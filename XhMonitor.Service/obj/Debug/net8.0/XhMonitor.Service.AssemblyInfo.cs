@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("XhMonitor.Service")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d2c07ed94bc982b7035c4d10e38943e907f58cad")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+70a69bd1c2e64202ef6f1672a14fdc1e989db616")]
 [assembly: System.Reflection.AssemblyProductAttribute("XhMonitor.Service")]
 [assembly: System.Reflection.AssemblyTitleAttribute("XhMonitor.Service")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

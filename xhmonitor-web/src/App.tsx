@@ -6,6 +6,7 @@ import { MetricChart } from './components/MetricChart';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { calculateSystemSummary, formatTimestamp } from './utils';
+import { t } from './i18n';
 import type { ChartDataPoint } from './types';
 
 function App() {
@@ -37,7 +38,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Activity className="w-16 h-16 mx-auto mb-4 text-cpu animate-pulse" />
-          <p className="text-gray-400">Loading configuration...</p>
+          <p className="text-gray-400">{t('Loading configuration...')}</p>
         </div>
       </div>
     );
@@ -47,7 +48,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500">Failed to load metric configuration</p>
+          <p className="text-red-500">{t('Failed to load metric configuration')}</p>
         </div>
       </div>
     );
@@ -68,10 +69,10 @@ function App() {
               <Activity className="w-10 h-10 text-cpu" />
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-cpu to-gpu bg-clip-text text-transparent">
-                  XhMonitor
+                  {t('appTitle')}
                 </h1>
                 <p className="text-gray-400 text-sm">
-                  Windows Resource Monitor
+                  {t('appSubtitle')}
                 </p>
               </div>
             </div>
@@ -80,13 +81,13 @@ function App() {
               {isConnected ? (
                 <div className="flex items-center gap-2 text-memory">
                   <Wifi className="w-5 h-5" />
-                  <span className="text-sm font-medium">Connected</span>
+                  <span className="text-sm font-medium">{t('connected')}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-red-500">
                   <WifiOff className="w-5 h-5" />
                   <span className="text-sm font-medium">
-                    {error || 'Disconnected'}
+                    {error ? t(error) : t('disconnected')}
                   </span>
                 </div>
               )}
@@ -127,7 +128,7 @@ function App() {
           <div className="glass rounded-xl p-12 text-center">
             <div className="animate-pulse-slow">
               <Activity className="w-16 h-16 mx-auto mb-4 text-cpu" />
-              <p className="text-gray-400">Waiting for metrics data...</p>
+              <p className="text-gray-400">{t('Waiting for metrics data...')}</p>
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { ArrowUpDown } from 'lucide-react';
 import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
+import { t } from '../i18n';
 
 interface ProcessListProps {
   processes: ProcessInfo[];
@@ -76,10 +77,10 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
   return (
     <div className="glass rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Process Monitor</h2>
+        <h2 className="text-2xl font-bold">{t('Process Monitor')}</h2>
         <input
           type="text"
-          placeholder="Search processes..."
+          placeholder={t('Search processes...')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-cpu"
@@ -95,11 +96,11 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
                   onClick={() => handleSort('processName')}
                   className="flex items-center gap-2 hover:text-cpu transition-colors"
                 >
-                  Process
+                  {t('Process')}
                   <ArrowUpDown className="w-4 h-4" />
                 </button>
               </th>
-              <th className="text-left py-3 px-4">PID</th>
+              <th className="text-left py-3 px-4">{t('PID')}</th>
               {metricMetadata.map((metric) => (
                 <th key={metric.metricId} className="text-left py-3 px-4">
                   <button
@@ -107,7 +108,7 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
                     className="flex items-center gap-2 hover:opacity-80 transition-colors"
                     style={{ color: colorMap[metric.metricId] }}
                   >
-                    {metric.displayName}
+                    {t(metric.displayName)}
                     <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
@@ -161,7 +162,7 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
 
       {sortedAndFilteredProcesses.length === 0 && (
         <div className="text-center py-8 text-gray-400">
-          No processes found matching "{searchTerm}"
+          {t('No processes found matching')} "{searchTerm}"
         </div>
       )}
     </div>

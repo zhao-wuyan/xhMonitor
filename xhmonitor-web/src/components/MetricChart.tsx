@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import type { ChartDataPoint } from '../types';
+import { t } from '../i18n';
 
 interface MetricChartProps {
   data: ChartDataPoint[];
@@ -26,7 +27,7 @@ export const MetricChart = ({ data, metricId, title, unit, color }: MetricChartP
 
     const option: echarts.EChartsOption = {
       title: {
-        text: title,
+        text: t(title),
         textStyle: {
           color: '#f3f4f6',
           fontSize: 16,

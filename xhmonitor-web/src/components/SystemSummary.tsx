@@ -1,6 +1,7 @@
 import * as LucideIcons from 'lucide-react';
 import type { MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
+import { t } from '../i18n';
 
 interface SystemSummaryProps {
   summary: Record<string, number>;
@@ -49,13 +50,13 @@ export const SystemSummary = ({ summary, metricMetadata, colorMap, iconMap }: Sy
           >
             <div className="flex items-center justify-between mb-4">
               <Icon className="w-8 h-8" style={{ color }} />
-              <span className="text-sm text-gray-400">{metric.displayName}</span>
+              <span className="text-sm text-gray-400">{t(metric.displayName)}</span>
             </div>
             <div className="text-3xl font-bold font-mono">
               {formatValue(value, metric.unit)}
             </div>
             <div className="mt-2 text-sm text-gray-400">
-              {summary.processCount} processes
+              {summary.processCount} {t('processes')}
             </div>
           </div>
         );
