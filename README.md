@@ -1,6 +1,6 @@
 # XhMonitor - Windows资源监视器
 
-一个高性能的Windows进程资源监控系统，支持CPU、内存、GPU、显存等指标的实时采集、聚合分析和Web API访问。
+一个高性能的Windows进程资源监控系统，支持CPU、内存、GPU、显存等指标的实时采集、聚合分析和Web可视化。
 
 ## 功能特性
 
@@ -9,9 +9,10 @@
 - ✅ **多维度指标**：CPU、内存、GPU、显存（支持插件扩展）
 - ✅ **数据持久化**：SQLite存储原始数据和聚合数据
 - ✅ **分层聚合**：自动生成分钟/小时/天级别统计数据
-- ✅ **Web API**：RESTful API查询历史数据
+- ✅ **Web可视化**：React + TailwindCSS现代化界面
 - ✅ **实时推送**：SignalR实时推送最新指标
-- ✅ **健康检查**：服务状态和数据库连接监控
+- ✅ **动态扩展**：配置驱动的指标系统，零前端代码修改
+- ✅ **国际化支持**：中英文切换，易于扩展多语言
 
 ### 技术特性
 - 🔌 **插件化架构**：IMetricProvider接口支持自定义指标
@@ -19,43 +20,420 @@
 - ⚡ **高性能**：优化的PID→InstanceName映射（O(1)查找）
 - 🔒 **线程安全**：SemaphoreSlim保护共享资源
 - 🎯 **精确聚合**：存储Sum/Count支持数学正确的加权平均
+- 🎨 **Glassmorphism UI**：现代化毛玻璃效果界面
 
 ## 技术栈
 
-- **后端框架**：.NET 8 + ASP.NET Core
+### 后端
+- **框架**：.NET 8 + ASP.NET Core
 - **数据库**：SQLite + EF Core 8
 - **实时通信**：SignalR
 - **性能监控**：PerformanceCounter API
 - **日志**：Microsoft.Extensions.Logging
 
+### 前端
+- **框架**：React 19 + TypeScript
+- **构建工具**：Vite 7
+- **样式**：TailwindCSS v4 (Glassmorphism)
+- **图表**：ECharts 6
+- **实时通信**：@microsoft/signalr
+- **图标**：Lucide React
+
+## 监控原理详解
+
+### 1. CPU 监控
+
+**原理**：使用 Windows Performance Counter API
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Core/Providers/CpuMetricProvider.cs
+public class CpuMetricProvider : IMetricProvider
+{
+    // 使用 PerformanceCounter 读取进程CPU使用率
+    private PerformanceCounter _counter;
+
+    public async Task<MetricValue> CollectAsync(int processId)
+    {
+        // 1. 通过PID获取进程实例名
+        var instanceName = GetInstanceName(processId);
+
+        // 2. 创建性能计数器
+        _counter = new PerformanceCounter(
+            "Process",           // 类别
+            "% Processor Time",  // 计数器名称
+            instanceName,        // 实例名（如 "python#2"）
+            true                 // 只读
+        );
+
+        // 3. 首次调用初始化
+        _counter.NextValue();
+        await Task.Delay(100);
+
+        // 4. 获取实际值
+        var cpuUsage = _counter.NextValue();
+
+        return new MetricValue { Value = cpuUsage, Unit = "%" };
+    }
+}
+```
+
+**关键API**：
+- `PerformanceCounter("Process", "% Processor Time", instanceName)`
+- 需要两次调用 `NextValue()` 才能获取准确值
+- 实例名格式：`processName#index`（如 `python#2`）
+
+**优化**：
+- 使用 `ConcurrentDictionary` 缓存 PID → InstanceName 映射
+- O(1) 时间复杂度查找
+
+### 2. 内存监控
+
+**原理**：使用 .NET Process API
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Core/Providers/MemoryMetricProvider.cs
+public class MemoryMetricProvider : IMetricProvider
+{
+    public Task<MetricValue> CollectAsync(int processId)
+    {
+        // 1. 通过PID获取进程对象
+        using var process = Process.GetProcessById(processId);
+
+        // 2. 读取工作集大小（物理内存）
+        var bytes = process.WorkingSet64;
+
+        // 3. 转换为MB
+        var mb = bytes / 1024.0 / 1024.0;
+
+        return Task.FromResult(new MetricValue
+        {
+            Value = Math.Round(mb, 1),
+            Unit = "MB"
+        });
+    }
+}
+```
+
+**关键API**：
+- `Process.GetProcessById(processId)` - 获取进程对象
+- `Process.WorkingSet64` - 物理内存使用量（字节）
+- 其他可用属性：
+  - `PrivateMemorySize64` - 私有内存
+  - `VirtualMemorySize64` - 虚拟内存
+  - `PagedMemorySize64` - 分页内存
+
+### 3. GPU 监控
+
+**原理**：使用 Windows Performance Counter API (GPU Engine)
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Core/Providers/GpuMetricProvider.cs
+public class GpuMetricProvider : IMetricProvider
+{
+    public async Task<MetricValue> CollectAsync(int processId)
+    {
+        // 1. 获取所有GPU引擎实例
+        var category = new PerformanceCounterCategory("GPU Engine");
+        var instanceNames = category.GetInstanceNames();
+
+        // 2. 过滤当前进程的GPU引擎
+        var prefix = $"pid_{processId}_";
+        var relevantInstances = instanceNames
+            .Where(n => n.Contains(prefix));
+
+        // 3. 累加所有引擎的使用率
+        double totalUsage = 0;
+        foreach (var instance in relevantInstances)
+        {
+            using var counter = new PerformanceCounter(
+                "GPU Engine",
+                "Utilization Percentage",
+                instance,
+                true
+            );
+
+            counter.NextValue();
+            await Task.Delay(100);
+            totalUsage += counter.NextValue();
+        }
+
+        return new MetricValue { Value = totalUsage, Unit = "%" };
+    }
+}
+```
+
+**关键API**：
+- `PerformanceCounterCategory("GPU Engine")`
+- 计数器：`Utilization Percentage`
+- 实例名格式：`pid_1234_luid_0x00000000_0x0000D3C7_phys_0_eng_3_engtype_3D`
+
+**注意事项**：
+- 需要 Windows 10 Fall Creators Update (1709) 或更高版本
+- 需要支持 WDDM 2.0 的显卡驱动
+- 一个进程可能有多个GPU引擎实例（3D、Copy、Video等）
+
+### 4. VRAM (显存) 监控
+
+**原理**：使用 Windows Performance Counter API (GPU Process Memory)
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Core/Providers/VramMetricProvider.cs
+public class VramMetricProvider : IMetricProvider
+{
+    public async Task<MetricValue> CollectAsync(int processId)
+    {
+        // 1. 获取GPU进程内存类别
+        var category = new PerformanceCounterCategory("GPU Process Memory");
+        var instanceNames = category.GetInstanceNames();
+
+        // 2. 过滤当前进程的实例
+        var prefix = $"pid_{processId}_";
+        long totalBytes = 0;
+
+        // 3. 累加所有GPU的显存使用
+        foreach (var name in instanceNames.Where(n => n.Contains(prefix)))
+        {
+            using var counter = new PerformanceCounter(
+                "GPU Process Memory",
+                "Dedicated Usage",  // 专用显存
+                name,
+                true
+            );
+
+            totalBytes += counter.RawValue;
+        }
+
+        // 4. 转换为MB
+        var mb = totalBytes / 1024.0 / 1024.0;
+
+        return new MetricValue { Value = Math.Round(mb, 1), Unit = "MB" };
+    }
+}
+```
+
+**关键API**：
+- `PerformanceCounterCategory("GPU Process Memory")`
+- 计数器：
+  - `Dedicated Usage` - 专用显存（独显）
+  - `Shared Usage` - 共享显存（集显）
+- 实例名格式：`pid_1234_luid_0x00000000_0x0000D3C7_phys_0`
+
+**可用计数器**：
+- `Dedicated Usage` - 独立显存使用量
+- `Shared Usage` - 共享内存使用量
+- `Total Committed` - 总提交内存
+
+### 5. 进程扫描
+
+**原理**：基于关键词过滤进程列表
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Service/Core/ProcessScanner.cs
+public class ProcessScanner
+{
+    private readonly string[] _keywords;
+
+    public IEnumerable<ProcessInfo> ScanProcesses()
+    {
+        // 1. 获取所有运行中的进程
+        var allProcesses = Process.GetProcesses();
+
+        // 2. 根据关键词过滤
+        var filtered = allProcesses.Where(p =>
+            _keywords.Any(keyword =>
+                p.ProcessName.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+            )
+        );
+
+        // 3. 提取进程信息
+        return filtered.Select(p => new ProcessInfo
+        {
+            ProcessId = p.Id,
+            ProcessName = p.ProcessName,
+            CommandLine = GetCommandLine(p.Id)  // 通过WMI获取
+        });
+    }
+}
+```
+
+**关键API**：
+- `Process.GetProcesses()` - 获取所有进程
+- WMI查询命令行：`SELECT CommandLine FROM Win32_Process WHERE ProcessId = {pid}`
+
+### 6. 数据聚合
+
+**原理**：时间窗口聚合 + 统计计算
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Service/Workers/AggregationWorker.cs
+public class AggregationWorker : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // 1. 原始数据 → 分钟聚合
+            await AggregateRawToMinute();
+
+            // 2. 分钟聚合 → 小时聚合
+            await AggregateMinuteToHour();
+
+            // 3. 小时聚合 → 天聚合
+            await AggregateHourToDay();
+
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        }
+    }
+
+    private async Task AggregateRawToMinute()
+    {
+        // 按进程和分钟分组
+        var groups = rawRecords
+            .GroupBy(r => new {
+                r.ProcessId,
+                Minute = r.Timestamp.TruncateToMinute()
+            });
+
+        foreach (var group in groups)
+        {
+            // 解析JSON并计算统计值
+            var metrics = group.Select(r =>
+                JsonSerializer.Deserialize<Dictionary<string, MetricValue>>(r.MetricsJson)
+            );
+
+            // 计算 Min, Max, Avg, Sum, Count
+            var aggregated = CalculateStatistics(metrics);
+
+            // 保存聚合结果
+            await SaveAggregation(aggregated, AggregationLevel.Minute);
+        }
+    }
+}
+```
+
+**聚合算法**：
+- **Min**: 最小值
+- **Max**: 最大值
+- **Avg**: 加权平均 = Sum / Count
+- **Sum**: 累加和
+- **Count**: 样本数量
+
+### 7. 实时推送 (SignalR)
+
+**原理**：WebSocket 双向通信
+
+**实现细节**：
+```csharp
+// 位置：XhMonitor.Service/Worker.cs
+public class Worker : BackgroundService
+{
+    private readonly IHubContext<MetricsHub> _hubContext;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // 1. 采集指标
+            var metrics = await _monitor.CollectAllAsync();
+
+            // 2. 保存到数据库
+            await _repository.SaveMetricsAsync(metrics, timestamp);
+
+            // 3. 推送到所有连接的客户端
+            await _hubContext.Clients.All.SendAsync(
+                "metrics.latest",  // 事件名
+                new {
+                    Timestamp = timestamp,
+                    ProcessCount = metrics.Count,
+                    Processes = metrics
+                },
+                stoppingToken
+            );
+
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+        }
+    }
+}
+```
+
+**SignalR Hub**：
+```csharp
+// 位置：XhMonitor.Service/Hubs/MetricsHub.cs
+public sealed class MetricsHub : Hub
+{
+    public override async Task OnConnectedAsync()
+    {
+        _logger.LogInformation("Client connected: {ConnectionId}",
+            Context.ConnectionId);
+        await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        _logger.LogInformation("Client disconnected: {ConnectionId}",
+            Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
+    }
+}
+```
+
+**前端连接**：
+```typescript
+// 位置：xhmonitor-web/src/hooks/useMetricsHub.ts
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl('http://localhost:35179/hubs/metrics')
+  .withAutomaticReconnect()  // 自动重连
+  .configureLogging(signalR.LogLevel.Information)
+  .build();
+
+connection.on('metrics.latest', (data: MetricsData) => {
+  setMetricsData(data);  // 更新React状态
+});
+
+await connection.start();
+```
+
 ## 快速开始
 
 ### 环境要求
 
+**后端**：
 - Windows 10/11
 - .NET 8 SDK
 - Visual Studio 2022 或 VS Code
 
+**前端**：
+- Node.js 18+
+- npm 或 pnpm
+
 ### 安装步骤
 
-1. **克隆仓库**
+#### 1. 后端服务
+
+**克隆仓库**
 ```bash
 git clone <repository-url>
 cd xhMonitor
 ```
 
-2. **还原依赖**
+**还原依赖**
 ```bash
 dotnet restore
 ```
 
-3. **应用数据库迁移**
+**应用数据库迁移**
 ```bash
 cd XhMonitor.Service
 dotnet ef database update
 ```
 
-4. **配置监控关键词**
+**配置监控关键词**
 
 编辑 `XhMonitor.Service/appsettings.json`：
 ```json
@@ -67,12 +445,36 @@ dotnet ef database update
 }
 ```
 
-5. **启动服务**
+**启动后端服务**
 ```bash
 dotnet run --project XhMonitor.Service
 ```
 
 服务将在 `http://localhost:35179` 启动。
+
+#### 2. 前端界面
+
+**进入前端目录**
+```bash
+cd xhmonitor-web
+```
+
+**安装依赖**
+```bash
+npm install
+```
+
+**启动开发服务器**
+```bash
+npm run dev
+```
+
+前端将在 `http://localhost:35180` 启动。
+
+**构建生产版本**
+```bash
+npm run build
+```
 
 ### 验证运行
 
@@ -84,6 +486,11 @@ curl http://localhost:35179/api/v1/config/health
 **查询最新指标**
 ```bash
 curl http://localhost:35179/api/v1/metrics/latest
+```
+
+**访问Web界面**
+```
+http://localhost:35180
 ```
 
 ## API文档
@@ -180,7 +587,46 @@ GET /metrics/aggregations?from={datetime}&to={datetime}&aggregation={string}
 
 #### Config API
 
-**1. 获取配置**
+**1. 获取指标元数据** ⭐ 新增
+```http
+GET /config/metrics
+```
+
+返回所有已注册的指标提供者信息，用于前端动态渲染。
+
+响应示例：
+```json
+[
+  {
+    "metricId": "cpu",
+    "displayName": "CPU Usage",
+    "unit": "%",
+    "type": "Percentage",
+    "category": "Percentage",
+    "color": "#3b82f6",
+    "icon": "Cpu"
+  },
+  {
+    "metricId": "memory",
+    "displayName": "Memory Usage",
+    "unit": "MB",
+    "type": "Size",
+    "category": "Size",
+    "color": "#10b981",
+    "icon": "MemoryStick"
+  }
+]
+```
+
+**字段说明**：
+- `metricId`: 指标唯一标识（如 cpu, memory, gpu, vram）
+- `displayName`: 显示名称（支持国际化映射）
+- `unit`: 单位（%, MB, GB, °C等）
+- `type`: 指标类型（Percentage, Size, Gauge等）
+- `color`: 前端显示颜色（十六进制）
+- `icon`: Lucide图标名称
+
+**2. 获取配置**
 ```http
 GET /config
 ```
@@ -371,16 +817,52 @@ xhMonitor/
 │   ├── Interfaces/              # 接口定义
 │   ├── Models/                  # 数据模型
 │   └── Providers/               # 内置指标提供者
+│       ├── CpuMetricProvider.cs
+│       ├── MemoryMetricProvider.cs
+│       ├── GpuMetricProvider.cs
+│       └── VramMetricProvider.cs
 ├── XhMonitor.Service/           # 主服务
 │   ├── Controllers/             # API控制器
+│   │   ├── MetricsController.cs
+│   │   └── ConfigController.cs
 │   ├── Core/                    # 核心逻辑
+│   │   ├── ProcessMonitor.cs
+│   │   └── ProcessScanner.cs
 │   ├── Data/                    # 数据访问
+│   │   ├── AppDbContext.cs
+│   │   └── MetricsRepository.cs
 │   ├── Hubs/                    # SignalR Hub
-│   └── Workers/                 # 后台服务
-└── KNOWN_LIMITATIONS.md         # 已知限制文档
+│   │   └── MetricsHub.cs
+│   ├── Workers/                 # 后台服务
+│   │   ├── Worker.cs
+│   │   └── AggregationWorker.cs
+│   ├── appsettings.json         # 配置文件
+│   └── xhmonitor.db             # SQLite数据库
+├── xhmonitor-web/               # 前端项目
+│   ├── src/
+│   │   ├── components/          # React组件
+│   │   │   ├── SystemSummary.tsx
+│   │   │   ├── ProcessList.tsx
+│   │   │   └── MetricChart.tsx
+│   │   ├── hooks/               # 自定义Hooks
+│   │   │   └── useMetricsHub.ts
+│   │   ├── i18n.ts              # 国际化配置
+│   │   ├── types.ts             # TypeScript类型定义
+│   │   ├── utils.ts             # 工具函数
+│   │   ├── App.tsx              # 主应用组件
+│   │   └── main.tsx             # 入口文件
+│   ├── public/                  # 静态资源
+│   ├── package.json             # 依赖配置
+│   ├── vite.config.ts           # Vite配置
+│   ├── tailwind.config.js       # TailwindCSS配置
+│   └── I18N.md                  # 国际化说明文档
+├── KNOWN_LIMITATIONS.md         # 已知限制文档
+└── README.md                    # 项目文档
 ```
 
 ### 添加自定义指标
+
+#### 后端实现
 
 实现`IMetricProvider`接口：
 
@@ -410,6 +892,70 @@ public class CustomMetricProvider : IMetricProvider
 
     public void Dispose() { }
 }
+```
+
+#### 前端国际化
+
+在 `xhmonitor-web/src/i18n.ts` 中添加翻译：
+
+```typescript
+export const i18n = {
+  zh: {
+    'Custom Metric': '自定义指标',
+  },
+  en: {
+    'Custom Metric': 'Custom Metric',
+  },
+};
+```
+
+前端会自动通过 `/api/v1/config/metrics` 获取指标元数据并渲染，无需修改组件代码。
+
+### 前端开发
+
+#### 启动开发服务器
+
+```bash
+cd xhmonitor-web
+npm install
+npm run dev
+```
+
+#### 添加新组件
+
+在 `src/components/` 目录下创建新组件：
+
+```typescript
+import { t } from '../i18n';
+
+export const MyComponent = () => {
+  return (
+    <div className="glass rounded-xl p-6">
+      <h2 className="text-2xl font-bold">{t('My Component')}</h2>
+      {/* 组件内容 */}
+    </div>
+  );
+};
+```
+
+#### 使用SignalR连接
+
+```typescript
+import { useMetricsHub } from './hooks/useMetricsHub';
+
+export const MyComponent = () => {
+  const { metricsData, connectionStatus } = useMetricsHub();
+
+  // 使用实时数据
+  return <div>{connectionStatus}</div>;
+};
+```
+
+#### 构建生产版本
+
+```bash
+npm run build
+# 输出到 dist/ 目录
 ```
 
 ### 运行测试
@@ -470,10 +1016,15 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - ✅ **阶段2**: 监控核心实现
 - ✅ **阶段3**: 数据持久化与聚合
 - ✅ **阶段4**: Web API + SignalR
+- ✅ **阶段5**: Web前端开发（React + TypeScript）
+  - ✅ 实时数据展示
+  - ✅ 进程列表与搜索
+  - ✅ 动态图表渲染
+  - ✅ 国际化支持（中英文）
+  - ✅ Glassmorphism UI设计
 
 ### 进行中
 
-- 🚧 **阶段5**: Web前端开发（React + TypeScript）
 - 🚧 **阶段6**: Electron桌面端
 
 ### 待开发
@@ -510,6 +1061,16 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - Issue追踪：<repository-url>/issues
 
 ## 更新日志
+
+### v0.5.0 (2025-12-21)
+- ✨ 完成Web前端开发（React 19 + TypeScript）
+- ✨ 实现实时数据展示和SignalR连接
+- ✨ 添加进程列表、搜索和排序功能
+- ✨ 集成ECharts动态图表
+- ✨ 实现国际化支持（中英文切换）
+- 🎨 采用Glassmorphism毛玻璃UI设计
+- ✨ 支持动态指标扩展（零前端代码修改）
+- 📝 添加前端国际化文档（I18N.md）
 
 ### v0.4.0 (2025-12-21)
 - ✨ 新增Web API和SignalR支持
