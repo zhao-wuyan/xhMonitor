@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
-import { ChartDataPoint } from '../types';
+import type { ChartDataPoint } from '../types';
 
 interface MetricChartProps {
   data: ChartDataPoint[];

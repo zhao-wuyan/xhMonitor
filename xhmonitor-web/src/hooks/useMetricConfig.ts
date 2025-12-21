@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MetricMetadata, MetricConfig } from '../types';
+import type { MetricMetadata, MetricConfig } from '../types';
 
 const API_BASE = 'http://localhost:35179/api/v1';
 

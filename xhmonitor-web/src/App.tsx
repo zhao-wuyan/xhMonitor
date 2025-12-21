@@ -6,7 +6,7 @@ import { MetricChart } from './components/MetricChart';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { calculateSystemSummary, formatTimestamp } from './utils';
-import { ChartDataPoint } from './types';
+import type { ChartDataPoint } from './types';
 
 function App() {
   const { metricsData, isConnected, error } = useMetricsHub();

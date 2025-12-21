@@ -1,4 +1,4 @@
-import { ProcessInfo } from './types';
+import type { ProcessInfo } from './types';
 
 export const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';

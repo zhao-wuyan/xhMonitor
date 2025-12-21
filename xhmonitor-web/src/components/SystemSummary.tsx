@@ -1,5 +1,5 @@
 import * as LucideIcons from 'lucide-react';
-import { MetricMetadata } from '../types';
+import type { MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
 
 interface SystemSummaryProps {

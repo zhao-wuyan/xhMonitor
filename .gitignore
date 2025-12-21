@@ -63,3 +63,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+xhmonitor.db

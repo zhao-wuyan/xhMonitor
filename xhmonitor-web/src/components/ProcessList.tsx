@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ArrowUpDown } from 'lucide-react';
-import { ProcessInfo, MetricMetadata } from '../types';
+import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
 
 interface ProcessListProps {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
-import { MetricsData } from '../types';
+import type { MetricsData } from '../types';
 
 const HUB_URL = 'http://localhost:35179/hubs/metrics';
 
