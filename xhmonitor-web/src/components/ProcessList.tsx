@@ -122,7 +122,10 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
               >
                 <td className="py-3 px-4">
                   <div className="font-medium">{process.processName}</div>
-                  <div className="text-xs text-gray-400 truncate max-w-xs">
+                  <div
+                    className="text-xs text-gray-400 truncate max-w-xs cursor-help"
+                    title={process.commandLine}
+                  >
                     {process.commandLine}
                   </div>
                 </td>
