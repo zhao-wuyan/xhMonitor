@@ -17,9 +17,12 @@ export const MetricChart = ({ data, metricId, title, unit, color }: MetricChartP
   useEffect(() => {
     if (!chartRef.current) return;
 
+    // 初始化图表实例
     if (!chartInstance.current) {
       chartInstance.current = echarts.init(chartRef.current, 'dark');
     }
+
+    const chart = chartInstance.current;
 
     const option: echarts.EChartsOption = {
       title: {
@@ -109,24 +112,24 @@ export const MetricChart = ({ data, metricId, title, unit, color }: MetricChartP
       ],
     };
 
-    chartInstance.current.setOption(option);
+    chart.setOption(option);
 
     const handleResize = () => {
-      chartInstance.current?.resize();
+      chart?.resize();
     };
 
     window.addEventListener('resize', handleResize);
 
+    // 清理函数
     return () => {
       window.removeEventListener('resize', handleResize);
+      // 组件卸载时才销毁实例
+      if (chartInstance.current) {
+        chartInstance.current.dispose();
+        chartInstance.current = null;
+      }
     };
   }, [data, metricId, title, unit, color]);
-
-  useEffect(() => {
-    return () => {
-      chartInstance.current?.dispose();
-    };
-  }, []);
 
   return <div ref={chartRef} className="w-full h-80" />;
 };
