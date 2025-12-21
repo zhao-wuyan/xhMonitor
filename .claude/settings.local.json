@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir)",
+      "Bash(dotnet new sln -n xhMonitor)",
+      "Bash(dotnet add reference ../XhMonitor.Core/XhMonitor.Core.csproj)",
+      "Bash(python:*)",
+      "Bash(mkdir:*)",
+      "Bash(timeout 15 dotnet run:*)",
+      "Bash(timeout 30 dotnet run:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "auggie-mcp"
+  ]
+}

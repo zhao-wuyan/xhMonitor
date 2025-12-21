@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "augment-context-engine": {
+      "command": "auggie",
+      "args": [
+        "--mcp"
+      ]
+    }
+  }
+}
