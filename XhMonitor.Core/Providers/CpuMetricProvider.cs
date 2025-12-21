@@ -9,9 +9,10 @@ namespace XhMonitor.Core.Providers;
 public class CpuMetricProvider : IMetricProvider
 {
     private readonly ConcurrentDictionary<int, PerformanceCounter> _counters = new();
-    private string[]? _cachedInstanceNames;
+    private Dictionary<int, string>? _pidToInstanceMap;
     private DateTime _cacheTimestamp = DateTime.MinValue;
     private readonly TimeSpan _cacheLifetime = TimeSpan.FromSeconds(5);
+    private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
     public string MetricId => "cpu";
     public string DisplayName => "CPU Usage";
@@ -72,25 +73,45 @@ public class CpuMetricProvider : IMetricProvider
     {
         try
         {
-            var process = Process.GetProcessById(pid);
-            var processName = process.ProcessName;
-
-            // Refresh cache if expired
-            if (_cachedInstanceNames == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
+            Dictionary<int, string> pidMap;
+            if (_pidToInstanceMap == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
             {
-                var category = new PerformanceCounterCategory("Process");
-                _cachedInstanceNames = category.GetInstanceNames();
-                _cacheTimestamp = DateTime.UtcNow;
+                _cacheLock.Wait();
+                try
+                {
+                    if (_pidToInstanceMap == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
+                    {
+                        var category = new PerformanceCounterCategory("Process");
+                        var instanceNames = category.GetInstanceNames();
+
+                        var newMap = new Dictionary<int, string>();
+                        foreach (var instance in instanceNames)
+                        {
+                            try
+                            {
+                                using var counter = new PerformanceCounter("Process", "ID Process", instance, true);
+                                var instancePid = (int)counter.RawValue;
+                                newMap[instancePid] = instance;
+                            }
+                            catch { }
+                        }
+
+                        _pidToInstanceMap = newMap;
+                        _cacheTimestamp = DateTime.UtcNow;
+                    }
+                    pidMap = _pidToInstanceMap;
+                }
+                finally
+                {
+                    _cacheLock.Release();
+                }
+            }
+            else
+            {
+                pidMap = _pidToInstanceMap;
             }
 
-            var instances = _cachedInstanceNames
-                .Where(x => x.StartsWith(processName, StringComparison.OrdinalIgnoreCase));
-
-            foreach (var instance in instances)
-            {
-                using var counter = new PerformanceCounter("Process", "ID Process", instance, true);
-                try { if ((int)counter.RawValue == pid) return instance; } catch { }
-            }
+            return pidMap.TryGetValue(pid, out var instanceName) ? instanceName : null;
         }
         catch { }
         return null;
@@ -100,5 +121,6 @@ public class CpuMetricProvider : IMetricProvider
     {
         foreach (var c in _counters.Values) c.Dispose();
         _counters.Clear();
+        _cacheLock.Dispose();
     }
 }

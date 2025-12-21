@@ -4,8 +4,10 @@ using XhMonitor.Service;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Data;
 using XhMonitor.Service.Data.Repositories;
+using XhMonitor.Service.Workers;
+using XhMonitor.Service.Hubs;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DatabaseConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -19,6 +21,7 @@ builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
 builder.Services.AddSingleton<IProcessMetricRepository, MetricRepository>();
 
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<AggregationWorker>();
 
 builder.Services.AddSingleton(sp =>
 {
@@ -38,5 +41,36 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton<ProcessScanner>();
 builder.Services.AddSingleton<PerformanceMonitor>();
 
-var host = builder.Build();
-host.Run();
+builder.Services.AddControllers();
+builder.Services.AddSignalR();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "app://.")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenLocalhost(35179);
+});
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseCors("AllowAll");
+app.UseRouting();
+
+app.MapControllers();
+app.MapHub<MetricsHub>("/hubs/metrics");
+
+app.Run();

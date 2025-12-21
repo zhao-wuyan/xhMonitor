@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.SignalR;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Service.Core;
+using XhMonitor.Service.Hubs;
 
 namespace XhMonitor.Service;
 
@@ -8,17 +10,20 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly PerformanceMonitor _monitor;
     private readonly IProcessMetricRepository _repository;
+    private readonly IHubContext<MetricsHub> _hubContext;
     private readonly int _intervalSeconds;
 
     public Worker(
         ILogger<Worker> logger,
         PerformanceMonitor monitor,
         IProcessMetricRepository repository,
+        IHubContext<MetricsHub> hubContext,
         IConfiguration config)
     {
         _logger = logger;
         _monitor = monitor;
         _repository = repository;
+        _hubContext = hubContext;
         _intervalSeconds = config.GetValue("Monitor:IntervalSeconds", 5);
     }
 
@@ -52,6 +57,21 @@ public class Worker : BackgroundService
                         metrics.Count, cycleTimestamp);
                     await _repository.SaveMetricsAsync(metrics, cycleTimestamp, stoppingToken);
                     _logger.LogDebug("SaveMetricsAsync completed");
+
+                    await _hubContext.Clients.All.SendAsync("metrics.latest", new
+                    {
+                        Timestamp = cycleTimestamp,
+                        ProcessCount = metrics.Count,
+                        Processes = metrics.Select(m => new
+                        {
+                            m.Info.ProcessId,
+                            m.Info.ProcessName,
+                            m.Info.CommandLine,
+                            Metrics = m.Metrics
+                        }).ToList()
+                    }, stoppingToken);
+
+                    _logger.LogDebug("Pushed metrics to SignalR clients");
                 }
                 else
                 {

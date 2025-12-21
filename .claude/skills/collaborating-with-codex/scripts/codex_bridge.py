@@ -193,6 +193,11 @@ def main():
     if args.return_all_messages:
         result["all_messages"] = all_messages
 
+    import sys
+    if sys.platform == 'win32':
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 if __name__ == "__main__":

@@ -7,7 +7,16 @@
       "Bash(python:*)",
       "Bash(mkdir:*)",
       "Bash(timeout 15 dotnet run:*)",
-      "Bash(timeout 30 dotnet run:*)"
+      "Bash(timeout 30 dotnet run:*)",
+      "Bash(dir \"C:\\\\ProjectDev\\\\project\\\\xinghe\\\\xhMonitor\\\\.claude\\\\skills\\\\collaborating-with-codex\")",
+      "Bash(dir \"C:\\\\ProjectDev\\\\project\\\\xinghe\\\\xhMonitor\\\\.claude\\\\skills\\\\collaborating-with-codex\\\\scripts\")",
+      "Bash(sqlite3:*)",
+      "Bash(timeout 20 dotnet run:*)",
+      "Bash(findstr:*)",
+      "Bash(dotnet build:*)",
+      "Bash(timeout 120 dotnet run:*)",
+      "Bash(timeout:*)",
+      "mcp__auggie-mcp__codebase-retrieval"
     ]
   },
   "enableAllProjectMcpServers": true,

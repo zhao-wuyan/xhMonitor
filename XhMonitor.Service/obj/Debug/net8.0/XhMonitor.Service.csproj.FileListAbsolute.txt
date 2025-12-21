@@ -10,7 +10,6 @@ C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Micros
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Relational.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Sqlite.dll
-C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.Extensions.Caching.Abstractions.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.Extensions.Caching.Memory.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.Extensions.Configuration.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Abstractions.dll
@@ -164,3 +163,18 @@ C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\ru\Mic
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\XhMonitor.Service.MvcApplicationPartsAssemblyInfo.cache
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\XhMonitor.Service.staticwebassets.endpoints.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\bin\Debug\net8.0\System.Net.WebSockets.WebSocketProtocol.dll
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\rjimswa.dswa.cache.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\scopedcss\bundle\XhMonitor.Service.styles.css
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\staticwebassets.build.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\staticwebassets.build.json.cache
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\staticwebassets.development.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\swae.build.ex.cache
+C:\ProjectDev\project\xinghe\xhMonitor\XhMonitor.Service\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
