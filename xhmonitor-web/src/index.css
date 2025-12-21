@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: rgb(17 24 39);
+    color: rgb(243 244 246);
+    font-family: Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background-color: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(48px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-hover {
+    transition: all 0.3s;
+  }
+
+  .glass-hover:hover {
+    background-color: rgba(17, 24, 39, 0.56);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .metric-bar {
+    height: 0.5rem;
+    border-radius: 9999px;
+    transition: all 0.5s ease-out;
+  }
+
+  .glow-cpu {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .glow-memory {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .glow-gpu {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+
+  .glow-vram {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+}

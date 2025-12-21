@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XhMonitor.Core.Entities;
+using XhMonitor.Service.Core;
 using XhMonitor.Service.Data;
+using XhMonitor.Service.Models;
 
 namespace XhMonitor.Service.Controllers;
 
@@ -12,15 +14,18 @@ public class ConfigController : ControllerBase
     private readonly IDbContextFactory<MonitorDbContext> _contextFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ConfigController> _logger;
+    private readonly MetricProviderRegistry _providerRegistry;
 
     public ConfigController(
         IDbContextFactory<MonitorDbContext> contextFactory,
         IConfiguration configuration,
-        ILogger<ConfigController> logger)
+        ILogger<ConfigController> logger,
+        MetricProviderRegistry providerRegistry)
     {
         _contextFactory = contextFactory;
         _configuration = configuration;
         _logger = logger;
+        _providerRegistry = providerRegistry;
     }
 
     [HttpGet]
@@ -96,6 +101,41 @@ public class ConfigController : ControllerBase
         await context.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    [HttpGet("metrics")]
+    public IActionResult GetMetrics()
+    {
+        var providers = _providerRegistry.GetAllProviders();
+
+        var metricColorMap = new Dictionary<string, string>
+        {
+            ["cpu"] = "#3b82f6",
+            ["memory"] = "#10b981",
+            ["gpu"] = "#8b5cf6",
+            ["vram"] = "#f59e0b"
+        };
+
+        var metricIconMap = new Dictionary<string, string>
+        {
+            ["cpu"] = "Cpu",
+            ["memory"] = "MemoryStick",
+            ["gpu"] = "Gpu",
+            ["vram"] = "HardDrive"
+        };
+
+        var metrics = providers.Select(p => new MetricMetadata
+        {
+            MetricId = p.MetricId,
+            DisplayName = p.DisplayName,
+            Unit = p.Unit,
+            Type = p.Type.ToString(),
+            Category = p.Type.ToString(),
+            Color = metricColorMap.GetValueOrDefault(p.MetricId.ToLower()),
+            Icon = metricIconMap.GetValueOrDefault(p.MetricId.ToLower())
+        }).ToList();
+
+        return Ok(metrics);
     }
 
     [HttpGet("health")]

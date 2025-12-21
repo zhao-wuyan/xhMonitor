@@ -16,7 +16,12 @@
       "Bash(dotnet build:*)",
       "Bash(timeout 120 dotnet run:*)",
       "Bash(timeout:*)",
-      "mcp__auggie-mcp__codebase-retrieval"
+      "mcp__auggie-mcp__codebase-retrieval",
+      "Bash(npm install)",
+      "mcp__context7__get-library-docs",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install tailwindcss@latest @tailwindcss/vite@latest)",
+      "Bash(rm:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
