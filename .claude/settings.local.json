@@ -21,7 +21,12 @@
       "mcp__context7__get-library-docs",
       "Bash(npm uninstall:*)",
       "Bash(npm install tailwindcss@latest @tailwindcss/vite@latest)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(where:*)",
+      "Bash(py:*)",
+      "Bash(cmd.exe /c:*)",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(dir:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

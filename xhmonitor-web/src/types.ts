@@ -1,3 +1,14 @@
+declare global {
+  interface Window {
+    electronAPI?: {
+      minimize: () => Promise<void>;
+      maximize: () => Promise<void>;
+      close: () => Promise<void>;
+      platform: NodeJS.Platform;
+    };
+  }
+}
+
 export interface MetricValue {
   value: number;
   unit: string;
