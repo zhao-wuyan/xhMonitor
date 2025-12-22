@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>xhMonitor Widget</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: transparent;
+        color: #e8e8f0;
+        overflow: hidden;
+      }
+      .widget {
+        height: 100vh;
+        width: 100vw;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(20, 20, 28, 0.9), rgba(30, 30, 45, 0.9));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        backdrop-filter: blur(10px);
+      }
+      .header {
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        -webkit-app-region: drag;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: #60a5fa;
+      }
+      .controls {
+        display: flex;
+        gap: 4px;
+        -webkit-app-region: no-drag;
+      }
+      .controls button {
+        border: none;
+        border-radius: 4px;
+        padding: 3px 6px;
+        font-size: 9px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.1);
+        color: inherit;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .controls button:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .content {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 10px;
+        flex: 1;
+        overflow: auto;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+      }
+      .stat-label {
+        color: rgba(232, 232, 240, 0.7);
+      }
+      .stat-value {
+        font-weight: 600;
+        color: #60a5fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="widget">
+      <div class="header">
+        <div class="title">xhMonitor</div>
+        <div class="controls">
+          <button id="toggleSize">Expand</button>
+          <button id="toggleClick">Click</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stat">
+          <span class="stat-label">Processes</span>
+          <span class="stat-value" id="processCount">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Updated</span>
+          <span class="stat-value" id="timestamp">--</span>
+        </div>
+        <div id="processList"></div>
+      </div>
+    </div>
+    <script>
+      const api = window.electronAPI;
+      const processCountEl = document.getElementById('processCount');
+      const timestampEl = document.getElementById('timestamp');
+      const processListEl = document.getElementById('processList');
+      const toggleSizeBtn = document.getElementById('toggleSize');
+      const toggleClickBtn = document.getElementById('toggleClick');
+
+      let sizeMode = 'compact';
+      let clickThrough = false;
+
+      const formatTimestamp = (timestamp) => {
+        if (!timestamp) return '--';
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return '--';
+        return date.toLocaleTimeString();
+      };
+
+      const renderMetrics = (data) => {
+        if (!data) {
+          processCountEl.textContent = '--';
+          timestampEl.textContent = '--';
+          processListEl.innerHTML = '';
+          return;
+        }
+
+        processCountEl.textContent = String(data.processCount ?? '--');
+        timestampEl.textContent = formatTimestamp(data.timestamp);
+
+        if (sizeMode === 'expanded' && data.processes) {
+          processListEl.innerHTML = data.processes.slice(0, 5).map(proc => {
+            const cpuMetric = proc.metrics['cpu'];
+            return `<div class="stat">
+              <span class="stat-label">${proc.processName}</span>
+              <span class="stat-value">${cpuMetric ? cpuMetric.value.toFixed(1) + '%' : '--'}</span>
+            </div>`;
+          }).join('');
+        } else {
+          processListEl.innerHTML = '';
+        }
+      };
+
+      const toggleSize = async () => {
+        sizeMode = sizeMode === 'compact' ? 'expanded' : 'compact';
+        toggleSizeBtn.textContent = sizeMode === 'compact' ? 'Expand' : 'Compact';
+        await api?.widget?.setWidgetSize?.(sizeMode);
+
+        const data = await api?.widget?.getMetricsData?.();
+        renderMetrics(data);
+      };
+
+      const toggleClickThrough = async () => {
+        clickThrough = !clickThrough;
+        toggleClickBtn.textContent = clickThrough ? 'Locked' : 'Click';
+        await api?.widget?.toggleClickthrough?.(clickThrough);
+      };
+
+      toggleSizeBtn.addEventListener('click', toggleSize);
+      toggleClickBtn.addEventListener('click', toggleClickThrough);
+
+      api?.widget?.onMetricsUpdate?.((data) => {
+        renderMetrics(data);
+      });
+
+      api?.widget?.getMetricsData?.().then((data) => {
+        renderMetrics(data);
+      });
+    </script>
+  </body>
+</html>

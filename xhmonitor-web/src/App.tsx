@@ -65,15 +65,27 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Custom Title Bar */}
       {isDesktop && (
-        <div className="h-8 w-full drag-region flex justify-end items-center px-2 space-x-2 fixed top-0 left-0 z-50">
-          <button onClick={() => window.electronAPI?.minimize()} className="p-1 hover:bg-white/10 rounded no-drag text-gray-400">
-            <Minus size={16} />
+        <div className="h-8 w-full drag-region flex justify-end items-center px-2 space-x-1 fixed top-0 left-0 z-50 bg-gray-900/80 backdrop-blur-sm border-b border-white/5">
+          <button
+            onClick={() => window.electronAPI?.minimize()}
+            className="p-1.5 hover:bg-white/10 rounded no-drag text-gray-300 hover:text-white transition-colors"
+            title="Minimize"
+          >
+            <Minus size={14} />
           </button>
-          <button onClick={() => window.electronAPI?.maximize()} className="p-1 hover:bg-white/10 rounded no-drag text-gray-400">
-            <Square size={14} />
+          <button
+            onClick={() => window.electronAPI?.maximize()}
+            className="p-1.5 hover:bg-white/10 rounded no-drag text-gray-300 hover:text-white transition-colors"
+            title="Maximize"
+          >
+            <Square size={12} />
           </button>
-          <button onClick={() => window.electronAPI?.close()} className="p-1 hover:bg-red-500/50 rounded no-drag text-gray-400">
-            <X size={16} />
+          <button
+            onClick={() => window.electronAPI?.close()}
+            className="p-1.5 hover:bg-red-500 rounded no-drag text-gray-300 hover:text-white transition-colors"
+            title="Close"
+          >
+            <X size={14} />
           </button>
         </div>
       )}

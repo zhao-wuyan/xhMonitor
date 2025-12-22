@@ -61,4 +61,3 @@ python scripts/codex_bridge.py --cd "/project" --PROMPT "Generate unified diff t
 ```bash
 python scripts/codex_bridge.py --cd "/project" --PROMPT "Debug this error" --return-all-messages
 ```
-注意编码问题，你是在Windows环境中
