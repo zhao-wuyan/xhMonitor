@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Activity, Lock, Unlock, MousePointer2, WifiOff } from 'lucide-react';
+import { Lock, Unlock, MousePointer2, WifiOff } from 'lucide-react';
 import { useMetricsHub } from '../../hooks/useMetricsHub';
 import { useMetricConfig } from '../../hooks/useMetricConfig';
 import { useWidgetConfig } from '../../hooks/useWidgetConfig';
 import { calculateSystemSummary, formatPercent, formatBytes } from '../../utils';
 import { t } from '../../i18n';
-import type { ProcessMetrics } from '../../types';
+import type { ProcessInfo } from '../../types';
 
 type WidgetState = 'collapsed' | 'expanded' | 'locked' | 'clickthrough';
 
@@ -28,8 +28,8 @@ export const FloatingWidget = () => {
 
     return [...metricsData.processes]
       .sort((a, b) => {
-        const aCpu = a.metrics.find(m => m.metricId === 'cpu')?.value || 0;
-        const bCpu = b.metrics.find(m => m.metricId === 'cpu')?.value || 0;
+        const aCpu = a.metrics['cpu']?.value || 0;
+        const bCpu = b.metrics['cpu']?.value || 0;
         return bCpu - aCpu;
       })
       .slice(0, 5);
@@ -79,7 +79,7 @@ export const FloatingWidget = () => {
   };
 
   // 处理进程点击事件
-  const handleProcessClick = (process: ProcessMetrics, e: React.MouseEvent) => {
+  const handleProcessClick = (process: ProcessInfo, e: React.MouseEvent) => {
     e.stopPropagation();
 
     console.log(`Process clicked: ${process.processName}`);
@@ -122,8 +122,8 @@ export const FloatingWidget = () => {
   const showControls = state === 'locked' || state === 'clickthrough';
 
   // 获取指标值
-  const getMetricValue = (process: ProcessMetrics, metricId: string): number => {
-    return process.metrics.find(m => m.metricId === metricId)?.value || 0;
+  const getMetricValue = (process: ProcessInfo, metricId: string): number => {
+    return process.metrics[metricId]?.value || 0;
   };
 
   // 格式化指标值

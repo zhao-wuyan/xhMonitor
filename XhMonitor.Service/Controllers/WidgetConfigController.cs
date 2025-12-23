@@ -47,7 +47,7 @@ public class WidgetConfigController : ControllerBase
     /// 更新悬浮窗配置
     /// </summary>
     [HttpPost]
-    public ActionResult UpdateSettings([FromBody] WidgetSettings settings)
+    public Microsoft.AspNetCore.Mvc.ActionResult UpdateSettings([FromBody] WidgetSettings settings)
     {
         try
         {
@@ -69,7 +69,7 @@ public class WidgetConfigController : ControllerBase
     /// 更新单个指标的点击配置
     /// </summary>
     [HttpPost("{metricId}")]
-    public ActionResult UpdateMetricConfig(string metricId, [FromBody] MetricClickConfig config)
+    public Microsoft.AspNetCore.Mvc.ActionResult UpdateMetricConfig(string metricId, [FromBody] MetricClickConfig config)
     {
         try
         {

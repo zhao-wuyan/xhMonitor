@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useMetricsHub } from '../../hooks/useMetricsHub';
 import { useMetricConfig } from '../../hooks/useMetricConfig';
-import { calculateSystemSummary, formatPercent, formatBytes } from '../../utils';
+import { calculateSystemSummary } from '../../utils';
 import { t } from '../../i18n';
 
 export const TaskbarWidget = () => {
