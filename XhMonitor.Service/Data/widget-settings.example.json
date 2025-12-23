@@ -1,0 +1,37 @@
+{
+  "enableMetricClick": true,
+  "metricClickActions": {
+    "cpu": {
+      "enabled": false,
+      "action": "none"
+    },
+    "memory": {
+      "enabled": false,
+      "action": "none"
+    },
+    "gpu": {
+      "enabled": false,
+      "action": "none"
+    },
+    "vram": {
+      "enabled": false,
+      "action": "none"
+    },
+    "power": {
+      "enabled": true,
+      "action": "togglePowerMode",
+      "parameters": {
+        "modes": "balanced,performance,powersaver",
+        "currentMode": "balanced"
+      }
+    },
+    "network_upload": {
+      "enabled": false,
+      "action": "none"
+    },
+    "network_download": {
+      "enabled": false,
+      "action": "none"
+    }
+  }
+}

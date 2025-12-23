@@ -27,7 +27,8 @@
       "Bash(cmd.exe /c:*)",
       "Bash(powershell.exe -Command:*)",
       "Bash(dir:*)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(C:\\Users\\xinghe_zwy\\.version-fox\\temp\\1766419200-51912\\python\\python.exe:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
