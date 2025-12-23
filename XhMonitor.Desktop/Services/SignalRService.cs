@@ -4,18 +4,33 @@ using XhMonitor.Desktop.Models;
 
 namespace XhMonitor.Desktop.Services;
 
-public class SignalRService : IDisposable
+public class SignalRService : IAsyncDisposable
 {
     private HubConnection? _connection;
-    private readonly string _hubUrl = "http://localhost:35179/hubs/metrics";
+    private readonly string _hubUrl;
 
     public event Action<MetricsDataDto>? MetricsReceived;
     public event Action<bool>? ConnectionStateChanged;
 
     public bool IsConnected => _connection?.State == HubConnectionState.Connected;
 
+    public SignalRService()
+    {
+        _hubUrl = "http://localhost:35179/hubs/metrics";
+    }
+
+    public SignalRService(string hubUrl)
+    {
+        _hubUrl = hubUrl;
+    }
+
     public async Task ConnectAsync()
     {
+        if (_connection != null)
+        {
+            await DisconnectAsync().ConfigureAwait(false);
+        }
+
         _connection = new HubConnectionBuilder()
             .WithUrl(_hubUrl)
             .WithAutomaticReconnect()
@@ -67,14 +82,22 @@ public class SignalRService : IDisposable
     {
         if (_connection != null)
         {
-            await _connection.StopAsync();
-            await _connection.DisposeAsync();
+            try
+            {
+                await _connection.StopAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore stop errors
+            }
+
+            await _connection.DisposeAsync().ConfigureAwait(false);
             _connection = null;
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        DisconnectAsync().GetAwaiter().GetResult();
+        await DisconnectAsync();
     }
 }

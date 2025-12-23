@@ -17,6 +17,7 @@ public partial class FloatingWindow : Window
     private readonly FloatingWindowViewModel _viewModel;
     private readonly WindowPositionStore _positionStore;
     private IntPtr _windowHandle;
+    private HwndSource? _hwndSource;
     private bool _allowClose;
     private int _hotkeyId;
 
@@ -93,8 +94,8 @@ public partial class FloatingWindow : Window
             ApplyPlacement(placement);
         }
 
-        var source = HwndSource.FromHwnd(_windowHandle);
-        source?.AddHook(WndProc);
+        _hwndSource = HwndSource.FromHwnd(_windowHandle);
+        _hwndSource?.AddHook(WndProc);
     }
 
     private void OnMouseLeftButtonDown(object? sender, MouseButtonEventArgs e)
@@ -112,7 +113,7 @@ public partial class FloatingWindow : Window
         }
     }
 
-    private async void OnClosing(object? sender, CancelEventArgs e)
+    private void OnClosing(object? sender, CancelEventArgs e)
     {
         if (!_allowClose)
         {
@@ -122,7 +123,15 @@ public partial class FloatingWindow : Window
         }
 
         _positionStore.Save(this);
-        await _viewModel.CleanupAsync();
+
+        try
+        {
+            _viewModel.CleanupAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // Ignore cleanup errors during shutdown
+        }
     }
 
     private void ApplyPlacement(WindowPlacement placement)
@@ -212,6 +221,8 @@ public partial class FloatingWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _hwndSource?.RemoveHook(WndProc);
+        _hwndSource = null;
         UnregisterExitHotkey();
         base.OnClosed(e);
     }

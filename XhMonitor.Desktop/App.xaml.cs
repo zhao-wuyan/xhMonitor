@@ -26,10 +26,17 @@ public partial class App : WpfApplication
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (_floatingWindow != null)
+        {
+            _floatingWindow.AllowClose();
+            _floatingWindow.Close();
+        }
+
         if (_trayIcon != null)
         {
             _trayIcon.Visible = false;
             _trayIcon.Dispose();
+            _trayIcon = null;
         }
 
         base.OnExit(e);

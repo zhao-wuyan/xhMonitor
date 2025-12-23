@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using XhMonitor.Desktop.Extensions;
 using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.Services;
 
@@ -72,7 +74,15 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
     {
         _signalRService = new SignalRService();
         _signalRService.MetricsReceived += OnMetricsReceived;
-        _signalRService.ConnectionStateChanged += (connected) => IsConnected = connected;
+        _signalRService.ConnectionStateChanged += OnConnectionStateChanged;
+    }
+
+    private void OnConnectionStateChanged(bool connected)
+    {
+        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true)
+            return;
+
+        System.Windows.Application.Current?.Dispatcher.Invoke(() => IsConnected = connected);
     }
 
     public async Task InitializeAsync()
@@ -89,31 +99,28 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
 
     private void OnMetricsReceived(MetricsDataDto data)
     {
-        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true)
+            return;
+
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
-            // 计算系统总计
             TotalCpu = data.Processes.Sum(p => p.Metrics.GetValueOrDefault("cpu")?.Value ?? 0);
             TotalMemory = data.Processes.Sum(p => p.Metrics.GetValueOrDefault("memory")?.Value ?? 0);
             TotalGpu = data.Processes.Sum(p => p.Metrics.GetValueOrDefault("gpu")?.Value ?? 0);
             TotalVram = data.Processes.Sum(p => p.Metrics.GetValueOrDefault("vram")?.Value ?? 0);
 
-            // 更新 Top 5 进程（按 CPU 排序）- 使用更高效的方法
             var top5 = data.Processes
                 .OrderByDescending(p => p.Metrics.GetValueOrDefault("cpu")?.Value ?? 0)
                 .Take(5)
                 .ToList();
 
-            TopProcesses.Clear();
-            foreach (var process in top5)
-            {
-                TopProcesses.Add(process);
-            }
+            TopProcesses.ReplaceAll(top5);
         });
     }
 
     public async Task CleanupAsync()
     {
-        await _signalRService.DisconnectAsync();
+        await _signalRService.DisconnectAsync().ConfigureAwait(false);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
