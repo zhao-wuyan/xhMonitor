@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Wifi, WifiOff, Minus, Square, X } from 'lucide-react';
+import { Activity, Wifi, WifiOff } from 'lucide-react';
 import { SystemSummary } from './components/SystemSummary';
 import { ProcessList } from './components/ProcessList';
 import { MetricChart } from './components/MetricChart';
@@ -13,7 +13,6 @@ function App() {
   const { metricsData, isConnected, error } = useMetricsHub();
   const { config, loading: configLoading } = useMetricConfig();
   const [metricHistory, setMetricHistory] = useState<Record<string, ChartDataPoint[]>>({});
-  const isDesktop = typeof window !== 'undefined' && !!window.electronAPI;
 
   useEffect(() => {
     if (!metricsData || !config) return;
@@ -57,42 +56,15 @@ function App() {
 
   const summary = metricsData
     ? calculateSystemSummary(metricsData.processes)
-    : { processCount: 0 };
+    : ({ processCount: 0 } as Record<string, number> & { processCount: number });
 
   const primaryMetrics = config.metadata.slice(0, 2);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Custom Title Bar */}
-      {isDesktop && (
-        <div className="h-8 w-full drag-region flex justify-end items-center px-2 space-x-1 fixed top-0 left-0 z-50 bg-gray-900/80 backdrop-blur-sm border-b border-white/5">
-          <button
-            onClick={() => window.electronAPI?.minimize()}
-            className="p-1.5 hover:bg-white/10 rounded no-drag text-gray-300 hover:text-white transition-colors"
-            title="Minimize"
-          >
-            <Minus size={14} />
-          </button>
-          <button
-            onClick={() => window.electronAPI?.maximize()}
-            className="p-1.5 hover:bg-white/10 rounded no-drag text-gray-300 hover:text-white transition-colors"
-            title="Maximize"
-          >
-            <Square size={12} />
-          </button>
-          <button
-            onClick={() => window.electronAPI?.close()}
-            className="p-1.5 hover:bg-red-500 rounded no-drag text-gray-300 hover:text-white transition-colors"
-            title="Close"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-
-      <div className="container mx-auto px-4 py-6 pt-12">
-        <header className="mb-8 drag-region">
-          <div className="flex items-center justify-between no-drag">
+      <div className="container mx-auto px-4 py-6">
+        <header className="mb-8">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Activity className="w-10 h-10 text-cpu" />
               <div>

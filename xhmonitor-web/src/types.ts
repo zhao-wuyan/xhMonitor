@@ -1,25 +1,3 @@
-export interface WidgetIPC {
-  toggleClickthrough: (enabled: boolean) => Promise<void>;
-  setWidgetSize: (sizeMode: 'compact' | 'expanded') => Promise<void>;
-  getMetricsData: () => Promise<MetricsData | null>;
-  onMetricsUpdate: (callback: (data: MetricsData) => void) => () => void;
-}
-
-export interface ElectronAPI {
-  minimize: () => Promise<void>;
-  maximize: () => Promise<void>;
-  close: () => Promise<void>;
-  platform: NodeJS.Platform;
-  widget: WidgetIPC;
-  publishMetrics: (data: MetricsData) => void;
-}
-
-declare global {
-  interface Window {
-    electronAPI?: ElectronAPI;
-  }
-}
-
 export interface MetricValue {
   value: number;
   unit: string;

@@ -26,7 +26,8 @@
       "Bash(py:*)",
       "Bash(cmd.exe /c:*)",
       "Bash(powershell.exe -Command:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm run build)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -44,9 +44,6 @@ export const useMetricsHub = () => {
 
     connection.on('metrics.latest', (data: MetricsData) => {
       setMetricsData(data);
-      if (typeof window !== 'undefined') {
-        window.electronAPI?.publishMetrics?.(data);
-      }
     });
 
     connection.onreconnecting(() => {
