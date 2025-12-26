@@ -40,20 +40,20 @@ public class Worker : BackgroundService
     {
         _logger.LogInformation("XhMonitor service started. Process interval: {IntervalSeconds}s, System usage interval: 1s", _intervalSeconds);
 
-        await Task.Delay(500, stoppingToken);
-
-        // Phase 1: Hardware limits (only once at startup)
-        try
+        // 所有任务立即并行启动
+        var hardwareTask = Task.Run(async () =>
         {
-            await SendHardwareLimitsAsync(DateTime.Now, stoppingToken);
-            _hardwareLimitsSent = true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting hardware limits");
-        }
+            try
+            {
+                await SendHardwareLimitsAsync(DateTime.Now, stoppingToken);
+                _hardwareLimitsSent = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting hardware limits");
+            }
+        }, stoppingToken);
 
-        // Start system usage loop (1 second interval) in parallel
         var systemUsageTask = RunSystemUsageLoopAsync(stoppingToken);
 
         // Process data loop (configurable interval)
@@ -78,7 +78,7 @@ public class Worker : BackgroundService
             }
         }
 
-        await systemUsageTask;
+        await Task.WhenAll(hardwareTask, systemUsageTask);
         _logger.LogInformation("XhMonitor service stopped");
     }
 
