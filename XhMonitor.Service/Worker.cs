@@ -11,6 +11,7 @@ public class Worker : BackgroundService
     private readonly PerformanceMonitor _monitor;
     private readonly IProcessMetricRepository _repository;
     private readonly IHubContext<MetricsHub> _hubContext;
+    private readonly MetricProviderRegistry _registry;
     private readonly int _intervalSeconds;
 
     public Worker(
@@ -18,12 +19,14 @@ public class Worker : BackgroundService
         PerformanceMonitor monitor,
         IProcessMetricRepository repository,
         IHubContext<MetricsHub> hubContext,
+        MetricProviderRegistry registry,
         IConfiguration config)
     {
         _logger = logger;
         _monitor = monitor;
         _repository = repository;
         _hubContext = hubContext;
+        _registry = registry;
         _intervalSeconds = config.GetValue("Monitor:IntervalSeconds", 5);
     }
 
@@ -58,6 +61,21 @@ public class Worker : BackgroundService
                     await _repository.SaveMetricsAsync(metrics, cycleTimestamp, stoppingToken);
                     _logger.LogDebug("SaveMetricsAsync completed");
 
+                    var cpuProvider = _registry.GetProvider("cpu");
+                    var memoryProvider = _registry.GetProvider("memory");
+                    var gpuProvider = _registry.GetProvider("gpu");
+                    var vramProvider = _registry.GetProvider("vram");
+
+                    var systemStats = new
+                    {
+                        TotalCpu = cpuProvider != null ? await cpuProvider.GetSystemTotalAsync() : 0,
+                        TotalMemory = 0.0,
+                        TotalGpu = gpuProvider != null ? await gpuProvider.GetSystemTotalAsync() : 0,
+                        TotalVram = 0.0,
+                        MaxMemory = memoryProvider != null ? await memoryProvider.GetSystemTotalAsync() : 0,
+                        MaxVram = vramProvider != null ? await vramProvider.GetSystemTotalAsync() : 0
+                    };
+
                     await _hubContext.Clients.All.SendAsync("metrics.latest", new
                     {
                         Timestamp = cycleTimestamp,
@@ -68,7 +86,8 @@ public class Worker : BackgroundService
                             m.Info.ProcessName,
                             m.Info.CommandLine,
                             Metrics = m.Metrics
-                        }).ToList()
+                        }).ToList(),
+                        SystemStats = systemStats
                     }, stoppingToken);
 
                     _logger.LogDebug("Pushed metrics to SignalR clients");

@@ -14,6 +14,21 @@ public class MemoryMetricProvider : IMetricProvider
 
     public bool IsSupported() => true;
 
+    public Task<double> GetSystemTotalAsync()
+    {
+        try
+        {
+            var gcMemoryInfo = GC.GetGCMemoryInfo();
+            var totalMemoryBytes = gcMemoryInfo.TotalAvailableMemoryBytes;
+            var totalMemoryMB = totalMemoryBytes / 1024.0 / 1024.0;
+            return Task.FromResult(Math.Round(totalMemoryMB, 1));
+        }
+        catch
+        {
+            return Task.FromResult(0.0);
+        }
+    }
+
     public Task<MetricValue> CollectAsync(int processId)
     {
         try

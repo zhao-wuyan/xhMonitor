@@ -21,6 +21,26 @@ public class CpuMetricProvider : IMetricProvider
 
     public bool IsSupported() => OperatingSystem.IsWindows();
 
+    public async Task<double> GetSystemTotalAsync()
+    {
+        if (!IsSupported()) return 0;
+
+        return await Task.Run(async () =>
+        {
+            try
+            {
+                using var counter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
+                counter.NextValue();
+                await Task.Delay(100);
+                return Math.Round(counter.NextValue(), 1);
+            }
+            catch
+            {
+                return 0.0;
+            }
+        });
+    }
+
     public async Task<MetricValue> CollectAsync(int processId)
     {
         if (!IsSupported()) return MetricValue.Error("Not supported");

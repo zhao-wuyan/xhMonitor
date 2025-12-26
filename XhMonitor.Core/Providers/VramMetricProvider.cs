@@ -14,6 +14,25 @@ public class VramMetricProvider : IMetricProvider
 
     public bool IsSupported() => OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Process Memory");
 
+    public async Task<double> GetSystemTotalAsync()
+    {
+        if (!IsSupported()) return 0;
+
+        return await Task.Run(() =>
+        {
+            try
+            {
+                using var counter = new PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", "_Total", true);
+                var totalBytes = counter.RawValue;
+                return Math.Round(totalBytes / 1024.0 / 1024.0, 1);
+            }
+            catch
+            {
+                return 0;
+            }
+        });
+    }
+
     public async Task<MetricValue> CollectAsync(int processId)
     {
         if (!IsSupported()) return MetricValue.Error("Not supported");

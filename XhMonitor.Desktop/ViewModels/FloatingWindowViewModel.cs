@@ -68,6 +68,20 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
         set { _totalVram = value; OnPropertyChanged(); }
     }
 
+    private double _maxMemory;
+    public double MaxMemory
+    {
+        get => _maxMemory;
+        set { _maxMemory = value; OnPropertyChanged(); }
+    }
+
+    private double _maxVram;
+    public double MaxVram
+    {
+        get => _maxVram;
+        set { _maxVram = value; OnPropertyChanged(); }
+    }
+
     private bool _isConnected;
     public bool IsConnected
     {
@@ -167,20 +181,32 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
 
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
-            double totalCpu = 0, totalMemory = 0, totalGpu = 0, totalVram = 0;
-
-            foreach (var p in data.Processes)
+            if (data.SystemStats != null)
             {
-                totalCpu += GetMetricValue(p, "cpu");
-                totalMemory += GetMetricValue(p, "memory");
-                totalGpu += GetMetricValue(p, "gpu");
-                totalVram += GetMetricValue(p, "vram");
+                TotalCpu = data.SystemStats.TotalCpu;
+                TotalGpu = data.SystemStats.TotalGpu;
+                TotalMemory = data.SystemStats.TotalMemory;
+                TotalVram = data.SystemStats.TotalVram;
+                MaxMemory = data.SystemStats.MaxMemory;
+                MaxVram = data.SystemStats.MaxVram;
             }
+            else
+            {
+                double totalCpu = 0, totalMemory = 0, totalGpu = 0, totalVram = 0;
 
-            TotalCpu = totalCpu;
-            TotalMemory = totalMemory;
-            TotalGpu = totalGpu;
-            TotalVram = totalVram;
+                foreach (var p in data.Processes)
+                {
+                    totalCpu += GetMetricValue(p, "cpu");
+                    totalMemory += GetMetricValue(p, "memory");
+                    totalGpu += GetMetricValue(p, "gpu");
+                    totalVram += GetMetricValue(p, "vram");
+                }
+
+                TotalCpu = totalCpu;
+                TotalMemory = totalMemory;
+                TotalGpu = totalGpu;
+                TotalVram = totalVram;
+            }
 
             SyncProcessIndex(data.Processes);
 

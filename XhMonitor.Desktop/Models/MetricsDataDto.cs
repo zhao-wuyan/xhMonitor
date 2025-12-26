@@ -12,4 +12,28 @@ public class MetricsDataDto
 
     [JsonPropertyName("processes")]
     public List<ProcessInfoDto> Processes { get; set; } = new();
+
+    [JsonPropertyName("systemStats")]
+    public SystemStatsDto? SystemStats { get; set; }
+}
+
+public class SystemStatsDto
+{
+    [JsonPropertyName("totalCpu")]
+    public double TotalCpu { get; set; }
+
+    [JsonPropertyName("totalMemory")]
+    public double TotalMemory { get; set; }
+
+    [JsonPropertyName("totalGpu")]
+    public double TotalGpu { get; set; }
+
+    [JsonPropertyName("totalVram")]
+    public double TotalVram { get; set; }
+
+    [JsonPropertyName("maxMemory")]
+    public double MaxMemory { get; set; }
+
+    [JsonPropertyName("maxVram")]
+    public double MaxVram { get; set; }
 }

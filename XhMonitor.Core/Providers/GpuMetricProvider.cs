@@ -17,6 +17,39 @@ public class GpuMetricProvider : IMetricProvider
 
     public bool IsSupported() => OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Engine");
 
+    public async Task<double> GetSystemTotalAsync()
+    {
+        if (!IsSupported()) return 0;
+
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var category = new PerformanceCounterCategory("GPU Engine");
+                var instanceNames = category.GetInstanceNames();
+
+                double maxUtilization = 0;
+                foreach (var name in instanceNames)
+                {
+                    try
+                    {
+                        using var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
+                        var value = counter.NextValue();
+                        if (value > maxUtilization)
+                            maxUtilization = value;
+                    }
+                    catch { }
+                }
+
+                return Math.Round(maxUtilization, 1);
+            }
+            catch
+            {
+                return 0;
+            }
+        });
+    }
+
     public async Task<MetricValue> CollectAsync(int processId)
     {
         if (!IsSupported()) return MetricValue.Error("Not supported");
