@@ -13,6 +13,8 @@ public class CpuMetricProvider : IMetricProvider
     private DateTime _cacheTimestamp = DateTime.MinValue;
     private readonly TimeSpan _cacheLifetime = TimeSpan.FromSeconds(5);
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private PerformanceCounter? _systemCounter;
+    private bool _systemCounterInitialized;
 
     public string MetricId => "cpu";
     public string DisplayName => "CPU Usage";
@@ -21,18 +23,30 @@ public class CpuMetricProvider : IMetricProvider
 
     public bool IsSupported() => OperatingSystem.IsWindows();
 
-    public async Task<double> GetSystemTotalAsync()
+    public Task<double> GetSystemTotalAsync()
     {
-        if (!IsSupported()) return 0;
+        if (!IsSupported()) return Task.FromResult(0.0);
 
-        return await Task.Run(async () =>
+        return Task.Run(() =>
         {
             try
             {
-                using var counter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
-                counter.NextValue();
-                await Task.Delay(100);
-                return Math.Round(counter.NextValue(), 1);
+                if (_systemCounter == null)
+                {
+                    _systemCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
+                    _systemCounter.NextValue(); // 首次调用初始化
+                    _systemCounterInitialized = false;
+                }
+
+                var value = _systemCounter.NextValue();
+
+                // 首次返回值可能不准确，但不阻塞
+                if (!_systemCounterInitialized)
+                {
+                    _systemCounterInitialized = true;
+                }
+
+                return Math.Round(value, 1);
             }
             catch
             {
@@ -139,6 +153,7 @@ public class CpuMetricProvider : IMetricProvider
 
     public void Dispose()
     {
+        _systemCounter?.Dispose();
         foreach (var c in _counters.Values) c.Dispose();
         _counters.Clear();
         _cacheLock.Dispose();

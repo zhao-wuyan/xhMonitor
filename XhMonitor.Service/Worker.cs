@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 using System.Runtime.InteropServices;
 using XhMonitor.Core.Interfaces;
@@ -110,33 +111,36 @@ public class Worker : BackgroundService
     {
         _logger.LogInformation("Phase 1: Getting hardware limits...");
 
-        // Get hardware limits in parallel
-        var memoryTask = Task.Run(() =>
+        // 立即获取并发送内存限制（GlobalMemoryStatusEx 非常快）
+        if (TryGetPhysicalMemoryDetails(out var totalMb, out _))
         {
-            if (TryGetPhysicalMemoryDetails(out var totalMb, out _))
+            _cachedMaxMemory = totalMb;
+            _logger.LogInformation("Memory limit ready: MaxMemory={MaxMemory}MB", _cachedMaxMemory);
+
+            // 立即发送内存限制，VRAM 暂时为 0
+            await _hubContext.Clients.All.SendAsync("metrics.hardware", new
             {
-                _cachedMaxMemory = totalMb;
-                return totalMb;
-            }
-            return 0.0;
-        }, ct);
+                Timestamp = timestamp,
+                MaxMemory = Math.Round(_cachedMaxMemory, 1),
+                MaxVram = 0.0
+            }, ct);
+        }
 
-        var vramTask = _vramProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
-
-        await Task.WhenAll(memoryTask, vramTask);
-
-        _cachedMaxMemory = memoryTask.Result > 0 ? memoryTask.Result : _cachedMaxMemory;
-        _cachedMaxVram = vramTask.Result;
-
-        _logger.LogInformation("Hardware limits: MaxMemory={MaxMemory}MB, MaxVram={MaxVram}MB",
-            _cachedMaxMemory, _cachedMaxVram);
-
-        await _hubContext.Clients.All.SendAsync("metrics.hardware", new
+        // 异步获取 VRAM 限制（可能较慢）
+        var vramCapacity = await (_vramProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0));
+        if (vramCapacity > 0)
         {
-            Timestamp = timestamp,
-            MaxMemory = Math.Round(_cachedMaxMemory, 1),
-            MaxVram = Math.Round(_cachedMaxVram, 1)
-        }, ct);
+            _cachedMaxVram = vramCapacity;
+            _logger.LogInformation("VRAM limit ready: MaxVram={MaxVram}MB", _cachedMaxVram);
+
+            // 发送完整的硬件限制
+            await _hubContext.Clients.All.SendAsync("metrics.hardware", new
+            {
+                Timestamp = DateTime.Now,
+                MaxMemory = Math.Round(_cachedMaxMemory, 1),
+                MaxVram = Math.Round(_cachedMaxVram, 1)
+            }, ct);
+        }
     }
 
     private async Task SendSystemUsageAsync(DateTime timestamp, CancellationToken ct)
@@ -217,38 +221,45 @@ public class Worker : BackgroundService
         });
     }
 
+    private PerformanceCounterCategory? _vramCategory;
+    private string? _vramCategoryName;
+
     private Task<double> GetVramUsageOnlyAsync()
     {
         return Task.Run(() =>
         {
             double totalUsed = 0;
 
-            if (System.Diagnostics.PerformanceCounterCategory.Exists("GPU Adapter Memory"))
+            try
             {
-                var category = new System.Diagnostics.PerformanceCounterCategory("GPU Adapter Memory");
-                foreach (var instanceName in category.GetInstanceNames())
+                if (_vramCategory == null)
                 {
-                    try
+                    if (PerformanceCounterCategory.Exists("GPU Adapter Memory"))
                     {
-                        using var counter = new System.Diagnostics.PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
-                        totalUsed += counter.RawValue / 1024.0 / 1024.0;
+                        _vramCategoryName = "GPU Adapter Memory";
+                        _vramCategory = new PerformanceCounterCategory(_vramCategoryName);
                     }
-                    catch { }
+                    else if (PerformanceCounterCategory.Exists("GPU Process Memory"))
+                    {
+                        _vramCategoryName = "GPU Process Memory";
+                        _vramCategory = new PerformanceCounterCategory(_vramCategoryName);
+                    }
+                }
+
+                if (_vramCategory != null && _vramCategoryName != null)
+                {
+                    foreach (var instanceName in _vramCategory.GetInstanceNames())
+                    {
+                        try
+                        {
+                            using var counter = new PerformanceCounter(_vramCategoryName, "Dedicated Usage", instanceName, true);
+                            totalUsed += counter.RawValue / 1024.0 / 1024.0;
+                        }
+                        catch { }
+                    }
                 }
             }
-            else if (System.Diagnostics.PerformanceCounterCategory.Exists("GPU Process Memory"))
-            {
-                var category = new System.Diagnostics.PerformanceCounterCategory("GPU Process Memory");
-                foreach (var instanceName in category.GetInstanceNames())
-                {
-                    try
-                    {
-                        using var counter = new System.Diagnostics.PerformanceCounter("GPU Process Memory", "Dedicated Usage", instanceName, true);
-                        totalUsed += counter.RawValue / 1024.0 / 1024.0;
-                    }
-                    catch { }
-                }
-            }
+            catch { }
 
             return totalUsed;
         });

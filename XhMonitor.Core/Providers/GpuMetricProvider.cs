@@ -9,24 +9,31 @@ namespace XhMonitor.Core.Providers;
 public class GpuMetricProvider : IMetricProvider
 {
     private readonly ConcurrentDictionary<int, List<PerformanceCounter>> _counters = new();
+    private bool? _isSupported;
+    private PerformanceCounterCategory? _gpuEngineCategory;
 
     public string MetricId => "gpu";
     public string DisplayName => "GPU Usage";
     public string Unit => "%";
     public MetricType Type => MetricType.Percentage;
 
-    public bool IsSupported() => OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Engine");
+    public bool IsSupported()
+    {
+        if (_isSupported.HasValue) return _isSupported.Value;
+        _isSupported = OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Engine");
+        return _isSupported.Value;
+    }
 
     public async Task<double> GetSystemTotalAsync()
     {
-        if (!IsSupported()) return 0;
+        if (!OperatingSystem.IsWindows()) return 0;
 
         return await Task.Run(() =>
         {
             try
             {
-                var category = new PerformanceCounterCategory("GPU Engine");
-                var instanceNames = category.GetInstanceNames();
+                _gpuEngineCategory ??= new PerformanceCounterCategory("GPU Engine");
+                var instanceNames = _gpuEngineCategory.GetInstanceNames();
 
                 double maxUtilization = 0;
                 foreach (var name in instanceNames)
@@ -41,10 +48,12 @@ public class GpuMetricProvider : IMetricProvider
                     catch { }
                 }
 
+                _isSupported = true;
                 return Math.Round(maxUtilization, 1);
             }
             catch
             {
+                _isSupported = false;
                 return 0;
             }
         });
