@@ -79,28 +79,30 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="50"/>
+                        <ColumnDefinition Width="55"/>
+                        <ColumnDefinition Width="55"/>
                         <ColumnDefinition Width="50"/>
                         <ColumnDefinition Width="50"/>
                         <ColumnDefinition Width="55"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="📌" Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ProcessName}" Foreground="White" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Gpu, StringFormat={}{0:F1}%}" Foreground="#4FC3F7" FontSize="10" FontFamily="Consolas"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Gpu, Mode=OneWay}" Height="2"/>
-                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding ProcessId}" Foreground="#888" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" TextAlignment="Right"/>
                     <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Cpu, StringFormat={}{0:F1}%}" Foreground="#FF6B6B" FontSize="10" FontFamily="Consolas"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Cpu, Mode=OneWay}" Height="2"/>
+                        <TextBlock Text="{Binding Vram, StringFormat={}{0:F1}G}" Foreground="#FFA726" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Vram, Mode=OneWay}" Maximum="24" Height="2"/>
                     </StackPanel>
                     <StackPanel Grid.Column="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Memory, StringFormat={}{0:F0}}" Foreground="#50C878" FontSize="10" FontFamily="Consolas"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Memory, Mode=OneWay}" Maximum="16384" Height="2"/>
+                        <TextBlock Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="#4FC3F7" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Gpu, Mode=OneWay}" Height="2"/>
                     </StackPanel>
                     <StackPanel Grid.Column="5" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Vram, StringFormat={}{0:F0}}" Foreground="#FFA726" FontSize="10" FontFamily="Consolas"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Vram, Mode=OneWay}" Maximum="16384" Height="2"/>
+                        <TextBlock Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="#FF6B6B" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Cpu, Mode=OneWay}" Height="2"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="6" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Memory, StringFormat={}{0:F1}G}" Foreground="#50C878" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Memory, Mode=OneWay}" Maximum="64" Height="2"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -108,21 +110,28 @@
 
         <!-- 钉住卡片模板 -->
         <DataTemplate x:Key="PinnedCardTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="#CC1A1A1A" CornerRadius="6" Padding="8,6" Margin="0,0,0,4" Width="300">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
-                </Border.Effect>
+            <Border Background="#BF141414" CornerRadius="4" Padding="10,6" Margin="0,0,0,4" Width="360"
+                    BorderBrush="#4CAF50" BorderThickness="3,0,0,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="45"/>
-                        <ColumnDefinition Width="45"/>
-                        <ColumnDefinition Width="50"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{Binding ProcessName}" Foreground="White" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Gpu, StringFormat={}{0:F1}%}" Foreground="#4FC3F7" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Cpu, StringFormat={}{0:F1}%}" Foreground="#FF6B6B" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="3" Text="{Binding Memory, StringFormat={}{0:F0}MB}" Foreground="#50C878" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="0" Text="{Binding ProcessName}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Run Text="GPU " Foreground="#888" FontSize="10"/>
+                        <Run Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="#4FC3F7" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                    </TextBlock>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Run Text="CPU " Foreground="#888" FontSize="10"/>
+                        <Run Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="#FF6B6B" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                    </TextBlock>
+                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Run Text="RAM " Foreground="#888" FontSize="10"/>
+                        <Run Text="{Binding Memory, StringFormat={}{0:F1}G}" Foreground="#50C878" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                    </TextBlock>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -252,16 +261,18 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="55"/>
+                            <ColumnDefinition Width="55"/>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="55"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="1" Text="Process" Foreground="#666" FontSize="9"/>
-                        <TextBlock Grid.Column="2" Text="GPU" Foreground="#666" FontSize="9"/>
-                        <TextBlock Grid.Column="3" Text="CPU" Foreground="#666" FontSize="9"/>
-                        <TextBlock Grid.Column="4" Text="RAM" Foreground="#666" FontSize="9"/>
-                        <TextBlock Grid.Column="5" Text="VRAM" Foreground="#666" FontSize="9"/>
+                        <TextBlock Grid.Column="1" Text="PROCESS" Foreground="#666" FontSize="9"/>
+                        <TextBlock Grid.Column="2" Text="PID" Foreground="#666" FontSize="9" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="3" Text="VRAM" Foreground="#666" FontSize="9" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="4" Text="GPU" Foreground="#666" FontSize="9" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="5" Text="CPU" Foreground="#666" FontSize="9" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="6" Text="RAM" Foreground="#666" FontSize="9" TextAlignment="Right"/>
                     </Grid>
 
                     <!-- Process List -->
