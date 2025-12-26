@@ -13,7 +13,11 @@ public class Worker : BackgroundService
     private readonly IProcessMetricRepository _repository;
     private readonly IHubContext<MetricsHub> _hubContext;
     private readonly MetricProviderRegistry _registry;
+    private readonly IMetricProvider? _vramProvider;
     private readonly int _intervalSeconds;
+    private double _cachedMaxMemory;
+    private double _cachedMaxVram;
+    private bool _hardwareLimitsSent;
 
     public Worker(
         ILogger<Worker> logger,
@@ -28,104 +32,40 @@ public class Worker : BackgroundService
         _repository = repository;
         _hubContext = hubContext;
         _registry = registry;
+        _vramProvider = registry.GetProvider("vram");
         _intervalSeconds = config.GetValue("Monitor:IntervalSeconds", 5);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("XhMonitor service started. Collection interval: {IntervalSeconds}s", _intervalSeconds);
+        _logger.LogInformation("XhMonitor service started. Process interval: {IntervalSeconds}s, System usage interval: 1s", _intervalSeconds);
 
-        await Task.Delay(1000, stoppingToken);
+        await Task.Delay(500, stoppingToken);
 
+        // Phase 1: Hardware limits (only once at startup)
+        try
+        {
+            await SendHardwareLimitsAsync(DateTime.Now, stoppingToken);
+            _hardwareLimitsSent = true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting hardware limits");
+        }
+
+        // Start system usage loop (1 second interval) in parallel
+        var systemUsageTask = RunSystemUsageLoopAsync(stoppingToken);
+
+        // Process data loop (configurable interval)
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                _logger.LogDebug("Calling CollectAllAsync...");
-                var metrics = await _monitor.CollectAllAsync();
-                _logger.LogDebug("CollectAllAsync returned {Count} metrics", metrics.Count);
-
-                if (metrics.Count > 0)
-                {
-                    _logger.LogInformation("Collected metrics for {Count} processes", metrics.Count);
-
-                    foreach (var pm in metrics.Take(3))
-                    {
-                        var metricSummary = string.Join(", ", pm.Metrics.Select(m => $"{m.Key}={m.Value.Value:F1}{m.Value.Unit}"));
-                        _logger.LogDebug("Process {ProcessId} ({ProcessName}): {Metrics}",
-                            pm.Info.ProcessId, pm.Info.ProcessName, metricSummary);
-                    }
-
-                    var cycleTimestamp = metrics[0].Timestamp;
-                    _logger.LogDebug("Calling SaveMetricsAsync with {Count} metrics and timestamp {Timestamp}",
-                        metrics.Count, cycleTimestamp);
-                    await _repository.SaveMetricsAsync(metrics, cycleTimestamp, stoppingToken);
-                    _logger.LogDebug("SaveMetricsAsync completed");
-
-                    var cpuProvider = _registry.GetProvider("cpu");
-                    var memoryProvider = _registry.GetProvider("memory");
-                    var gpuProvider = _registry.GetProvider("gpu");
-                    var vramProvider = _registry.GetProvider("vram");
-
-                    var totalCpu = cpuProvider != null ? await cpuProvider.GetSystemTotalAsync() : 0;
-                    var totalGpu = gpuProvider != null ? await gpuProvider.GetSystemTotalAsync() : 0;
-
-                    double totalMemoryUsed = 0;
-                    double totalVramUsed = 0;
-                    double maxMemory = 0;
-                    double maxVram = 0;
-
-                    if (memoryProvider != null)
-                    {
-                        var memoryStats = await GetMemoryStatsAsync();
-                        totalMemoryUsed = memoryStats.Used;
-                        maxMemory = memoryStats.Total;
-                    }
-
-                    if (vramProvider != null)
-                    {
-                        var vramStats = await GetVramStatsAsync();
-                        totalVramUsed = vramStats.Used;
-                        maxVram = vramStats.Total;
-                    }
-
-                    _logger.LogInformation("System Stats: CPU={TotalCpu}%, GPU={TotalGpu}%, MemoryUsed={MemoryUsed}MB/{MaxMemory}MB, VramUsed={VramUsed}MB/{MaxVram}MB",
-                        totalCpu, totalGpu, totalMemoryUsed, maxMemory, totalVramUsed, maxVram);
-
-                    var systemStats = new
-                    {
-                        TotalCpu = totalCpu,
-                        TotalMemory = totalMemoryUsed,
-                        TotalGpu = totalGpu,
-                        TotalVram = totalVramUsed,
-                        MaxMemory = maxMemory,
-                        MaxVram = maxVram
-                    };
-
-                    await _hubContext.Clients.All.SendAsync("metrics.latest", new
-                    {
-                        Timestamp = cycleTimestamp,
-                        ProcessCount = metrics.Count,
-                        Processes = metrics.Select(m => new
-                        {
-                            m.Info.ProcessId,
-                            m.Info.ProcessName,
-                            m.Info.CommandLine,
-                            Metrics = m.Metrics
-                        }).ToList(),
-                        SystemStats = systemStats
-                    }, stoppingToken);
-
-                    _logger.LogDebug("Pushed metrics to SignalR clients");
-                }
-                else
-                {
-                    _logger.LogInformation("No matching processes found");
-                }
+                await SendProcessDataAsync(DateTime.Now, stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during metric collection");
+                _logger.LogError(ex, "Error during process data collection");
             }
 
             try
@@ -138,152 +78,180 @@ public class Worker : BackgroundService
             }
         }
 
+        await systemUsageTask;
         _logger.LogInformation("XhMonitor service stopped");
     }
 
-    private async Task<(double Used, double Total)> GetMemoryStatsAsync()
+    private async Task RunSystemUsageLoopAsync(CancellationToken stoppingToken)
     {
-        return await Task.Run(() =>
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                if (OperatingSystem.IsWindows())
-                {
-                    if (TryGetPhysicalMemory(out var usedMB, out var totalMB))
-                    {
-                        _logger.LogInformation("Memory stats via GlobalMemoryStatusEx: Used={Used}MB Total={Total}MB", usedMB, totalMB);
-                        return (Math.Round(usedMB, 1), Math.Round(totalMB, 1));
-                    }
-                    _logger.LogWarning("GlobalMemoryStatusEx failed, falling back to PerformanceCounter");
-                }
-
-                using var totalCounter = new System.Diagnostics.PerformanceCounter("Memory", "Commit Limit", true);
-                using var availableCounter = new System.Diagnostics.PerformanceCounter("Memory", "Available MBytes", true);
-
-                var totalBytes = totalCounter.RawValue;
-                var totalMb = totalBytes / 1024.0 / 1024.0;
-                var availableMb = availableCounter.NextValue();
-                var usedMb = totalMb - availableMb;
-
-                _logger.LogInformation("Memory stats via PerformanceCounter: Used={Used}MB Total={Total}MB Available={Available}MB", usedMb, totalMb, availableMb);
-                return (Math.Round(usedMb, 1), Math.Round(totalMb, 1));
+                await SendSystemUsageAsync(DateTime.Now, stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Memory stats collection failed");
-                return (0, 0);
+                _logger.LogError(ex, "Error during system usage collection");
             }
+
+            try
+            {
+                await Task.Delay(1000, stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private async Task SendHardwareLimitsAsync(DateTime timestamp, CancellationToken ct)
+    {
+        _logger.LogInformation("Phase 1: Getting hardware limits...");
+
+        // Get hardware limits in parallel
+        var memoryTask = Task.Run(() =>
+        {
+            if (TryGetPhysicalMemoryDetails(out var totalMb, out _))
+            {
+                _cachedMaxMemory = totalMb;
+                return totalMb;
+            }
+            return 0.0;
+        }, ct);
+
+        var vramTask = _vramProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+
+        await Task.WhenAll(memoryTask, vramTask);
+
+        _cachedMaxMemory = memoryTask.Result > 0 ? memoryTask.Result : _cachedMaxMemory;
+        _cachedMaxVram = vramTask.Result;
+
+        _logger.LogInformation("Hardware limits: MaxMemory={MaxMemory}MB, MaxVram={MaxVram}MB",
+            _cachedMaxMemory, _cachedMaxVram);
+
+        await _hubContext.Clients.All.SendAsync("metrics.hardware", new
+        {
+            Timestamp = timestamp,
+            MaxMemory = Math.Round(_cachedMaxMemory, 1),
+            MaxVram = Math.Round(_cachedMaxVram, 1)
+        }, ct);
+    }
+
+    private async Task SendSystemUsageAsync(DateTime timestamp, CancellationToken ct)
+    {
+        var cpuProvider = _registry.GetProvider("cpu");
+        var gpuProvider = _registry.GetProvider("gpu");
+
+        // Get CPU and GPU usage in parallel
+        var cpuTask = cpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var gpuTask = gpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var memoryTask = GetMemoryUsageOnlyAsync();
+        var vramTask = GetVramUsageOnlyAsync();
+
+        await Task.WhenAll(cpuTask, gpuTask, memoryTask, vramTask);
+
+        var totalCpu = cpuTask.Result;
+        var totalGpu = gpuTask.Result;
+        var memoryUsed = memoryTask.Result;
+        var vramUsed = vramTask.Result;
+
+        _logger.LogDebug("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
+            totalCpu, totalGpu, memoryUsed, vramUsed);
+
+        await _hubContext.Clients.All.SendAsync("metrics.system", new
+        {
+            Timestamp = timestamp,
+            TotalCpu = totalCpu,
+            TotalGpu = totalGpu,
+            TotalMemory = Math.Round(memoryUsed, 1),
+            TotalVram = Math.Round(vramUsed, 1),
+            MaxMemory = Math.Round(_cachedMaxMemory, 1),
+            MaxVram = Math.Round(_cachedMaxVram, 1)
+        }, ct);
+    }
+
+    private async Task SendProcessDataAsync(DateTime timestamp, CancellationToken ct)
+    {
+        _logger.LogDebug("Phase 3: Collecting process metrics...");
+        var metrics = await _monitor.CollectAllAsync();
+
+        if (metrics.Count > 0)
+        {
+            _logger.LogInformation("Collected metrics for {Count} processes", metrics.Count);
+
+            await _repository.SaveMetricsAsync(metrics, timestamp, ct);
+
+            await _hubContext.Clients.All.SendAsync("metrics.processes", new
+            {
+                Timestamp = timestamp,
+                ProcessCount = metrics.Count,
+                Processes = metrics.Select(m => new
+                {
+                    m.Info.ProcessId,
+                    m.Info.ProcessName,
+                    m.Info.CommandLine,
+                    Metrics = m.Metrics
+                }).ToList()
+            }, ct);
+
+            _logger.LogDebug("Pushed process metrics to SignalR clients");
+        }
+        else
+        {
+            _logger.LogDebug("No matching processes found");
+        }
+    }
+
+    private Task<double> GetMemoryUsageOnlyAsync()
+    {
+        return Task.Run(() =>
+        {
+            if (OperatingSystem.IsWindows() && TryGetPhysicalMemoryDetails(out var totalMb, out var availMb))
+            {
+                var maxMb = _cachedMaxMemory > 0 ? _cachedMaxMemory : totalMb;
+                return maxMb - availMb;
+            }
+            return 0.0;
         });
     }
 
-    private async Task<(double Used, double Total)> GetVramStatsAsync()
+    private Task<double> GetVramUsageOnlyAsync()
     {
-        return await Task.Run(() =>
+        return Task.Run(() =>
         {
-            try
+            double totalUsed = 0;
+
+            if (System.Diagnostics.PerformanceCounterCategory.Exists("GPU Adapter Memory"))
             {
-                if (!System.Diagnostics.PerformanceCounterCategory.Exists("GPU Adapter Memory"))
-                {
-                    _logger.LogWarning("GPU Adapter Memory category missing, falling back to GPU Process Memory");
-                    return GetVramStatsFromProcessCounters();
-                }
-
                 var category = new System.Diagnostics.PerformanceCounterCategory("GPU Adapter Memory");
-                var instanceNames = category.GetInstanceNames();
-
-                double totalUsed = 0;
-                double totalCapacity = 0;
-
-                foreach (var instanceName in instanceNames)
+                foreach (var instanceName in category.GetInstanceNames())
                 {
                     try
                     {
-                        using var usedCounter = new System.Diagnostics.PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
-                        var usedBytes = usedCounter.RawValue;
-                        totalUsed += usedBytes / 1024.0 / 1024.0;
-
-                        try
-                        {
-                            using var searcher = new System.Management.ManagementObjectSearcher("SELECT AdapterRAM FROM Win32_VideoController");
-                            foreach (System.Management.ManagementObject obj in searcher.Get())
-                            {
-                                var adapterRAM = Convert.ToUInt64(obj["AdapterRAM"]);
-                                if (adapterRAM > 0)
-                                {
-                                    totalCapacity += adapterRAM / 1024.0 / 1024.0;
-                                }
-                            }
-                        }
-                        catch { }
+                        using var counter = new System.Diagnostics.PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
+                        totalUsed += counter.RawValue / 1024.0 / 1024.0;
                     }
                     catch { }
                 }
-
-                if (totalCapacity == 0 && totalUsed > 0)
-                {
-                    totalCapacity = totalUsed * 2.5;
-                }
-
-                _logger.LogInformation("VRAM stats via GPU Adapter Memory: Used={Used}MB Total={Total}MB Instances={Count}", totalUsed, totalCapacity, instanceNames.Length);
-                return (Math.Round(totalUsed, 1), Math.Round(totalCapacity, 1));
             }
-            catch (Exception ex)
+            else if (System.Diagnostics.PerformanceCounterCategory.Exists("GPU Process Memory"))
             {
-                _logger.LogWarning(ex, "VRAM stats collection failed");
-                return (0, 0);
-            }
-        });
-    }
-
-    private static (double Used, double Total) GetVramStatsFromProcessCounters()
-    {
-        try
-        {
-            if (!System.Diagnostics.PerformanceCounterCategory.Exists("GPU Process Memory"))
-                return (0, 0);
-
-            var category = new System.Diagnostics.PerformanceCounterCategory("GPU Process Memory");
-            var instanceNames = category.GetInstanceNames();
-
-            double totalUsed = 0;
-
-            foreach (var instanceName in instanceNames)
-            {
-                try
+                var category = new System.Diagnostics.PerformanceCounterCategory("GPU Process Memory");
+                foreach (var instanceName in category.GetInstanceNames())
                 {
-                    using var usedCounter = new System.Diagnostics.PerformanceCounter("GPU Process Memory", "Dedicated Usage", instanceName, true);
-                    totalUsed += usedCounter.RawValue / 1024.0 / 1024.0;
-                }
-                catch { }
-            }
-
-            double totalCapacity = 0;
-            try
-            {
-                using var searcher = new System.Management.ManagementObjectSearcher("SELECT AdapterRAM FROM Win32_VideoController");
-                foreach (System.Management.ManagementObject obj in searcher.Get())
-                {
-                    var adapterRAM = Convert.ToUInt64(obj["AdapterRAM"]);
-                    if (adapterRAM > 0)
+                    try
                     {
-                        totalCapacity += adapterRAM / 1024.0 / 1024.0;
+                        using var counter = new System.Diagnostics.PerformanceCounter("GPU Process Memory", "Dedicated Usage", instanceName, true);
+                        totalUsed += counter.RawValue / 1024.0 / 1024.0;
                     }
+                    catch { }
                 }
             }
-            catch { }
 
-            if (totalCapacity == 0 && totalUsed > 0)
-            {
-                totalCapacity = totalUsed * 2.5;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[VRAM] GPU Process Memory fallback: Used={totalUsed:F1}MB Total={totalCapacity:F1}MB Instances={instanceNames.Length}");
-            return (Math.Round(totalUsed, 1), Math.Round(totalCapacity, 1));
-        }
-        catch
-        {
-            return (0, 0);
-        }
+            return totalUsed;
+        });
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -303,10 +271,10 @@ public class Worker : BackgroundService
     [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern bool GlobalMemoryStatusEx(ref MemoryStatusEx buffer);
 
-    private static bool TryGetPhysicalMemory(out double usedMb, out double totalMb)
+    private static bool TryGetPhysicalMemoryDetails(out double totalMb, out double availMb)
     {
-        usedMb = 0;
         totalMb = 0;
+        availMb = 0;
 
         var status = new MemoryStatusEx { DwLength = (uint)Marshal.SizeOf<MemoryStatusEx>() };
         if (!GlobalMemoryStatusEx(ref status))
@@ -315,8 +283,7 @@ public class Worker : BackgroundService
         }
 
         totalMb = status.UllTotalPhys / 1024.0 / 1024.0;
-        var availMb = status.UllAvailPhys / 1024.0 / 1024.0;
-        usedMb = totalMb - availMb;
-        return totalMb > 0;
+        availMb = status.UllAvailPhys / 1024.0 / 1024.0;
+        return totalMb > 0 && availMb >= 0;
     }
 }

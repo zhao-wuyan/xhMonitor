@@ -37,3 +37,51 @@ public class SystemStatsDto
     [JsonPropertyName("maxVram")]
     public double MaxVram { get; set; }
 }
+
+public class HardwareLimitsDto
+{
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; }
+
+    [JsonPropertyName("maxMemory")]
+    public double MaxMemory { get; set; }
+
+    [JsonPropertyName("maxVram")]
+    public double MaxVram { get; set; }
+}
+
+public class SystemUsageDto
+{
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; }
+
+    [JsonPropertyName("totalCpu")]
+    public double TotalCpu { get; set; }
+
+    [JsonPropertyName("totalGpu")]
+    public double TotalGpu { get; set; }
+
+    [JsonPropertyName("totalMemory")]
+    public double TotalMemory { get; set; }
+
+    [JsonPropertyName("totalVram")]
+    public double TotalVram { get; set; }
+
+    [JsonPropertyName("maxMemory")]
+    public double MaxMemory { get; set; }
+
+    [JsonPropertyName("maxVram")]
+    public double MaxVram { get; set; }
+}
+
+public class ProcessDataDto
+{
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; }
+
+    [JsonPropertyName("processCount")]
+    public int ProcessCount { get; set; }
+
+    [JsonPropertyName("processes")]
+    public List<ProcessInfoDto> Processes { get; set; } = new();
+}

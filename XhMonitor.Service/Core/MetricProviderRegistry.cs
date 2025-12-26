@@ -8,20 +8,22 @@ namespace XhMonitor.Service.Core;
 public sealed class MetricProviderRegistry : IDisposable
 {
     private readonly ILogger<MetricProviderRegistry> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly ConcurrentDictionary<string, IMetricProvider> _providers;
     private volatile bool _disposed;
 
-    public MetricProviderRegistry(ILogger<MetricProviderRegistry> logger, string pluginDirectory)
+    public MetricProviderRegistry(ILogger<MetricProviderRegistry> logger, ILoggerFactory loggerFactory, string pluginDirectory)
     {
         _logger = logger;
+        _loggerFactory = loggerFactory;
         _providers = new ConcurrentDictionary<string, IMetricProvider>(StringComparer.OrdinalIgnoreCase);
 
         RegisterBuiltInProviders();
         LoadFromDirectory(pluginDirectory);
     }
 
-    public MetricProviderRegistry(ILogger<MetricProviderRegistry> logger)
-        : this(logger, Path.Combine(AppContext.BaseDirectory, "plugins"))
+    public MetricProviderRegistry(ILogger<MetricProviderRegistry> logger, ILoggerFactory loggerFactory)
+        : this(logger, loggerFactory, Path.Combine(AppContext.BaseDirectory, "plugins"))
     {
     }
 
@@ -129,7 +131,7 @@ public sealed class MetricProviderRegistry : IDisposable
         RegisterProvider(new CpuMetricProvider());
         RegisterProvider(new MemoryMetricProvider());
         RegisterProvider(new GpuMetricProvider());
-        RegisterProvider(new VramMetricProvider());
+        RegisterProvider(new VramMetricProvider(_loggerFactory.CreateLogger<VramMetricProvider>()));
     }
 
     private void LoadFromAssemblyPath(string path)

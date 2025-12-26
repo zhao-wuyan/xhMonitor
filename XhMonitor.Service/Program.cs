@@ -26,6 +26,7 @@ builder.Services.AddHostedService<AggregationWorker>();
 builder.Services.AddSingleton(sp =>
 {
     var logger = sp.GetRequiredService<ILogger<MetricProviderRegistry>>();
+    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
     var config = sp.GetRequiredService<IConfiguration>();
     var env = sp.GetRequiredService<IHostEnvironment>();
 
@@ -35,7 +36,7 @@ builder.Services.AddSingleton(sp =>
         pluginDirectory = Path.Combine(env.ContentRootPath, "plugins");
     }
 
-    return new MetricProviderRegistry(logger, pluginDirectory);
+    return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory);
 });
 
 builder.Services.AddSingleton<ProcessScanner>();

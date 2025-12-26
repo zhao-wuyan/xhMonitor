@@ -31,7 +31,8 @@
       "Bash(C:\\Users\\xinghe_zwy\\.version-fox\\temp\\1766419200-51912\\python\\python.exe:*)",
       "Bash(cmd /c:*)",
       "Skill(collaborating-with-codex)",
-      "Skill(collaborating-with-gemini)"
+      "Skill(collaborating-with-gemini)",
+      "Bash(taskkill:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -93,6 +93,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
     {
         _signalRService = new SignalRService();
         _signalRService.MetricsReceived += OnMetricsReceived;
+        _signalRService.HardwareLimitsReceived += OnHardwareLimitsReceived;
+        _signalRService.SystemUsageReceived += OnSystemUsageReceived;
+        _signalRService.ProcessDataReceived += OnProcessDataReceived;
         _signalRService.ConnectionStateChanged += OnConnectionStateChanged;
     }
 
@@ -145,6 +148,51 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
     {
         if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
         System.Windows.Application.Current?.Dispatcher.Invoke(() => IsConnected = connected);
+    }
+
+    private void OnHardwareLimitsReceived(HardwareLimitsDto data)
+    {
+        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            MaxMemory = data.MaxMemory;
+            MaxVram = data.MaxVram;
+        });
+    }
+
+    private void OnSystemUsageReceived(SystemUsageDto data)
+    {
+        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            TotalCpu = data.TotalCpu;
+            TotalGpu = data.TotalGpu;
+            TotalMemory = data.TotalMemory;
+            TotalVram = data.TotalVram;
+            if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
+            if (data.MaxVram > 0) MaxVram = data.MaxVram;
+        });
+    }
+
+    private void OnProcessDataReceived(ProcessDataDto data)
+    {
+        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            SyncProcessIndex(data.Processes);
+
+            var orderedAll = data.Processes
+                .OrderByDescending(p => GetMetricValue(p, "cpu"))
+                .ThenBy(p => p.ProcessName)
+                .Select(p => _processIndex[p.ProcessId])
+                .ToList();
+
+            var orderedTop = orderedAll.Take(5).ToList();
+
+            SyncCollectionOrder(AllProcesses, orderedAll);
+            SyncCollectionOrder(TopProcesses, orderedTop);
+            SyncPinnedCollection();
+        });
     }
 
     public async Task InitializeAsync()
@@ -296,6 +344,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
     public async Task CleanupAsync()
     {
         _signalRService.MetricsReceived -= OnMetricsReceived;
+        _signalRService.HardwareLimitsReceived -= OnHardwareLimitsReceived;
+        _signalRService.SystemUsageReceived -= OnSystemUsageReceived;
+        _signalRService.ProcessDataReceived -= OnProcessDataReceived;
         _signalRService.ConnectionStateChanged -= OnConnectionStateChanged;
         await _signalRService.DisconnectAsync().ConfigureAwait(false);
     }

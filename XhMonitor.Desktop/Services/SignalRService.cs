@@ -10,6 +10,9 @@ public class SignalRService : IAsyncDisposable
     private readonly string _hubUrl;
 
     public event Action<MetricsDataDto>? MetricsReceived;
+    public event Action<HardwareLimitsDto>? HardwareLimitsReceived;
+    public event Action<SystemUsageDto>? SystemUsageReceived;
+    public event Action<ProcessDataDto>? ProcessDataReceived;
     public event Action<bool>? ConnectionStateChanged;
 
     public bool IsConnected => _connection?.State == HubConnectionState.Connected;
@@ -36,19 +39,53 @@ public class SignalRService : IAsyncDisposable
             .WithAutomaticReconnect()
             .Build();
 
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        _connection.On<JsonElement>("metrics.hardware", (data) =>
+        {
+            try
+            {
+                var dto = JsonSerializer.Deserialize<HardwareLimitsDto>(data.GetRawText(), jsonOptions);
+                if (dto != null) HardwareLimitsReceived?.Invoke(dto);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to deserialize hardware limits: {ex.Message}");
+            }
+        });
+
+        _connection.On<JsonElement>("metrics.system", (data) =>
+        {
+            try
+            {
+                var dto = JsonSerializer.Deserialize<SystemUsageDto>(data.GetRawText(), jsonOptions);
+                if (dto != null) SystemUsageReceived?.Invoke(dto);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to deserialize system usage: {ex.Message}");
+            }
+        });
+
+        _connection.On<JsonElement>("metrics.processes", (data) =>
+        {
+            try
+            {
+                var dto = JsonSerializer.Deserialize<ProcessDataDto>(data.GetRawText(), jsonOptions);
+                if (dto != null) ProcessDataReceived?.Invoke(dto);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to deserialize process data: {ex.Message}");
+            }
+        });
+
         _connection.On<JsonElement>("metrics.latest", (data) =>
         {
             try
             {
-                var metrics = JsonSerializer.Deserialize<MetricsDataDto>(
-                    data.GetRawText(),
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                );
-
-                if (metrics != null)
-                {
-                    MetricsReceived?.Invoke(metrics);
-                }
+                var metrics = JsonSerializer.Deserialize<MetricsDataDto>(data.GetRawText(), jsonOptions);
+                if (metrics != null) MetricsReceived?.Invoke(metrics);
             }
             catch (Exception ex)
             {
