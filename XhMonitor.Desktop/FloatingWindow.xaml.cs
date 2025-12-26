@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using XhMonitor.Desktop.ViewModels;
@@ -113,6 +114,37 @@ public partial class FloatingWindow : Window
         }
     }
 
+    private void MonitorBar_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        _viewModel.OnBarPointerEnter();
+    }
+
+    private void MonitorBar_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        _viewModel.OnBarPointerLeave();
+    }
+
+    private void MonitorBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.OnBarClick();
+        e.Handled = true;
+    }
+
+    private void PinIndicator_Click(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.EnterClickthrough();
+        SetClickThrough(true);
+        e.Handled = true;
+    }
+
+    private void ProcessRow_TogglePin(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is FloatingWindowViewModel.ProcessRowViewModel row)
+        {
+            _viewModel.TogglePin(row);
+        }
+    }
+
     private void OnClosing(object? sender, CancelEventArgs e)
     {
         if (!_allowClose)
@@ -212,8 +244,11 @@ public partial class FloatingWindow : Window
         const int WM_HOTKEY = 0x0312;
         if (msg == WM_HOTKEY && wParam.ToInt32() == _hotkeyId)
         {
-            // Exit click-through mode when hotkey is pressed
-            Dispatcher.Invoke(() => SetClickThrough(false));
+            Dispatcher.Invoke(() =>
+            {
+                _viewModel.ExitClickthrough();
+                SetClickThrough(false);
+            });
             handled = true;
         }
         return IntPtr.Zero;
