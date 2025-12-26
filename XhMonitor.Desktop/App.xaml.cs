@@ -1,6 +1,10 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.FileProviders;
 using WinForms = System.Windows.Forms;
 using WpfApplication = System.Windows.Application;
 
@@ -11,13 +15,16 @@ public partial class App : WpfApplication
     private WinForms.NotifyIcon? _trayIcon;
     private FloatingWindow? _floatingWindow;
     private Process? _serverProcess;
+    private Task? _webServerTask;
+    private CancellationTokenSource? _webServerCts;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        // 异步启动后端 Server，避免阻塞 UI
+        // 异步启动后端 Server 和 Web，避免阻塞 UI
         _ = StartBackendServerAsync();
+        _ = StartWebAsync();
 
         _floatingWindow = new FloatingWindow();
 
@@ -32,8 +39,9 @@ public partial class App : WpfApplication
 
     protected override void OnExit(ExitEventArgs e)
     {
-        // 关闭后端 Server
+        // 关闭后端 Server 和 Web
         StopBackendServer();
+        StopWebServer();
 
         if (_floatingWindow != null)
         {
@@ -70,6 +78,9 @@ public partial class App : WpfApplication
         var showItem = new WinForms.ToolStripMenuItem("显示/隐藏");
         showItem.Click += (_, _) => ToggleFloatingWindow();
 
+        var openWebItem = new WinForms.ToolStripMenuItem("打开 Web 界面");
+        openWebItem.Click += (_, _) => OpenWebInterface();
+
         var clickThroughItem = new WinForms.ToolStripMenuItem("点击穿透")
         {
             CheckOnClick = true,
@@ -87,6 +98,7 @@ public partial class App : WpfApplication
         exitItem.Click += (_, _) => ExitApplication();
 
         menu.Items.Add(showItem);
+        menu.Items.Add(openWebItem);
         menu.Items.Add(clickThroughItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(exitItem);
@@ -106,6 +118,27 @@ public partial class App : WpfApplication
         {
             _floatingWindow.Show();
             _floatingWindow.Activate();
+        }
+    }
+
+    private void OpenWebInterface()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "http://localhost:35180",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to open web interface: {ex.Message}");
+            System.Windows.MessageBox.Show(
+                $"无法打开 Web 界面。\n请手动访问：http://localhost:35180\n\n错误：{ex.Message}",
+                "打开失败",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 
@@ -284,6 +317,181 @@ public partial class App : WpfApplication
         catch
         {
             return true;
+        }
+    }
+
+    private async Task StartWebAsync()
+    {
+        try
+        {
+            // 检查端口 35180 是否已被占用
+            if (IsPortInUse(35180))
+            {
+                Debug.WriteLine("Web frontend is already running on port 35180");
+                return;
+            }
+
+            var projectPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "xhmonitor-web");
+            var fullPath = Path.GetFullPath(projectPath);
+
+            if (!Directory.Exists(fullPath))
+            {
+                Debug.WriteLine($"Web project not found at: {fullPath}");
+                return;
+            }
+
+            // 检查 dist 目录是否存在，如果不存在则构建
+            var distPath = Path.Combine(fullPath, "dist");
+            if (!Directory.Exists(distPath))
+            {
+                Debug.WriteLine("Building web frontend...");
+
+                // 检查 node_modules 是否存在
+                var nodeModulesPath = Path.Combine(fullPath, "node_modules");
+                if (!Directory.Exists(nodeModulesPath))
+                {
+                    Debug.WriteLine("Installing web dependencies...");
+                    await RunNpmInstallAsync(fullPath);
+                }
+
+                // 执行构建
+                await RunNpmBuildAsync(fullPath);
+            }
+
+            // 使用内嵌的 Kestrel 静态文件服务器
+            _webServerCts = new CancellationTokenSource();
+            _webServerTask = Task.Run(async () =>
+            {
+                try
+                {
+                    var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
+                    builder.WebHost.UseKestrel(options =>
+                    {
+                        options.ListenLocalhost(35180);
+                    });
+                    builder.WebHost.UseUrls("http://localhost:35180");
+
+                    var app = builder.Build();
+                    app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
+                    {
+                        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(distPath),
+                        RequestPath = ""
+                    });
+
+                    // SPA 回退路由
+                    app.MapFallbackToFile("index.html", new Microsoft.AspNetCore.Builder.StaticFileOptions
+                    {
+                        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(distPath)
+                    });
+
+                    Debug.WriteLine("Web frontend server starting at http://localhost:35180");
+                    using var stopRegistration = _webServerCts.Token.Register(() =>
+                        app.StopAsync().GetAwaiter().GetResult());
+                    await app.RunAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Web server error: {ex.Message}");
+                }
+            }, _webServerCts.Token);
+
+            // 等待服务器就绪
+            await Task.Delay(1000);
+            Debug.WriteLine("Web frontend is ready at http://localhost:35180");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to start web frontend: {ex.Message}");
+        }
+    }
+
+    private async Task RunNpmInstallAsync(string webProjectPath)
+    {
+        try
+        {
+            var installProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c npm install",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    WorkingDirectory = webProjectPath
+                }
+            };
+
+            installProcess.Start();
+            await installProcess.WaitForExitAsync();
+
+            if (installProcess.ExitCode == 0)
+            {
+                Debug.WriteLine("Web dependencies installed successfully");
+            }
+            else
+            {
+                Debug.WriteLine($"npm install failed with exit code: {installProcess.ExitCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to install web dependencies: {ex.Message}");
+        }
+    }
+
+    private async Task RunNpmBuildAsync(string webProjectPath)
+    {
+        try
+        {
+            var buildProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c npm run build",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    WorkingDirectory = webProjectPath
+                }
+            };
+
+            buildProcess.Start();
+            await buildProcess.WaitForExitAsync();
+
+            if (buildProcess.ExitCode == 0)
+            {
+                Debug.WriteLine("Web frontend built successfully");
+            }
+            else
+            {
+                Debug.WriteLine($"npm run build failed with exit code: {buildProcess.ExitCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to build web frontend: {ex.Message}");
+        }
+    }
+
+    private void StopWebServer()
+    {
+        try
+        {
+            _webServerCts?.Cancel();
+            _webServerTask?.Wait(TimeSpan.FromSeconds(5));
+            _webServerCts?.Dispose();
+            _webServerCts = null;
+            _webServerTask = null;
+
+            Debug.WriteLine("Web frontend server stopped successfully");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error stopping web server: {ex.Message}");
         }
     }
 }
