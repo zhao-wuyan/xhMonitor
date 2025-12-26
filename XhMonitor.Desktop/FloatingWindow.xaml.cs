@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using XhMonitor.Desktop.ViewModels;
@@ -34,12 +35,28 @@ public partial class FloatingWindow : Window
         _viewModel = new FloatingWindowViewModel();
         DataContext = _viewModel;
 
+        DetailsPopup.CustomPopupPlacementCallback = OnCustomPopupPlacement;
+
         _positionStore = new WindowPositionStore("XhMonitor.Desktop");
 
         Loaded += OnLoaded;
         SourceInitialized += OnSourceInitialized;
         MouseLeftButtonDown += OnMouseLeftButtonDown;
         Closing += OnClosing;
+    }
+
+    private CustomPopupPlacement[] OnCustomPopupPlacement(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
+    {
+        // Center the popup horizontally relative to the target
+        double x = (targetSize.Width - popupSize.Width) / 2;
+
+        // Place the popup above the target with a small gap (8px)
+        double y = -popupSize.Height - 8;
+
+        return new CustomPopupPlacement[]
+        {
+            new CustomPopupPlacement(new System.Windows.Point(x, y), PopupPrimaryAxis.Horizontal)
+        };
     }
 
     public void AllowClose()

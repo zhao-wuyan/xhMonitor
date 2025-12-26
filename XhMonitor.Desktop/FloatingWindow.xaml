@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:XhMonitor.Desktop"
         xmlns:vm="clr-namespace:XhMonitor.Desktop.ViewModels"
+        xmlns:conv="clr-namespace:XhMonitor.Desktop.Converters"
         Title="XhMonitor"
         SizeToContent="WidthAndHeight"
         WindowStyle="None"
@@ -13,25 +14,40 @@
         ShowInTaskbar="False">
 
     <Window.Resources>
-        <!-- 转换器 -->
+        <!-- Converters -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:MemoryUnitConverter x:Key="MemoryConverter"/>
+        <conv:MetricValueColorConverter x:Key="ColorConverter"/>
+        <conv:MemoryPercentageColorConverter x:Key="MemoryColorConverter"/>
 
-        <!-- 阈值渐变画刷 -->
+        <!-- Palette -->
+        <SolidColorBrush x:Key="ColorGreen" Color="#4ade80"/>
+        <SolidColorBrush x:Key="ColorYellow" Color="#facc15"/>
+        <SolidColorBrush x:Key="ColorRed" Color="#f87171"/>
+        <SolidColorBrush x:Key="ColorCyan" Color="#22d3ee"/>
+        <SolidColorBrush x:Key="ColorTextMain" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="ColorTextSub" Color="#88FFFFFF"/>
+        <SolidColorBrush x:Key="ColorBorder" Color="#14FFFFFF"/>
+        <SolidColorBrush x:Key="ColorBackground" Color="#990A0A0A"/> <!-- More transparent (60%) -->
+        <SolidColorBrush x:Key="ColorPinnedBg" Color="#99141414"/> <!-- More transparent (60%) -->
+        <SolidColorBrush x:Key="ColorProgressBg" Color="#1AFFFFFF"/>
+
+        <!-- Gradient for general usage (simulating dynamic color ranges) -->
         <LinearGradientBrush x:Key="ThresholdBrush" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#4CAF50" Offset="0.0"/>
-            <GradientStop Color="#4CAF50" Offset="0.49"/>
-            <GradientStop Color="#FFC107" Offset="0.50"/>
-            <GradientStop Color="#FFC107" Offset="0.79"/>
-            <GradientStop Color="#F44336" Offset="0.80"/>
-            <GradientStop Color="#F44336" Offset="1.0"/>
+            <GradientStop Color="#4ade80" Offset="0.0"/>
+            <GradientStop Color="#4ade80" Offset="0.49"/>
+            <GradientStop Color="#facc15" Offset="0.50"/>
+            <GradientStop Color="#facc15" Offset="0.79"/>
+            <GradientStop Color="#f87171" Offset="0.80"/>
+            <GradientStop Color="#f87171" Offset="1.0"/>
         </LinearGradientBrush>
 
-        <!-- 3px 高度进度条样式 -->
+        <!-- 3px ProgressBar Style -->
         <Style x:Key="ThinProgressBar" TargetType="ProgressBar">
             <Setter Property="Height" Value="3"/>
             <Setter Property="Minimum" Value="0"/>
             <Setter Property="Maximum" Value="100"/>
-            <Setter Property="Background" Value="#33FFFFFF"/>
+            <Setter Property="Background" Value="{StaticResource ColorProgressBg}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -40,7 +56,7 @@
                             <Border Background="{TemplateBinding Background}" CornerRadius="1.5"/>
                             <Border x:Name="PART_Track" CornerRadius="1.5"/>
                             <Border x:Name="PART_Indicator" HorizontalAlignment="Left" CornerRadius="1.5"
-                                    Background="{StaticResource ThresholdBrush}">
+                                    Background="{TemplateBinding Foreground}">
                                 <Border.Width>
                                     <MultiBinding>
                                         <MultiBinding.Converter>
@@ -58,18 +74,9 @@
             </Setter>
         </Style>
 
-        <!-- 指标项模板 -->
-        <DataTemplate x:Key="MetricItemTemplate">
-            <StackPanel Margin="8,4">
-                <TextBlock Text="{Binding Label}" FontSize="9" Foreground="#888" FontFamily="Segoe UI"/>
-                <TextBlock Text="{Binding ValueText}" FontSize="11" Foreground="White" FontWeight="Bold" FontFamily="Consolas"/>
-                <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Value}" Margin="0,2,0,0"/>
-            </StackPanel>
-        </DataTemplate>
-
-        <!-- 进程行模板 -->
+        <!-- Process Row Template -->
         <DataTemplate x:Key="ProcessRowTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="#11FFFFFF" CornerRadius="4" Padding="8,4" Margin="0,1">
+            <Border Background="Transparent" Padding="0,2" Margin="0,1">
                 <Border.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Toggle Pin" Click="ProcessRow_TogglePin" Tag="{Binding}"/>
@@ -77,74 +84,121 @@
                 </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="45"/>
+                        <ColumnDefinition Width="70"/>
                         <ColumnDefinition Width="55"/>
                         <ColumnDefinition Width="55"/>
-                        <ColumnDefinition Width="50"/>
-                        <ColumnDefinition Width="50"/>
-                        <ColumnDefinition Width="55"/>
+                        <ColumnDefinition Width="70"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="📌" Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding ProcessName}" Foreground="White" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Grid.Column="2" Text="{Binding ProcessId}" Foreground="#888" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" TextAlignment="Right"/>
-                    <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Vram, StringFormat={}{0:F1}G}" Foreground="#FFA726" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Vram, Mode=OneWay}" Maximum="24" Height="2"/>
+                    
+                    <!-- Process Name -->
+                    <Grid Grid.Column="0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="📌 " Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}" 
+                                   Foreground="{StaticResource ColorGreen}" FontSize="9" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0">
+                            <TextBlock Text="{Binding ProcessName}" Foreground="{StaticResource ColorTextMain}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- PID -->
+                    <TextBlock Grid.Column="1" Text="{Binding ProcessId}" Foreground="#888" FontSize="11" FontFamily="Consolas" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                    <!-- VRAM -->
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="4,0">
+                        <TextBlock Text="{Binding Vram, Converter={StaticResource MemoryConverter}}" Foreground="{StaticResource ColorTextMain}" FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Vram, Mode=OneWay}" Height="2">
+                            <ProgressBar.Maximum>
+                                <Binding Path="DataContext.TotalVram" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                            </ProgressBar.Maximum>
+                            <ProgressBar.Foreground>
+                                <MultiBinding Converter="{StaticResource MemoryColorConverter}">
+                                    <Binding Path="Vram"/>
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="Maximum"/>
+                                </MultiBinding>
+                            </ProgressBar.Foreground>
+                        </ProgressBar>
                     </StackPanel>
-                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="#4FC3F7" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Gpu, Mode=OneWay}" Height="2"/>
+
+                    <!-- GPU -->
+                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="4,0">
+                        <TextBlock Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}}" FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Gpu, Mode=OneWay}" Height="2" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}}"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="5" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="#FF6B6B" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Cpu, Mode=OneWay}" Height="2"/>
+
+                    <!-- CPU -->
+                    <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="4,0">
+                        <TextBlock Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="{StaticResource ColorTextMain}" FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Cpu, Mode=OneWay}" Height="2" Foreground="{Binding Cpu, Converter={StaticResource ColorConverter}}"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="6" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Memory, StringFormat={}{0:F1}G}" Foreground="#50C878" FontSize="10" FontFamily="Consolas" TextAlignment="Right"/>
-                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Memory, Mode=OneWay}" Maximum="64" Height="2"/>
+
+                    <!-- RAM -->
+                    <StackPanel Grid.Column="5" VerticalAlignment="Center" Margin="4,0">
+                        <TextBlock Text="{Binding Memory, Converter={StaticResource MemoryConverter}}" Foreground="{StaticResource ColorTextMain}" FontSize="11" FontFamily="Consolas" TextAlignment="Right"/>
+                        <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Memory, Mode=OneWay}" Height="2">
+                            <ProgressBar.Maximum>
+                                <Binding Path="DataContext.TotalMemory" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                            </ProgressBar.Maximum>
+                            <ProgressBar.Foreground>
+                                <MultiBinding Converter="{StaticResource MemoryColorConverter}">
+                                    <Binding Path="Memory"/>
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="Maximum"/>
+                                </MultiBinding>
+                            </ProgressBar.Foreground>
+                        </ProgressBar>
                     </StackPanel>
                 </Grid>
             </Border>
         </DataTemplate>
 
-        <!-- 钉住卡片模板 -->
+        <!-- Pinned Card Template -->
         <DataTemplate x:Key="PinnedCardTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="#BF141414" CornerRadius="4" Padding="10,6" Margin="0,0,0,4" Width="360"
-                    BorderBrush="#4CAF50" BorderThickness="3,0,0,0">
+            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="320"
+                    BorderBrush="{StaticResource ColorBorder}" BorderThickness="1">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{Binding ProcessName}" Foreground="White" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
-                        <Run Text="GPU " Foreground="#888" FontSize="10"/>
-                        <Run Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="#4FC3F7" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
-                        <Run Text="CPU " Foreground="#888" FontSize="10"/>
-                        <Run Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="#FF6B6B" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                    </TextBlock>
-                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,0,0">
-                        <Run Text="RAM " Foreground="#888" FontSize="10"/>
-                        <Run Text="{Binding Memory, StringFormat={}{0:F1}G}" Foreground="#50C878" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                    </TextBlock>
+                    <!-- Left Accent Border -->
+                    <Border Background="{StaticResource ColorGreen}" HorizontalAlignment="Left" Width="3" CornerRadius="3,0,0,3"/>
+                    
+                    <Grid Margin="13,4,10,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="{Binding ProcessName}" Foreground="{StaticResource ColorTextMain}"
+                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Run Text="VRAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                            <Run Text="{Binding Vram, Converter={StaticResource MemoryConverter}}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                        </TextBlock>
+
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Run Text="GPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                            <Run Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                        </TextBlock>
+
+                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Run Text="CPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                            <Run Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="{Binding Cpu, Converter={StaticResource ColorConverter}}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                        </TextBlock>
+
+                        <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Run Text="RAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                            <Run Text="{Binding Memory, Converter={StaticResource MemoryConverter}}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                        </TextBlock>
+                    </Grid>
                 </Grid>
             </Border>
         </DataTemplate>
 
-        <!-- SlideIn 动画 -->
-        <Storyboard x:Key="SlideInStoryboard">
-            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.2"/>
-            <ThicknessAnimation Storyboard.TargetProperty="Margin" From="0,-10,0,0" To="0,0,0,0" Duration="0:0:0.2">
-                <ThicknessAnimation.EasingFunction>
-                    <QuadraticEase EasingMode="EaseOut"/>
-                </ThicknessAnimation.EasingFunction>
-            </ThicknessAnimation>
-        </Storyboard>
     </Window.Resources>
 
     <Grid>
@@ -157,7 +211,7 @@
         <!-- Pinned Stack -->
         <ItemsControl Grid.Row="0" ItemsSource="{Binding PinnedProcesses}"
                       ItemTemplate="{StaticResource PinnedCardTemplate}"
-                      HorizontalAlignment="Center" Margin="0,0,0,4">
+                      HorizontalAlignment="Center" Margin="0,0,0,6">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Vertical"/>
@@ -166,73 +220,104 @@
         </ItemsControl>
 
         <!-- Monitor Bar -->
-        <Border Grid.Row="1" x:Name="MonitorBar" Background="#E6141414" CornerRadius="8"
-                BorderBrush="#33FFFFFF" BorderThickness="1" Padding="4,6"
+        <Border Grid.Row="1" x:Name="MonitorBar" Background="{StaticResource ColorBackground}" CornerRadius="8"
+                BorderBrush="{StaticResource ColorBorder}" BorderThickness="1" Padding="14,6"
                 MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
                 MouseLeftButtonUp="MonitorBar_MouseLeftButtonUp">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="12" ShadowDepth="4" Opacity="0.4"/>
+                <DropShadowEffect BlurRadius="32" ShadowDepth="8" Opacity="0.4" Direction="270"/>
             </Border.Effect>
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="1"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="1"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="1"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/> <!-- CPU -->
+                    <ColumnDefinition Width="Auto"/> <!-- Div -->
+                    <ColumnDefinition Width="Auto"/> <!-- RAM -->
+                    <ColumnDefinition Width="Auto"/> <!-- Div -->
+                    <ColumnDefinition Width="Auto"/> <!-- GPU -->
+                    <ColumnDefinition Width="Auto"/> <!-- Div -->
+                    <ColumnDefinition Width="Auto"/> <!-- VRAM -->
+                    <ColumnDefinition Width="Auto"/> <!-- Pin -->
                 </Grid.ColumnDefinitions>
 
                 <!-- CPU -->
-                <StackPanel Grid.Column="0" Margin="8,2" MinWidth="55">
-                    <TextBlock Text="CPU" FontSize="9" Foreground="#888"/>
-                    <TextBlock Text="{Binding TotalCpu, StringFormat={}{0:F1}%}" FontSize="11" Foreground="#FF6B6B" FontWeight="Bold" FontFamily="Consolas"/>
-                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalCpu, Mode=OneWay}" Margin="0,2,0,0"/>
+                <StackPanel Grid.Column="0" Width="48" Margin="2,0">
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="CPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                        <TextBlock Text="{Binding TotalCpu, StringFormat={}{0:F0}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalCpu, Mode=OneWay}" Foreground="{Binding TotalCpu, Converter={StaticResource ColorConverter}}"/>
                 </StackPanel>
 
-                <Rectangle Grid.Column="1" Width="1" Fill="#33FFFFFF" Margin="0,4"/>
+                <Rectangle Grid.Column="1" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="8,0"/>
 
                 <!-- RAM -->
-                <StackPanel Grid.Column="2" Margin="8,2" MinWidth="55">
-                    <TextBlock Text="RAM" FontSize="9" Foreground="#888"/>
-                    <TextBlock Text="{Binding TotalMemory, StringFormat={}{0:F0}MB}" FontSize="11" Foreground="#50C878" FontWeight="Bold" FontFamily="Consolas"/>
-                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalMemory, Mode=OneWay}" Maximum="32768" Margin="0,2,0,0"/>
+                <StackPanel Grid.Column="2" Width="75" Margin="2,0">
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="RAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                        <TextBlock Text="{Binding TotalMemory, Converter={StaticResource MemoryConverter}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalMemory, Mode=OneWay}" Maximum="32768">
+                        <ProgressBar.Foreground>
+                            <MultiBinding Converter="{StaticResource MemoryColorConverter}">
+                                <Binding Path="TotalMemory"/>
+                                <Binding RelativeSource="{RelativeSource Self}" Path="Maximum"/>
+                            </MultiBinding>
+                        </ProgressBar.Foreground>
+                    </ProgressBar>
                 </StackPanel>
 
-                <Rectangle Grid.Column="3" Width="1" Fill="#33FFFFFF" Margin="0,4"/>
+                <Rectangle Grid.Column="3" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="8,0"/>
 
                 <!-- GPU -->
-                <StackPanel Grid.Column="4" Margin="8,2" MinWidth="55">
-                    <TextBlock Text="GPU" FontSize="9" Foreground="#888"/>
-                    <TextBlock Text="{Binding TotalGpu, StringFormat={}{0:F1}%}" FontSize="11" Foreground="#4FC3F7" FontWeight="Bold" FontFamily="Consolas"/>
-                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalGpu, Mode=OneWay}" Margin="0,2,0,0"/>
+                <StackPanel Grid.Column="4" Width="48" Margin="2,0">
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="GPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                        <TextBlock Text="{Binding TotalGpu, StringFormat={}{0:F0}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalGpu, Mode=OneWay}" Foreground="{Binding TotalGpu, Converter={StaticResource ColorConverter}}"/>
                 </StackPanel>
 
-                <Rectangle Grid.Column="5" Width="1" Fill="#33FFFFFF" Margin="0,4"/>
+                <Rectangle Grid.Column="5" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="8,0"/>
 
                 <!-- VRAM -->
-                <StackPanel Grid.Column="6" Margin="8,2" MinWidth="55">
-                    <TextBlock Text="VRAM" FontSize="9" Foreground="#888"/>
-                    <TextBlock Text="{Binding TotalVram, StringFormat={}{0:F0}MB}" FontSize="11" Foreground="#FFA726" FontWeight="Bold" FontFamily="Consolas"/>
-                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalVram, Mode=OneWay}" Maximum="16384" Margin="0,2,0,0"/>
+                <StackPanel Grid.Column="6" Width="75" Margin="2,0">
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="VRAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                        <TextBlock Text="{Binding TotalVram, Converter={StaticResource MemoryConverter}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding TotalVram, Mode=OneWay}" Maximum="16384">
+                        <ProgressBar.Foreground>
+                            <MultiBinding Converter="{StaticResource MemoryColorConverter}">
+                                <Binding Path="TotalVram"/>
+                                <Binding RelativeSource="{RelativeSource Self}" Path="Maximum"/>
+                            </MultiBinding>
+                        </ProgressBar.Foreground>
+                    </ProgressBar>
                 </StackPanel>
 
                 <!-- Pin Indicator -->
-                <Border Grid.Column="7" Width="12" Height="12" CornerRadius="6" Margin="6,0,4,0"
-                        VerticalAlignment="Center" Cursor="Hand"
+                <Border Grid.Column="7" Width="8" Height="8" CornerRadius="4" Margin="12,-4,-4,0"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Cursor="Hand"
                         MouseLeftButtonUp="PinIndicator_Click">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="#4CAF50"/>
+                            <Setter Property="Background" Value="{StaticResource ColorGreen}"/>
+                            <Setter Property="Opacity" Value="0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsConnected}" Value="False">
-                                    <Setter Property="Background" Value="#F44336"/>
+                                    <Setter Property="Background" Value="{StaticResource ColorRed}"/>
+                                    <Setter Property="Opacity" Value="1"/>
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding IsLocked}" Value="True">
-                                    <Setter Property="Background" Value="#2196F3"/>
+                                    <Setter Property="Opacity" Value="1"/>
                                 </DataTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="RenderTransform">
+                                        <Setter.Value>
+                                            <ScaleTransform ScaleX="1.5" ScaleY="1.5" CenterX="4" CenterY="4"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
@@ -242,13 +327,12 @@
 
         <!-- Details Panel (Popup) -->
         <Popup Grid.Row="2" x:Name="DetailsPopup" PlacementTarget="{Binding ElementName=MonitorBar}"
-               Placement="Top" StaysOpen="True" AllowsTransparency="True"
-               IsOpen="{Binding IsDetailsVisible, Mode=OneWay}"
-               VerticalOffset="-8">
-            <Border Background="#F0141414" CornerRadius="8" BorderBrush="#33FFFFFF"
+               Placement="Custom" StaysOpen="True" AllowsTransparency="True"
+               IsOpen="{Binding IsDetailsVisible, Mode=OneWay}">
+            <Border Background="#F0141414" CornerRadius="8" BorderBrush="{StaticResource ColorBorder}"
                     BorderThickness="1" Padding="8" MinWidth="360" MaxHeight="300">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="16" ShadowDepth="6" Opacity="0.5"/>
+                    <DropShadowEffect BlurRadius="60" ShadowDepth="20" Opacity="0.6" Direction="270"/>
                 </Border.Effect>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -257,26 +341,33 @@
                     </Grid.RowDefinitions>
 
                     <!-- Header -->
-                    <Grid Grid.Row="0" Margin="0,0,0,6">
+                    <Grid Grid.Row="0" Margin="0,0,0,4">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="70"/>
                             <ColumnDefinition Width="55"/>
                             <ColumnDefinition Width="55"/>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="55"/>
+                            <ColumnDefinition Width="70"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="1" Text="PROCESS" Foreground="#666" FontSize="9"/>
-                        <TextBlock Grid.Column="2" Text="PID" Foreground="#666" FontSize="9" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="3" Text="VRAM" Foreground="#666" FontSize="9" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="4" Text="GPU" Foreground="#666" FontSize="9" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="5" Text="CPU" Foreground="#666" FontSize="9" TextAlignment="Right"/>
-                        <TextBlock Grid.Column="6" Text="RAM" Foreground="#666" FontSize="9" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="0" Text="PROCESS" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="1" Text="PID" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="2" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right" Margin="4,0">
+                            <Run Text="VRAM "/>
+                            <Run Text="{Binding TotalVram, Converter={StaticResource MemoryConverter}, StringFormat='({0})'}" FontSize="8"/>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="GPU" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right" Margin="4,0"/>
+                        <TextBlock Grid.Column="4" Text="CPU" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right" Margin="4,0"/>
+                        <TextBlock Grid.Column="5" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right" Margin="4,0">
+                            <Run Text="RAM "/>
+                            <Run Text="{Binding TotalMemory, Converter={StaticResource MemoryConverter}, StringFormat='({0})'}" FontSize="8"/>
+                        </TextBlock>
                     </Grid>
+                    
+                    <Rectangle Grid.Row="0" VerticalAlignment="Bottom" Height="1" Fill="{StaticResource ColorBorder}" Margin="0,0,0,-2"/>
 
                     <!-- Process List -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="260">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="300" Margin="0,6,0,0">
                         <ItemsControl x:Name="ProcessList" ItemsSource="{Binding AllProcesses}"
                                       ItemTemplate="{StaticResource ProcessRowTemplate}">
                             <ItemsControl.ItemsPanel>
