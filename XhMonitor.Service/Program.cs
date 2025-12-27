@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using XhMonitor.Core.Interfaces;
+using XhMonitor.Core.Providers;
 using XhMonitor.Service;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Data;
@@ -16,7 +17,11 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
-    options.UseSqlite(connectionString));
+{
+    var sqliteOptions = options.UseSqlite(connectionString);
+    // Note: SQLite doesn't have built-in retry on failure like SQL Server
+    // But we can still configure command timeout
+});
 
 builder.Services.AddSingleton<IProcessMetricRepository, MetricRepository>();
 
@@ -39,6 +44,17 @@ builder.Services.AddSingleton(sp =>
     return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory);
 });
 
+builder.Services.AddSingleton<SystemMetricProvider>(sp =>
+{
+    var registry = sp.GetRequiredService<MetricProviderRegistry>();
+    return new SystemMetricProvider(
+        registry.GetProvider("cpu"),
+        registry.GetProvider("gpu"),
+        registry.GetProvider("memory"),
+        registry.GetProvider("vram")
+    );
+});
+
 builder.Services.AddSingleton<ProcessScanner>();
 builder.Services.AddSingleton<PerformanceMonitor>();
 
@@ -56,9 +72,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.WebHost.ConfigureKestrel(options =>
+builder.WebHost.ConfigureKestrel((context, options) =>
 {
-    options.ListenLocalhost(35179);
+    var host = context.Configuration["Server:Host"] ?? "localhost";
+    var port = context.Configuration.GetValue<int>("Server:Port", 35179);
+    options.ListenLocalhost(port);
 });
 
 var app = builder.Build();
@@ -72,6 +90,7 @@ app.UseCors("AllowAll");
 app.UseRouting();
 
 app.MapControllers();
-app.MapHub<MetricsHub>("/hubs/metrics");
+var hubPath = builder.Configuration["Server:HubPath"] ?? "/hubs/metrics";
+app.MapHub<MetricsHub>(hubPath);
 
 app.Run();

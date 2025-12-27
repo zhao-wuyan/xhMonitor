@@ -40,7 +40,7 @@ public class PerformanceMonitor
 
         var parallelOptions = new ParallelOptions
         {
-            MaxDegreeOfParallelism = 1
+            MaxDegreeOfParallelism = 4
         };
 
         _logger.LogDebug("Starting parallel processing of {ProcessCount} processes", processes.Count);
@@ -65,7 +65,16 @@ public class PerformanceMonitor
                 foreach (var provider in providers)
                 {
                     var (metricId, value) = await CollectMetricSafeAsync(provider, processInfo.ProcessId);
-                    metrics[metricId] = value;
+                    // Filter out error values to avoid polluting the data
+                    if (!value.IsError)
+                    {
+                        metrics[metricId] = value;
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Skipping error metric {MetricId} for PID {ProcessId}: {Error}",
+                            metricId, processInfo.ProcessId, value.Value);
+                    }
                 }
 
                 results.Add(new ProcessMetrics

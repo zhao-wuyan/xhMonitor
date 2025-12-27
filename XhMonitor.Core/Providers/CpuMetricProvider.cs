@@ -59,58 +59,55 @@ public class CpuMetricProvider : IMetricProvider
     {
         if (!IsSupported()) return MetricValue.Error("Not supported");
 
-        return await Task.Run(() =>
+        try
         {
+            if (!_counters.TryGetValue(processId, out var counter))
+            {
+                var instanceName = await GetInstanceNameAsync(processId);
+                if (instanceName == null) return MetricValue.Error("Process not found");
+
+                counter = new PerformanceCounter("Process", "% Processor Time", instanceName, true);
+                // Initialize
+                try { counter.NextValue(); } catch { }
+                _counters.TryAdd(processId, counter);
+            }
+
             try
             {
-                if (!_counters.TryGetValue(processId, out var counter))
-                {
-                    var instanceName = GetInstanceName(processId);
-                    if (instanceName == null) return MetricValue.Error("Process not found");
+                var value = await Task.Run(() => counter.NextValue());
+                // Normalize by processor count to match Task Manager (0-100% total system load equivalent)
+                value /= Environment.ProcessorCount;
 
-                    counter = new PerformanceCounter("Process", "% Processor Time", instanceName, true);
-                    // Initialize
-                    try { counter.NextValue(); } catch { }
-                    _counters.TryAdd(processId, counter);
-                }
-
-                try
+                return new MetricValue
                 {
-                    var value = counter.NextValue();
-                    // Normalize by processor count to match Task Manager (0-100% total system load equivalent)
-                    value /= Environment.ProcessorCount;
-
-                    return new MetricValue
-                    {
-                        Value = Math.Round(value, 1),
-                        Unit = Unit,
-                        DisplayName = DisplayName,
-                        Timestamp = DateTime.Now
-                    };
-                }
-                catch (Exception)
-                {
-                    // Instance might be invalid/process dead
-                    _counters.TryRemove(processId, out var c);
-                    c?.Dispose();
-                    return MetricValue.Error("Process instance lost");
-                }
+                    Value = Math.Round(value, 1),
+                    Unit = Unit,
+                    DisplayName = DisplayName,
+                    Timestamp = DateTime.Now
+                };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return MetricValue.Error(ex.Message);
+                // Instance might be invalid/process dead
+                _counters.TryRemove(processId, out var c);
+                c?.Dispose();
+                return MetricValue.Error("Process instance lost");
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            return MetricValue.Error(ex.Message);
+        }
     }
 
-    private string? GetInstanceName(int pid)
+    private async Task<string?> GetInstanceNameAsync(int pid)
     {
         try
         {
             Dictionary<int, string> pidMap;
             if (_pidToInstanceMap == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
             {
-                _cacheLock.Wait();
+                await _cacheLock.WaitAsync();
                 try
                 {
                     if (_pidToInstanceMap == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
@@ -149,6 +146,38 @@ public class CpuMetricProvider : IMetricProvider
         }
         catch { }
         return null;
+    }
+
+    public void CleanupStaleCounters()
+    {
+        var stalePids = new List<int>();
+
+        foreach (var pid in _counters.Keys)
+        {
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                // Process exists, keep it
+            }
+            catch (ArgumentException)
+            {
+                // Process doesn't exist
+                stalePids.Add(pid);
+            }
+        }
+
+        foreach (var pid in stalePids)
+        {
+            if (_counters.TryRemove(pid, out var counter))
+            {
+                counter.Dispose();
+            }
+        }
+
+        if (stalePids.Count > 0)
+        {
+            // Logger not available here, could inject if needed
+        }
     }
 
     public void Dispose()

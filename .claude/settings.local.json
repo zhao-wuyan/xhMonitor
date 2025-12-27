@@ -1,4 +1,11 @@
 {
+  "includeCoAuthoredBy": false,
+  "statusLine": {
+    "type": "command",
+    "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
+    "padding": 0
+  },
+  "model": "sonnet[1m]",
   "permissions": {
     "allow": [
       "Bash(dir)",
@@ -32,7 +39,8 @@
       "Bash(cmd /c:*)",
       "Skill(collaborating-with-codex)",
       "Skill(collaborating-with-gemini)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(cd:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

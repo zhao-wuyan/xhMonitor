@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Text.Json;
 using XhMonitor.Desktop.Models;
+using XhMonitor.Desktop.Constants;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -8,6 +9,7 @@ public class SignalRService : IAsyncDisposable
 {
     private HubConnection? _connection;
     private readonly string _hubUrl;
+    private const string DefaultHubUrl = "http://localhost:35179/hubs/metrics";
 
     public event Action<MetricsDataDto>? MetricsReceived;
     public event Action<HardwareLimitsDto>? HardwareLimitsReceived;
@@ -19,7 +21,7 @@ public class SignalRService : IAsyncDisposable
 
     public SignalRService()
     {
-        _hubUrl = "http://localhost:35179/hubs/metrics";
+        _hubUrl = DefaultHubUrl;
     }
 
     public SignalRService(string hubUrl)
@@ -41,7 +43,7 @@ public class SignalRService : IAsyncDisposable
 
         var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        _connection.On<JsonElement>("metrics.hardware", (data) =>
+        _connection.On<JsonElement>(SignalREvents.HardwareLimits, (data) =>
         {
             try
             {
@@ -54,7 +56,7 @@ public class SignalRService : IAsyncDisposable
             }
         });
 
-        _connection.On<JsonElement>("metrics.system", (data) =>
+        _connection.On<JsonElement>(SignalREvents.SystemUsage, (data) =>
         {
             try
             {
@@ -67,7 +69,7 @@ public class SignalRService : IAsyncDisposable
             }
         });
 
-        _connection.On<JsonElement>("metrics.processes", (data) =>
+        _connection.On<JsonElement>(SignalREvents.ProcessMetrics, (data) =>
         {
             try
             {

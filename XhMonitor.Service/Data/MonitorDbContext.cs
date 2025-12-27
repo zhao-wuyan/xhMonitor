@@ -9,6 +9,8 @@ public sealed class MonitorDbContext : DbContext
     public MonitorDbContext(DbContextOptions<MonitorDbContext> options)
         : base(options)
     {
+        // 启用 WAL 模式以提升并发性能
+        Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
     }
 
     public DbSet<ProcessMetricRecord> ProcessMetricRecords => Set<ProcessMetricRecord>();
