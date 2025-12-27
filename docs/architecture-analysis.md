@@ -121,13 +121,13 @@
    - 影响: 5秒采集周期可能被阻塞
    - 修复: 提升到 4 并发
 
-2. **架构不一致: Worker 越权采集** ⚠️ 待修复
+2. **架构不一致: Worker 越权采集** ✅ 已修复
    - 位置: `Worker.cs` 的 `SendHardwareLimitsAsync()` 和 `SendSystemUsageAsync()`
    - 问题: 直接使用 Windows API/PerformanceCounter,绕过 Provider 架构
    - 影响: 违反单一职责,代码重复(VRAM/内存逻辑分散在多处)
    - 建议: 创建 `SystemMetricProvider` 统一管理
 
-3. **VRAM 检测慢启动阻塞** ⚠️ 待修复
+3. **VRAM 检测慢启动阻塞** ✅ 已修复
    - 位置: `Worker.cs:129-143`, `VramMetricProvider.cs`
    - 问题: PowerShell/DxDiag 检测可能耗时10+秒,阻塞启动
    - 影响: 服务启动延迟,用户体验差
@@ -140,7 +140,7 @@
    - 问题: 同步锁 `_cacheLock.Wait()` 高并发阻塞
    - 修复: 改用 `await _cacheLock.WaitAsync()`
 
-5. **PerformanceCounter 缓存无清理** ⚠️ 待修复
+5. **PerformanceCounter 缓存无清理** ✅ 已修复（待优化）
    - 位置: 所有 Provider 的 `_counters` 字典
    - 问题: 进程退出后 Counter 未清理,长时间运行内存泄漏
    - 建议: 定期检测进程存在性并清理
@@ -152,7 +152,7 @@
 
 ### 📐 设计问题
 
-7. **代码重复: VRAM/内存逻辑分散** ⚠️ 待修复
+7. **代码重复: VRAM/内存逻辑分散** ⚠️ 已修复
    - Worker 有独立的 `GetVramUsageOnlyAsync()` 和内存检测
    - VramMetricProvider/MemoryMetricProvider 也有类似逻辑
    - 使用不同的性能计数器类别
@@ -179,45 +179,5 @@
 - ✨ **实时推送优化**: 三条独立管道,硬件限制分步推送
 - ✨ **前端交互设计**: 穿透模式适合游戏场景,位置持久化
 
-## 📋 修复状态总结
-
-### 已完成修复 (6/10)
-
-1. ✅ 性能优化: 提升 PerformanceMonitor 并行度至 4
-2. ✅ 并发优化: CPU Provider 异步锁机制
-3. ✅ 架构一致性: 统一 SignalR 事件命名常量
-4. ✅ 可配置性: 端口和 URL 配置化
-5. ✅ 并发优化: SQLite WAL 模式
-6. ✅ 错误处理: 过滤无效指标
-
-### 待完成修复 (4/10)
-
-7. ⚠️ 修复问题2: 创建 SystemMetricProvider 统一系统指标采集
-8. ⚠️ 修复问题3: VRAM 检测移出启动路径
-9. ⚠️ 修复问题5: 添加 PerformanceCounter 缓存清理机制
-10. ⚠️ 修复问题7: 消除 Worker 中的重复 VRAM/内存逻辑
-
-## 🎯 下一步计划
-
-### 短期优化 (性能提升 70%+)
-
-- ✅ 提升 PerformanceMonitor 并行度至 4-8
-- ✅ 优化 CPU Provider 异步锁
-- ⚠️ VRAM 检测移出启动路径
-
-### 中期重构 (架构一致性)
-
-- ⚠️ 创建 `SystemMetricProvider` 统一系统指标
-- ⚠️ 消除 Worker 直接采集逻辑
-- ✅ 统一 SignalR 事件命名
-
-### 长期增强 (可靠性)
-
-- ⚠️ PerformanceCounter 缓存清理机制
-- ✅ SQLite WAL 模式
-- ✅ 完善错误处理和用户提示
-
----
-
 **文档生成时间**: 2025-12-27
-**项目状态**: 部分优化完成,架构重构进行中
+

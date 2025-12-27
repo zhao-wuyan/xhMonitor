@@ -29,6 +29,8 @@
 ----
 ## 1. Workflow
 
+进行前需了解当前项目架构模式和要求，若上下文中无[architecture-analysis.md](../docs/architecture-analysis.md)，则进行读取后再继续
+
 ### Phase 1: 上下文全量检索 (Auggie Interface)
 **执行条件**：在生成任何建议或代码前。
 1.  **工具调用**：调用 `mcp__auggie-mcp__codebase-retrieval`。
