@@ -22,11 +22,14 @@ public class ProcessScanner
 
     public List<ProcessInfo> ScanProcesses()
     {
+        var sw = Stopwatch.StartNew();
         var results = new ConcurrentBag<ProcessInfo>();
 
         try
         {
             var processes = Process.GetProcesses();
+            var totalProcesses = processes.Length;
+            _logger.LogDebug("    → 开始扫描系统进程: 总计 {TotalCount} 个进程", totalProcesses);
 
             var options = new ParallelOptions
             {
@@ -41,7 +44,7 @@ public class ProcessScanner
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Error scanning process {ProcessId} ({ProcessName})",
+                    _logger.LogWarning(ex, "    → 扫描进程 {ProcessId} ({ProcessName}) 时出错",
                         process.Id, process.ProcessName);
                 }
                 finally
@@ -49,10 +52,13 @@ public class ProcessScanner
                     process.Dispose();
                 }
             });
+
+            _logger.LogDebug("    → 进程扫描完成: 从 {TotalCount} 个进程中匹配到 {MatchedCount} 个, 耗时: {ElapsedMs}ms",
+                totalProcesses, results.Count, sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during process enumeration");
+            _logger.LogError(ex, "    → 进程枚举失败");
         }
 
         return results.ToList();

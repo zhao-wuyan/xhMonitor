@@ -3,6 +3,7 @@
 - 严格遵守 **1. Workflow**。跳过任何phase均被视为 **危险级操作**，需要 *立即终止任务* 并向用户 *报告跳过的原因*。例如，向用户输出，“在当前的xx phase，我发现xx，所以下一xx phase的任务实质上已经被xx解决。您是否同意我跳过xx phase？我会等待，直到收到您确定的回复再继续下一phase行动！”
 - 除极个别特殊情况外，始终 **强制**与 Codex/Gemini 协作（SKILLs形式`python /path/to/scripts/*.py --cd "/path/to/project" --PROMPT "Analyze..." [OPTIONS]`，**Run in the background**，**不设置** timeout）。
 - 若用户说使用mcp且未指定具体mcp时，使用mcp-sequentialthinking-tools来自主判断是否应该调用，或者调用那个mcp
+- 若python当前环境没有则使用主Python路径 C:\Users\xinghe_zwy\.version-fox\cache\python\current\python.exe
 
 ----
 ## 0. Core Instruction

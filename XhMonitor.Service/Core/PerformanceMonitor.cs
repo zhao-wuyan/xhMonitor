@@ -26,15 +26,15 @@ public class PerformanceMonitor
     {
         var stopwatch = Stopwatch.StartNew();
         var cycleTimestamp = DateTime.UtcNow;
-        _logger.LogInformation("Starting metric collection cycle");
+        _logger.LogInformation("  → 开始指标采集周期");
 
-        _logger.LogDebug("Scanning processes...");
+        var scanStart = Stopwatch.GetTimestamp();
         var processes = _scanner.ScanProcesses();
-        _logger.LogDebug("Found {ProcessCount} processes to monitor", processes.Count);
+        var scanElapsed = Stopwatch.GetElapsedTime(scanStart).TotalMilliseconds;
+        _logger.LogInformation("  → 进程扫描完成: 发现 {ProcessCount} 个进程, 耗时: {ElapsedMs}ms", processes.Count, scanElapsed);
 
-        _logger.LogDebug("Getting metric providers...");
         var providers = _registry.GetAllProviders().ToList();
-        _logger.LogDebug("Loaded {ProviderCount} metric providers", providers.Count);
+        _logger.LogDebug("  → 加载了 {ProviderCount} 个指标提供者", providers.Count);
 
         var results = new ConcurrentBag<ProcessMetrics>();
 
@@ -43,11 +43,10 @@ public class PerformanceMonitor
             MaxDegreeOfParallelism = 4
         };
 
-        _logger.LogDebug("Starting parallel processing of {ProcessCount} processes", processes.Count);
-
+        var processStart = Stopwatch.GetTimestamp();
         await Parallel.ForEachAsync(processes, parallelOptions, async (processInfo, ct) =>
         {
-            _logger.LogTrace("Processing PID {ProcessId} ({ProcessName})", processInfo.ProcessId, processInfo.ProcessName);
+            _logger.LogTrace("  → 处理进程 PID {ProcessId} ({ProcessName})", processInfo.ProcessId, processInfo.ProcessName);
             try
             {
                 try
@@ -56,12 +55,12 @@ public class PerformanceMonitor
                 }
                 catch (ArgumentException)
                 {
-                    _logger.LogTrace("Process {ProcessId} no longer exists, skipping", processInfo.ProcessId);
+                    _logger.LogTrace("  → 进程 {ProcessId} 已退出，跳过", processInfo.ProcessId);
                     return;
                 }
 
                 var metrics = new Dictionary<string, MetricValue>();
-                _logger.LogTrace("Collecting {ProviderCount} metrics for PID {ProcessId}", providers.Count, processInfo.ProcessId);
+                _logger.LogTrace("  → 为进程 PID {ProcessId} 采集 {ProviderCount} 个指标", processInfo.ProcessId, providers.Count);
                 foreach (var provider in providers)
                 {
                     var (metricId, value) = await CollectMetricSafeAsync(provider, processInfo.ProcessId);
@@ -72,7 +71,7 @@ public class PerformanceMonitor
                     }
                     else
                     {
-                        _logger.LogDebug("Skipping error metric {MetricId} for PID {ProcessId}: {Error}",
+                        _logger.LogDebug("  → 跳过错误指标 {MetricId} (PID {ProcessId}): {Error}",
                             metricId, processInfo.ProcessId, value.Value);
                     }
                 }
@@ -83,19 +82,18 @@ public class PerformanceMonitor
                     Metrics = metrics,
                     Timestamp = cycleTimestamp
                 });
-                _logger.LogTrace("Completed metrics for PID {ProcessId}", processInfo.ProcessId);
+                _logger.LogTrace("  → 进程 PID {ProcessId} 指标采集完成", processInfo.ProcessId);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error processing process {ProcessId}", processInfo.ProcessId);
+                _logger.LogWarning(ex, "  → 处理进程 {ProcessId} 时出错", processInfo.ProcessId);
             }
         });
 
-        _logger.LogDebug("Parallel processing completed");
-
+        var processElapsed = Stopwatch.GetElapsedTime(processStart).TotalMilliseconds;
         stopwatch.Stop();
-        _logger.LogInformation("Metric collection completed in {ElapsedMilliseconds}ms. Collected {Count} processes.",
-            stopwatch.ElapsedMilliseconds, results.Count);
+        _logger.LogInformation("  → 指标采集周期完成: 成功采集 {Count} 个进程, 并行处理耗时: {ProcessMs}ms, 总耗时: {TotalMs}ms",
+            results.Count, processElapsed, stopwatch.ElapsedMilliseconds);
 
         return results.ToList();
     }

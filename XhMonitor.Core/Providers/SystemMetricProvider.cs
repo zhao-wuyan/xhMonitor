@@ -16,6 +16,11 @@ public class SystemMetricProvider
     private readonly IMetricProvider? _memoryProvider;
     private readonly IMetricProvider? _vramProvider;
 
+    // 缓存VRAM性能计数器
+    private readonly List<PerformanceCounter> _vramCounters = new();
+    private readonly object _vramCountersLock = new();
+    private bool _vramCountersInitialized = false;
+
     public SystemMetricProvider(
         IMetricProvider? cpuProvider,
         IMetricProvider? gpuProvider,
@@ -95,42 +100,60 @@ public class SystemMetricProvider
     {
         return Task.Run(() =>
         {
-            double totalUsed = 0;
-
-            try
+            lock (_vramCountersLock)
             {
-                // 优先使用 GPU Adapter Memory
-                if (PerformanceCounterCategory.Exists("GPU Adapter Memory"))
+                // 初始化VRAM计数器（只在第一次执行）
+                if (!_vramCountersInitialized)
                 {
-                    var category = new PerformanceCounterCategory("GPU Adapter Memory");
-                    foreach (var instanceName in category.GetInstanceNames())
+                    try
                     {
-                        try
+                        // 优先使用 GPU Adapter Memory
+                        if (PerformanceCounterCategory.Exists("GPU Adapter Memory"))
                         {
-                            using var counter = new PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
-                            totalUsed += counter.RawValue / 1024.0 / 1024.0;
+                            var category = new PerformanceCounterCategory("GPU Adapter Memory");
+                            foreach (var instanceName in category.GetInstanceNames())
+                            {
+                                try
+                                {
+                                    var counter = new PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
+                                    _vramCounters.Add(counter);
+                                }
+                                catch { }
+                            }
                         }
-                        catch { }
-                    }
-                }
-                // 备用: GPU Process Memory
-                else if (PerformanceCounterCategory.Exists("GPU Process Memory"))
-                {
-                    var category = new PerformanceCounterCategory("GPU Process Memory");
-                    foreach (var instanceName in category.GetInstanceNames())
-                    {
-                        try
+                        // 备用: GPU Process Memory
+                        else if (PerformanceCounterCategory.Exists("GPU Process Memory"))
                         {
-                            using var counter = new PerformanceCounter("GPU Process Memory", "Dedicated Usage", instanceName, true);
-                            totalUsed += counter.RawValue / 1024.0 / 1024.0;
+                            var category = new PerformanceCounterCategory("GPU Process Memory");
+                            foreach (var instanceName in category.GetInstanceNames())
+                            {
+                                try
+                                {
+                                    var counter = new PerformanceCounter("GPU Process Memory", "Dedicated Usage", instanceName, true);
+                                    _vramCounters.Add(counter);
+                                }
+                                catch { }
+                            }
                         }
-                        catch { }
                     }
-                }
-            }
-            catch { }
+                    catch { }
 
-            return totalUsed;
+                    _vramCountersInitialized = true;
+                }
+
+                // 读取缓存的计数器（快速）
+                double totalUsed = 0;
+                foreach (var counter in _vramCounters)
+                {
+                    try
+                    {
+                        totalUsed += counter.RawValue / 1024.0 / 1024.0;
+                    }
+                    catch { }
+                }
+
+                return totalUsed;
+            }
         });
     }
 

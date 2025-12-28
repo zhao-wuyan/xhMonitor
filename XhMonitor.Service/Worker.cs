@@ -37,15 +37,37 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("XhMonitor service started. Process interval: {IntervalSeconds}s, System usage interval: 1s", _intervalSeconds);
+        var startupStopwatch = Stopwatch.StartNew();
+        _logger.LogInformation("=== XhMonitor 启动开始 === Process interval: {IntervalSeconds}s, System usage interval: 1s", _intervalSeconds);
 
-        // 立即发送内存限制(快速)
+        // Phase 1: 内存限制检测
+        var phaseStopwatch = Stopwatch.StartNew();
+        _logger.LogInformation("[启动阶段 1/3] 正在检测内存限制...");
         await SendMemoryLimitAsync(DateTime.Now, stoppingToken);
+        _logger.LogInformation("[启动阶段 1/3] 内存限制检测完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
 
-        // VRAM 检测移到后台定时任务(每小时一次,避免阻塞启动)
+        // Phase 2: 启动后台任务
+        phaseStopwatch.Restart();
+        _logger.LogInformation("[启动阶段 2/3] 正在启动后台任务（VRAM检测、系统使用率监控）...");
         var vramTask = RunVramLimitCheckAsync(stoppingToken);
-
         var systemUsageTask = RunSystemUsageLoopAsync(stoppingToken);
+        _logger.LogInformation("[启动阶段 2/3] 后台任务启动完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+
+        // Phase 3: 首次进程数据采集
+        phaseStopwatch.Restart();
+        _logger.LogInformation("[启动阶段 3/3] 正在执行首次进程数据采集...");
+        try
+        {
+            await SendProcessDataAsync(DateTime.Now, stoppingToken);
+            _logger.LogInformation("[启动阶段 3/3] 首次进程数据采集完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[启动阶段 3/3] 首次进程数据采集失败，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+        }
+
+        startupStopwatch.Stop();
+        _logger.LogInformation("=== XhMonitor 启动完成 === 总耗时: {TotalMs}ms ===", startupStopwatch.ElapsedMilliseconds);
 
         // Process data loop (configurable interval)
         while (!stoppingToken.IsCancellationRequested)
@@ -75,12 +97,13 @@ public class Worker : BackgroundService
 
     private async Task SendMemoryLimitAsync(DateTime timestamp, CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
             var limits = await _systemMetricProvider.GetHardwareLimitsAsync();
             _cachedMaxMemory = limits.MaxMemory;
 
-            _logger.LogInformation("Memory limit ready: MaxMemory={MaxMemory}MB", _cachedMaxMemory);
+            _logger.LogInformation("  → 内存限制检测成功: MaxMemory={MaxMemory}MB, 耗时: {ElapsedMs}ms", _cachedMaxMemory, sw.ElapsedMilliseconds);
 
             await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
             {
@@ -91,7 +114,7 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting memory limit");
+            _logger.LogError(ex, "  → 内存限制检测失败, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
         }
     }
 
@@ -123,12 +146,13 @@ public class Worker : BackgroundService
 
     private async Task UpdateVramLimitAsync(DateTime timestamp, CancellationToken ct)
     {
-        _logger.LogInformation("Updating VRAM limit...");
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation("正在更新VRAM限制...");
 
         var limits = await _systemMetricProvider.GetHardwareLimitsAsync();
         _cachedMaxVram = limits.MaxVram;
 
-        _logger.LogInformation("VRAM limit updated: MaxVram={MaxVram}MB", _cachedMaxVram);
+        _logger.LogInformation("VRAM限制更新完成: MaxVram={MaxVram}MB, 耗时: {ElapsedMs}ms", _cachedMaxVram, sw.ElapsedMilliseconds);
 
         await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
         {
@@ -183,14 +207,19 @@ public class Worker : BackgroundService
 
     private async Task SendProcessDataAsync(DateTime timestamp, CancellationToken ct)
     {
-        _logger.LogDebug("Phase 3: Collecting process metrics...");
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation("开始采集进程指标...");
+
         var metrics = await _monitor.CollectAllAsync();
+        var collectElapsed = sw.ElapsedMilliseconds;
 
         if (metrics.Count > 0)
         {
-            _logger.LogInformation("Collected metrics for {Count} processes", metrics.Count);
+            _logger.LogInformation("进程指标采集完成: 采集到 {Count} 个进程, 采集耗时: {CollectMs}ms", metrics.Count, collectElapsed);
 
+            var saveStart = Stopwatch.GetTimestamp();
             await _repository.SaveMetricsAsync(metrics, timestamp, ct);
+            var saveElapsed = Stopwatch.GetElapsedTime(saveStart).TotalMilliseconds;
 
             await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetrics, new
             {
@@ -205,11 +234,12 @@ public class Worker : BackgroundService
                 }).ToList()
             }, ct);
 
-            _logger.LogDebug("Pushed process metrics to SignalR clients");
+            _logger.LogInformation("进程数据处理完成: 保存耗时: {SaveMs}ms, 推送完成, 总耗时: {TotalMs}ms",
+                saveElapsed, sw.ElapsedMilliseconds);
         }
         else
         {
-            _logger.LogDebug("No matching processes found");
+            _logger.LogInformation("未发现匹配的进程, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
         }
     }
 }
