@@ -213,7 +213,9 @@
         <Border Grid.Row="1" x:Name="MonitorBar" Background="{StaticResource ColorBackground}" CornerRadius="8"
                 BorderBrush="{StaticResource ColorBorder}" BorderThickness="1" Padding="14,6"
                 MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
-                MouseLeftButtonUp="MonitorBar_MouseLeftButtonUp">
+                PreviewMouseLeftButtonDown="MonitorBar_PreviewMouseDown"
+                PreviewMouseMove="MonitorBar_PreviewMouseMove"
+                PreviewMouseLeftButtonUp="MonitorBar_PreviewMouseUp">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="32" ShadowDepth="8" Opacity="0.4" Direction="270"/>
             </Border.Effect>
@@ -231,9 +233,7 @@
 
                 <!-- CPU -->
                 <StackPanel Grid.Column="0" Width="48" Margin="2,0" Tag="cpu"
-                            PreviewMouseDown="Metric_PreviewMouseDown"
-                            PreviewMouseUp="Metric_PreviewMouseUp"
-                            MouseLeave="Metric_MouseLeave"
+                            MouseEnter="Metric_MouseEnter"
                             Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="CPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
@@ -246,9 +246,7 @@
 
                 <!-- RAM -->
                 <StackPanel Grid.Column="2" Width="75" Margin="2,0" Tag="ram"
-                            PreviewMouseDown="Metric_PreviewMouseDown"
-                            PreviewMouseUp="Metric_PreviewMouseUp"
-                            MouseLeave="Metric_MouseLeave"
+                            MouseEnter="Metric_MouseEnter"
                             Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="RAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
@@ -268,9 +266,7 @@
 
                 <!-- GPU -->
                 <StackPanel Grid.Column="4" Width="48" Margin="2,0" Tag="gpu"
-                            PreviewMouseDown="Metric_PreviewMouseDown"
-                            PreviewMouseUp="Metric_PreviewMouseUp"
-                            MouseLeave="Metric_MouseLeave"
+                            MouseEnter="Metric_MouseEnter"
                             Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="GPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
@@ -283,9 +279,7 @@
 
                 <!-- VRAM -->
                 <StackPanel Grid.Column="6" Width="75" Margin="2,0" Tag="vram"
-                            PreviewMouseDown="Metric_PreviewMouseDown"
-                            PreviewMouseUp="Metric_PreviewMouseUp"
-                            MouseLeave="Metric_MouseLeave"
+                            MouseEnter="Metric_MouseEnter"
                             Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="VRAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>

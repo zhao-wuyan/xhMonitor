@@ -16,6 +16,7 @@ public partial class FloatingWindow : Window
 {
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20L;
+    private const double DRAG_THRESHOLD = 5.0; // 拖动阈值(像素)
 
     private readonly FloatingWindowViewModel _viewModel;
     private readonly WindowPositionStore _positionStore;
@@ -28,6 +29,10 @@ public partial class FloatingWindow : Window
     private DispatcherTimer? _longPressTimer;
     private string? _longPressingMetric;
     private bool _longPressTriggered; // 标记长按是否已触发
+
+    // 拖动相关
+    private bool _isDragging;
+    private System.Windows.Point _dragStartPoint;
 
     public bool IsClickThroughEnabled { get; private set; }
 
@@ -165,17 +170,7 @@ public partial class FloatingWindow : Window
 
     private void OnMouseLeftButtonDown(object? sender, MouseButtonEventArgs e)
     {
-        if (!IsClickThroughEnabled && e.ButtonState == MouseButtonState.Pressed)
-        {
-            try
-            {
-                DragMove();
-            }
-            catch
-            {
-                // Ignore drag errors
-            }
-        }
+        // 不处理,让 MonitorBar 或其他元素自己处理
     }
 
     private void MonitorBar_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -188,88 +183,125 @@ public partial class FloatingWindow : Window
     {
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标离开");
         _viewModel.OnBarPointerLeave();
+
+        // 如果正在拖动,停止拖动
+        _isDragging = false;
     }
 
-    private void MonitorBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    // 主控制栏鼠标按下 - 开始长按计时,记录拖动起点
+    private void MonitorBar_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标左键抬起,调用 OnBarClick,当前状态: {_viewModel.CurrentPanelState}");
+        if (e.ChangedButton != MouseButton.Left) return;
+
+        // 记录拖动起点
+        _dragStartPoint = e.GetPosition(this);
+        _isDragging = false;
+
+        // 检查是否点击在指标上(用于长按功能)
+        if (e.OriginalSource is DependencyObject depObj)
+        {
+            var metric = FindParentWithTag(depObj);
+            if (metric != null && metric.Tag is string metricId)
+            {
+                System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标按下 - 指标ID={metricId}");
+                StartLongPress(metricId);
+                return;
+            }
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标按下(空白区域)");
+    }
+
+    // 主控制栏鼠标移动 - 检测是否应该开始拖动
+    private void MonitorBar_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        if (_isDragging) return;
+
+        // 计算移动距离
+        System.Windows.Point currentPoint = e.GetPosition(this);
+        System.Windows.Vector diff = currentPoint - _dragStartPoint;
+        double distance = diff.Length;
+
+        // 如果移动距离超过阈值,开始拖动
+        if (distance > DRAG_THRESHOLD)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 检测到拖动(移动距离={distance:F1}px),开始拖动窗口");
+
+            // 停止长按计时器
+            StopLongPressTimer();
+
+            _isDragging = true;
+
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+                // Ignore drag errors
+            }
+        }
+    }
+
+    // 主控制栏鼠标抬起 - 处理短按(锁定)或长按
+    private void MonitorBar_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left) return;
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标抬起,isDragging={_isDragging}");
+
+        // 如果正在拖动,不执行任何逻辑
+        if (_isDragging)
+        {
+            _isDragging = false;
+            StopLongPressTimer();
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 拖动结束");
+            e.Handled = true;
+            return;
+        }
+
+        // 如果长按已触发,不执行点击逻辑
+        if (_longPressTriggered)
+        {
+            _longPressTriggered = false;
+            StopLongPressTimer();
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 长按已触发,跳过点击逻辑");
+            e.Handled = true;
+            return;
+        }
+
+        // 停止长按计时器(如果还在运行)
+        StopLongPressTimer();
+
+        // 执行点击锁定逻辑
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 短按,调用 OnBarClick,当前状态: {_viewModel.CurrentPanelState}");
         _viewModel.OnBarClick();
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] OnBarClick 执行后,新状态: {_viewModel.CurrentPanelState}");
+
         e.Handled = true;
     }
 
-    // 指标长按开始
-    private void Metric_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    // 指标鼠标进入 - 用于长按时的视觉反馈(可选)
+    private void Metric_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (sender is FrameworkElement element && element.Tag is string metricId)
         {
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标按下 - 指标ID={metricId}");
-
-            // 捕获鼠标,确保 MouseUp 事件能触发到这个元素
-            element.CaptureMouse();
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 已捕获鼠标");
-
-            StartLongPress(metricId);
-            e.Handled = true; // 阻止事件继续传播,避免重复触发
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标进入 - 指标ID={metricId}");
         }
     }
 
-    // 指标长按结束
-    private void Metric_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    // 辅助方法:查找带Tag的父元素
+    private FrameworkElement? FindParentWithTag(DependencyObject child)
     {
-        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标抬起事件触发");
-
-        // 检查是否已经处理过这个事件
-        if (e.Handled)
+        var parent = System.Windows.Media.VisualTreeHelper.GetParent(child);
+        while (parent != null)
         {
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 事件已被处理,跳过");
-            return;
+            if (parent is FrameworkElement fe && fe.Tag is string)
+                return fe;
+            parent = System.Windows.Media.VisualTreeHelper.GetParent(parent);
         }
-
-        // 释放鼠标捕获
-        if (sender is FrameworkElement element && element.IsMouseCaptured)
-        {
-            element.ReleaseMouseCapture();
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 已释放鼠标捕获");
-        }
-
-        // 如果定时器还在运行,说明是短按(不到2秒)
-        bool isShortPress = _longPressTimer != null && _longPressTimer.IsEnabled;
-
-        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 是否短按={isShortPress}, 长按已触发={_longPressTriggered}");
-
-        StopLongPressTimer();
-
-        // 短按时触发主控制栏点击逻辑
-        // 长按完成后不触发
-        if (_longPressTriggered)
-        {
-            _longPressTriggered = false; // 重置标志
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 长按已触发,跳过点击逻辑");
-        }
-        else
-        {
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 短按,触发主控制栏点击逻辑");
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标->主控制栏] 调用 OnBarClick,当前状态: {_viewModel.CurrentPanelState}");
-            _viewModel.OnBarClick();
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标->主控制栏] OnBarClick 执行后,新状态: {_viewModel.CurrentPanelState}");
-        }
-
-        e.Handled = true; // 阻止事件继续传播
-    }
-
-    // 指标鼠标离开
-    private void Metric_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        // 如果鼠标已被捕获,忽略 MouseLeave 事件(因为我们需要等待 MouseUp)
-        if (sender is FrameworkElement element && element.IsMouseCaptured)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标离开 - 但鼠标已捕获,忽略此事件,等待 MouseUp");
-            return;
-        }
-
-        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标离开 - 取消长按");
-        StopLongPressTimer();
+        return null;
     }
 
     private void StartLongPress(string metricId)
