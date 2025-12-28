@@ -105,7 +105,10 @@ public class Worker : BackgroundService
     {
         try
         {
-            // 预热System Usage（初始化VRAM计数器）
+            // 预热所有性能计数器
+            await _systemMetricProvider.WarmupAsync();
+
+            // 验证预热结果
             var usage = await _systemMetricProvider.GetSystemUsageAsync();
             _logger.LogDebug("  → 预热完成: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
                 usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);

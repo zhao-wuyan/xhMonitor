@@ -146,6 +146,40 @@ public class GpuMetricProvider : IMetricProvider
         return list;
     }
 
+    public Task WarmupAsync()
+    {
+        if (!IsSupported()) return Task.CompletedTask;
+
+        return Task.Run(() =>
+        {
+            lock (_systemCountersLock)
+            {
+                if (!_systemCountersInitialized)
+                {
+                    try
+                    {
+                        _gpuEngineCategory = new PerformanceCounterCategory("GPU Engine");
+                        var instanceNames = _gpuEngineCategory.GetInstanceNames();
+
+                        foreach (var name in instanceNames)
+                        {
+                            try
+                            {
+                                var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
+                                _systemCounters.Add(counter);
+                            }
+                            catch { }
+                        }
+
+                        _systemCountersInitialized = true;
+                        _isSupported = _systemCounters.Count > 0;
+                    }
+                    catch { }
+                }
+            }
+        });
+    }
+
     public void Dispose()
     {
         foreach(var list in _counters.Values)

@@ -34,6 +34,26 @@ public class SystemMetricProvider
     }
 
     /// <summary>
+    /// 预热所有性能计数器
+    /// </summary>
+    public async Task WarmupAsync()
+    {
+        var tasks = new List<Task>();
+
+        if (_cpuProvider is CpuMetricProvider cpuProvider)
+        {
+            tasks.Add(cpuProvider.WarmupAsync());
+        }
+
+        if (_gpuProvider is GpuMetricProvider gpuProvider)
+        {
+            tasks.Add(gpuProvider.WarmupAsync());
+        }
+
+        await Task.WhenAll(tasks);
+    }
+
+    /// <summary>
     /// 获取硬件限制(最大容量)
     /// </summary>
     public async Task<HardwareLimits> GetHardwareLimitsAsync()

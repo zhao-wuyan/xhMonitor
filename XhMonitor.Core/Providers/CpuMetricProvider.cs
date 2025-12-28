@@ -8,13 +8,14 @@ namespace XhMonitor.Core.Providers;
 
 public class CpuMetricProvider : IMetricProvider
 {
-    private readonly ConcurrentDictionary<int, PerformanceCounter> _counters = new();
-    private Dictionary<int, string>? _pidToInstanceMap;
+    private PerformanceCounterCategory? _processCategory;
+    private Dictionary<int, double>? _cachedCpuData;
     private DateTime _cacheTimestamp = DateTime.MinValue;
-    private readonly TimeSpan _cacheLifetime = TimeSpan.FromSeconds(5);
+    private readonly TimeSpan _cacheLifetime = TimeSpan.FromSeconds(1);
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private PerformanceCounter? _systemCounter;
-    private bool _systemCounterInitialized;
+    private bool _isWarmedUp;
+    private int _readCategoryCallCount;
 
     public string MetricId => "cpu";
     public string DisplayName => "CPU Usage";
@@ -34,18 +35,14 @@ public class CpuMetricProvider : IMetricProvider
                 if (_systemCounter == null)
                 {
                     _systemCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
-                    _systemCounter.NextValue(); // 首次调用初始化
-                    _systemCounterInitialized = true;
+                    if (!_isWarmedUp)
+                    {
+                        _systemCounter.NextValue();
+                        Thread.Sleep(100);
+                    }
                 }
 
                 var value = _systemCounter.NextValue();
-
-                // 首次返回值可能不准确，但不阻塞
-                if (!_systemCounterInitialized)
-                {
-                    _systemCounterInitialized = true;
-                }
-
                 return Math.Round(value, 1);
             }
             catch
@@ -61,38 +58,20 @@ public class CpuMetricProvider : IMetricProvider
 
         try
         {
-            if (!_counters.TryGetValue(processId, out var counter))
+            var cpuData = await GetBatchCpuDataAsync();
+
+            if (cpuData.TryGetValue(processId, out var cpuValue))
             {
-                var instanceName = await GetInstanceNameAsync(processId);
-                if (instanceName == null) return MetricValue.Error("Process not found");
-
-                counter = new PerformanceCounter("Process", "% Processor Time", instanceName, true);
-                // Initialize
-                try { counter.NextValue(); } catch { }
-                _counters.TryAdd(processId, counter);
-            }
-
-            try
-            {
-                var value = await Task.Run(() => counter.NextValue());
-                // Normalize by processor count to match Task Manager (0-100% total system load equivalent)
-                value /= Environment.ProcessorCount;
-
                 return new MetricValue
                 {
-                    Value = Math.Round(value, 1),
+                    Value = Math.Round(cpuValue, 1),
                     Unit = Unit,
                     DisplayName = DisplayName,
                     Timestamp = DateTime.Now
                 };
             }
-            catch (Exception)
-            {
-                // Instance might be invalid/process dead
-                _counters.TryRemove(processId, out var c);
-                c?.Dispose();
-                return MetricValue.Error("Process instance lost");
-            }
+
+            return MetricValue.Error("Process not found");
         }
         catch (Exception ex)
         {
@@ -100,91 +79,136 @@ public class CpuMetricProvider : IMetricProvider
         }
     }
 
-    private async Task<string?> GetInstanceNameAsync(int pid)
+    private async Task<Dictionary<int, double>> GetBatchCpuDataAsync()
     {
+        if (_cachedCpuData != null && DateTime.UtcNow - _cacheTimestamp < _cacheLifetime)
+        {
+            return _cachedCpuData;
+        }
+
+        await _cacheLock.WaitAsync();
         try
         {
-            Dictionary<int, string> pidMap;
-            if (_pidToInstanceMap == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
+            if (_cachedCpuData != null && DateTime.UtcNow - _cacheTimestamp < _cacheLifetime)
             {
-                await _cacheLock.WaitAsync();
-                try
+                return _cachedCpuData;
+            }
+
+            return await Task.Run(() =>
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
+                _processCategory ??= new PerformanceCounterCategory("Process");
+
+                var data = _processCategory.ReadCategory();
+                var result = new Dictionary<int, double>();
+
+                if (data.Contains("ID Process") && data.Contains("% Processor Time"))
                 {
-                    if (_pidToInstanceMap == null || DateTime.UtcNow - _cacheTimestamp > _cacheLifetime)
+                    var pidCollection = data["ID Process"];
+                    var cpuCollection = data["% Processor Time"];
+
+                    foreach (string instanceName in pidCollection.Keys)
                     {
-                        var category = new PerformanceCounterCategory("Process");
-                        var instanceNames = category.GetInstanceNames();
-
-                        var newMap = new Dictionary<int, string>();
-                        foreach (var instance in instanceNames)
+                        try
                         {
-                            try
-                            {
-                                using var counter = new PerformanceCounter("Process", "ID Process", instance, true);
-                                var instancePid = (int)counter.RawValue;
-                                newMap[instancePid] = instance;
-                            }
-                            catch { }
+                            var pidSample = pidCollection[instanceName];
+                            var cpuSample = cpuCollection[instanceName];
+
+                            int pid = (int)pidSample.RawValue;
+                            double cpuValue = cpuSample.RawValue / Environment.ProcessorCount;
+
+                            result[pid] = cpuValue;
                         }
-
-                        _pidToInstanceMap = newMap;
-                        _cacheTimestamp = DateTime.UtcNow;
+                        catch { }
                     }
-                    pidMap = _pidToInstanceMap;
                 }
-                finally
-                {
-                    _cacheLock.Release();
-                }
-            }
-            else
-            {
-                pidMap = _pidToInstanceMap;
-            }
 
-            return pidMap.TryGetValue(pid, out var instanceName) ? instanceName : null;
+                _cachedCpuData = result;
+                _cacheTimestamp = DateTime.UtcNow;
+                _readCategoryCallCount++;
+
+                sw.Stop();
+                if (sw.ElapsedMilliseconds > 100)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[CpuMetricProvider] ReadCategory took {sw.ElapsedMilliseconds}ms, processed {result.Count} processes");
+                }
+
+                return result;
+            });
         }
-        catch { }
-        return null;
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    public async Task WarmupAsync()
+    {
+        if (!IsSupported() || _isWarmedUp) return;
+
+        await Task.Run(() =>
+        {
+            try
+            {
+                _systemCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
+                _systemCounter.NextValue();
+
+                _processCategory = new PerformanceCounterCategory("Process");
+                var data = _processCategory.ReadCategory();
+
+                if (data.Contains("ID Process") && data.Contains("% Processor Time"))
+                {
+                    var pidCollection = data["ID Process"];
+                    var cpuCollection = data["% Processor Time"];
+
+                    var result = new Dictionary<int, double>();
+                    foreach (string instanceName in pidCollection.Keys)
+                    {
+                        try
+                        {
+                            var pidSample = pidCollection[instanceName];
+                            var cpuSample = cpuCollection[instanceName];
+
+                            int pid = (int)pidSample.RawValue;
+                            double cpuValue = cpuSample.RawValue / Environment.ProcessorCount;
+                            result[pid] = cpuValue;
+                        }
+                        catch { }
+                    }
+
+                    _cachedCpuData = result;
+                    _cacheTimestamp = DateTime.UtcNow;
+                }
+
+                _isWarmedUp = true;
+            }
+            catch { }
+        });
     }
 
     public void CleanupStaleCounters()
     {
-        var stalePids = new List<int>();
+        // 批量模式下不需要清理,缓存会自动过期
+    }
 
-        foreach (var pid in _counters.Keys)
-        {
-            try
-            {
-                using var process = Process.GetProcessById(pid);
-                // Process exists, keep it
-            }
-            catch (ArgumentException)
-            {
-                // Process doesn't exist
-                stalePids.Add(pid);
-            }
-        }
+    public (int CallCount, int CachedProcesses, TimeSpan CacheAge) GetStatistics()
+    {
+        var cacheAge = _cachedCpuData != null
+            ? DateTime.UtcNow - _cacheTimestamp
+            : TimeSpan.Zero;
 
-        foreach (var pid in stalePids)
-        {
-            if (_counters.TryRemove(pid, out var counter))
-            {
-                counter.Dispose();
-            }
-        }
-
-        if (stalePids.Count > 0)
-        {
-            // Logger not available here, could inject if needed
-        }
+        return (
+            CallCount: _readCategoryCallCount,
+            CachedProcesses: _cachedCpuData?.Count ?? 0,
+            CacheAge: cacheAge
+        );
     }
 
     public void Dispose()
     {
         _systemCounter?.Dispose();
-        foreach (var c in _counters.Values) c.Dispose();
-        _counters.Clear();
         _cacheLock.Dispose();
     }
 }
