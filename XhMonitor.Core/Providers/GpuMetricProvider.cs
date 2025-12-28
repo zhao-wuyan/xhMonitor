@@ -12,6 +12,11 @@ public class GpuMetricProvider : IMetricProvider
     private bool? _isSupported;
     private PerformanceCounterCategory? _gpuEngineCategory;
 
+    // 缓存系统总量计数器
+    private readonly List<PerformanceCounter> _systemCounters = new();
+    private readonly object _systemCountersLock = new();
+    private bool _systemCountersInitialized = false;
+
     public string MetricId => "gpu";
     public string DisplayName => "GPU Usage";
     public string Unit => "%";
@@ -30,31 +35,50 @@ public class GpuMetricProvider : IMetricProvider
 
         return await Task.Run(() =>
         {
-            try
+            lock (_systemCountersLock)
             {
-                _gpuEngineCategory ??= new PerformanceCounterCategory("GPU Engine");
-                var instanceNames = _gpuEngineCategory.GetInstanceNames();
-
-                double maxUtilization = 0;
-                foreach (var name in instanceNames)
+                try
                 {
-                    try
+                    // 初始化系统GPU计数器（只在第一次执行）
+                    if (!_systemCountersInitialized)
                     {
-                        using var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
-                        var value = counter.NextValue();
-                        if (value > maxUtilization)
-                            maxUtilization = value;
-                    }
-                    catch { }
-                }
+                        _gpuEngineCategory ??= new PerformanceCounterCategory("GPU Engine");
+                        var instanceNames = _gpuEngineCategory.GetInstanceNames();
 
-                _isSupported = true;
-                return Math.Round(maxUtilization, 1);
-            }
-            catch
-            {
-                _isSupported = false;
-                return 0;
+                        foreach (var name in instanceNames)
+                        {
+                            try
+                            {
+                                var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
+                                _systemCounters.Add(counter);
+                            }
+                            catch { }
+                        }
+
+                        _systemCountersInitialized = true;
+                        _isSupported = _systemCounters.Count > 0;
+                    }
+
+                    // 读取缓存的计数器（快速）
+                    double maxUtilization = 0;
+                    foreach (var counter in _systemCounters)
+                    {
+                        try
+                        {
+                            var value = counter.NextValue();
+                            if (value > maxUtilization)
+                                maxUtilization = value;
+                        }
+                        catch { }
+                    }
+
+                    return Math.Round(maxUtilization, 1);
+                }
+                catch
+                {
+                    _isSupported = false;
+                    return 0;
+                }
             }
         });
     }
@@ -122,5 +146,19 @@ public class GpuMetricProvider : IMetricProvider
         return list;
     }
 
-    public void Dispose() { foreach(var list in _counters.Values) foreach(var c in list) c.Dispose(); _counters.Clear(); }
+    public void Dispose()
+    {
+        foreach(var list in _counters.Values)
+            foreach(var c in list)
+                c.Dispose();
+        _counters.Clear();
+
+        // 释放系统GPU计数器
+        lock (_systemCountersLock)
+        {
+            foreach (var c in _systemCounters)
+                c.Dispose();
+            _systemCounters.Clear();
+        }
+    }
 }

@@ -35,7 +35,7 @@ public class CpuMetricProvider : IMetricProvider
                 {
                     _systemCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
                     _systemCounter.NextValue(); // 首次调用初始化
-                    _systemCounterInitialized = false;
+                    _systemCounterInitialized = true;
                 }
 
                 var value = _systemCounter.NextValue();

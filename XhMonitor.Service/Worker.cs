@@ -46,12 +46,18 @@ public class Worker : BackgroundService
         await SendMemoryLimitAsync(DateTime.Now, stoppingToken);
         _logger.LogInformation("[启动阶段 1/3] 内存限制检测完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
 
-        // Phase 2: 启动后台任务
+        // Phase 2: 预热性能计数器（避免首次采集慢）
         phaseStopwatch.Restart();
-        _logger.LogInformation("[启动阶段 2/3] 正在启动后台任务（VRAM检测、系统使用率监控）...");
+        _logger.LogInformation("[启动阶段 2/3] 正在预热性能计数器...");
+        await WarmupPerformanceCountersAsync(stoppingToken);
+        _logger.LogInformation("[启动阶段 2/3] 性能计数器预热完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+
+        // Phase 2.5: 启动后台任务（VRAM检测、系统使用率监控）
+        phaseStopwatch.Restart();
+        _logger.LogInformation("[启动阶段 2.5/3] 正在启动后台任务...");
         var vramTask = RunVramLimitCheckAsync(stoppingToken);
         var systemUsageTask = RunSystemUsageLoopAsync(stoppingToken);
-        _logger.LogInformation("[启动阶段 2/3] 后台任务启动完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+        _logger.LogInformation("[启动阶段 2.5/3] 后台任务启动完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
 
         // Phase 3: 首次进程数据采集
         phaseStopwatch.Restart();
@@ -93,6 +99,21 @@ public class Worker : BackgroundService
 
         await Task.WhenAll(vramTask, systemUsageTask);
         _logger.LogInformation("XhMonitor service stopped");
+    }
+
+    private async Task WarmupPerformanceCountersAsync(CancellationToken ct)
+    {
+        try
+        {
+            // 预热System Usage（初始化VRAM计数器）
+            var usage = await _systemMetricProvider.GetSystemUsageAsync();
+            _logger.LogDebug("  → 预热完成: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
+                usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "  → 性能计数器预热失败（不影响后续运行）");
+        }
     }
 
     private async Task SendMemoryLimitAsync(DateTime timestamp, CancellationToken ct)
