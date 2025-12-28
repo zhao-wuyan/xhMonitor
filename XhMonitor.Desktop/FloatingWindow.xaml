@@ -147,7 +147,7 @@
 
         <!-- Pinned Card Template -->
         <DataTemplate x:Key="PinnedCardTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="320"
+            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="320" Height="28"
                     BorderBrush="{StaticResource ColorBorder}" BorderThickness="1">
                 <Grid>
                     <!-- Left Accent Border -->
@@ -201,26 +201,10 @@
     </Window.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <!-- Pinned Stack -->
-        <ItemsControl Grid.Row="0" ItemsSource="{Binding PinnedProcesses}"
-                      ItemTemplate="{StaticResource PinnedCardTemplate}"
-                      HorizontalAlignment="Center" Margin="0,0,0,6">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Vertical"/>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-        </ItemsControl>
-
-        <!-- Monitor Bar -->
-        <Border Grid.Row="1" x:Name="MonitorBar" CornerRadius="8"
-                BorderThickness="2" Padding="14,6"
+        <!-- Monitor Bar - 使用 Grid 但固定位置 -->
+        <Border x:Name="MonitorBar" CornerRadius="8"
+                BorderThickness="1" Padding="14,6"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
                 MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
                 PreviewMouseLeftButtonDown="MonitorBar_PreviewMouseDown"
                 PreviewMouseMove="MonitorBar_PreviewMouseMove"
@@ -333,8 +317,23 @@
             </Grid>
         </Border>
 
+        <!-- Pinned Stack - 绝对定位在主控制栏上方/下方 -->
+        <ItemsControl x:Name="PinnedStack" ItemsSource="{Binding PinnedProcesses}"
+                      ItemTemplate="{StaticResource PinnedCardTemplate}"
+                      HorizontalAlignment="Center" VerticalAlignment="Top"
+                      Margin="0,0,0,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical" x:Name="PinnedStackPanel"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.RenderTransform>
+                <TranslateTransform x:Name="PinnedStackTransform" Y="0"/>
+            </ItemsControl.RenderTransform>
+        </ItemsControl>
+
         <!-- Details Panel (Popup) -->
-        <Popup Grid.Row="2" x:Name="DetailsPopup" PlacementTarget="{Binding ElementName=MonitorBar}"
+        <Popup x:Name="DetailsPopup" PlacementTarget="{Binding ElementName=MonitorBar}"
                Placement="Custom" StaysOpen="True" AllowsTransparency="True"
                IsOpen="{Binding IsDetailsVisible, Mode=OneWay}">
             <Border Background="#F0141414" CornerRadius="8" BorderBrush="{StaticResource ColorBorder}"

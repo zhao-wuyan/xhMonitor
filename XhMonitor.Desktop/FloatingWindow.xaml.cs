@@ -8,6 +8,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using System.Collections.Specialized;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop;
@@ -34,6 +35,11 @@ public partial class FloatingWindow : Window
     private bool _isDragging;
     private System.Windows.Point _dragStartPoint;
 
+    // Pinned Stack 定位相关
+    private bool _lastPopupAbove = false;
+    private int _layoutRetryCount = 0;
+    private const int MAX_LAYOUT_RETRIES = 3;
+
     public bool IsClickThroughEnabled { get; private set; }
 
     public event EventHandler<MetricActionEventArgs>? MetricActionRequested;
@@ -54,6 +60,12 @@ public partial class FloatingWindow : Window
         SourceInitialized += OnSourceInitialized;
         MouseLeftButtonDown += OnMouseLeftButtonDown;
         Closing += OnClosing;
+
+        // 监听 PinnedProcesses 集合变化
+        _viewModel.PinnedProcesses.CollectionChanged += OnPinnedProcessesChanged;
+
+        // 监听窗口尺寸变化
+        SizeChanged += OnWindowSizeChanged;
     }
 
     private CustomPopupPlacement[] OnCustomPopupPlacement(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
@@ -79,16 +91,20 @@ public partial class FloatingWindow : Window
         double requiredSpace = popupSize.Height + 8;
 
         double y;
+        bool popupAbove = false;
+
         // 判断应该向上还是向下弹出
         if (spaceAbove >= requiredSpace)
         {
             // 上方空间充足,向上弹出
             y = -popupSize.Height - 8;
+            popupAbove = true;
         }
         else if (spaceBelow >= requiredSpace)
         {
             // 上方空间不足但下方空间充足,向下弹出
             y = targetSize.Height + 8;
+            popupAbove = false;
         }
         else
         {
@@ -97,18 +113,111 @@ public partial class FloatingWindow : Window
             {
                 // 向上弹出,但可能超出屏幕
                 y = -popupSize.Height - 8;
+                popupAbove = true;
             }
             else
             {
                 // 向下弹出,但可能超出屏幕
                 y = targetSize.Height + 8;
+                popupAbove = false;
             }
         }
+
+        // 根据 Popup 方向调整 Pinned Stack 的位置和方向
+        UpdatePinnedStackPlacement(popupAbove);
 
         return new CustomPopupPlacement[]
         {
             new CustomPopupPlacement(new System.Windows.Point(x, y), PopupPrimaryAxis.Horizontal)
         };
+    }
+
+    private void UpdatePinnedStackPlacement(bool popupAbove)
+    {
+        _lastPopupAbove = popupAbove;
+
+        // 延迟执行以确保布局已更新
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (PinnedStack == null || PinnedStackTransform == null || MonitorBar == null) return;
+
+            // 强制更新布局以获取正确的尺寸
+            PinnedStack.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+            PinnedStack.UpdateLayout();
+            MonitorBar.UpdateLayout();
+
+            double monitorBarHeight = MonitorBar.ActualHeight;
+            double pinnedStackHeight = PinnedStack.DesiredSize.Height;
+
+            // 如果 DesiredSize 为 0,使用 ActualHeight
+            if (pinnedStackHeight == 0)
+                pinnedStackHeight = PinnedStack.ActualHeight;
+
+            // 高度验证：如果仍为 0 且有固定项，监听布局完成事件
+            if (pinnedStackHeight == 0 && _viewModel.PinnedProcesses.Count > 0)
+            {
+                if (_layoutRetryCount >= MAX_LAYOUT_RETRIES)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[PinnedStack] Max retries reached, using fallback height");
+                    pinnedStackHeight = 32; // 使用单卡片高度作为回退值
+                    _layoutRetryCount = 0;
+                }
+                else
+                {
+                    _layoutRetryCount++;
+                    System.Diagnostics.Debug.WriteLine($"[PinnedStack] Height is 0, waiting for layout completion (retry {_layoutRetryCount}/{MAX_LAYOUT_RETRIES})...");
+                    EventHandler? layoutHandler = null;
+                    layoutHandler = (s, e) =>
+                    {
+                        PinnedStack.LayoutUpdated -= layoutHandler;
+                        UpdatePinnedStackPlacement(popupAbove);
+                    };
+                    PinnedStack.LayoutUpdated += layoutHandler;
+                    return;
+                }
+            }
+            else
+            {
+                _layoutRetryCount = 0;
+            }
+
+            if (popupAbove)
+            {
+                // Popup 向上弹出,Pinned Stack 也向上堆叠(在主控制栏上方)
+                PinnedStackTransform.Y = -(pinnedStackHeight + 8);
+            }
+            else
+            {
+                // Popup 向下弹出,Pinned Stack 向下堆叠(在主控制栏下方)
+                PinnedStackTransform.Y = monitorBarHeight + 8;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[PinnedStack] Placement Updated - popupAbove={popupAbove}, MonitorBarHeight={monitorBarHeight:F1}, PinnedStackHeight={pinnedStackHeight:F1}, TranslateY={PinnedStackTransform.Y:F1}");
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void OnPinnedProcessesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        // 当 PinnedProcesses 集合发生变化时,重新计算位置
+        System.Diagnostics.Debug.WriteLine($"[PinnedStack] Collection Changed - Action={e.Action}, Count={_viewModel.PinnedProcesses.Count}");
+
+        // 延迟更新以确保 UI 已渲染
+        Dispatcher.InvokeAsync(() =>
+        {
+            UpdatePinnedStackPlacement(_lastPopupAbove);
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void OnWindowSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        // 窗口尺寸变化时也需要重新计算
+        if (PinnedStack != null && _viewModel.PinnedProcesses.Count > 0)
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                UpdatePinnedStackPlacement(_lastPopupAbove);
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
+        }
     }
 
     public void AllowClose()
