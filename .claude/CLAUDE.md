@@ -2,6 +2,7 @@
 - 若任务简单，可不进行多模型协作，但**必须**立即中止所有行为，向用户报告不进行协作的具体原因，直到收到用户许可才可进行下一步行动。例如，向用户输出，“这是一个简单xx任务，无需多模型协作。您是否同意此任务下不再进行任何多模型协作过程？我会等待您的回复并严格遵循本次特定协作规则！”
 - 严格遵守 **1. Workflow**。跳过任何phase均被视为 **危险级操作**，需要 *立即终止任务* 并向用户 *报告跳过的原因*。例如，向用户输出，“在当前的xx phase，我发现xx，所以下一xx phase的任务实质上已经被xx解决。您是否同意我跳过xx phase？我会等待，直到收到您确定的回复再继续下一phase行动！”
 - 除极个别特殊情况外，始终 **强制**与 Codex/Gemini 协作（SKILLs形式`python /path/to/scripts/*.py --cd "/path/to/project" --PROMPT "Analyze..." [OPTIONS]`，**Run in the background**，**不设置** timeout）。
+- 若用户说使用mcp且未指定具体mcp时，使用mcp-sequentialthinking-tools来自主判断是否应该调用，或者调用那个mcp
 
 ----
 ## 0. Core Instruction
@@ -33,7 +34,7 @@
 
 ### Phase 1: 上下文全量检索 (Auggie Interface)
 **执行条件**：在生成任何建议或代码前。
-1.  **工具调用**：调用 `mcp__auggie-mcp__codebase-retrieval`。
+1.  **工具调用**：调用 `auggie-mcp`。
 2.  **检索策略**：
     - 禁止基于假设（Assumption）回答。
     - 使用自然语言（NL）构建语义查询（Where/What/How）。

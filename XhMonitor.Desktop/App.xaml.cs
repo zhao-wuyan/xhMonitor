@@ -22,6 +22,9 @@ public partial class App : WpfApplication
     {
         base.OnStartup(e);
 
+        // 监听系统关闭事件
+        SessionEnding += OnSessionEnding;
+
         // 异步启动后端 Server 和 Web，避免阻塞 UI
         _ = StartBackendServerAsync();
         _ = StartWebAsync();
@@ -57,6 +60,13 @@ public partial class App : WpfApplication
         }
 
         base.OnExit(e);
+    }
+
+    private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
+    {
+        // 系统关机/注销时确保清理
+        StopBackendServer();
+        StopWebServer();
     }
 
     private void InitializeTrayIcon()
@@ -144,6 +154,10 @@ public partial class App : WpfApplication
 
     private void ExitApplication()
     {
+        // 先关闭后端服务
+        StopBackendServer();
+        StopWebServer();
+
         if (_floatingWindow != null)
         {
             _floatingWindow.AllowClose();
@@ -283,14 +297,11 @@ public partial class App : WpfApplication
 
         try
         {
-            // 优雅关闭：发送 Ctrl+C
+            // 优雅关闭：终止整个进程树
             _serverProcess.Kill(entireProcessTree: true);
 
-            if (!_serverProcess.WaitForExit(5000))
-            {
-                // 超时后强制终止
-                _serverProcess.Kill();
-            }
+            // 等待进程退出
+            _serverProcess.WaitForExit(5000);
 
             Debug.WriteLine("Backend server stopped successfully");
         }
@@ -372,6 +383,13 @@ public partial class App : WpfApplication
                     builder.WebHost.UseUrls("http://localhost:35180");
 
                     var app = builder.Build();
+
+                    // 注册 CancellationToken 回调来停止服务器
+                    _webServerCts.Token.Register(() =>
+                    {
+                        app.StopAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                    });
+
                     app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
                     {
                         FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(distPath),
@@ -385,8 +403,6 @@ public partial class App : WpfApplication
                     });
 
                     Debug.WriteLine("Web frontend server starting at http://localhost:35180");
-                    using var stopRegistration = _webServerCts.Token.Register(() =>
-                        app.StopAsync().GetAwaiter().GetResult());
                     await app.RunAsync();
                 }
                 catch (Exception ex)
