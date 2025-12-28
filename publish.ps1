@@ -2,7 +2,7 @@
 # 用法: .\publish.ps1 [-Version "1.0.0"] [-SkipDesktop] [-SkipService] [-NoZip] [-Lite] [-Debug]
 
 param(
-    [string]$Version = "1.0.0",
+    [string]$Version = "0.1.0",
     [switch]$SkipDesktop,
     [switch]$SkipService,
     [switch]$NoZip,

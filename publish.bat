@@ -7,8 +7,8 @@ echo   XhMonitor 绿色版发布脚本
 echo ====================================
 echo.
 
-:: 设置版本号
-set VERSION=1.0.0
+::设置版本号
+set VERSION=0.1.0
 if not "%1"=="" set VERSION=%1
 
 :: 设置输出目录
