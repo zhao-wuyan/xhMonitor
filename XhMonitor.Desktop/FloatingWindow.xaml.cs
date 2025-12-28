@@ -37,8 +37,6 @@ public partial class FloatingWindow : Window
 
     // Pinned Stack 定位相关
     private bool _lastPopupAbove = false;
-    private int _layoutRetryCount = 0;
-    private const int MAX_LAYOUT_RETRIES = 3;
 
     public bool IsClickThroughEnabled { get; private set; }
 
@@ -136,88 +134,29 @@ public partial class FloatingWindow : Window
     {
         _lastPopupAbove = popupAbove;
 
-        // 延迟执行以确保布局已更新
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (PinnedStack == null || PinnedStackTransform == null || MonitorBar == null) return;
+        if (PinnedStack == null) return;
 
-            // 强制更新布局以获取正确的尺寸
-            PinnedStack.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
-            PinnedStack.UpdateLayout();
-            MonitorBar.UpdateLayout();
+        // 使用Grid.Row动态定位：Row 0=上方, Row 2=下方
+        int targetRow = popupAbove ? 0 : 2;
+        Grid.SetRow(PinnedStack, targetRow);
 
-            double monitorBarHeight = MonitorBar.ActualHeight;
-            double pinnedStackHeight = PinnedStack.DesiredSize.Height;
+        // 根据位置调整Margin（上方需要底部间距，下方需要顶部间距）
+        PinnedStack.Margin = popupAbove
+            ? new Thickness(0, 0, 0, 8)  // 上方：底部间距
+            : new Thickness(0, 8, 0, 0);  // 下方：顶部间距
 
-            // 如果 DesiredSize 为 0,使用 ActualHeight
-            if (pinnedStackHeight == 0)
-                pinnedStackHeight = PinnedStack.ActualHeight;
-
-            // 高度验证：如果仍为 0 且有固定项，监听布局完成事件
-            if (pinnedStackHeight == 0 && _viewModel.PinnedProcesses.Count > 0)
-            {
-                if (_layoutRetryCount >= MAX_LAYOUT_RETRIES)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[PinnedStack] Max retries reached, using fallback height");
-                    pinnedStackHeight = 32; // 使用单卡片高度作为回退值
-                    _layoutRetryCount = 0;
-                }
-                else
-                {
-                    _layoutRetryCount++;
-                    System.Diagnostics.Debug.WriteLine($"[PinnedStack] Height is 0, waiting for layout completion (retry {_layoutRetryCount}/{MAX_LAYOUT_RETRIES})...");
-                    EventHandler? layoutHandler = null;
-                    layoutHandler = (s, e) =>
-                    {
-                        PinnedStack.LayoutUpdated -= layoutHandler;
-                        UpdatePinnedStackPlacement(popupAbove);
-                    };
-                    PinnedStack.LayoutUpdated += layoutHandler;
-                    return;
-                }
-            }
-            else
-            {
-                _layoutRetryCount = 0;
-            }
-
-            if (popupAbove)
-            {
-                // Popup 向上弹出,Pinned Stack 也向上堆叠(在主控制栏上方)
-                PinnedStackTransform.Y = -(pinnedStackHeight + 8);
-            }
-            else
-            {
-                // Popup 向下弹出,Pinned Stack 向下堆叠(在主控制栏下方)
-                PinnedStackTransform.Y = monitorBarHeight + 8;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[PinnedStack] Placement Updated - popupAbove={popupAbove}, MonitorBarHeight={monitorBarHeight:F1}, PinnedStackHeight={pinnedStackHeight:F1}, TranslateY={PinnedStackTransform.Y:F1}");
-        }, System.Windows.Threading.DispatcherPriority.Loaded);
+        System.Diagnostics.Debug.WriteLine($"[PinnedStack] Placement Updated - popupAbove={popupAbove}, Grid.Row={targetRow}");
     }
 
     private void OnPinnedProcessesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
-        // 当 PinnedProcesses 集合发生变化时,重新计算位置
         System.Diagnostics.Debug.WriteLine($"[PinnedStack] Collection Changed - Action={e.Action}, Count={_viewModel.PinnedProcesses.Count}");
-
-        // 延迟更新以确保 UI 已渲染
-        Dispatcher.InvokeAsync(() =>
-        {
-            UpdatePinnedStackPlacement(_lastPopupAbove);
-        }, System.Windows.Threading.DispatcherPriority.Loaded);
+        UpdatePinnedStackPlacement(_lastPopupAbove);
     }
 
     private void OnWindowSizeChanged(object? sender, SizeChangedEventArgs e)
     {
-        // 窗口尺寸变化时也需要重新计算
-        if (PinnedStack != null && _viewModel.PinnedProcesses.Count > 0)
-        {
-            Dispatcher.InvokeAsync(() =>
-            {
-                UpdatePinnedStackPlacement(_lastPopupAbove);
-            }, System.Windows.Threading.DispatcherPriority.Loaded);
-        }
+        UpdatePinnedStackPlacement(_lastPopupAbove);
     }
 
     public void AllowClose()

@@ -201,8 +201,14 @@
     </Window.Resources>
 
     <Grid>
-        <!-- Monitor Bar - 使用 Grid 但固定位置 -->
-        <Border x:Name="MonitorBar" CornerRadius="8"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Row 0: 上方PinnedStack区域 -->
+            <RowDefinition Height="Auto"/> <!-- Row 1: MonitorBar -->
+            <RowDefinition Height="Auto"/> <!-- Row 2: 下方PinnedStack区域 -->
+        </Grid.RowDefinitions>
+
+        <!-- Monitor Bar -->
+        <Border x:Name="MonitorBar" Grid.Row="1" CornerRadius="8"
                 BorderThickness="1" Padding="14,6"
                 HorizontalAlignment="Center" VerticalAlignment="Top"
                 MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
@@ -317,19 +323,17 @@
             </Grid>
         </Border>
 
-        <!-- Pinned Stack - 绝对定位在主控制栏上方/下方 -->
-        <ItemsControl x:Name="PinnedStack" ItemsSource="{Binding PinnedProcesses}"
+        <!-- Pinned Stack - 通过Grid.Row动态定位 -->
+        <ItemsControl x:Name="PinnedStack" Grid.Row="2"
+                      ItemsSource="{Binding PinnedProcesses}"
                       ItemTemplate="{StaticResource PinnedCardTemplate}"
-                      HorizontalAlignment="Center" VerticalAlignment="Top"
-                      Margin="0,0,0,0">
+                      HorizontalAlignment="Center"
+                      Margin="0,8,0,0">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <StackPanel Orientation="Vertical" x:Name="PinnedStackPanel"/>
+                    <StackPanel Orientation="Vertical"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.RenderTransform>
-                <TranslateTransform x:Name="PinnedStackTransform" Y="0"/>
-            </ItemsControl.RenderTransform>
         </ItemsControl>
 
         <!-- Details Panel (Popup) -->
