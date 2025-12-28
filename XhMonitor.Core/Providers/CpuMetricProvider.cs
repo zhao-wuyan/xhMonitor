@@ -10,6 +10,7 @@ public class CpuMetricProvider : IMetricProvider
 {
     private PerformanceCounterCategory? _processCategory;
     private Dictionary<int, double>? _cachedCpuData;
+    private Dictionary<int, (long RawValue, DateTime Timestamp)>? _previousSamples;
     private DateTime _cacheTimestamp = DateTime.MinValue;
     private readonly TimeSpan _cacheLifetime = TimeSpan.FromSeconds(1);
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
@@ -102,6 +103,8 @@ public class CpuMetricProvider : IMetricProvider
 
                 var data = _processCategory.ReadCategory();
                 var result = new Dictionary<int, double>();
+                var newSamples = new Dictionary<int, (long RawValue, DateTime Timestamp)>();
+                var now = DateTime.UtcNow;
 
                 if (data.Contains("ID Process") && data.Contains("% Processor Time"))
                 {
@@ -116,14 +119,26 @@ public class CpuMetricProvider : IMetricProvider
                             var cpuSample = cpuCollection[instanceName];
 
                             int pid = (int)pidSample.RawValue;
-                            double cpuValue = cpuSample.RawValue / Environment.ProcessorCount;
+                            long currentRawValue = cpuSample.RawValue;
 
-                            result[pid] = cpuValue;
+                            newSamples[pid] = (currentRawValue, now);
+
+                            if (_previousSamples != null && _previousSamples.TryGetValue(pid, out var previous))
+                            {
+                                var timeDiff = (now - previous.Timestamp).TotalSeconds;
+                                if (timeDiff > 0)
+                                {
+                                    var valueDiff = currentRawValue - previous.RawValue;
+                                    double cpuPercent = (valueDiff / timeDiff) / 10000000.0 / Environment.ProcessorCount * 100;
+                                    result[pid] = Math.Max(0, Math.Min(100, cpuPercent));
+                                }
+                            }
                         }
                         catch { }
                     }
                 }
 
+                _previousSamples = newSamples;
                 _cachedCpuData = result;
                 _cacheTimestamp = DateTime.UtcNow;
                 _readCategoryCallCount++;
@@ -158,12 +173,14 @@ public class CpuMetricProvider : IMetricProvider
                 _processCategory = new PerformanceCounterCategory("Process");
                 var data = _processCategory.ReadCategory();
 
+                var initialSamples = new Dictionary<int, (long RawValue, DateTime Timestamp)>();
+                var now = DateTime.UtcNow;
+
                 if (data.Contains("ID Process") && data.Contains("% Processor Time"))
                 {
                     var pidCollection = data["ID Process"];
                     var cpuCollection = data["% Processor Time"];
 
-                    var result = new Dictionary<int, double>();
                     foreach (string instanceName in pidCollection.Keys)
                     {
                         try
@@ -172,14 +189,13 @@ public class CpuMetricProvider : IMetricProvider
                             var cpuSample = cpuCollection[instanceName];
 
                             int pid = (int)pidSample.RawValue;
-                            double cpuValue = cpuSample.RawValue / Environment.ProcessorCount;
-                            result[pid] = cpuValue;
+                            long rawValue = cpuSample.RawValue;
+                            initialSamples[pid] = (rawValue, now);
                         }
                         catch { }
                     }
 
-                    _cachedCpuData = result;
-                    _cacheTimestamp = DateTime.UtcNow;
+                    _previousSamples = initialSamples;
                 }
 
                 _isWarmedUp = true;
