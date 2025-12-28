@@ -113,9 +113,18 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
 
     public void OnBarClick()
     {
-        CurrentPanelState = CurrentPanelState == PanelState.Locked
-            ? PanelState.Expanded
-            : PanelState.Locked;
+        // 只有在 Expanded 或 Locked 状态才响应点击
+        if (CurrentPanelState == PanelState.Expanded)
+        {
+            // Expanded → Locked: 锁定面板
+            CurrentPanelState = PanelState.Locked;
+        }
+        else if (CurrentPanelState == PanelState.Locked)
+        {
+            // Locked → Expanded: 解除锁定,面板会在鼠标离开时收起
+            CurrentPanelState = PanelState.Expanded;
+        }
+        // Collapsed 状态不响应点击(需要先 hover 进入 Expanded)
     }
 
     public void EnterClickthrough()

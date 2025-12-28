@@ -76,12 +76,8 @@
 
         <!-- Process Row Template -->
         <DataTemplate x:Key="ProcessRowTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="Transparent" Padding="0,2" Margin="0,1">
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Toggle Pin" Click="ProcessRow_TogglePin" Tag="{Binding}"/>
-                    </ContextMenu>
-                </Border.ContextMenu>
+            <Border Background="Transparent" Padding="0,2" Margin="0,1"
+                    MouseRightButtonUp="ProcessRow_RightClick">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
@@ -120,7 +116,7 @@
                         <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Memory, Mode=OneWay}" Maximum="{Binding DataContext.MaxMemory, RelativeSource={RelativeSource AncestorType=Window}}" Height="2">
                             <ProgressBar.Foreground>
                                 <MultiBinding Converter="{StaticResource MemoryColorConverter}">
-                                    <Binding Path="Memory"/>
+                                    <Binding Path="Memory" Mode="OneWay"/>
                                     <Binding RelativeSource="{RelativeSource Self}" Path="Maximum"/>
                                 </MultiBinding>
                             </ProgressBar.Foreground>
@@ -139,7 +135,7 @@
                         <ProgressBar Style="{StaticResource ThinProgressBar}" Value="{Binding Vram, Mode=OneWay}" Maximum="{Binding DataContext.MaxVram, RelativeSource={RelativeSource AncestorType=Window}}" Height="2">
                             <ProgressBar.Foreground>
                                 <MultiBinding Converter="{StaticResource MemoryColorConverter}">
-                                    <Binding Path="Vram"/>
+                                    <Binding Path="Vram" Mode="OneWay"/>
                                     <Binding RelativeSource="{RelativeSource Self}" Path="Maximum"/>
                                 </MultiBinding>
                             </ProgressBar.Foreground>
@@ -171,22 +167,22 @@
 
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
                             <Run Text="VRAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Vram, Converter={StaticResource MemoryConverter}}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            <Run Text="{Binding Vram, Converter={StaticResource MemoryConverter}, Mode=OneWay}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
                         </TextBlock>
 
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
                             <Run Text="GPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Gpu, StringFormat={}{0:F0}%}" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            <Run Text="{Binding Gpu, StringFormat={}{0:F0}%, Mode=OneWay}" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}, Mode=OneWay}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
                         </TextBlock>
 
                         <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,0,0">
                             <Run Text="CPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Cpu, StringFormat={}{0:F0}%}" Foreground="{Binding Cpu, Converter={StaticResource ColorConverter}}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            <Run Text="{Binding Cpu, StringFormat={}{0:F0}%, Mode=OneWay}" Foreground="{Binding Cpu, Converter={StaticResource ColorConverter}, Mode=OneWay}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
                         </TextBlock>
 
                         <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0">
                             <Run Text="RAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Memory, Converter={StaticResource MemoryConverter}}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            <Run Text="{Binding Memory, Converter={StaticResource MemoryConverter}, Mode=OneWay}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
                         </TextBlock>
                     </Grid>
                 </Grid>
@@ -234,7 +230,11 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- CPU -->
-                <StackPanel Grid.Column="0" Width="48" Margin="2,0">
+                <StackPanel Grid.Column="0" Width="48" Margin="2,0" Tag="cpu"
+                            PreviewMouseDown="Metric_PreviewMouseDown"
+                            PreviewMouseUp="Metric_PreviewMouseUp"
+                            MouseLeave="Metric_MouseLeave"
+                            Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="CPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalCpu, StringFormat={}{0:F0}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -245,7 +245,11 @@
                 <Rectangle Grid.Column="1" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="8,0"/>
 
                 <!-- RAM -->
-                <StackPanel Grid.Column="2" Width="75" Margin="2,0">
+                <StackPanel Grid.Column="2" Width="75" Margin="2,0" Tag="ram"
+                            PreviewMouseDown="Metric_PreviewMouseDown"
+                            PreviewMouseUp="Metric_PreviewMouseUp"
+                            MouseLeave="Metric_MouseLeave"
+                            Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="RAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalMemory, Converter={StaticResource MemoryConverter}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -263,7 +267,11 @@
                 <Rectangle Grid.Column="3" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="8,0"/>
 
                 <!-- GPU -->
-                <StackPanel Grid.Column="4" Width="48" Margin="2,0">
+                <StackPanel Grid.Column="4" Width="48" Margin="2,0" Tag="gpu"
+                            PreviewMouseDown="Metric_PreviewMouseDown"
+                            PreviewMouseUp="Metric_PreviewMouseUp"
+                            MouseLeave="Metric_MouseLeave"
+                            Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="GPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalGpu, StringFormat={}{0:F0}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -274,7 +282,11 @@
                 <Rectangle Grid.Column="5" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="8,0"/>
 
                 <!-- VRAM -->
-                <StackPanel Grid.Column="6" Width="75" Margin="2,0">
+                <StackPanel Grid.Column="6" Width="75" Margin="2,0" Tag="vram"
+                            PreviewMouseDown="Metric_PreviewMouseDown"
+                            PreviewMouseUp="Metric_PreviewMouseUp"
+                            MouseLeave="Metric_MouseLeave"
+                            Cursor="Hand">
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="VRAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalVram, Converter={StaticResource MemoryConverter}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>

@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop;
@@ -22,6 +23,11 @@ public partial class FloatingWindow : Window
     private HwndSource? _hwndSource;
     private bool _allowClose;
     private int _hotkeyId;
+
+    // 长按相关
+    private DispatcherTimer? _longPressTimer;
+    private string? _longPressingMetric;
+    private bool _longPressTriggered; // 标记长按是否已触发
 
     public bool IsClickThroughEnabled { get; private set; }
 
@@ -50,8 +56,49 @@ public partial class FloatingWindow : Window
         // Center the popup horizontally relative to the target
         double x = (targetSize.Width - popupSize.Width) / 2;
 
-        // Place the popup above the target with a small gap (8px)
-        double y = -popupSize.Height - 8;
+        // 获取窗口当前位置
+        double windowTop = this.Top;
+        double windowHeight = this.ActualHeight;
+
+        // 获取屏幕工作区域
+        var screenTop = SystemParameters.WorkArea.Top;
+        var screenHeight = SystemParameters.WorkArea.Height;
+
+        // 计算上方剩余空间(从窗口顶部到屏幕顶部的距离)
+        double spaceAbove = windowTop - screenTop;
+
+        // 计算下方剩余空间(从窗口底部到屏幕底部的距离)
+        double spaceBelow = (screenTop + screenHeight) - (windowTop + windowHeight);
+
+        // 所需空间(面板高度 + 间距)
+        double requiredSpace = popupSize.Height + 8;
+
+        double y;
+        // 判断应该向上还是向下弹出
+        if (spaceAbove >= requiredSpace)
+        {
+            // 上方空间充足,向上弹出
+            y = -popupSize.Height - 8;
+        }
+        else if (spaceBelow >= requiredSpace)
+        {
+            // 上方空间不足但下方空间充足,向下弹出
+            y = targetSize.Height + 8;
+        }
+        else
+        {
+            // 两边空间都不足,选择空间较大的一侧
+            if (spaceAbove > spaceBelow)
+            {
+                // 向上弹出,但可能超出屏幕
+                y = -popupSize.Height - 8;
+            }
+            else
+            {
+                // 向下弹出,但可能超出屏幕
+                y = targetSize.Height + 8;
+            }
+        }
 
         return new CustomPopupPlacement[]
         {
@@ -133,18 +180,137 @@ public partial class FloatingWindow : Window
 
     private void MonitorBar_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标进入");
         _viewModel.OnBarPointerEnter();
     }
 
     private void MonitorBar_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标离开");
         _viewModel.OnBarPointerLeave();
     }
 
     private void MonitorBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标左键抬起,调用 OnBarClick,当前状态: {_viewModel.CurrentPanelState}");
         _viewModel.OnBarClick();
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] OnBarClick 执行后,新状态: {_viewModel.CurrentPanelState}");
         e.Handled = true;
+    }
+
+    // 指标长按开始
+    private void Metric_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is string metricId)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标按下 - 指标ID={metricId}");
+
+            // 捕获鼠标,确保 MouseUp 事件能触发到这个元素
+            element.CaptureMouse();
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 已捕获鼠标");
+
+            StartLongPress(metricId);
+            e.Handled = true; // 阻止事件继续传播,避免重复触发
+        }
+    }
+
+    // 指标长按结束
+    private void Metric_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标抬起事件触发");
+
+        // 检查是否已经处理过这个事件
+        if (e.Handled)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 事件已被处理,跳过");
+            return;
+        }
+
+        // 释放鼠标捕获
+        if (sender is FrameworkElement element && element.IsMouseCaptured)
+        {
+            element.ReleaseMouseCapture();
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 已释放鼠标捕获");
+        }
+
+        // 如果定时器还在运行,说明是短按(不到2秒)
+        bool isShortPress = _longPressTimer != null && _longPressTimer.IsEnabled;
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 是否短按={isShortPress}, 长按已触发={_longPressTriggered}");
+
+        StopLongPressTimer();
+
+        // 短按时触发主控制栏点击逻辑
+        // 长按完成后不触发
+        if (_longPressTriggered)
+        {
+            _longPressTriggered = false; // 重置标志
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 长按已触发,跳过点击逻辑");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 短按,触发主控制栏点击逻辑");
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标->主控制栏] 调用 OnBarClick,当前状态: {_viewModel.CurrentPanelState}");
+            _viewModel.OnBarClick();
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标->主控制栏] OnBarClick 执行后,新状态: {_viewModel.CurrentPanelState}");
+        }
+
+        e.Handled = true; // 阻止事件继续传播
+    }
+
+    // 指标鼠标离开
+    private void Metric_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        // 如果鼠标已被捕获,忽略 MouseLeave 事件(因为我们需要等待 MouseUp)
+        if (sender is FrameworkElement element && element.IsMouseCaptured)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标离开 - 但鼠标已捕获,忽略此事件,等待 MouseUp");
+            return;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 鼠标离开 - 取消长按");
+        StopLongPressTimer();
+    }
+
+    private void StartLongPress(string metricId)
+    {
+        _longPressingMetric = metricId;
+        _longPressTriggered = false; // 重置标志
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [长按] 开始 - 指标ID={metricId}");
+
+        _longPressTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+
+        _longPressTimer.Tick += (s, e) =>
+        {
+            _longPressTriggered = true; // 标记长按已触发
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [长按] ✓ 已触发! 指标ID={metricId}");
+            StopLongPressTimer();
+
+            // 触发长按动作
+            MetricActionRequested?.Invoke(this, new MetricActionEventArgs
+            {
+                MetricId = metricId,
+                Action = $"longPress_{metricId}" // 可以根据配置决定动作
+            });
+        };
+
+        _longPressTimer.Start();
+    }
+
+    private void StopLongPressTimer()
+    {
+        if (_longPressTimer != null)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [长按] 定时器已停止");
+            _longPressTimer.Stop();
+            _longPressTimer = null;
+        }
+        _longPressingMetric = null;
+        // 不在这里重置 _longPressTriggered,让 MouseUp 事件处理后再重置
     }
 
     private void PinIndicator_Click(object sender, MouseButtonEventArgs e)
@@ -154,11 +320,13 @@ public partial class FloatingWindow : Window
         e.Handled = true;
     }
 
-    private void ProcessRow_TogglePin(object sender, RoutedEventArgs e)
+    private void ProcessRow_RightClick(object sender, MouseButtonEventArgs e)
     {
-        if (sender is MenuItem menuItem && menuItem.Tag is FloatingWindowViewModel.ProcessRowViewModel row)
+        if (sender is FrameworkElement element && element.DataContext is FloatingWindowViewModel.ProcessRowViewModel row)
         {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [进程行] 右键点击 - 进程名={row.ProcessName}, IsPinned={row.IsPinned}");
             _viewModel.TogglePin(row);
+            e.Handled = true;
         }
     }
 
