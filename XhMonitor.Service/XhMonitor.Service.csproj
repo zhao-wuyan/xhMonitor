@@ -7,6 +7,11 @@
     <UserSecretsId>dotnet-XhMonitor.Service-12aa785d-3c46-4be3-9f47-7fba78625a38</UserSecretsId>
   </PropertyGroup>
 
+  <!-- Release 模式不显示控制台窗口 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputType>WinExe</OutputType>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />

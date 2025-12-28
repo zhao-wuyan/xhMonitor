@@ -11,9 +11,25 @@ using XhMonitor.Service.Data.Repositories;
 using XhMonitor.Service.Workers;
 using XhMonitor.Service.Hubs;
 
-// 设置控制台编码为 UTF-8，确保中文日志正常显示
-Console.OutputEncoding = Encoding.UTF8;
-Console.InputEncoding = Encoding.UTF8;
+// 设置控制台编码为 UTF-8，确保中文日志正常显示（仅在有控制台时）
+try
+{
+    if (Environment.UserInteractive)
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+    }
+}
+catch
+{
+    // WinExe 模式下可能没有控制台，忽略错误
+}
+
+// 确定日志目录（使用应用所在目录）
+var appDirectory = AppContext.BaseDirectory;
+var logDirectory = Path.Combine(appDirectory, "logs");
+Directory.CreateDirectory(logDirectory);
+var logPath = Path.Combine(logDirectory, "xhmonitor-.log");
 
 // 配置 Serilog 日志
 Log.Logger = new LoggerConfiguration()
@@ -26,8 +42,10 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Debug(
         outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}")
     .WriteTo.File(
-        path: "logs/xhmonitor-.log",
+        path: logPath,
         rollingInterval: RollingInterval.Day,
+        fileSizeLimitBytes: 50 * 1024 * 1024,
+        rollOnFileSizeLimit: true,
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}",
         encoding: Encoding.UTF8,
         retainedFileCountLimit: 7)
@@ -59,6 +77,7 @@ builder.Services.AddSingleton<IProcessMetricRepository, MetricRepository>();
 
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<AggregationWorker>();
+builder.Services.AddHostedService<DatabaseCleanupWorker>();
 
 builder.Services.AddSingleton(sp =>
 {
@@ -112,6 +131,22 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 });
 
 var app = builder.Build();
+
+// 自动应用数据库迁移
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MonitorDbContext>();
+    try
+    {
+        Log.Information("正在检查并应用数据库迁移...");
+        dbContext.Database.Migrate();
+        Log.Information("数据库迁移完成");
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "数据库迁移失败，将尝试继续运行");
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {

@@ -43,7 +43,8 @@
       "Bash(cd:*)",
       "Bash(C:\\Users\\xinghe_zwy\\.version-fox\\cache\\python\\v-3.12.9\\python.exe:*)",
       "Edit",
-      "Bash(C:\\Users\\xinghe_zwy\\.version-fox\\cache\\python\\current\\python.exe:*)"
+      "Bash(C:\\Users\\xinghe_zwy\\.version-fox\\cache\\python\\current\\python.exe:*)",
+      "Bash(dotnet:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

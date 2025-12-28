@@ -191,6 +191,38 @@ public partial class App : WpfApplication
     {
         try
         {
+            // 检查是否为发布版本（Service 应该单独启动）
+            var serviceExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Service", "XhMonitor.Service.exe");
+            if (File.Exists(Path.GetFullPath(serviceExePath)))
+            {
+                Debug.WriteLine("Detected published version - waiting for Service to start");
+
+                // 等待最多 15 秒让 Service 启动
+                var maxWaitTime = TimeSpan.FromSeconds(15);
+                var startTime = DateTime.Now;
+
+                while (DateTime.Now - startTime < maxWaitTime)
+                {
+                    if (IsPortInUse(35179))
+                    {
+                        Debug.WriteLine("Backend server is now running");
+                        return;
+                    }
+                    await Task.Delay(500);
+                }
+
+                // 超时仍未启动，提示用户
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    System.Windows.MessageBox.Show(
+                        "后端服务未运行。\n请先运行根目录的 \"启动服务.bat\" 启动完整应用。",
+                        "服务未启动",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                });
+                return;
+            }
+
             // 检查端口 35179 是否已被占用（Server 可能已在运行）
             if (IsPortInUse(35179))
             {
