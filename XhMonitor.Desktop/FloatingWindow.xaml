@@ -152,7 +152,16 @@
                 <Grid>
                     <!-- Left Accent Border -->
                     <Border Background="{StaticResource ColorGreen}" HorizontalAlignment="Left" Width="3" CornerRadius="3,0,0,3"/>
-                    
+
+                    <!-- Unpin Button (右上角) -->
+                    <Border Width="16" Height="16" CornerRadius="8" Margin="0,4,4,0"
+                            VerticalAlignment="Top" HorizontalAlignment="Right"
+                            Background="#33FFFFFF" Cursor="Hand"
+                            MouseLeftButtonUp="PinnedCard_UnpinClick">
+                        <TextBlock Text="✕" FontSize="10" Foreground="{StaticResource ColorTextMain}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
+                    </Border>
+
                     <Grid Margin="13,4,10,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -163,7 +172,7 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0" Text="{Binding ProcessName}" Foreground="{StaticResource ColorTextMain}"
-                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,20,0"/>
 
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
                             <Run Text="VRAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
@@ -210,12 +219,23 @@
         </ItemsControl>
 
         <!-- Monitor Bar -->
-        <Border Grid.Row="1" x:Name="MonitorBar" Background="{StaticResource ColorBackground}" CornerRadius="8"
-                BorderBrush="{StaticResource ColorBorder}" BorderThickness="1" Padding="14,6"
+        <Border Grid.Row="1" x:Name="MonitorBar" CornerRadius="8"
+                BorderThickness="2" Padding="14,6"
                 MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
                 PreviewMouseLeftButtonDown="MonitorBar_PreviewMouseDown"
                 PreviewMouseMove="MonitorBar_PreviewMouseMove"
                 PreviewMouseLeftButtonUp="MonitorBar_PreviewMouseUp">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource ColorBackground}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource ColorBorder}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                            <Setter Property="BorderBrush" Value="{StaticResource ColorGreen}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Border.Effect>
                 <DropShadowEffect BlurRadius="32" ShadowDepth="8" Opacity="0.4" Direction="270"/>
             </Border.Effect>
@@ -228,7 +248,7 @@
                     <ColumnDefinition Width="Auto"/> <!-- GPU -->
                     <ColumnDefinition Width="Auto"/> <!-- Div -->
                     <ColumnDefinition Width="Auto"/> <!-- VRAM -->
-                    <ColumnDefinition Width="Auto"/> <!-- Pin -->
+                    <ColumnDefinition Width="Auto"/> <!-- Status -->
                 </Grid.ColumnDefinitions>
 
                 <!-- CPU -->
@@ -295,29 +315,17 @@
                     </ProgressBar>
                 </StackPanel>
 
-                <!-- Pin Indicator -->
+                <!-- Connection Status Indicator (仅断开时显示) -->
                 <Border Grid.Column="7" Width="8" Height="8" CornerRadius="4" Margin="12,-4,-4,0"
-                        VerticalAlignment="Top" HorizontalAlignment="Right" Cursor="Hand"
-                        MouseLeftButtonUp="PinIndicator_Click">
+                        VerticalAlignment="Top" HorizontalAlignment="Right"
+                        Background="{StaticResource ColorRed}">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource ColorGreen}"/>
-                            <Setter Property="Opacity" Value="0"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsConnected}" Value="False">
-                                    <Setter Property="Background" Value="{StaticResource ColorRed}"/>
-                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding IsLocked}" Value="True">
-                                    <Setter Property="Opacity" Value="1"/>
-                                </DataTrigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="RenderTransform">
-                                        <Setter.Value>
-                                            <ScaleTransform ScaleX="1.5" ScaleY="1.5" CenterX="4" CenterY="4"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
                             </Style.Triggers>
                         </Style>
                     </Border.Style>

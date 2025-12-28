@@ -352,6 +352,16 @@ public partial class FloatingWindow : Window
         e.Handled = true;
     }
 
+    private void PinnedCard_UnpinClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is FloatingWindowViewModel.ProcessRowViewModel row)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [Pinned Card] 取消固定 - 进程名={row.ProcessName}");
+            _viewModel.TogglePin(row);
+            e.Handled = true;
+        }
+    }
+
     private void ProcessRow_RightClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is FloatingWindowViewModel.ProcessRowViewModel row)
