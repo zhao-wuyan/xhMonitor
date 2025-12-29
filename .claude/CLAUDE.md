@@ -4,6 +4,8 @@
 - 除极个别特殊情况外，始终 **强制**与 Codex/Gemini 协作（SKILLs形式`python /path/to/scripts/*.py --cd "/path/to/project" --PROMPT "Analyze..." [OPTIONS]`，**Run in the background**，**不设置** timeout）。
 - 若用户说使用mcp且未指定具体mcp时，使用mcp-sequentialthinking-tools来自主判断是否应该调用，或者调用那个mcp
 - 若python当前环境没有则使用主Python路径 C:\Users\xinghe_zwy\.version-fox\cache\python\current\python.exe
+- 若修改了交互，记得更新`docs/桌面悬浮窗交互设计稿.md`，更新原则，保持文档结构不变，仅描述清楚交互逻辑，添加代码位置引用 (文件名 + 行号)，移除过时的 HTML/CSS 实现细节，强调 WPF 实现方式 (数据绑定、Converter、事件系统)
+- 若修改了架构，记得更新`docs/architecture-analysis.md`，保持原有结构: 架构图和问题诊断部分不变，简洁准确: 仅补充必要的架构信息,不添加冗余细节，与交互文档呼应
 
 ----
 ## 0. Core Instruction
@@ -63,7 +65,7 @@
 ### Phase 4: 编码实施
 **执行准则**：
 1.  **逻辑重构**：基于 Phase 3 的原型，去除冗余，**重写**为高可读、高可维护性、企业发布级代码。
-2.  **文档规范**：非必要不生成注释与文档，代码自解释。
+2.  **文档规范**：只生成必要注释（简单，中文），非必要不生成文档，代码自解释。
 3.  **最小作用域**：变更仅限需求范围，**强制审查**变更是否引入副作用并做针对性修正。
 
 ### Phase 5: 审计与交付
