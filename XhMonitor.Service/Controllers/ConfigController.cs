@@ -165,4 +165,102 @@ public class ConfigController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// 获取所有应用设置 (按分类分组)
+    /// </summary>
+    [HttpGet("settings")]
+    [ProducesResponseType(typeof(Dictionary<string, Dictionary<string, string>>), 200)]
+    public async Task<IActionResult> GetSettings()
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var settings = await context.ApplicationSettings
+            .OrderBy(s => s.Category)
+            .ThenBy(s => s.Key)
+            .ToListAsync();
+
+        // 按分类分组
+        var grouped = settings
+            .GroupBy(s => s.Category)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToDictionary(x => x.Key, x => x.Value)
+            );
+
+        return Ok(grouped);
+    }
+
+    /// <summary>
+    /// 更新单个配置项
+    /// </summary>
+    /// <param name="category">配置分类</param>
+    /// <param name="key">配置键</param>
+    /// <param name="request">配置值</param>
+    [HttpPut("settings/{category}/{key}")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UpdateSetting(
+        string category,
+        string key,
+        [FromBody] UpdateSettingRequest request)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var setting = await context.ApplicationSettings
+            .FirstOrDefaultAsync(s => s.Category == category && s.Key == key);
+
+        if (setting == null)
+        {
+            return NotFound(new { Message = $"配置项 {category}.{key} 不存在" });
+        }
+
+        setting.Value = request.Value;
+        setting.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        _logger.LogInformation("配置已更新: {Category}.{Key} = {Value}", category, key, request.Value);
+
+        return Ok(new { Message = "配置已更新", Category = category, Key = key, Value = request.Value });
+    }
+
+    /// <summary>
+    /// 批量更新配置 (用于保存整个设置页)
+    /// </summary>
+    [HttpPut("settings")]
+    [ProducesResponseType(200)]
+    public async Task<IActionResult> UpdateSettings([FromBody] Dictionary<string, Dictionary<string, string>> settings)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var updatedCount = 0;
+        var timestamp = DateTime.UtcNow;
+
+        foreach (var categoryGroup in settings)
+        {
+            var category = categoryGroup.Key;
+            foreach (var item in categoryGroup.Value)
+            {
+                var key = item.Key;
+                var value = item.Value;
+
+                var setting = await context.ApplicationSettings
+                    .FirstOrDefaultAsync(s => s.Category == category && s.Key == key);
+
+                if (setting != null)
+                {
+                    setting.Value = value;
+                    setting.UpdatedAt = timestamp;
+                    updatedCount++;
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
+
+        _logger.LogInformation("批量更新 {Count} 个配置项", updatedCount);
+
+        return Ok(new { Message = $"成功更新 {updatedCount} 个配置项", UpdatedCount = updatedCount });
+    }
 }

@@ -104,12 +104,17 @@ public partial class App : WpfApplication
             }
         };
 
+        var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
+        settingsItem.Click += (_, _) => OpenSettingsWindow();
+
         var exitItem = new WinForms.ToolStripMenuItem("退出");
         exitItem.Click += (_, _) => ExitApplication();
 
         menu.Items.Add(showItem);
         menu.Items.Add(openWebItem);
         menu.Items.Add(clickThroughItem);
+        menu.Items.Add(new WinForms.ToolStripSeparator());
+        menu.Items.Add(settingsItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(exitItem);
 
@@ -150,6 +155,18 @@ public partial class App : WpfApplication
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+    }
+
+    private void OpenSettingsWindow()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            var settingsWindow = new Windows.SettingsWindow
+            {
+                Owner = _floatingWindow
+            };
+            settingsWindow.ShowDialog();
+        });
     }
 
     private void ExitApplication()
