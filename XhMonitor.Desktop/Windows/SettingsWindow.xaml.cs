@@ -1,4 +1,5 @@
 using System.Windows;
+using XhMonitor.Desktop.Dialogs;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop.Windows;
@@ -64,10 +65,18 @@ public partial class SettingsWindow : Window
 
     private void AddKeyword_Click(object sender, RoutedEventArgs e)
     {
-        var keyword = Microsoft.VisualBasic.Interaction.InputBox("输入进程关键词:", "添加关键词", "");
-        if (!string.IsNullOrWhiteSpace(keyword))
+        var dialog = new InputDialog("输入进程关键词:", "添加关键词") { Owner = this };
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ResponseText))
         {
-            _viewModel.ProcessKeywords.Add(keyword);
+            _viewModel.ProcessKeywords.Add(dialog.ResponseText);
+        }
+    }
+
+    private void DeleteKeyword_Click(object sender, RoutedEventArgs e)
+    {
+        if (KeywordsListBox.SelectedItem is string keyword)
+        {
+            _viewModel.ProcessKeywords.Remove(keyword);
         }
     }
 }

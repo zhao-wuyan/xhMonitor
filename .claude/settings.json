@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"ccw tool exec update_module_claude '{\\\"strategy\\\":\\\"related\\\",\\\"tool\\\":\\\"codex\\\"}'\""
+          }
+        ]
+      }
+    ]
+  }
+}

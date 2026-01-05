@@ -40,7 +40,12 @@
       "Bash(C:\\Users\\xinghe_zwy\\.version-fox\\cache\\python\\current\\python.exe:*)",
       "Bash(dotnet:*)",
       "SlashCommand(/zcf:workflow 请在desktop的任务栏图标装创建一个设置菜单,请先罗列所有可设置项,我来判断是否应该加入设置)",
-      "SlashCommand(/zcf:workflow:*)"
+      "SlashCommand(/zcf:workflow:*)",
+      "Bash(cat:*)",
+      "Skill(workflow:lite-execute)",
+      "Bash(ccw cli history:*)",
+      "Bash(ccw cli output:*)",
+      "Bash(ccw tool exec:*)"
     ]
   },
   "model": "sonnet[1m]",

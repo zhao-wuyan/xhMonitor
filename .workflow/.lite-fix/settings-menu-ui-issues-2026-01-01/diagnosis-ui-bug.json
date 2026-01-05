@@ -1,0 +1,123 @@
+{
+  "symptom": {
+    "description": "设置窗口存在多个 UI/UX 问题：1) 点击"添加关键词"按钮时应用崩溃或无响应，无法向进程监控关键词列表添加新项；2) 样式问题包括深色模式下控件对比度不足、ListBox 显示空白无内容、按钮样式不一致",
+    "error_message": "Microsoft.VisualBasic.Interaction.InputBox 运行时异常 (推测) - 缺少 Microsoft.VisualBasic.Compatibility 程序集引用",
+    "stack_trace": null,
+    "frequency": "always",
+    "user_impact": "用户完全无法添加进程监控关键词，导致核心功能不可用；样式问题影响用户体验，降低可读性"
+  },
+  "root_cause": {
+    "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+    "line_range": "67-71",
+    "function": "AddKeyword_Click",
+    "issue": "使用 Microsoft.VisualBasic.Interaction.InputBox 但项目 csproj 中缺少 Microsoft.VisualBasic 程序集引用。.NET 8 WPF 项目默认不包含 VisualBasic 支持，导致运行时 TypeLoadException 或 FileNotFoundException",
+    "confidence": 0.95,
+    "introduced_by": "559d0b0 (feat: 添加应用配置管理功能并完善设置界面)",
+    "category": "integration"
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+      "relevance": 0.95,
+      "rationale": "包含缺少程序集引用的 InputBox 调用，需要替换为 WPF 原生对话框或添加 NuGet 包",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+      "relevance": 0.85,
+      "rationale": "需要添加 Microsoft.VisualBasic NuGet 包引用或移除对 VisualBasic 的依赖",
+      "change_type": "needs_update"
+    },
+    {
+      "path": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "relevance": 0.75,
+      "rationale": "ListBox (line 132-137) 缺少 ItemTemplate 导致显示空白；深色模式样式问题需要调整对比度和边距",
+      "change_type": "needs_update"
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "relevance": 0.65,
+      "rationale": "ProcessKeywords 属性 (line 50-54) 绑定正确，但需要验证 LoadSettingsAsync (line 125) 是否正确填充初始数据",
+      "change_type": "test_coverage"
+    }
+  ],
+  "reproduction_steps": [
+    "启动 XhMonitor Desktop 应用",
+    "点击托盘图标或悬浮窗的设置按钮打开 SettingsWindow",
+    "导航到"数据采集"选项卡 (NavList SelectedIndex=1)",
+    "观察"进程监控关键词" ListBox - 可能显示空白或无法显示默认关键词",
+    "点击"+ 添加关键词"按钮",
+    "预期弹出输入对话框，实际可能崩溃或无响应 (缺少 VisualBasic 引用)"
+  ],
+  "fix_hints": [
+    {
+      "description": "替换 Microsoft.VisualBasic.Interaction.InputBox 为 WPF 原生对话框",
+      "approach": "创建自定义 WPF InputDialog 窗口或使用第三方库 (如 MahApps.Metro Dialogs)。推荐使用原生 WPF 方案避免外部依赖",
+      "code_example": "// 创建自定义 InputDialog.xaml 窗口\npublic partial class InputDialog : Window {\n    public string ResponseText { get; set; } = \"\";\n    public InputDialog(string question, string title) {\n        InitializeComponent();\n        Title = title;\n        QuestionTextBlock.Text = question;\n    }\n    private void OkButton_Click(object sender, RoutedEventArgs e) {\n        ResponseText = ResponseTextBox.Text;\n        DialogResult = true;\n    }\n}\n\n// 在 AddKeyword_Click 中使用\nvar dialog = new InputDialog(\"输入进程关键词:\", \"添加关键词\");\nif (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ResponseText)) {\n    _viewModel.ProcessKeywords.Add(dialog.ResponseText);\n}",
+      "risk": "low"
+    },
+    {
+      "description": "为 ListBox 添加 ItemTemplate 显示字符串内容",
+      "approach": "在 SettingsWindow.xaml 的 ListBox 控件中添加 DataTemplate，确保字符串集合正确渲染",
+      "code_example": "<ListBox ItemsSource=\"{Binding ProcessKeywords}\" ...>\n    <ListBox.ItemTemplate>\n        <DataTemplate>\n            <TextBlock Text=\"{Binding}\" Foreground=\"White\" FontSize=\"12\"/>\n        </DataTemplate>\n    </ListBox.ItemTemplate>\n</ListBox>",
+      "risk": "low"
+    },
+    {
+      "description": "优化深色模式样式对比度",
+      "approach": "调整 ListBox 背景色从 #333 到 #2D2D30，增加边框以区分控件边界，调整 Foreground 到 #E0E0E0",
+      "code_example": "<ListBox Background=\"#2D2D30\" Foreground=\"#E0E0E0\" BorderBrush=\"#3F3F46\" BorderThickness=\"1\" Padding=\"8\"/>",
+      "risk": "low"
+    },
+    {
+      "description": "添加删除关键词功能",
+      "approach": "在 ListBox 中添加右键菜单或删除按钮，调用 ProcessKeywords.Remove()",
+      "code_example": "<ListBox.ItemTemplate>\n    <DataTemplate>\n        <Grid>\n            <Grid.ColumnDefinitions>\n                <ColumnDefinition Width=\"*\"/>\n                <ColumnDefinition Width=\"Auto\"/>\n            </Grid.ColumnDefinitions>\n            <TextBlock Text=\"{Binding}\" Foreground=\"White\" VerticalAlignment=\"Center\"/>\n            <Button Grid.Column=\"1\" Content=\"🗑️\" Click=\"DeleteKeyword_Click\" Tag=\"{Binding}\" \n                    Background=\"Transparent\" Foreground=\"#f87171\" BorderThickness=\"0\" Padding=\"8,4\"/>\n        </Grid>\n    </DataTemplate>\n</ListBox.ItemTemplate>",
+      "risk": "low"
+    }
+  ],
+  "dependencies": "WPF (.NET 8), System.Text.Json (已引用), Microsoft.VisualBasic (缺失)",
+  "constraints": "必须保持与现有 MVVM 架构兼容；不应引入大型第三方 UI 库增加二进制体积；需要保持深色模式一致性",
+  "related_issues": [
+    {
+      "type": "tech_debt",
+      "reference": "XhMonitor.Desktop/Windows/SettingsWindow.xaml line 132-137",
+      "description": "ListBox 缺少 ItemTemplate 和 ContextMenu，导致用户无法删除已添加的关键词"
+    },
+    {
+      "type": "similar_bug",
+      "reference": "XhMonitor.Desktop/Windows/SettingsWindow.xaml line 107-110",
+      "description": "主题颜色 ComboBox 未实际绑定到 ViewModel 属性，当前是假数据"
+    }
+  ],
+  "clarification_needs": [
+    {
+      "question": "如何实现添加关键词的输入对话框？",
+      "context": "当前使用 Microsoft.VisualBasic.InputBox 导致缺少引用问题，需要选择替代方案",
+      "options": [
+        "创建自定义 WPF InputDialog 窗口 (推荐 - 无外部依赖)",
+        "添加 Microsoft.VisualBasic NuGet 包引用 (快速修复但引入遗留依赖)",
+        "使用 MahApps.Metro 对话框库 (功能强大但增加体积)",
+        "直接在 ListBox 上方添加 TextBox + 确认按钮 (无弹窗，内联编辑)"
+      ]
+    },
+    {
+      "question": "ListBox 样式优先级？",
+      "context": "多个样式问题需要修复，需要确定优先级",
+      "options": [
+        "优先修复 ItemTemplate 显示问题 (功能性 bug)",
+        "优先修复深色模式对比度 (用户体验)",
+        "同时修复所有样式问题 (全面优化)",
+        "仅修复 InputBox 功能问题，样式问题延后"
+      ]
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-01T12:37:00Z",
+    "bug_description": "使用gemini审查设置菜单的UI问题,有无法添加进程监控关键词,还有各种样式问题",
+    "source": "cli-explore-agent",
+    "diagnosis_angle": "ui-bug",
+    "diagnosis_index": 1,
+    "total_diagnoses": 2,
+    "duration_seconds": 180
+  }
+}
