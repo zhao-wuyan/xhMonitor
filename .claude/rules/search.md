@@ -1,0 +1,1 @@
+会话开始需要搜索文件时，使用augment-context-engine进行语义级别的代码搜索。

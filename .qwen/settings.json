@@ -1,3 +1,7 @@
 {
-  "contextfilename": ["CLAUDE.md", "QWEN.md"]
+  "contextfilename": [
+    "CLAUDE.md",
+    "QWEN.md"
+  ],
+  "$version": 2
 }

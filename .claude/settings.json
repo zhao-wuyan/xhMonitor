@@ -5,7 +5,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c \"ccw tool exec update_module_claude '{\\\"strategy\\\":\\\"related\\\",\\\"tool\\\":\\\"codex\\\"}'\""
+            "command": "bash -c \"ccw tool exec update_module_claude '{\\\"strategy\\\":\\\"related\\\",\\\"tool\\\":\\\"qwen\\\"}'\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"ccw tool exec skill_context_loader '{\\\"mode\\\":\\\"auto\\\",\\\"prompt\\\":\\\"$CLAUDE_PROMPT\\\"}'\""
           }
         ]
       }

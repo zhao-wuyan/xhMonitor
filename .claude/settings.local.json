@@ -45,7 +45,17 @@
       "Skill(workflow:lite-execute)",
       "Bash(ccw cli history:*)",
       "Bash(ccw cli output:*)",
-      "Bash(ccw tool exec:*)"
+      "Bash(ccw tool exec:*)",
+      "mcp__ccw-tools__smart_search",
+      "Bash(tree:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\ProjectDev\\\\project\\\\xinghe\\\\xhMonitor\" -Recurse -Include \"*.cs\",\"*.ts\",\"*.tsx\" -Exclude \"node_modules\",\"obj\",\"bin\")",
+      "Bash(Where-Object { $_FullName -notmatch \"node_modules|obj|bin|release\" })",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Select-String -Pattern \"config|store|state|settings\" -SimpleMatch)",
+      "Bash(Select-Object -First 30)",
+      "mcp__MetaMCP__context7__resolve-library-id",
+      "Bash(test:*)",
+      "mcp__ccw-tools__write_file"
     ]
   },
   "model": "sonnet[1m]",

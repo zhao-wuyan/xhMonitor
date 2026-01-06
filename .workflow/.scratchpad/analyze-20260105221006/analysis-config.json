@@ -1,0 +1,18 @@
+{
+  "report_type": "comprehensive",
+  "depth_level": "standard",
+  "focus_areas": ["frontend_ui", "backend_logic", "system_monitoring"],
+  "timestamp": "20260105221006",
+  "output_dir": ".workflow/.scratchpad/analyze-20260105221006",
+  "agents": {
+    "architecture": ["overview", "layers", "dependencies", "dataflow", "entrypoints"],
+    "design": ["patterns", "classes", "interfaces", "state"],
+    "methods": ["algorithms", "paths", "apis", "logic"]
+  },
+  "project_context": {
+    "name": "xhMonitor",
+    "platform": "Windows",
+    "tech_stack": ["WPF", "C#", ".NET"],
+    "focus": "System monitoring desktop application"
+  }
+}
