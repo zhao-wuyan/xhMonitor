@@ -104,8 +104,10 @@ public partial class App : WpfApplication
             }
         };
 
-        var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
-        settingsItem.Click += (_, _) => OpenSettingsWindow();
+        // TODO: 设置功能暂时隐藏 - 等待其他功能完善后继续开发
+        // 保留代码以便后续恢复
+        // var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
+        // settingsItem.Click += (_, _) => OpenSettingsWindow();
 
         var exitItem = new WinForms.ToolStripMenuItem("退出");
         exitItem.Click += (_, _) => ExitApplication();
@@ -114,8 +116,8 @@ public partial class App : WpfApplication
         menu.Items.Add(openWebItem);
         menu.Items.Add(clickThroughItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
-        menu.Items.Add(settingsItem);
-        menu.Items.Add(new WinForms.ToolStripSeparator());
+        // menu.Items.Add(settingsItem); // 暂时隐藏设置菜单项
+        // menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(exitItem);
 
         return menu;
@@ -157,6 +159,21 @@ public partial class App : WpfApplication
         }
     }
 
+    /// <summary>
+    /// 打开设置窗口
+    /// TODO: 设置功能暂时隐藏 - 等待其他功能完善后继续开发
+    ///
+    /// 暂停原因:
+    /// - 需要先完善核心监控功能
+    /// - 设置项需要与后端 API 完全对接
+    /// - UI 交互需要进一步优化
+    ///
+    /// 恢复步骤:
+    /// 1. 取消注释 BuildTrayMenu() 中的 settingsItem 相关代码 (App.xaml.cs:107-110, 119-120)
+    /// 2. 确保 SettingsWindow.xaml 和 SettingsViewModel.cs 功能完整
+    /// 3. 测试设置保存和加载功能
+    /// 4. 验证与后端 API 的通信
+    /// </summary>
     private void OpenSettingsWindow()
     {
         Dispatcher.Invoke(() =>
