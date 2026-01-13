@@ -1,0 +1,27 @@
+{
+  "session_id": "process-name-display-enhancement-2026-01-13",
+  "task_description": "当前进程监控名称显示对用户来说不够友好，比如llamacpp 运行了很多模型，我想让其能显示模型名称，名称在进程运行命令上，但是难点是，各种进程不同规则我如何能正确的提取名称呢，请你给出一些方案让我选择,请你结合当前项目架构进行考虑，且注意编程实践规范",
+  "timestamp": "2026-01-13T00:00:00Z",
+  "complexity": "Medium",
+  "exploration_count": 3,
+  "explorations": [
+    {
+      "angle": "patterns",
+      "file": "exploration-patterns.json",
+      "path": ".workflow/.lite-plan/process-name-display-enhancement-2026-01-13/exploration-patterns.json",
+      "index": 1
+    },
+    {
+      "angle": "integration-points",
+      "file": "exploration-integration-points.json",
+      "path": ".workflow/.lite-plan/process-name-display-enhancement-2026-01-13/exploration-integration-points.json",
+      "index": 2
+    },
+    {
+      "angle": "testing",
+      "file": "exploration-testing.json",
+      "path": ".workflow/.lite-plan/process-name-display-enhancement-2026-01-13/exploration-testing.json",
+      "index": 3
+    }
+  ]
+}

@@ -55,7 +55,9 @@
       "Bash(Select-Object -First 30)",
       "mcp__MetaMCP__context7__resolve-library-id",
       "Bash(test:*)",
-      "mcp__ccw-tools__write_file"
+      "mcp__ccw-tools__write_file",
+      "Bash(find:*)",
+      "Bash(ccw task output:*)"
     ]
   },
   "model": "sonnet[1m]",

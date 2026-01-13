@@ -1,0 +1,104 @@
+{
+  "project_structure": "C# .NET 8 solution with 3 main projects: XhMonitor.Core (domain models/interfaces), XhMonitor.Service (ASP.NET backend with SignalR), XhMonitor.Desktop (WPF UI). Testing infrastructure is minimal - only SqliteTest utility project for database validation and TestRepository.csx script for ad-hoc testing. No formal unit test framework (xUnit/NUnit/MSTest) detected. Architecture follows plugin pattern (MetricProviderRegistry) and MVVM for UI (FloatingWindowViewModel).",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Core/Models/ProcessInfo.cs",
+      "relevance": 0.95,
+      "rationale": "Core model containing ProcessName and CommandLine fields - will need DisplayName property for friendly names, critical for testing name extraction logic"
+    },
+    {
+      "path": "XhMonitor.Service/Core/ProcessScanner.cs",
+      "relevance": 0.90,
+      "rationale": "Scans processes and extracts CommandLine via ProcessCommandLineReader - integration point for name extraction, needs testability improvements for different process types"
+    },
+    {
+      "path": "XhMonitor.Desktop/Models/ProcessInfoDto.cs",
+      "relevance": 0.85,
+      "rationale": "DTO for UI data transfer - will need DisplayName field, affects UI testing and data binding validation"
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "relevance": 0.80,
+      "rationale": "ViewModel displaying process names - ProcessRowViewModel.ProcessName property needs to bind to friendly name, UI behavior testing required"
+    },
+    {
+      "path": "SqliteTest/Program.cs",
+      "relevance": 0.60,
+      "rationale": "Existing test utility pattern - demonstrates ad-hoc testing approach, can be template for name extraction validation tests"
+    },
+    {
+      "path": "TestRepository.csx",
+      "relevance": 0.55,
+      "rationale": "C# script for repository testing - shows manual testing pattern with sample data, useful for creating test fixtures"
+    },
+    {
+      "path": "XhMonitor.Core/Entities/ProcessMetricRecord.cs",
+      "relevance": 0.50,
+      "rationale": "Database entity with ProcessName and CommandLine fields - may need DisplayName column for persistence, affects data migration testing"
+    },
+    {
+      "path": "XhMonitor.Service/Core/MetricProviderRegistry.cs",
+      "relevance": 0.45,
+      "rationale": "Plugin registry pattern - demonstrates extensibility approach that could be applied to name extractors, testability reference for strategy pattern"
+    }
+  ],
+  "patterns": "**Testing Patterns Found:**\n\n1. **Ad-hoc Console Testing**: SqliteTest project uses simple Console.WriteLine for validation (lines 3-91), no formal assertions\n2. **Script-based Testing**: TestRepository.csx uses C# scripting for manual repository testing with sample data (lines 20-31)\n3. **Manual Validation**: Tests rely on visual output inspection rather than automated assertions\n4. **No Test Framework**: No xUnit/NUnit/MSTest detected - testing is informal and manual\n5. **Plugin Pattern**: MetricProviderRegistry demonstrates testable plugin architecture with IsSupported() validation (lines 65-82)\n6. **Interface-based Design**: IMetricProvider interface enables mocking and testing (DisplayName, MetricId properties)\n\n**Testability Concerns for Name Extraction:**\n\n1. **Regex/Parser Validation**: Need test cases for different command line formats (llamacpp models, Python scripts, Java apps)\n2. **Edge Case Coverage**: Empty CommandLine, special characters, Unicode, very long paths\n3. **Performance Testing**: Regex performance on 1000+ processes, caching effectiveness\n4. **Error Handling**: Graceful fallback when extraction fails, logging validation\n5. **Cross-platform Testing**: Windows vs Linux path separators, different process naming conventions",
+  "dependencies": "**Testing Dependencies:**\n\n1. **Current (Minimal)**: Microsoft.Data.Sqlite (10.0.1) for SqliteTest - no test framework dependencies\n2. **Recommended for Name Extraction Testing**:\n   - xUnit or NUnit for unit testing framework\n   - FluentAssertions for readable test assertions\n   - Moq for mocking ILogger and dependencies\n   - Bogus for generating test data (fake process names/command lines)\n3. **System Dependencies**: System.Diagnostics.Process for process enumeration (already used in ProcessScanner)\n4. **Regex Testing**: System.Text.RegularExpressions (built-in) - needs performance benchmarking\n5. **Integration Testing**: Microsoft.EntityFrameworkCore.InMemory for database testing without SQLite file",
+  "integration_points": "**Testing Integration Points:**\n\n1. **ProcessScanner.ProcessSingleProcess()** (ProcessScanner.cs:67-109)\n   - Current: Extracts CommandLine via ProcessCommandLineReader.GetCommandLine()\n   - Testing Need: Mock ProcessCommandLineReader to inject test command lines\n   - Validation: Verify name extraction logic with various command line formats\n\n2. **ProcessInfo Model** (ProcessInfo.cs:3-9)\n   - Current: ProcessName (line 6), CommandLine (line 7)\n   - Testing Need: Add DisplayName property with getter logic or computed field\n   - Validation: Unit tests for DisplayName generation from CommandLine\n\n3. **ProcessRowViewModel.UpdateFrom()** (FloatingWindowViewModel.cs:411-419)\n   - Current: Updates ProcessName from DTO (line 413)\n   - Testing Need: Verify DisplayName binding and UI updates\n   - Validation: ViewModel property change notifications for DisplayName\n\n4. **MetricRepository.SaveMetricsAsync()** (referenced in TestRepository.csx:35)\n   - Current: Saves ProcessName to database\n   - Testing Need: Verify DisplayName persistence if added to schema\n   - Validation: Database round-trip tests for DisplayName field\n\n5. **Name Extraction Strategy Interface** (new component)\n   - Pattern: Similar to IMetricProvider (IMetricProvider.cs:9-49)\n   - Testing Need: Interface with Extract(commandLine) method, multiple implementations\n   - Validation: Strategy pattern tests with different extractors (regex, heuristic, ML-based)",
+  "constraints": "**Testing Constraints:**\n\n1. **No Formal Test Framework**: Project lacks xUnit/NUnit infrastructure - tests must be added or use ad-hoc approach\n2. **Manual Testing Culture**: Existing tests (SqliteTest, TestRepository.csx) are manual validation scripts, not automated\n3. **Limited Test Coverage**: No existing unit tests for business logic - name extraction will be first testable component\n4. **Performance Requirements**: ProcessScanner runs in parallel (MaxDegreeOfParallelism=4, ProcessScanner.cs:34-37) - name extraction must not slow down scanning\n5. **Production Data Dependency**: Testing requires real process command lines - need test fixture with diverse examples\n6. **Regex Complexity**: Different processes have different command line formats - single regex won't work, need strategy pattern\n7. **Backward Compatibility**: Existing ProcessName field must remain unchanged - DisplayName is additive\n8. **UI Thread Safety**: FloatingWindowViewModel updates on Dispatcher thread (line 189) - DisplayName updates must be thread-safe\n9. **Database Schema**: Adding DisplayName to ProcessMetricRecord requires migration - test data migration path\n10. **Logging Overhead**: ProcessScanner logs warnings (lines 47-48, 87-88) - name extraction errors must not spam logs",
+  "clarification_needs": [
+    {
+      "question": "What testing approach should be used for name extraction validation?",
+      "context": "Project currently has no formal test framework (no xUnit/NUnit/MSTest). Existing tests are ad-hoc console apps (SqliteTest) and C# scripts (TestRepository.csx). Name extraction logic with regex/parsing needs comprehensive testing for different process types (llamacpp, Python, Java, etc.) and edge cases (special characters, Unicode, long paths).",
+      "options": [
+        "Add xUnit test project with unit tests for name extraction strategies (recommended for long-term maintainability, enables CI/CD integration)",
+        "Create console test utility similar to SqliteTest with sample command lines and visual validation (faster to implement, matches existing pattern)",
+        "Use C# script (.csx) with test cases and assertions for manual execution (lightweight, no project changes needed)",
+        "Implement integration tests in existing projects with Debug.Assert for development-time validation (minimal setup, runtime checks only)"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should name extraction logic be validated for correctness?",
+      "context": "Different processes have different command line formats. For example, llamacpp might use '--model models/llama-7b.gguf', Python scripts 'python script.py', Java apps 'java -jar app.jar'. Need validation strategy to ensure extracted names are correct and user-friendly across diverse process types.",
+      "options": [
+        "Create test fixture with 50+ real-world command line examples and expected display names, validate extraction accuracy (comprehensive, data-driven testing)",
+        "Manual testing with live processes on developer machine, visual inspection of extracted names (quick feedback, real-world validation)",
+        "Unit tests for each extraction strategy (regex patterns) with 5-10 test cases per strategy (focused, fast execution)",
+        "Golden file testing: capture command lines from production, store expected names in JSON, compare extraction results (regression testing, production data)"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "Should DisplayName be persisted to database or computed on-the-fly?",
+      "context": "ProcessMetricRecord entity stores ProcessName and CommandLine in SQLite. DisplayName could be: (1) computed property from CommandLine when needed, or (2) stored as separate column. Computed approach avoids schema migration but impacts query performance. Persisted approach requires migration testing and data consistency validation.",
+      "options": [
+        "Computed property in ProcessInfo/ProcessInfoDto models - no database changes, extraction logic in application layer (simpler testing, no migration)",
+        "Add DisplayName column to ProcessMetricRecord with database migration - store extracted name at collection time (better query performance, requires migration testing)",
+        "Hybrid: compute on-the-fly for real-time display, persist in aggregated tables only (balances performance and storage)",
+        "Cache computed DisplayName in memory dictionary keyed by ProcessId - avoid repeated extraction (performance optimization, needs cache invalidation testing)"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should name extraction failures be tested and handled?",
+      "context": "Extraction may fail for: (1) malformed command lines, (2) unsupported process types, (3) regex timeout on very long strings, (4) special characters causing parsing errors. ProcessScanner already logs warnings for process access failures (lines 47-48, 87-88). Need error handling strategy that doesn't spam logs or break UI.",
+      "options": [
+        "Fallback to original ProcessName on extraction failure, log at Debug level only, test with intentionally malformed inputs (graceful degradation, minimal logging)",
+        "Return ProcessName with '(unrecognized)' suffix on failure, log at Warning level, test error rate metrics (user visibility, monitoring)",
+        "Throw exception on extraction failure, catch in ProcessScanner, test exception handling paths (fail-fast, explicit error handling)",
+        "Use default extraction strategy (filename from path) as fallback, no logging, test fallback chain (silent recovery, always produces result)"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-13T14:50:00.000Z",
+    "task_description": "当前进程监控名称显示对用户来说不够友好，比如llamacpp 运行了很多模型，我想让其能显示模型名称，名称在进程运行命令上，但是难点是，各种进程不同规则我如何能正确的提取名称呢，请你给出一些方案让我选择，请你结合当前项目架构进行考虑，且注意编程实践规范",
+    "source": "cli-explore-agent",
+    "exploration_angle": "testing",
+    "exploration_index": 3,
+    "total_explorations": 3,
+    "duration_seconds": 180
+  }
+}
