@@ -60,17 +60,17 @@ public class GpuMetricProvider : IMetricProvider
                     }
 
                     // 读取缓存的计数器（快速）
-                    double totalUtilization = 0;
+                    double maxUtilization = 0;
                     foreach (var counter in _systemCounters)
                     {
                         try
                         {
-                            totalUtilization += counter.NextValue();
+                            maxUtilization = Math.Max(maxUtilization, counter.NextValue());
                         }
                         catch { }
                     }
 
-                    return Math.Round(totalUtilization, 1);
+                    return Math.Round(maxUtilization, 1);
                 }
                 catch
                 {
@@ -167,6 +167,12 @@ public class GpuMetricProvider : IMetricProvider
                                 _systemCounters.Add(counter);
                             }
                             catch { }
+                        }
+
+                        // Warmup all counters (first call always returns 0)
+                        foreach (var counter in _systemCounters)
+                        {
+                            try { counter.NextValue(); } catch { }
                         }
 
                         _systemCountersInitialized = true;

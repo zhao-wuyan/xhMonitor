@@ -1,0 +1,109 @@
+{
+  "symptom": {
+    "description": "GPU 占用监控数据不准确，特别是在系统启动后的首次采集中，GPU 使用率显示为 0%，即使 GPU 正在高负载运行",
+    "error_message": null,
+    "stack_trace": null,
+    "frequency": "always",
+    "user_impact": "监控数据失真，用户无法准确了解 GPU 实际使用情况，特别是启动后的第一秒数据必然错误"
+  },
+  "root_cause": {
+    "file": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+    "line_range": "62-73",
+    "function": "GetSystemTotalAsync",
+    "issue": "PerformanceCounter.NextValue() 的第一次调用总是返回 0。代码在初始化性能计数器后立即调用 NextValue() 并将其作为有效数据，违反了 PerformanceCounter 的使用约定（需要两次调用之间有时间间隔才能计算平均值）",
+    "confidence": 0.95,
+    "introduced_by": "unknown",
+    "category": "logic_error"
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+      "relevance": 0.95,
+      "rationale": "包含 GPU 数据采集的核心逻辑，GetSystemTotalAsync 方法在初始化后立即调用 NextValue() 导致首次返回 0",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+      "relevance": 0.85,
+      "rationale": "WarmupAsync 方法设计缺陷，只创建了计数器实例但未执行预热调用（第一次 NextValue()），未能解决核心问题",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "relevance": 0.70,
+      "rationale": "调用 WarmupPerformanceCountersAsync 和 RunSystemUsageLoopAsync，需要确保预热和首次有效采集之间有足够时间间隔",
+      "change_type": "needs_update"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "relevance": 0.60,
+      "rationale": "调用 GpuMetricProvider.GetSystemTotalAsync，受上游数据不准确影响，但本身逻辑正确",
+      "change_type": "reference_only"
+    }
+  ],
+  "reproduction_steps": [
+    "启动 XhMonitor.Service 服务",
+    "观察控制台日志中的第一条 System usage 日志（启动后约 1-2 秒）",
+    "检查日志中的 GPU 使用率值，会发现显示为 0%",
+    "即使此时 GPU 正在运行高负载任务（如游戏、视频渲染），首次采集的 GPU 数据仍然是 0%",
+    "后续采集的数据会逐渐恢复正常，但首次数据失真已经记录到数据库和推送到前端"
+  ],
+  "fix_hints": [
+    {
+      "description": "修正 WarmupAsync 方法，在创建 PerformanceCounter 实例后立即调用一次 NextValue() 进行预热",
+      "approach": "在 GpuMetricProvider.WarmupAsync 的初始化循环后，遍历所有新创建的计数器并调用一次 NextValue()，忽略返回值（必然为 0）。这样后续的 GetSystemTotalAsync 调用就能获取有效数据",
+      "code_example": "// 在 GpuMetricProvider.WarmupAsync 的 _systemCountersInitialized = true 之前\nforeach (var counter in _systemCounters)\n{\n    try { counter.NextValue(); } catch { } // 预热调用，忽略返回值 0\n}\n_systemCountersInitialized = true;",
+      "risk": "low"
+    },
+    {
+      "description": "确保 Worker 启动流程中预热和首次采集之间有足够时间间隔",
+      "approach": "在 Worker.cs 的 ExecuteAsync 中，WarmupPerformanceCountersAsync 完成后，到 RunSystemUsageLoopAsync 的第一次实际数据采集之间，应至少有 1 秒的间隔。当前代码已经是异步启动，通常能满足，但可以添加显式延迟确保",
+      "code_example": "// 在 Worker.cs 的 ExecuteAsync 中，WarmupPerformanceCountersAsync 之后\nawait Task.Delay(TimeSpan.FromSeconds(1), stoppingToken); // 确保预热生效",
+      "risk": "low"
+    },
+    {
+      "description": "同样的问题可能存在于 CollectAsync 方法中的进程级 GPU 监控",
+      "approach": "检查 GpuMetricProvider.CollectAsync 中的 InitCounters 方法（L:129-145），确保新创建的进程级计数器也进行预热调用。当前代码在 L:140 有 c.NextValue() 调用，这是正确的，但需要验证是否在所有路径都执行",
+      "code_example": "// 在 InitCounters 方法中，已经有预热调用（L:140）\ntry { c.NextValue(); list.Add(c); } catch { c.Dispose(); }\n// 这个逻辑是正确的，需要确保 GetSystemTotalAsync 也采用相同模式",
+      "risk": "low"
+    }
+  ],
+  "dependencies": "System.Diagnostics.PerformanceCounter (Windows Performance Counter API)",
+  "constraints": "PerformanceCounter 的工作机制要求两次 NextValue() 调用之间有时间间隔才能计算有效的平均值，第一次调用总是返回 0。修复必须遵循这个约束",
+  "related_issues": [
+    {
+      "type": "similar_bug",
+      "reference": "GpuMetricProvider.CollectAsync L:140",
+      "description": "进程级 GPU 监控在 InitCounters 中已经正确实现了预热调用（c.NextValue()），但系统级监控（GetSystemTotalAsync）未采用相同模式"
+    }
+  ],
+  "clarification_needs": [
+    {
+      "question": "是否需要在日志中记录预热过程的详细信息？",
+      "context": "当前 WarmupPerformanceCountersAsync 只记录了预热完成后的验证结果（L:113），但未记录预热过程中的计数器创建和预热调用细节。增加详细日志有助于诊断预热失败的情况",
+      "options": [
+        "保持当前日志级别，只记录预热结果",
+        "增加 Debug 级别日志，记录每个计数器的创建和预热状态",
+        "增加 Information 级别日志，记录预热的关键步骤和计数器数量"
+      ]
+    },
+    {
+      "question": "是否需要对预热失败的情况进行重试？",
+      "context": "当前 WarmupAsync 如果失败会被 catch 忽略（L:175），不会影响服务启动。但这意味着如果预热失败，首次采集数据仍然会不准确。是否需要增加重试机制或降级策略",
+      "options": [
+        "保持当前行为，预热失败不影响服务启动，首次数据可能不准",
+        "增加重试机制，预热失败后延迟重试 2-3 次",
+        "预热失败时记录警告日志，并在首次采集时跳过数据推送"
+      ]
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-12T08:00:00Z",
+    "bug_description": "在控制台打印当前系统占用情况的日志，我要分析为什么 GPU 占用监控不准",
+    "source": "cli-explore-agent",
+    "diagnosis_angle": "performance",
+    "diagnosis_index": 1,
+    "total_diagnoses": 2,
+    "duration_seconds": 120
+  }
+}

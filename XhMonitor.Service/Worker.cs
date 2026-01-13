@@ -214,6 +214,8 @@ public class Worker : BackgroundService
     {
         var usage = await _systemMetricProvider.GetSystemUsageAsync();
 
+        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] System Usage - CPU: {usage.TotalCpu:F1}%, GPU: {usage.TotalGpu:F1}%, Memory: {usage.TotalMemory}MB, VRAM: {usage.TotalVram}MB");
+
         _logger.LogDebug("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
             usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
 

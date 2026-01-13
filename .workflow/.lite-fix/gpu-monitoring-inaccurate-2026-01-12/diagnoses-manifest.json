@@ -1,0 +1,21 @@
+{
+  "session_id": "gpu-monitoring-inaccurate-2026-01-12",
+  "bug_description": "在控制台打印当前系统占用情况的日志，我要分析为什么gpu占用监控不准",
+  "timestamp": "2026-01-12T08:00:00Z",
+  "severity": "Medium",
+  "diagnosis_count": 2,
+  "diagnoses": [
+    {
+      "angle": "performance",
+      "file": "diagnosis-performance.json",
+      "path": ".workflow/.lite-fix/gpu-monitoring-inaccurate-2026-01-12/diagnosis-performance.json",
+      "index": 1
+    },
+    {
+      "angle": "dataflow",
+      "file": "diagnosis-dataflow.json",
+      "path": ".workflow/.lite-fix/gpu-monitoring-inaccurate-2026-01-12/diagnosis-dataflow.json",
+      "index": 2
+    }
+  ]
+}
