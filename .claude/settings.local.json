@@ -58,7 +58,10 @@
       "mcp__ccw-tools__write_file",
       "Bash(find:*)",
       "Bash(ccw task output:*)",
-      "mcp__augment-context-engine__codebase-retrieval"
+      "mcp__augment-context-engine__codebase-retrieval",
+      "mcp__idea-mcp__get_file_problems",
+      "mcp__idea-mcp__get_symbol_info",
+      "mcp__idea-mcp__search_in_files_by_text"
     ]
   },
   "model": "sonnet[1m]",
