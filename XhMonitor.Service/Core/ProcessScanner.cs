@@ -87,7 +87,7 @@ public class ProcessScanner
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get command line for process {ProcessId} ({ProcessName})",
+            _logger.LogWarning(ex, "获取进程命令行失败 {ProcessId} ({ProcessName})",
                 pid, processName);
             return;
         }
@@ -101,7 +101,11 @@ public class ProcessScanner
 
         if (_keywords.Count == 0 || matchedKeywords.Count > 0)
         {
-            var displayName = _nameResolver.Resolve(processName, commandLine);
+            var resolvedName = _nameResolver.Resolve(processName, commandLine);
+            var displayName = !string.IsNullOrEmpty(resolvedName) ? resolvedName : processName;
+
+            _logger.LogDebug("获取进程命令友好名称【{displayName}】 {commandLine} ({processName})",
+                displayName, commandLine, processName);
 
             results.Add(new ProcessInfo
             {

@@ -256,6 +256,7 @@ public class Worker : BackgroundService
                     m.Info.ProcessId,
                     m.Info.ProcessName,
                     m.Info.CommandLine,
+                    m.Info.DisplayName,
                     Metrics = m.Metrics
                 }).ToList()
             }, ct);
