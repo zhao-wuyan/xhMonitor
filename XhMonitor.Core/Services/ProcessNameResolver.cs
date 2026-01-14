@@ -29,7 +29,7 @@ public class ProcessNameResolver : IProcessNameResolver
 
         var rulesSection = configuration.GetSection("Monitor:ProcessNameRules");
         _rules = rulesSection.Get<List<ProcessNameRule>>() ?? new List<ProcessNameRule>();
-
+        System.Diagnostics.Debug.WriteLine("加载规处理规则: {0}个", _rules.Count);
         // 验证规则完整性
         foreach (var rule in _rules)
         {
@@ -123,6 +123,7 @@ public class ProcessNameResolver : IProcessNameResolver
         if (!match.Success)
         {
             _logger.LogDebug("Regex pattern did not match: {Pattern}", rule.Pattern);
+            System.Diagnostics.Debug.WriteLine("正则表达式模式不匹配: {0}", rule.Pattern);
             return processName;
         }
 
@@ -130,6 +131,7 @@ public class ProcessNameResolver : IProcessNameResolver
         if (groupIndex < 0 || groupIndex >= match.Groups.Count)
         {
             _logger.LogDebug("Invalid capture group index: {GroupIndex}", groupIndex);
+            System.Diagnostics.Debug.WriteLine("捕获组索引无效: {0}", groupIndex);
             return processName;
         }
 
