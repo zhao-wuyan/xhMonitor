@@ -4,6 +4,7 @@ using Serilog;
 using Serilog.Events;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
+using XhMonitor.Core.Services;
 using XhMonitor.Service;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Data;
@@ -74,6 +75,8 @@ builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
 });
 
 builder.Services.AddSingleton<IProcessMetricRepository, MetricRepository>();
+
+builder.Services.AddSingleton<IProcessNameResolver, ProcessNameResolver>();
 
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<AggregationWorker>();

@@ -71,6 +71,7 @@ public sealed class MetricRepository : IProcessMetricRepository
             ProcessId = source.Info.ProcessId,
             ProcessName = source.Info.ProcessName,
             CommandLine = source.Info.CommandLine,
+            DisplayName = source.Info.DisplayName,
             Timestamp = DateTime.SpecifyKind(cycleTimestamp, DateTimeKind.Utc),
             MetricsJson = metricsJson
         };

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using XhMonitor.Core.Interop;
 using XhMonitor.Core.Models;
+using XhMonitor.Core.Interfaces;
 
 namespace XhMonitor.Service.Core;
 
@@ -9,10 +10,12 @@ public class ProcessScanner
 {
     private readonly ILogger<ProcessScanner> _logger;
     private readonly List<string> _keywords;
+    private readonly IProcessNameResolver _nameResolver;
 
-    public ProcessScanner(ILogger<ProcessScanner> logger, IConfiguration config)
+    public ProcessScanner(ILogger<ProcessScanner> logger, IConfiguration config, IProcessNameResolver nameResolver)
     {
         _logger = logger;
+        _nameResolver = nameResolver;
 
         var keywords = config.GetSection("Monitor:Keywords").Get<string[]>() ?? Array.Empty<string>();
         _keywords = keywords.Select(k => k.ToLowerInvariant()).ToList();
@@ -98,11 +101,14 @@ public class ProcessScanner
 
         if (_keywords.Count == 0 || matchedKeywords.Count > 0)
         {
+            var displayName = _nameResolver.Resolve(processName, commandLine);
+
             results.Add(new ProcessInfo
             {
                 ProcessId = pid,
                 ProcessName = processName,
                 CommandLine = commandLine,
+                DisplayName = displayName,
                 MatchedKeywords = matchedKeywords
             });
         }

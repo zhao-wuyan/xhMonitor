@@ -257,6 +257,10 @@ namespace XhMonitor.Service.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("MetricsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");

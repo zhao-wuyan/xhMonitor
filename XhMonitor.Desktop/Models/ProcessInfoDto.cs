@@ -13,6 +13,9 @@ public class ProcessInfoDto
     [JsonPropertyName("commandLine")]
     public string CommandLine { get; set; } = string.Empty;
 
+    [JsonPropertyName("displayName")]
+    public string DisplayName { get; set; } = string.Empty;
+
     [JsonPropertyName("metrics")]
     public Dictionary<string, MetricValue> Metrics { get; set; } = new();
 }

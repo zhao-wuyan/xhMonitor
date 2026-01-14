@@ -57,13 +57,14 @@
       "Bash(test:*)",
       "mcp__ccw-tools__write_file",
       "Bash(find:*)",
-      "Bash(ccw task output:*)"
+      "Bash(ccw task output:*)",
+      "mcp__augment-context-engine__codebase-retrieval"
     ]
   },
   "model": "sonnet[1m]",
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "auggie-mcp"
+    "ccw-tools"
   ],
   "statusLine": {
     "type": "command",

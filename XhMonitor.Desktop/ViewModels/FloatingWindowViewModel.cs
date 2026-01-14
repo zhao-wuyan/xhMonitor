@@ -385,6 +385,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             private set => SetField(ref _commandLine, value);
         }
 
+        private string _displayName = string.Empty;
+        public string DisplayName
+        {
+            get => _displayName;
+            private set => SetField(ref _displayName, value);
+        }
+
         private double _cpu;
         public double Cpu { get => _cpu; private set => SetField(ref _cpu, value); }
 
@@ -405,6 +412,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             ProcessId = dto.ProcessId;
             _processName = dto.ProcessName;
             _commandLine = dto.CommandLine;
+            _displayName = !string.IsNullOrEmpty(dto.DisplayName) ? dto.DisplayName : dto.ProcessName;
             UpdateFrom(dto);
         }
 
@@ -412,6 +420,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
         {
             ProcessName = dto.ProcessName;
             CommandLine = dto.CommandLine;
+            DisplayName = !string.IsNullOrEmpty(dto.DisplayName) ? dto.DisplayName : dto.ProcessName;
             Cpu = dto.Metrics.GetValueOrDefault("cpu")?.Value ?? 0d;
             Memory = dto.Metrics.GetValueOrDefault("memory")?.Value ?? 0d;
             Gpu = dto.Metrics.GetValueOrDefault("gpu")?.Value ?? 0d;
