@@ -191,8 +191,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             SyncProcessIndex(data.Processes);
 
             var orderedAll = data.Processes
-                .OrderByDescending(p => GetMetricValue(p, "cpu"))
-                .ThenBy(p => p.ProcessName)
+                .OrderBy(p => p.ProcessName)
+                .ThenByDescending(p => GetMetricValue(p, "vram"))
                 .Select(p => _processIndex[p.ProcessId])
                 .ToList();
 
@@ -268,8 +268,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             SyncProcessIndex(data.Processes);
 
             var orderedAll = data.Processes
-                .OrderByDescending(p => GetMetricValue(p, "cpu"))
-                .ThenBy(p => p.ProcessName)
+                .OrderBy(p => p.ProcessName)
+                .ThenByDescending(p => GetMetricValue(p, "vram"))
                 .Select(p => _processIndex[p.ProcessId])
                 .ToList();
 
