@@ -214,9 +214,7 @@ public class Worker : BackgroundService
     {
         var usage = await _systemMetricProvider.GetSystemUsageAsync();
 
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] System Usage - CPU: {usage.TotalCpu:F1}%, GPU: {usage.TotalGpu:F1}%, Memory: {usage.TotalMemory}MB, VRAM: {usage.TotalVram}MB");
-
-        _logger.LogDebug("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
+        _logger.LogInformation("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
             usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
 
         await _hubContext.Clients.All.SendAsync(SignalREvents.SystemUsage, new
@@ -234,14 +232,14 @@ public class Worker : BackgroundService
     private async Task SendProcessDataAsync(DateTime timestamp, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
-        _logger.LogInformation("开始采集进程指标...");
+        _logger.LogDebug("开始采集进程指标...");
 
         var metrics = await _monitor.CollectAllAsync();
         var collectElapsed = sw.ElapsedMilliseconds;
 
         if (metrics.Count > 0)
         {
-            _logger.LogInformation("进程指标采集完成: 采集到 {Count} 个进程, 采集耗时: {CollectMs}ms", metrics.Count, collectElapsed);
+            _logger.LogDebug("进程指标采集完成: 采集到 {Count} 个进程, 采集耗时: {CollectMs}ms", metrics.Count, collectElapsed);
 
             var saveStart = Stopwatch.GetTimestamp();
             await _repository.SaveMetricsAsync(metrics, timestamp, ct);
@@ -261,12 +259,12 @@ public class Worker : BackgroundService
                 }).ToList()
             }, ct);
 
-            _logger.LogInformation("进程数据处理完成: 保存耗时: {SaveMs}ms, 推送完成, 总耗时: {TotalMs}ms",
+            _logger.LogDebug("进程数据处理完成: 保存耗时: {SaveMs}ms, 推送完成, 总耗时: {TotalMs}ms",
                 saveElapsed, sw.ElapsedMilliseconds);
         }
         else
         {
-            _logger.LogInformation("未发现匹配的进程, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
+            _logger.LogDebug("未发现匹配的进程, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
         }
     }
 }

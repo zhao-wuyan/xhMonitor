@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 using XhMonitor.Core.Interfaces;
@@ -26,30 +27,21 @@ catch
     // WinExe 模式下可能没有控制台，忽略错误
 }
 
+// 创建临时配置以读取日志设置
+var tempConfig = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
+    .Build();
+
 // 确定日志目录（使用应用所在目录）
 var appDirectory = AppContext.BaseDirectory;
 var logDirectory = Path.Combine(appDirectory, "logs");
 Directory.CreateDirectory(logDirectory);
-var logPath = Path.Combine(logDirectory, "xhmonitor-.log");
 
-// 配置 Serilog 日志
+// 配置 Serilog 日志 - 从配置文件读取
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.Console(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}")
-    .WriteTo.Debug(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}")
-    .WriteTo.File(
-        path: logPath,
-        rollingInterval: RollingInterval.Day,
-        fileSizeLimitBytes: 50 * 1024 * 1024,
-        rollOnFileSizeLimit: true,
-        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}",
-        encoding: Encoding.UTF8,
-        retainedFileCountLimit: 7)
+    .ReadFrom.Configuration(tempConfig)
     .CreateLogger();
 
 try
