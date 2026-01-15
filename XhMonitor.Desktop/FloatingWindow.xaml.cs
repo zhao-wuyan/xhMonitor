@@ -9,6 +9,8 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using System.Collections.Specialized;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop;
@@ -435,6 +437,209 @@ public partial class FloatingWindow : Window
         }
     }
 
+    private void ProcessRow_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is Border border)
+        {
+            var killButton = FindVisualChild<Border>(border, "KillButton");
+            if (killButton != null && killButton.Tag as string != "killing")
+            {
+                killButton.Visibility = Visibility.Visible;
+            }
+        }
+    }
+
+    private void ProcessRow_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is Border border)
+        {
+            var killButton = FindVisualChild<Border>(border, "KillButton");
+            if (killButton != null && killButton.Tag as string != "confirmed" && killButton.Tag as string != "killing")
+            {
+                killButton.Visibility = Visibility.Collapsed;
+                killButton.Tag = null;
+            }
+        }
+    }
+
+    private void KillButton_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border button && button.DataContext is FloatingWindowViewModel.ProcessRowViewModel row)
+        {
+            var buttonText = FindVisualChild<TextBlock>(button, "KillButtonText");
+            var countdownCircle = FindVisualChild<Ellipse>(button, "CountdownCircle");
+            if (buttonText == null) return;
+
+            var currentState = button.Tag as string;
+
+            if (currentState == "killing")
+            {
+                // 正在执行 kill，禁止重复点击
+                e.Handled = true;
+                return;
+            }
+
+            if (currentState == "confirmed")
+            {
+                // 第二次点击：执行 kill
+                button.Tag = "killing";
+                button.IsEnabled = false;
+
+                // 停止倒计时
+                if (button.Tag is DispatcherTimer countdownTimer)
+                {
+                    countdownTimer.Stop();
+                }
+
+                // 隐藏倒计时圆圈
+                if (countdownCircle != null)
+                {
+                    countdownCircle.Visibility = Visibility.Collapsed;
+                }
+
+                // 显示加载动画
+                var rotateAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 0,
+                    To = 360,
+                    Duration = TimeSpan.FromSeconds(1),
+                    RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
+                };
+                var rotateTransform = new RotateTransform();
+                buttonText.RenderTransform = rotateTransform;
+                buttonText.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+                rotateTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnimation);
+
+                ProcessActionRequested?.Invoke(this, new ProcessActionEventArgs
+                {
+                    ProcessId = row.ProcessId,
+                    ProcessName = row.ProcessName,
+                    Action = "kill"
+                });
+
+                // 重置状态（kill 完成后进程会从列表移除，所以这里延迟重置）
+                var resetTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                resetTimer.Tick += (s, args) =>
+                {
+                    button.Tag = null;
+                    button.IsEnabled = true;
+                    button.Visibility = Visibility.Collapsed;
+                    buttonText.RenderTransform = null;
+                    resetTimer.Stop();
+                };
+                resetTimer.Start();
+            }
+            else
+            {
+                // 第一次点击：确认状态 + 启动倒计时
+                button.Tag = "confirmed";
+                // X 保持深色不变
+                button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0xFF, 0x99, 0x99)); // 浅红色背景
+
+                // 缩放动画（视觉反馈）
+                var scaleTransform = button.RenderTransform as ScaleTransform;
+                if (scaleTransform != null)
+                {
+                    var scaleAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                    {
+                        From = 1.0,
+                        To = 1.2,
+                        Duration = TimeSpan.FromMilliseconds(150),
+                        AutoReverse = true
+                    };
+                    scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimation);
+                    scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimation);
+                }
+
+                // 显示倒计时圆圈并启动动画
+                if (countdownCircle != null)
+                {
+                    countdownCircle.Visibility = Visibility.Visible;
+
+                    // 圆圈周长 = 2 * π * r = 2 * 3.14159 * 7 = 43.98
+                    var circumference = 43.98;
+                    var dashAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                    {
+                        From = 0,
+                        To = circumference,
+                        Duration = TimeSpan.FromSeconds(1)
+                    };
+                    countdownCircle.BeginAnimation(Ellipse.StrokeDashOffsetProperty, dashAnimation);
+                }
+
+                // 1秒倒计时：超时后取消确认状态
+                var countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                countdownTimer.Tick += (s, args) =>
+                {
+                    // 取消确认状态
+                    button.Tag = null;
+                    // X 保持深色不变
+                    button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0xFF, 0xFF, 0xFF)); // 恢复白色背景
+
+                    // 隐藏倒计时圆圈
+                    if (countdownCircle != null)
+                    {
+                        countdownCircle.Visibility = Visibility.Collapsed;
+                    }
+
+                    countdownTimer.Stop();
+                };
+                countdownTimer.Start();
+            }
+            e.Handled = true;
+        }
+    }
+
+    private void KillButton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is Border button && button.Tag as string != "confirmed" && button.Tag as string != "killing")
+        {
+            // Hover 时改变背景颜色为浅红色
+            button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0xFF, 0xCC, 0xCC));
+        }
+    }
+
+    private void KillButton_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is Border button && button.Tag as string != "confirmed" && button.Tag as string != "killing")
+        {
+            // 恢复默认背景颜色
+            button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xCC, 0xFF, 0xFF, 0xFF));
+        }
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent, string name) where T : FrameworkElement
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T element && element.Name == name)
+            {
+                return element;
+            }
+            var result = FindVisualChild<T>(child, name);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    public void ShowToast(string message)
+    {
+        ToastMessage.Text = message;
+        ToastBorder.Visibility = Visibility.Visible;
+
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        timer.Tick += (s, e) =>
+        {
+            ToastBorder.Visibility = Visibility.Collapsed;
+            timer.Stop();
+        };
+        timer.Start();
+    }
+
     private void ProcessScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         // 只在垂直滚动位置变化时处理
@@ -618,8 +823,8 @@ public partial class FloatingWindow : Window
 
         public WindowPositionStore(string appName)
         {
-            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName);
-            _filePath = Path.Combine(dir, "window.json");
+            var dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName);
+            _filePath = System.IO.Path.Combine(dir, "window.json");
         }
 
         public WindowPlacement? Load()
@@ -641,7 +846,7 @@ public partial class FloatingWindow : Window
         {
             try
             {
-                var dir = Path.GetDirectoryName(_filePath);
+                var dir = System.IO.Path.GetDirectoryName(_filePath);
                 if (!string.IsNullOrEmpty(dir))
                 {
                     Directory.CreateDirectory(dir);

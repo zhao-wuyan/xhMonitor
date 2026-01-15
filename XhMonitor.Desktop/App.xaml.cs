@@ -213,12 +213,29 @@ public partial class App : WpfApplication
 
     private void OnProcessActionRequested(object? sender, ProcessActionEventArgs e)
     {
-        // 插件扩展点：在这里实现自定义的进程点击处理逻辑
-        // 示例：记录日志
         System.Diagnostics.Debug.WriteLine($"[Plugin Extension Point] Process Action: {e.ProcessName} (PID: {e.ProcessId}) -> {e.Action}");
 
-        // TODO: 插件可以在这里注册自定义处理器
-        // 例如：PluginManager.HandleProcessAction(e.ProcessId, e.ProcessName, e.Action);
+        if (e.Action == "kill")
+        {
+            try
+            {
+                var process = Process.GetProcessById(e.ProcessId);
+                process.Kill(entireProcessTree: true);
+                System.Diagnostics.Debug.WriteLine($"Successfully killed process: {e.ProcessName} (PID: {e.ProcessId})");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _floatingWindow?.ShowToast($"无权限关闭进程 {e.ProcessName} (PID: {e.ProcessId})");
+            }
+            catch (InvalidOperationException)
+            {
+                _floatingWindow?.ShowToast($"进程 {e.ProcessName} 已退出");
+            }
+            catch (Exception ex)
+            {
+                _floatingWindow?.ShowToast($"关闭进程失败: {ex.Message}");
+            }
+        }
     }
 
     private async Task StartBackendServerAsync()

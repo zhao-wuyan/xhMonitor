@@ -77,8 +77,9 @@
 
         <!-- Process Row Template -->
         <DataTemplate x:Key="ProcessRowTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="Transparent" Padding="0,2" Margin="0,1"
-                    MouseRightButtonUp="ProcessRow_RightClick">
+            <Border x:Name="ProcessRow" Background="Transparent" Padding="0,2" Margin="0,1"
+                    MouseRightButtonUp="ProcessRow_RightClick"
+                    MouseEnter="ProcessRow_MouseEnter" MouseLeave="ProcessRow_MouseLeave">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -91,14 +92,13 @@
 
                     <!-- Process Name -->
                     <Grid Grid.Column="0" VerticalAlignment="Center" MinWidth="120">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="📌 " Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}"
-                                   Foreground="{StaticResource ColorGreen}" FontSize="9" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0">
-                            <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource ColorTextMain}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
+                        <!-- Base Layer: Process Name -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📌 " Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}"
+                                       Foreground="{StaticResource ColorGreen}" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource ColorTextMain}"
+                                       FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" Margin="4,0,0,0">
                                 <TextBlock.ToolTip>
                                     <ToolTip MaxWidth="400">
                                         <TextBlock Text="{Binding CommandLine}" TextWrapping="Wrap"/>
@@ -106,6 +106,33 @@
                                 </TextBlock.ToolTip>
                             </TextBlock>
                         </StackPanel>
+                        <!-- Overlay Layer: Kill Button (Floating) -->
+                        <Border x:Name="KillButton" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Width="16" Height="16" CornerRadius="8" Margin="0,0,4,0"
+                                Background="#CCFFFFFF" Cursor="Hand" Visibility="Collapsed"
+                                MouseEnter="KillButton_MouseEnter" MouseLeave="KillButton_MouseLeave"
+                                MouseLeftButtonUp="KillButton_Click">
+                            <Border.ToolTip>
+                                <ToolTip Content="关闭进程（点击两次确认）"/>
+                            </Border.ToolTip>
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="KillButtonScale" ScaleX="1" ScaleY="1" CenterX="8" CenterY="8"/>
+                            </Border.RenderTransform>
+                            <Grid>
+                                <!-- Countdown Circle (Background) -->
+                                <Ellipse x:Name="CountdownCircle" Width="14" Height="14"
+                                         Stroke="#CC333333" StrokeThickness="2"
+                                         Visibility="Collapsed" StrokeDashArray="43.98" StrokeDashOffset="0">
+                                    <Ellipse.RenderTransform>
+                                        <RotateTransform Angle="-90" CenterX="7" CenterY="7"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                                <!-- Kill Icon (Same as PinnedCard Unpin) -->
+                                <TextBlock x:Name="KillButtonText" Text="✕" FontSize="10"
+                                           Foreground="#333333" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
                     </Grid>
 
                     <!-- PID -->
@@ -225,6 +252,13 @@
             <RowDefinition Height="Auto"/> <!-- Row 1: MonitorBar -->
             <RowDefinition Height="Auto"/> <!-- Row 2: 下方PinnedStack区域 -->
         </Grid.RowDefinitions>
+
+        <!-- Toast Notification -->
+        <Border x:Name="ToastBorder" Grid.Row="1" Background="#CC000000" CornerRadius="4" Padding="12,8"
+                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"
+                Visibility="Collapsed" Panel.ZIndex="1000">
+            <TextBlock x:Name="ToastMessage" Foreground="White" FontSize="12" TextWrapping="Wrap"/>
+        </Border>
 
         <!-- Monitor Bar -->
         <Border x:Name="MonitorBar" Grid.Row="1" CornerRadius="8"
