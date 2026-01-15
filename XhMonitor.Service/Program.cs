@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
+using Serilog.Settings.Configuration;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
 using XhMonitor.Core.Services;
@@ -45,8 +47,13 @@ var logDirectory = Path.Combine(appDirectory, "logs");
 Directory.CreateDirectory(logDirectory);
 
 // 配置 Serilog 日志 - 从配置文件读取
+var serilogOptions = new ConfigurationReaderOptions(
+    Assembly.Load("Serilog.Sinks.Console"),
+    Assembly.Load("Serilog.Sinks.Debug"),
+    Assembly.Load("Serilog.Sinks.File"));
+
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(tempConfig)
+    .ReadFrom.Configuration(tempConfig, serilogOptions)
     .CreateLogger();
 
 try

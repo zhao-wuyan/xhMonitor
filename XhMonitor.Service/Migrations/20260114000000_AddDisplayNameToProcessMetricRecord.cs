@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using XhMonitor.Service.Data;
 
 #nullable disable
 
 namespace XhMonitor.Service.Migrations
 {
+    [DbContext(typeof(MonitorDbContext))]
+    [Migration("20260114000000_AddDisplayNameToProcessMetricRecord")]
     /// <inheritdoc />
     public partial class AddDisplayNameToProcessMetricRecord : Migration
     {
