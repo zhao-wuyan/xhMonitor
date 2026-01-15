@@ -38,6 +38,10 @@ public partial class FloatingWindow : Window
     // Pinned Stack 定位相关
     private bool _lastPopupAbove = false;
 
+    // 滚动条隐藏相关
+    private DispatcherTimer? _scrollBarHideTimer;
+    private double _lastVerticalOffset;
+
     public bool IsClickThroughEnabled { get; private set; }
 
     public event EventHandler<MetricActionEventArgs>? MetricActionRequested;
@@ -418,6 +422,53 @@ public partial class FloatingWindow : Window
             _viewModel.TogglePin(row);
             e.Handled = true;
         }
+    }
+
+    private void ProcessScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        // 只在垂直滚动位置变化时处理
+        if (Math.Abs(e.VerticalOffset - _lastVerticalOffset) < 0.1) return;
+        _lastVerticalOffset = e.VerticalOffset;
+
+        if (sender is not ScrollViewer scrollViewer) return;
+
+        // 找到滚动条并显示
+        var scrollBar = FindVisualChild<System.Windows.Controls.Primitives.ScrollBar>(scrollViewer);
+        if (scrollBar != null)
+        {
+            scrollBar.Opacity = 1;
+        }
+
+        // 重置隐藏计时器
+        _scrollBarHideTimer?.Stop();
+        _scrollBarHideTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(600)
+        };
+        _scrollBarHideTimer.Tick += (s, args) =>
+        {
+            _scrollBarHideTimer?.Stop();
+            if (scrollBar != null)
+            {
+                scrollBar.Opacity = 0;
+            }
+        };
+        _scrollBarHideTimer.Start();
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            if (child is T typedChild)
+                return typedChild;
+
+            var result = FindVisualChild<T>(child);
+            if (result != null)
+                return result;
+        }
+        return null;
     }
 
     private void OnClosing(object? sender, CancelEventArgs e)
