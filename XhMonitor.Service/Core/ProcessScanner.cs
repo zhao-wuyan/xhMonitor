@@ -72,10 +72,11 @@ public class ProcessScanner
 
     private void ProcessSingleProcess(Process process, ConcurrentBag<ProcessInfo> results)
     {
-        int pid = process.Id;
-        string processName = process.ProcessName;
+        var pid = process.Id;
+        var processName = process.ProcessName;
         string? commandLine = null;
-
+        _logger.LogDebug("进入ProcessSingleProcess");
+        
         try
         {
             commandLine = ProcessCommandLineReader.GetCommandLine(pid);
@@ -102,23 +103,22 @@ public class ProcessScanner
 
         var matchedKeywords = GetMatchedKeywords(commandLine);
 
-        if ((_includeKeywords.Count == 0 && _excludeKeywords.Count == 0) || matchedKeywords.Count > 0)
+        if ((_includeKeywords.Count != 0 || _excludeKeywords.Count != 0) && matchedKeywords.Count <= 0) return;
+        
+        var resolvedName = _nameResolver.Resolve(processName, commandLine);
+        var displayName = !string.IsNullOrEmpty(resolvedName) ? resolvedName : processName;
+
+        _logger.LogDebug("获取进程命令友好名称【{displayName}】 {commandLine} ({processName})",
+            displayName, commandLine, processName);
+
+        results.Add(new ProcessInfo
         {
-            var resolvedName = _nameResolver.Resolve(processName, commandLine);
-            var displayName = !string.IsNullOrEmpty(resolvedName) ? resolvedName : processName;
-
-            _logger.LogDebug("获取进程命令友好名称【{displayName}】 {commandLine} ({processName})",
-                displayName, commandLine, processName);
-
-            results.Add(new ProcessInfo
-            {
-                ProcessId = pid,
-                ProcessName = processName,
-                CommandLine = commandLine,
-                DisplayName = displayName,
-                MatchedKeywords = matchedKeywords
-            });
-        }
+            ProcessId = pid,
+            ProcessName = processName,
+            CommandLine = commandLine,
+            DisplayName = displayName,
+            MatchedKeywords = matchedKeywords
+        });
     }
 
     private List<string> GetMatchedKeywords(string commandLine)

@@ -44,8 +44,19 @@ public partial class FloatingWindow : Window
 
     public bool IsClickThroughEnabled { get; private set; }
 
+    /// <summary>
+    /// 指标操作事件 - 预留扩展点，用于处理指标相关的用户交互操作
+    /// </summary>
     public event EventHandler<MetricActionEventArgs>? MetricActionRequested;
+
+    /// <summary>
+    /// 进程操作事件 - 预留扩展点，用于处理进程相关的用户交互操作
+    /// 当用户在悬浮窗点击进程时触发，传递 ProcessId、ProcessName、Action 给订阅者
+    /// 处理方法位于 App.xaml.cs 的 OnProcessActionRequested
+    /// </summary>
+#pragma warning disable CS0067 // Event is never used - reserved for future extension
     public event EventHandler<ProcessActionEventArgs>? ProcessActionRequested;
+#pragma warning restore CS0067
 
     public FloatingWindow()
     {
