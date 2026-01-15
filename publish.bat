@@ -60,24 +60,9 @@ echo [4/5] 复制配置文件和文档...
 :: 复制 Service 配置文件
 copy /y "XhMonitor.Service\appsettings.json" "%SERVICE_DIR%\appsettings.json" > nul
 
-::创建启动脚本
-echo @echo off > "%OUTPUT_DIR%\启动服务.bat"
-echo chcp 65001 ^> nul >> "%OUTPUT_DIR%\启动服务.bat"
-echo cd /d "%%~dp0" >> "%OUTPUT_DIR%\启动服务.bat"
-echo echo 正在启动服务端... >> "%OUTPUT_DIR%\启动服务.bat"
-echo cd Service >> "%OUTPUT_DIR%\启动服务.bat"
-echo start /b "" XhMonitor.Service.exe >> "%OUTPUT_DIR%\启动服务.bat"
-echo cd .. >> "%OUTPUT_DIR%\启动服务.bat"
-echo timeout /t 5 /nobreak ^> nul >> "%OUTPUT_DIR%\启动服务.bat"
-echo echo 正在启动桌面应用... >> "%OUTPUT_DIR%\启动服务.bat"
-echo start "" "%%~dp0Desktop\XhMonitor.Desktop.exe" >> "%OUTPUT_DIR%\启动服务.bat"
-
-:: 创建停止脚本
-echo @echo off > "%OUTPUT_DIR%\停止服务.bat"
-echo taskkill /F /IM XhMonitor.Service.exe 2^>nul >> "%OUTPUT_DIR%\停止服务.bat"
-echo taskkill /F /IM XhMonitor.Desktop.exe 2^>nul >> "%OUTPUT_DIR%\停止服务.bat"
-echo echo 服务已停止 >> "%OUTPUT_DIR%\停止服务.bat"
-echo pause >> "%OUTPUT_DIR%\停止服务.bat"
+:: 复制启动/停止脚本
+copy /y "scripts\启动服务.bat" "%OUTPUT_DIR%\启动服务.bat" > nul
+copy /y "scripts\停止服务.bat" "%OUTPUT_DIR%\停止服务.bat" > nul
 
 :: 创建 README
 echo # XhMonitor 绿色版 v%VERSION% > "%OUTPUT_DIR%\README.txt"

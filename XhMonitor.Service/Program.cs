@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,15 +28,19 @@ catch
     // WinExe 模式下可能没有控制台，忽略错误
 }
 
-// 创建临时配置以读取日志设置
+// 获取应用程序目录（兼容单文件发布模式）
+// 单文件发布时 AppContext.BaseDirectory 指向临时解压目录，需要使用 exe 实际路径
+var appDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName)
+    ?? AppContext.BaseDirectory;
+
+// 创建临时配置以读取日志设置（使用应用程序目录而非工作目录）
 var tempConfig = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
+    .SetBasePath(appDirectory)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
     .Build();
 
 // 确定日志目录（使用应用所在目录）
-var appDirectory = AppContext.BaseDirectory;
 var logDirectory = Path.Combine(appDirectory, "logs");
 Directory.CreateDirectory(logDirectory);
 
@@ -47,8 +52,15 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     Log.Information("正在启动 XhMonitor 服务...");
+    Log.Information("应用程序目录: {AppDirectory}", appDirectory);
 
-    var builder = WebApplication.CreateBuilder(args);
+    // 创建 WebApplication 时设置 ContentRootPath 为应用程序目录
+    // 确保相对路径（数据库、日志等）解析到正确位置
+    var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+    {
+        Args = args,
+        ContentRootPath = appDirectory
+    });
 
     // 使用 Serilog 作为日志提供者
     builder.Host.UseSerilog();

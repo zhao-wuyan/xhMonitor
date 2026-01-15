@@ -156,32 +156,9 @@ if (-not $SkipService) {
     }
 }
   
-# 创建启动脚本
-$startScript = @"
-@echo off
-chcp 65001 > nul
-cd /d "%~dp0"
-echo 正在启动服务端...
-cd Service
-start /b "" XhMonitor.Service.exe
-cd ..
-echo 等待服务端启动完成...
-timeout /t 8 /nobreak > nul
-echo 正在启动桌面应用...
-start "" "%~dp0Desktop\XhMonitor.Desktop.exe"
-"@
-Set-Content -Path (Join-Path $OutputDir "启动服务.bat") -Value $startScript -Encoding UTF8
-  
-# 创建停止脚本
-$stopScript = @"
-@echo off
-chcp 65001 > nul
-taskkill /F /IM XhMonitor.Service.exe 2>nul
-taskkill /F /IM XhMonitor.Desktop.exe 2>nul
-echo 服务已停止
-pause
-"@
-Set-Content -Path (Join-Path $OutputDir "停止服务.bat") -Value $stopScript -Encoding UTF8
+# 复制启动/停止脚本
+Copy-Item (Join-Path $RootDir "scripts\启动服务.bat") (Join-Path $OutputDir "启动服务.bat") -Force
+Copy-Item (Join-Path $RootDir "scripts\停止服务.bat") (Join-Path $OutputDir "停止服务.bat") -Force
 
 # 创建 README
 $systemRequirement = if ($Lite) {
