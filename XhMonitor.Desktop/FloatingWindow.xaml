@@ -19,6 +19,7 @@
         <conv:MemoryUnitConverter x:Key="MemoryConverter"/>
         <conv:MetricValueColorConverter x:Key="ColorConverter"/>
         <conv:MemoryPercentageColorConverter x:Key="MemoryColorConverter"/>
+        <conv:MiddleEllipsisConverter x:Key="MiddleEllipsisConverter"/>
 
         <!-- Palette -->
         <SolidColorBrush x:Key="ColorGreen" Color="#4ade80"/>
@@ -147,7 +148,7 @@
 
         <!-- Pinned Card Template -->
         <DataTemplate x:Key="PinnedCardTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="360" Height="28"
+            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="400" Height="28"
                     BorderBrush="{StaticResource ColorBorder}" BorderThickness="1">
                 <Grid>
                     <!-- Left Accent Border -->
@@ -171,9 +172,10 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- 进程名称 -->
-                        <TextBlock Grid.Column="0" Text="{Binding DisplayName}" Foreground="{StaticResource ColorTextMain}"
-                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+                        <!-- 进程名称 (左侧省略) -->
+                        <TextBlock Grid.Column="0" Text="{Binding DisplayName, Converter={StaticResource MiddleEllipsisConverter}, ConverterParameter=18}"
+                                   Foreground="{StaticResource ColorTextMain}" ToolTip="{Binding DisplayName}"
+                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                         <!-- CPU (对应主控栏第1列) -->
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
