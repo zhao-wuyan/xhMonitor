@@ -9,7 +9,8 @@ namespace XhMonitor.Service.Core;
 public class ProcessScanner
 {
     private readonly ILogger<ProcessScanner> _logger;
-    private readonly List<string> _keywords;
+    private readonly List<string> _includeKeywords;
+    private readonly List<string> _excludeKeywords;
     private readonly IProcessNameResolver _nameResolver;
 
     public ProcessScanner(ILogger<ProcessScanner> logger, IConfiguration config, IProcessNameResolver nameResolver)
@@ -18,9 +19,11 @@ public class ProcessScanner
         _nameResolver = nameResolver;
 
         var keywords = config.GetSection("Monitor:Keywords").Get<string[]>() ?? Array.Empty<string>();
-        _keywords = keywords.Select(k => k.ToLowerInvariant()).ToList();
+        _includeKeywords = keywords.Where(k => !k.StartsWith("!")).Select(k => k.ToLowerInvariant()).ToList();
+        _excludeKeywords = keywords.Where(k => k.StartsWith("!")).Select(k => k[1..].ToLowerInvariant()).ToList();
 
-        _logger.LogInformation("ProcessScanner initialized with {Count} keywords", _keywords.Count);
+        _logger.LogInformation("ProcessScanner initialized with {IncludeCount} include, {ExcludeCount} exclude keywords",
+            _includeKeywords.Count, _excludeKeywords.Count);
     }
 
     public List<ProcessInfo> ScanProcesses()
@@ -99,7 +102,7 @@ public class ProcessScanner
 
         var matchedKeywords = GetMatchedKeywords(commandLine);
 
-        if (_keywords.Count == 0 || matchedKeywords.Count > 0)
+        if ((_includeKeywords.Count == 0 && _excludeKeywords.Count == 0) || matchedKeywords.Count > 0)
         {
             var resolvedName = _nameResolver.Resolve(processName, commandLine);
             var displayName = !string.IsNullOrEmpty(resolvedName) ? resolvedName : processName;
@@ -120,12 +123,15 @@ public class ProcessScanner
 
     private List<string> GetMatchedKeywords(string commandLine)
     {
-        if (_keywords.Count == 0)
-        {
-            return new List<string>();
-        }
-
         var commandLineLower = commandLine.ToLowerInvariant();
-        return _keywords.Where(k => commandLineLower.Contains(k)).ToList();
+
+        // 排除检查：命中任意排除关键字则返回空
+        if (_excludeKeywords.Any(k => commandLineLower.Contains(k)))
+            return new List<string>();
+
+        if (_includeKeywords.Count == 0)
+            return new List<string>();
+
+        return _includeKeywords.Where(k => commandLineLower.Contains(k)).ToList();
     }
 }
