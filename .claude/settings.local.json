@@ -64,7 +64,8 @@
       "mcp__idea-mcp__search_in_files_by_text",
       "mcp__MetaMCP__web-search-prime__webSearchPrime",
       "mcp__MetaMCP__fetch__fetch",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(powershell:*)"
     ]
   },
   "model": "sonnet[1m]",
