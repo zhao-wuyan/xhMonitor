@@ -139,13 +139,16 @@ public class SystemMetricProvider : IDisposable
         {
             if (!_dxgiAvailable)
             {
+                _logger?.LogDebug("DXGI not available, returning 0 for VRAM");
                 return 0.0;
             }
 
             try
             {
                 // 使用 DXGI 查询系统总 GPU 内存使用（轻量级，无迭代）
-                var (totalMemory, usedMemory, _) = _dxgiMonitor.GetTotalMemoryUsage();
+                var (totalMemory, usedMemory, usagePercent) = _dxgiMonitor.GetTotalMemoryUsage();
+                _logger?.LogDebug("DXGI query result: Total={TotalMB}MB, Used={UsedMB}MB, Percent={Percent}%",
+                    totalMemory / 1024.0 / 1024.0, usedMemory / 1024.0 / 1024.0, usagePercent);
                 return usedMemory / 1024.0 / 1024.0; // 转换为 MB
             }
             catch (Exception ex)
