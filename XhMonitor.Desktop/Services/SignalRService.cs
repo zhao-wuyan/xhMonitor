@@ -15,6 +15,7 @@ public class SignalRService : IAsyncDisposable
     public event Action<HardwareLimitsDto>? HardwareLimitsReceived;
     public event Action<SystemUsageDto>? SystemUsageReceived;
     public event Action<ProcessDataDto>? ProcessDataReceived;
+    public event Action<ProcessMetaDto>? ProcessMetaReceived;
     public event Action<bool>? ConnectionStateChanged;
 
     public bool IsConnected => _connection?.State == HubConnectionState.Connected;
@@ -79,6 +80,19 @@ public class SignalRService : IAsyncDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize process data: {ex.Message}");
+            }
+        });
+
+        _connection.On<JsonElement>(SignalREvents.ProcessMetadata, (data) =>
+        {
+            try
+            {
+                var dto = JsonSerializer.Deserialize<ProcessMetaDto>(data.GetRawText(), jsonOptions);
+                if (dto != null) ProcessMetaReceived?.Invoke(dto);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to deserialize process metadata: {ex.Message}");
             }
         });
 

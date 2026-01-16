@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Constants;
+using XhMonitor.Core.Models;
 using XhMonitor.Core.Providers;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
@@ -15,9 +17,16 @@ public class Worker : BackgroundService
     private readonly IProcessMetricRepository _repository;
     private readonly IHubContext<MetricsHub> _hubContext;
     private readonly SystemMetricProvider _systemMetricProvider;
+    private readonly IProcessMetadataStore _processMetadataStore;
     private readonly int _intervalSeconds;
     private double _cachedMaxMemory;
     private double _cachedMaxVram;
+    private readonly Channel<ProcessSnapshot> _processSnapshotChannel =
+        Channel.CreateBounded<ProcessSnapshot>(new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            SingleWriter = true
+        });
 
     public Worker(
         ILogger<Worker> logger,
@@ -25,6 +34,7 @@ public class Worker : BackgroundService
         IProcessMetricRepository repository,
         IHubContext<MetricsHub> hubContext,
         SystemMetricProvider systemMetricProvider,
+        IProcessMetadataStore processMetadataStore,
         IConfiguration config)
     {
         _logger = logger;
@@ -32,6 +42,7 @@ public class Worker : BackgroundService
         _repository = repository;
         _hubContext = hubContext;
         _systemMetricProvider = systemMetricProvider;
+        _processMetadataStore = processMetadataStore;
         _intervalSeconds = config.GetValue("Monitor:IntervalSeconds", 5);
     }
 
@@ -57,6 +68,7 @@ public class Worker : BackgroundService
         _logger.LogInformation("[启动阶段 2.5/3] 正在启动后台任务...");
         var vramTask = RunVramLimitCheckAsync(stoppingToken);
         var systemUsageTask = RunSystemUsageLoopAsync(stoppingToken);
+        var processPushTask = RunProcessPushLoopAsync(stoppingToken);
         _logger.LogInformation("[启动阶段 2.5/3] 后台任务启动完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
 
         // Phase 3: 首次进程数据采集
@@ -97,7 +109,8 @@ public class Worker : BackgroundService
             }
         }
 
-        await Task.WhenAll(vramTask, systemUsageTask);
+        _processSnapshotChannel.Writer.TryComplete();
+        await Task.WhenAll(vramTask, systemUsageTask, processPushTask);
         _logger.LogInformation("XhMonitor service stopped");
     }
 
@@ -245,19 +258,37 @@ public class Worker : BackgroundService
             await _repository.SaveMetricsAsync(metrics, timestamp, ct);
             var saveElapsed = Stopwatch.GetElapsedTime(saveStart).TotalMilliseconds;
 
-            await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetrics, new
+            var metaUpdates = _processMetadataStore.Update(metrics);
+
+            if (metaUpdates.Count > 0)
+            {
+                await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetadata, new
+                {
+                    Timestamp = timestamp,
+                    ProcessCount = metaUpdates.Count,
+                    Processes = metaUpdates.Select(m => new
+                    {
+                        m.ProcessId,
+                        m.ProcessName,
+                        m.CommandLine,
+                        m.DisplayName
+                    }).ToList()
+                }, ct);
+            }
+
+            var snapshot = new ProcessSnapshot
             {
                 Timestamp = timestamp,
                 ProcessCount = metrics.Count,
-                Processes = metrics.Select(m => new
+                Processes = metrics.Select(m => new ProcessMetricSnapshot
                 {
-                    m.Info.ProcessId,
-                    m.Info.ProcessName,
-                    m.Info.CommandLine,
-                    m.Info.DisplayName,
+                    ProcessId = m.Info.ProcessId,
+                    ProcessName = m.Info.ProcessName,
                     Metrics = m.Metrics
                 }).ToList()
-            }, ct);
+            };
+
+            EnqueueProcessSnapshot(snapshot);
 
             _logger.LogDebug("进程数据处理完成: 保存耗时: {SaveMs}ms, 推送完成, 总耗时: {TotalMs}ms",
                 saveElapsed, sw.ElapsedMilliseconds);
@@ -266,5 +297,51 @@ public class Worker : BackgroundService
         {
             _logger.LogDebug("未发现匹配的进程, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
         }
+    }
+
+    private async Task RunProcessPushLoopAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await foreach (var snapshot in _processSnapshotChannel.Reader.ReadAllAsync(stoppingToken))
+            {
+                await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetrics, new
+                {
+                    Timestamp = snapshot.Timestamp,
+                    ProcessCount = snapshot.ProcessCount,
+                    Processes = snapshot.Processes.Select(p => new
+                    {
+                        p.ProcessId,
+                        p.ProcessName,
+                        Metrics = p.Metrics
+                    }).ToList()
+                }, stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void EnqueueProcessSnapshot(ProcessSnapshot snapshot)
+    {
+        while (!_processSnapshotChannel.Writer.TryWrite(snapshot))
+        {
+            _processSnapshotChannel.Reader.TryRead(out _);
+        }
+    }
+
+    private sealed class ProcessSnapshot
+    {
+        public DateTime Timestamp { get; init; }
+        public int ProcessCount { get; init; }
+        public List<ProcessMetricSnapshot> Processes { get; init; } = new();
+    }
+
+    private sealed class ProcessMetricSnapshot
+    {
+        public int ProcessId { get; init; }
+        public string ProcessName { get; init; } = string.Empty;
+        public Dictionary<string, MetricValue> Metrics { get; init; } = new();
     }
 }

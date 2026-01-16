@@ -124,6 +124,7 @@ builder.Services.AddSingleton<SystemMetricProvider>(sp =>
 
 builder.Services.AddSingleton<ProcessScanner>();
 builder.Services.AddSingleton<PerformanceMonitor>();
+builder.Services.AddSingleton<IProcessMetadataStore, ProcessMetadataStore>();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();

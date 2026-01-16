@@ -85,3 +85,30 @@ public class ProcessDataDto
     [JsonPropertyName("processes")]
     public List<ProcessInfoDto> Processes { get; set; } = new();
 }
+
+public class ProcessMetaDto
+{
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; }
+
+    [JsonPropertyName("processCount")]
+    public int ProcessCount { get; set; }
+
+    [JsonPropertyName("processes")]
+    public List<ProcessMetaInfoDto> Processes { get; set; } = new();
+}
+
+public class ProcessMetaInfoDto
+{
+    [JsonPropertyName("processId")]
+    public int ProcessId { get; set; }
+
+    [JsonPropertyName("processName")]
+    public string ProcessName { get; set; } = string.Empty;
+
+    [JsonPropertyName("commandLine")]
+    public string CommandLine { get; set; } = string.Empty;
+
+    [JsonPropertyName("displayName")]
+    public string DisplayName { get; set; } = string.Empty;
+}

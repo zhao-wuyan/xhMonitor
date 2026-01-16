@@ -96,6 +96,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
         _signalRService.HardwareLimitsReceived += OnHardwareLimitsReceived;
         _signalRService.SystemUsageReceived += OnSystemUsageReceived;
         _signalRService.ProcessDataReceived += OnProcessDataReceived;
+        _signalRService.ProcessMetaReceived += OnProcessMetaReceived;
         _signalRService.ConnectionStateChanged += OnConnectionStateChanged;
     }
 
@@ -191,9 +192,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             SyncProcessIndex(data.Processes);
 
             var orderedAll = data.Processes
-                .OrderBy(p => p.ProcessName)
-                .ThenByDescending(p => GetMetricValue(p, "vram"))
                 .Select(p => _processIndex[p.ProcessId])
+                .OrderBy(p => p.ProcessName)
+                .ThenByDescending(p => p.Vram)
                 .ToList();
 
             var orderedTop = orderedAll.Take(5).ToList();
@@ -201,6 +202,15 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             SyncCollectionOrder(AllProcesses, orderedAll);
             SyncCollectionOrder(TopProcesses, orderedTop);
             SyncPinnedCollection();
+        });
+    }
+
+    private void OnProcessMetaReceived(ProcessMetaDto data)
+    {
+        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
+        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        {
+            SyncProcessMeta(data.Processes);
         });
     }
 
@@ -268,9 +278,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
             SyncProcessIndex(data.Processes);
 
             var orderedAll = data.Processes
-                .OrderBy(p => p.ProcessName)
-                .ThenByDescending(p => GetMetricValue(p, "vram"))
                 .Select(p => _processIndex[p.ProcessId])
+                .OrderBy(p => p.ProcessName)
+                .ThenByDescending(p => p.Vram)
                 .ToList();
 
             var orderedTop = orderedAll.Take(5).ToList();
@@ -304,6 +314,28 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
         {
             _processIndex.Remove(id);
             _pinnedProcessIds.Remove(id);
+        }
+    }
+
+    private void SyncProcessMeta(IEnumerable<ProcessMetaInfoDto> processes)
+    {
+        foreach (var p in processes)
+        {
+            if (!_processIndex.TryGetValue(p.ProcessId, out var row))
+            {
+                row = new ProcessRowViewModel(new ProcessInfoDto
+                {
+                    ProcessId = p.ProcessId,
+                    ProcessName = p.ProcessName,
+                    CommandLine = p.CommandLine,
+                    DisplayName = p.DisplayName
+                });
+                _processIndex[p.ProcessId] = row;
+            }
+            else
+            {
+                row.UpdateMetaFrom(p);
+            }
         }
     }
 
@@ -356,6 +388,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
         _signalRService.HardwareLimitsReceived -= OnHardwareLimitsReceived;
         _signalRService.SystemUsageReceived -= OnSystemUsageReceived;
         _signalRService.ProcessDataReceived -= OnProcessDataReceived;
+        _signalRService.ProcessMetaReceived -= OnProcessMetaReceived;
         _signalRService.ConnectionStateChanged -= OnConnectionStateChanged;
         await _signalRService.DisconnectAsync().ConfigureAwait(false);
     }
@@ -418,13 +451,30 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
 
         public void UpdateFrom(ProcessInfoDto dto)
         {
-            ProcessName = dto.ProcessName;
-            CommandLine = dto.CommandLine;
-            DisplayName = !string.IsNullOrEmpty(dto.DisplayName) ? dto.DisplayName : dto.ProcessName;
+            if (!string.IsNullOrEmpty(dto.ProcessName))
+                ProcessName = dto.ProcessName;
+            if (!string.IsNullOrEmpty(dto.CommandLine))
+                CommandLine = dto.CommandLine;
+            if (!string.IsNullOrEmpty(dto.DisplayName))
+                DisplayName = dto.DisplayName;
+            else if (string.IsNullOrEmpty(DisplayName) && !string.IsNullOrEmpty(dto.ProcessName))
+                DisplayName = dto.ProcessName;
             Cpu = dto.Metrics.GetValueOrDefault("cpu")?.Value ?? 0d;
             Memory = dto.Metrics.GetValueOrDefault("memory")?.Value ?? 0d;
             Gpu = dto.Metrics.GetValueOrDefault("gpu")?.Value ?? 0d;
             Vram = dto.Metrics.GetValueOrDefault("vram")?.Value ?? 0d;
+        }
+
+        public void UpdateMetaFrom(ProcessMetaInfoDto dto)
+        {
+            if (!string.IsNullOrEmpty(dto.ProcessName))
+                ProcessName = dto.ProcessName;
+            if (!string.IsNullOrEmpty(dto.CommandLine))
+                CommandLine = dto.CommandLine;
+            if (!string.IsNullOrEmpty(dto.DisplayName))
+                DisplayName = dto.DisplayName;
+            else if (!string.IsNullOrEmpty(dto.ProcessName))
+                DisplayName = dto.ProcessName;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
