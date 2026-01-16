@@ -137,23 +137,42 @@ public class SystemMetricProvider : IDisposable
     {
         return Task.Run(() =>
         {
-            if (!_dxgiAvailable)
+            // DXGI QueryVideoMemoryInfo 的 CurrentUsage 不准确，改用性能计数器
+            // 参考：https://github.com/microsoft/DirectX-Graphics-Samples/issues/754
+
+            if (!OperatingSystem.IsWindows())
             {
-                _logger?.LogDebug("DXGI not available, returning 0 for VRAM");
                 return 0.0;
             }
 
             try
             {
-                // 使用 DXGI 查询系统总 GPU 内存使用（轻量级，无迭代）
-                var (totalMemory, usedMemory, usagePercent) = _dxgiMonitor.GetTotalMemoryUsage();
-                _logger?.LogDebug("DXGI query result: Total={TotalMB}MB, Used={UsedMB}MB, Percent={Percent}%",
-                    totalMemory / 1024.0 / 1024.0, usedMemory / 1024.0 / 1024.0, usagePercent);
-                return usedMemory / 1024.0 / 1024.0; // 转换为 MB
+                // 使用性能计数器获取所有 GPU 适配器的内存使用总和
+                var category = new System.Diagnostics.PerformanceCounterCategory("GPU Adapter Memory");
+                var instanceNames = category.GetInstanceNames();
+
+                double totalUsage = 0;
+                foreach (var instanceName in instanceNames)
+                {
+                    try
+                    {
+                        using var counter = new System.Diagnostics.PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
+                        var value = counter.NextValue();
+                        totalUsage += value;
+                    }
+                    catch
+                    {
+                        // 跳过无法读取的实例
+                        continue;
+                    }
+                }
+
+                // 转换为 MB
+                return totalUsage / 1024.0 / 1024.0;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Failed to query DXGI GPU memory usage");
+                _logger?.LogError(ex, "Failed to query GPU memory usage via performance counter");
                 return 0.0;
             }
         });
