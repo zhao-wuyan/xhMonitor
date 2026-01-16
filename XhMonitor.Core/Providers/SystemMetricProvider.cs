@@ -36,7 +36,6 @@ public class SystemMetricProvider : IDisposable
         _memoryProvider = memoryProvider;
         _vramProvider = vramProvider;
         _logger = logger;
-
         // 初始化 DXGI 监控
         _dxgiAvailable = _dxgiMonitor.Initialize();
         if (!_dxgiAvailable)
@@ -137,9 +136,6 @@ public class SystemMetricProvider : IDisposable
     {
         return Task.Run(() =>
         {
-            // DXGI QueryVideoMemoryInfo 的 CurrentUsage 不准确，改用性能计数器
-            // 参考：https://github.com/microsoft/DirectX-Graphics-Samples/issues/754
-
             if (!OperatingSystem.IsWindows())
             {
                 return 0.0;
@@ -147,6 +143,15 @@ public class SystemMetricProvider : IDisposable
 
             try
             {
+                if (_dxgiAvailable)
+                {
+                    var usedBytes = _dxgiMonitor.GetTotalVramUsageBytes();
+                    if (usedBytes >= 0)
+                    {
+                        return usedBytes / 1024.0 / 1024.0;
+                    }
+                }
+
                 // 使用性能计数器获取所有 GPU 适配器的内存使用总和
                 var category = new System.Diagnostics.PerformanceCounterCategory("GPU Adapter Memory");
                 var instanceNames = category.GetInstanceNames();

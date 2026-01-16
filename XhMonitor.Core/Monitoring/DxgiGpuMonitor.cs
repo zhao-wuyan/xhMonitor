@@ -33,13 +33,6 @@ namespace XhMonitor.Core.Monitoring
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct LUID
-        {
-            public uint LowPart;
-            public int HighPart;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
         private struct DXGI_QUERY_VIDEO_MEMORY_INFO
         {
             public ulong Budget;
@@ -338,7 +331,19 @@ namespace XhMonitor.Core.Monitoring
 
         #region D3DKMT GPU Usage Monitoring
 
-        // D3DKMT structures for GPU usage monitoring
+        private const int D3DKMT_QUERYSTATISTICS_RESULT_SIZE = 1024;
+        private const int D3DKMT_QUERYSTATISTICS_QUERY_SIZE = 64;
+        private const int SegmentGroupShift = 6;
+        private const ulong SegmentGroupMask = 0x3;
+        private const int D3dkmtSuccess = 0;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct LUID
+        {
+            public uint LowPart;
+            public int HighPart;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct D3DKMT_QUERYSTATISTICS
         {
@@ -346,9 +351,10 @@ namespace XhMonitor.Core.Monitoring
             public LUID AdapterLuid;
             public IntPtr hProcess;
             public D3DKMT_QUERYSTATISTICS_RESULT QueryResult;
+            public D3DKMT_QUERYSTATISTICS_QUERY Query;
         }
 
-        [StructLayout(LayoutKind.Explicit)]
+        [StructLayout(LayoutKind.Explicit, Size = D3DKMT_QUERYSTATISTICS_RESULT_SIZE)]
         private struct D3DKMT_QUERYSTATISTICS_RESULT
         {
             [FieldOffset(0)]
@@ -356,6 +362,9 @@ namespace XhMonitor.Core.Monitoring
 
             [FieldOffset(0)]
             public D3DKMT_QUERYSTATISTICS_NODE_INFORMATION NodeInformation;
+
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_SEGMENT_INFORMATION SegmentInformation;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -368,28 +377,58 @@ namespace XhMonitor.Core.Monitoring
             public uint TdrDetectedCount;
             public long ZeroLengthDmaBuffers;
             public ulong RestartedPeriod;
-            // ... more fields exist but we only need NodeCount
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit, Size = 256)]
         private struct D3DKMT_QUERYSTATISTICS_NODE_INFORMATION
         {
-            public D3DKMT_QUERYSTATISTICS_NODE_INFORMATION_DATA GlobalInformation;
-            public D3DKMT_QUERYSTATISTICS_NODE_INFORMATION_DATA SystemInformation;
-            // ... more fields
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_PROCESS_NODE_INFORMATION GlobalInformation;
+            [FieldOffset(128)]
+            public D3DKMT_QUERYSTATISTICS_PROCESS_NODE_INFORMATION SystemInformation;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 152)]
+        private struct D3DKMT_QUERYSTATISTICS_SEGMENT_INFORMATION
+        {
+            [FieldOffset(0)]
+            public ulong CommitLimit;
+            [FieldOffset(8)]
+            public ulong BytesCommitted;
+            [FieldOffset(16)]
+            public ulong BytesResident;
+            [FieldOffset(104)]
+            public ulong SegmentProperties;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 128)]
+        private struct D3DKMT_QUERYSTATISTICS_PROCESS_NODE_INFORMATION
+        {
+            [FieldOffset(0)]
+            public long RunningTime;
+            [FieldOffset(8)]
+            public uint ContextSwitch;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = D3DKMT_QUERYSTATISTICS_QUERY_SIZE)]
+        private struct D3DKMT_QUERYSTATISTICS_QUERY
+        {
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_QUERY_SEGMENT QuerySegment;
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_QUERY_NODE QueryNode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct D3DKMT_QUERYSTATISTICS_NODE_INFORMATION_DATA
+        private struct D3DKMT_QUERYSTATISTICS_QUERY_SEGMENT
         {
-            public ulong RunningTime;
-            public uint ContextSwitch;
-            public uint PreemptionAttempts;
-            public uint PreemptionSuccesses;
-            public uint SplitCount;
-            public uint NbDmaBufferSubmitted;
-            public uint NbDmaBufferPreempted;
-            public uint NbDmaBufferCompleted;
+            public uint SegmentId;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct D3DKMT_QUERYSTATISTICS_QUERY_NODE
+        {
+            public uint NodeId;
         }
 
         private enum D3DKMT_QUERYSTATISTICS_TYPE
@@ -403,6 +442,12 @@ namespace XhMonitor.Core.Monitoring
             D3DKMT_QUERYSTATISTICS_PROCESS_NODE = 6,
             D3DKMT_QUERYSTATISTICS_VIDPNSOURCE = 7,
             D3DKMT_QUERYSTATISTICS_PROCESS_VIDPNSOURCE = 8
+        }
+
+        private enum D3DKMT_MEMORY_SEGMENT_GROUP : uint
+        {
+            D3DKMT_MEMORY_SEGMENT_GROUP_LOCAL = 0,
+            D3DKMT_MEMORY_SEGMENT_GROUP_NON_LOCAL = 1
         }
 
         [DllImport("gdi32.dll", SetLastError = true)]
@@ -449,6 +494,68 @@ namespace XhMonitor.Core.Monitoring
             }
         }
 
+        /// <summary>
+        /// Get total dedicated VRAM usage across all adapters in bytes.
+        /// Returns -1 when D3DKMT query fails.
+        /// </summary>
+        public long GetTotalVramUsageBytes()
+        {
+            if (_adapters.Count == 0)
+                return 0;
+
+            try
+            {
+                ulong totalBytes = 0;
+
+                foreach (var adapter in _adapters)
+                {
+                    var desc = GetAdapterDesc(adapter.AdapterPtr);
+                    if (desc == null)
+                        continue;
+
+                    var luid = desc.Value.AdapterLuid;
+
+                    var queryAdapter = new D3DKMT_QUERYSTATISTICS
+                    {
+                        Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_ADAPTER,
+                        AdapterLuid = luid
+                    };
+
+                    int hr = D3DKMTQueryStatistics(ref queryAdapter);
+                    if (hr != D3dkmtSuccess)
+                        continue;
+
+                    uint segmentCount = queryAdapter.QueryResult.AdapterInformation.NbSegments;
+                    for (uint segmentId = 0; segmentId < segmentCount; segmentId++)
+                    {
+                        var querySegment = new D3DKMT_QUERYSTATISTICS
+                        {
+                            Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_SEGMENT,
+                            AdapterLuid = luid
+                        };
+
+                        querySegment.Query.QuerySegment.SegmentId = segmentId;
+
+                        hr = D3DKMTQueryStatistics(ref querySegment);
+                        if (hr != D3dkmtSuccess)
+                            continue;
+
+                        var segmentInfo = querySegment.QueryResult.SegmentInformation;
+                        if (GetSegmentGroup(segmentInfo) == (int)D3DKMT_MEMORY_SEGMENT_GROUP.D3DKMT_MEMORY_SEGMENT_GROUP_LOCAL)
+                        {
+                            totalBytes += segmentInfo.BytesResident;
+                        }
+                    }
+                }
+
+                return totalBytes > long.MaxValue ? long.MaxValue : (long)totalBytes;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
         private double GetAdapterGpuUsage(GpuAdapter adapter)
         {
             try
@@ -468,7 +575,7 @@ namespace XhMonitor.Core.Monitoring
                 };
 
                 int hr = D3DKMTQueryStatistics(ref queryAdapter);
-                if (hr != 0)
+                if (hr != D3dkmtSuccess)
                     return -1;
 
                 uint nodeCount = queryAdapter.QueryResult.AdapterInformation.NodeCount;
@@ -487,16 +594,17 @@ namespace XhMonitor.Core.Monitoring
                         AdapterLuid = luid
                     };
 
-                    // Set NodeId in the union (we need to use unsafe code or marshal)
-                    // For simplicity, we'll use the first node (3D engine)
-                    if (nodeId > 0)
-                        continue; // Only query first node for now
+                    queryNode.Query.QueryNode.NodeId = nodeId;
 
                     hr = D3DKMTQueryStatistics(ref queryNode);
-                    if (hr != 0)
+                    if (hr != D3dkmtSuccess)
                         continue;
 
-                    ulong runningTime = queryNode.QueryResult.NodeInformation.GlobalInformation.RunningTime;
+                    long runningTimeTicks = queryNode.QueryResult.NodeInformation.GlobalInformation.RunningTime;
+                    if (runningTimeTicks < 0)
+                        continue;
+
+                    ulong runningTime = (ulong)runningTimeTicks;
 
                     // Calculate usage based on time delta
                     string cacheKey = $"{luid.LowPart}_{luid.HighPart}_{nodeId}";
@@ -506,7 +614,7 @@ namespace XhMonitor.Core.Monitoring
                         if (_nodeUsageCache.TryGetValue(cacheKey, out var cached))
                         {
                             var timeDelta = (now - cached.LastQueryTime).TotalMilliseconds;
-                            if (timeDelta > 0)
+                            if (timeDelta > 0 && runningTime >= cached.LastRunningTime)
                             {
                                 var runningDelta = runningTime - cached.LastRunningTime;
                                 // RunningTime is in 100-nanosecond units
@@ -536,6 +644,11 @@ namespace XhMonitor.Core.Monitoring
             {
                 return -1;
             }
+        }
+
+        private static int GetSegmentGroup(D3DKMT_QUERYSTATISTICS_SEGMENT_INFORMATION segmentInfo)
+        {
+            return (int)((segmentInfo.SegmentProperties >> SegmentGroupShift) & SegmentGroupMask);
         }
 
         #endregion

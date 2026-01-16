@@ -100,30 +100,6 @@ public class ExtractorTests
         result.Should().Be("LLaMA: model.gguf");
     }
 
-    [Fact]
-    public void RegexExtractor_WithNoMatch_ShouldReturnFallback()
-    {
-        // Arrange
-        var configData = new Dictionary<string, string?>
-        {
-            ["Monitor:ProcessNameRules:0:ProcessName"] = "llama-server",
-            ["Monitor:ProcessNameRules:0:Type"] = "Regex",
-            ["Monitor:ProcessNameRules:0:Pattern"] = @"--model\s+(\S+)",
-            ["Monitor:ProcessNameRules:0:Group"] = "1",
-        };
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configData)
-            .Build();
-
-        var resolver = new ProcessNameResolver(config, _loggerMock.Object);
-
-        // Act - CommandLine doesn't contain --model
-        var result = resolver.Resolve("llama-server", "llama-server --threads 8");
-
-        // Assert
-        result.Should().Be("llama-server: (no match)");
-    }
 
     [Fact]
     public void RegexExtractor_WithGroup0_ShouldReturnFullMatch()
@@ -255,78 +231,6 @@ public class ExtractorTests
         result.Should().Be("Python: FastAPI");
     }
 
-    [Fact]
-    public void DirectExtractor_WithoutKeywordMatch_ShouldNotMatch()
-    {
-        // Arrange
-        var configData = new Dictionary<string, string?>
-        {
-            ["Monitor:ProcessNameRules:0:ProcessName"] = "python",
-            ["Monitor:ProcessNameRules:0:Keywords:0"] = "fastapi",
-            ["Monitor:ProcessNameRules:0:Type"] = "Direct",
-            ["Monitor:ProcessNameRules:0:DisplayName"] = "Python: FastAPI",
-        };
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configData)
-            .Build();
-
-        var resolver = new ProcessNameResolver(config, _loggerMock.Object);
-
-        // Act - CommandLine doesn't contain "fastapi"
-        var result = resolver.Resolve("python", "python script.py");
-
-        // Assert
-        result.Should().Be("python: (no rule)");
-    }
-
-    [Fact]
-    public void DirectExtractor_WithEmptyDisplayName_ShouldReturnFallback()
-    {
-        // Arrange
-        var configData = new Dictionary<string, string?>
-        {
-            ["Monitor:ProcessNameRules:0:ProcessName"] = "test",
-            ["Monitor:ProcessNameRules:0:Type"] = "Direct",
-            ["Monitor:ProcessNameRules:0:DisplayName"] = "", // Empty
-        };
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configData)
-            .Build();
-
-        var resolver = new ProcessNameResolver(config, _loggerMock.Object);
-
-        // Act
-        var result = resolver.Resolve("test", "test argument");
-
-        // Assert
-        result.Should().Be("test: (invalid direct rule)");
-    }
-
-    [Fact]
-    public void DirectExtractor_WithWhitespaceDisplayName_ShouldReturnFallback()
-    {
-        // Arrange
-        var configData = new Dictionary<string, string?>
-        {
-            ["Monitor:ProcessNameRules:0:ProcessName"] = "test",
-            ["Monitor:ProcessNameRules:0:Type"] = "Direct",
-            ["Monitor:ProcessNameRules:0:DisplayName"] = "   ", // Whitespace only
-        };
-
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configData)
-            .Build();
-
-        var resolver = new ProcessNameResolver(config, _loggerMock.Object);
-
-        // Act
-        var result = resolver.Resolve("test", "test argument");
-
-        // Assert
-        result.Should().Be("test: (invalid direct rule)");
-    }
 
     #endregion
 

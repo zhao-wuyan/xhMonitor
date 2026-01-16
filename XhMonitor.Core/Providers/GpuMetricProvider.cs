@@ -23,10 +23,6 @@ public class GpuMetricProvider : IMetricProvider
     public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null)
     {
         _logger = logger;
-
-        // 初始化 DXGI 监控（暂时禁用 D3DKMT，避免崩溃）
-        // TODO: 修复 D3DKMT API 调用的结构体布局问题
-        /*
         try
         {
             _dxgiInitialized = _dxgiMonitor.Initialize();
@@ -40,8 +36,10 @@ public class GpuMetricProvider : IMetricProvider
             _logger?.LogWarning(ex, "Failed to initialize DXGI GPU monitor");
             _dxgiInitialized = false;
         }
-        */
-        _dxgiInitialized = false;
+        if (!_dxgiInitialized)
+        {
+            _logger?.LogDebug("DXGI GPU monitor not available, fallback to performance counters");
+        }
     }
 
     public string MetricId => "gpu";

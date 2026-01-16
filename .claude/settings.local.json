@@ -65,7 +65,8 @@
       "mcp__MetaMCP__web-search-prime__webSearchPrime",
       "mcp__MetaMCP__fetch__fetch",
       "Bash(grep:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "mcp__ccw-tools__core_memory"
     ]
   },
   "model": "sonnet[1m]",
