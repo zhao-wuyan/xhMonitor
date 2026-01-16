@@ -43,8 +43,8 @@ public partial class App : WpfApplication
     protected override void OnExit(ExitEventArgs e)
     {
         // 关闭后端 Server 和 Web
-        StopBackendServer();
-        StopWebServer();
+        _ = StopBackendServerAsync();
+        _ = StopWebServerAsync();
 
         if (_floatingWindow != null)
         {
@@ -65,8 +65,8 @@ public partial class App : WpfApplication
     private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
     {
         // 系统关机/注销时确保清理
-        StopBackendServer();
-        StopWebServer();
+        _ = StopBackendServerAsync();
+        _ = StopWebServerAsync();
     }
 
     private void InitializeTrayIcon()
@@ -186,11 +186,12 @@ public partial class App : WpfApplication
         });
     }
 
-    private void ExitApplication()
+    private async void ExitApplication()
     {
-        // 先关闭后端服务
-        StopBackendServer();
-        StopWebServer();
+        // 先关闭后端服务，避免阻塞 UI 线程
+        var stopBackendTask = StopBackendServerAsync();
+        var stopWebTask = StopWebServerAsync();
+        await Task.WhenAny(Task.WhenAll(stopBackendTask, stopWebTask), Task.Delay(TimeSpan.FromSeconds(3)));
 
         if (_floatingWindow != null)
         {
@@ -377,27 +378,62 @@ public partial class App : WpfApplication
 
     private void StopBackendServer()
     {
-        if (_serverProcess == null || _serverProcess.HasExited)
-            return;
+        if (_serverProcess != null)
+        {
+            if (_serverProcess.HasExited)
+            {
+                _serverProcess.Dispose();
+                _serverProcess = null;
+            }
+            else
+            {
+                try
+                {
+                    // 优雅关闭：终止整个进程树
+                    _serverProcess.Kill(entireProcessTree: true);
+
+                    // 等待进程退出
+                    _serverProcess.WaitForExit(5000);
+
+                    Debug.WriteLine("Backend server stopped successfully");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error stopping backend server: {ex.Message}");
+                }
+                finally
+                {
+                    _serverProcess?.Dispose();
+                    _serverProcess = null;
+                }
+
+                return;
+            }
+        }
 
         try
         {
-            // 优雅关闭：终止整个进程树
-            _serverProcess.Kill(entireProcessTree: true);
-
-            // 等待进程退出
-            _serverProcess.WaitForExit(5000);
-
-            Debug.WriteLine("Backend server stopped successfully");
+            var processes = Process.GetProcessesByName("XhMonitor.Service");
+            foreach (var process in processes)
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5000);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error stopping backend service process: {ex.Message}");
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error stopping backend server: {ex.Message}");
-        }
-        finally
-        {
-            _serverProcess?.Dispose();
-            _serverProcess = null;
+            Debug.WriteLine($"Error locating backend service processes: {ex.Message}");
         }
     }
 
@@ -594,6 +630,16 @@ public partial class App : WpfApplication
         {
             Debug.WriteLine($"Error stopping web server: {ex.Message}");
         }
+    }
+
+    private Task StopBackendServerAsync()
+    {
+        return Task.Run(StopBackendServer);
+    }
+
+    private Task StopWebServerAsync()
+    {
+        return Task.Run(StopWebServer);
     }
 }
 
