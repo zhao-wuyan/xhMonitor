@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Models;
+using XhMonitor.Core.Monitoring;
 
 namespace XhMonitor.Core.Providers;
 
@@ -12,19 +13,35 @@ public class GpuMetricProvider : IMetricProvider
     private readonly ConcurrentDictionary<int, List<PerformanceCounter>> _counters = new();
     private readonly ConcurrentDictionary<int, DateTime> _lastAccessTime = new();
     private readonly ILogger<GpuMetricProvider>? _logger;
+    private readonly DxgiGpuMonitor _dxgiMonitor = new();
     private bool? _isSupported;
+    private bool _dxgiInitialized;
     private int _cycleCount = 0;
     private const int CleanupIntervalCycles = 10; // 每 10 次调用清理一次
     private const int TtlSeconds = 60; // 60 秒未访问则清理
 
-    // 缓存系统总量计数器（已禁用迭代，避免内存暴涨）
-    // private readonly List<PerformanceCounter> _systemCounters = new();
-    // private readonly object _systemCountersLock = new();
-    // private bool _systemCountersInitialized = false;
-
     public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null)
     {
         _logger = logger;
+
+        // 初始化 DXGI 监控（暂时禁用 D3DKMT，避免崩溃）
+        // TODO: 修复 D3DKMT API 调用的结构体布局问题
+        /*
+        try
+        {
+            _dxgiInitialized = _dxgiMonitor.Initialize();
+            if (_dxgiInitialized)
+            {
+                _logger?.LogInformation("DXGI GPU monitor initialized successfully");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to initialize DXGI GPU monitor");
+            _dxgiInitialized = false;
+        }
+        */
+        _dxgiInitialized = false;
     }
 
     public string MetricId => "gpu";
@@ -41,7 +58,24 @@ public class GpuMetricProvider : IMetricProvider
 
     public async Task<double> GetSystemTotalAsync()
     {
-        // 使用 ReadCategory 批量读取所有 GPU Engine 实例（比逐个创建计数器快得多）
+        // 优先使用 D3DKMT API（更准确，无需创建大量计数器）
+        if (_dxgiInitialized)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    return _dxgiMonitor.GetGpuUsage();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Failed to query GPU usage via D3DKMT");
+                    return 0.0;
+                }
+            });
+        }
+
+        // Fallback: 使用 ReadCategory 批量读取（但无法获取正确的百分比值）
         // 添加超时保护，避免首次调用时卡死
         var task = Task.Run(() =>
         {
@@ -212,5 +246,6 @@ public class GpuMetricProvider : IMetricProvider
                 c.Dispose();
         _counters.Clear();
         _lastAccessTime.Clear();
+        _dxgiMonitor?.Dispose();
     }
 }

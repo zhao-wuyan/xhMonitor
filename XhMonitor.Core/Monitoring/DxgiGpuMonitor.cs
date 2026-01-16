@@ -336,6 +336,210 @@ namespace XhMonitor.Core.Monitoring
 
         #endregion
 
+        #region D3DKMT GPU Usage Monitoring
+
+        // D3DKMT structures for GPU usage monitoring
+        [StructLayout(LayoutKind.Sequential)]
+        private struct D3DKMT_QUERYSTATISTICS
+        {
+            public D3DKMT_QUERYSTATISTICS_TYPE Type;
+            public LUID AdapterLuid;
+            public IntPtr hProcess;
+            public D3DKMT_QUERYSTATISTICS_RESULT QueryResult;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct D3DKMT_QUERYSTATISTICS_RESULT
+        {
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_ADAPTER_INFORMATION AdapterInformation;
+
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_NODE_INFORMATION NodeInformation;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct D3DKMT_QUERYSTATISTICS_ADAPTER_INFORMATION
+        {
+            public uint NbSegments;
+            public uint NodeCount;
+            public uint VidPnSourceCount;
+            public uint VSyncEnabled;
+            public uint TdrDetectedCount;
+            public long ZeroLengthDmaBuffers;
+            public ulong RestartedPeriod;
+            // ... more fields exist but we only need NodeCount
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct D3DKMT_QUERYSTATISTICS_NODE_INFORMATION
+        {
+            public D3DKMT_QUERYSTATISTICS_NODE_INFORMATION_DATA GlobalInformation;
+            public D3DKMT_QUERYSTATISTICS_NODE_INFORMATION_DATA SystemInformation;
+            // ... more fields
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct D3DKMT_QUERYSTATISTICS_NODE_INFORMATION_DATA
+        {
+            public ulong RunningTime;
+            public uint ContextSwitch;
+            public uint PreemptionAttempts;
+            public uint PreemptionSuccesses;
+            public uint SplitCount;
+            public uint NbDmaBufferSubmitted;
+            public uint NbDmaBufferPreempted;
+            public uint NbDmaBufferCompleted;
+        }
+
+        private enum D3DKMT_QUERYSTATISTICS_TYPE
+        {
+            D3DKMT_QUERYSTATISTICS_ADAPTER = 0,
+            D3DKMT_QUERYSTATISTICS_PROCESS = 1,
+            D3DKMT_QUERYSTATISTICS_PROCESS_ADAPTER = 2,
+            D3DKMT_QUERYSTATISTICS_SEGMENT = 3,
+            D3DKMT_QUERYSTATISTICS_PROCESS_SEGMENT = 4,
+            D3DKMT_QUERYSTATISTICS_NODE = 5,
+            D3DKMT_QUERYSTATISTICS_PROCESS_NODE = 6,
+            D3DKMT_QUERYSTATISTICS_VIDPNSOURCE = 7,
+            D3DKMT_QUERYSTATISTICS_PROCESS_VIDPNSOURCE = 8
+        }
+
+        [DllImport("gdi32.dll", SetLastError = true)]
+        private static extern int D3DKMTQueryStatistics(ref D3DKMT_QUERYSTATISTICS pData);
+
+        // GPU usage tracking
+        private class GpuNodeUsage
+        {
+            public ulong LastRunningTime { get; set; }
+            public DateTime LastQueryTime { get; set; }
+        }
+
+        private readonly Dictionary<string, GpuNodeUsage> _nodeUsageCache = new();
+        private readonly object _usageLock = new object();
+
+        /// <summary>
+        /// Get GPU usage percentage for all adapters (0-100)
+        /// </summary>
+        public double GetGpuUsage()
+        {
+            if (_adapters.Count == 0)
+                return 0.0;
+
+            try
+            {
+                double totalUsage = 0.0;
+                int validAdapters = 0;
+
+                foreach (var adapter in _adapters)
+                {
+                    var usage = GetAdapterGpuUsage(adapter);
+                    if (usage >= 0)
+                    {
+                        totalUsage += usage;
+                        validAdapters++;
+                    }
+                }
+
+                return validAdapters > 0 ? totalUsage / validAdapters : 0.0;
+            }
+            catch
+            {
+                return 0.0;
+            }
+        }
+
+        private double GetAdapterGpuUsage(GpuAdapter adapter)
+        {
+            try
+            {
+                // Get adapter LUID from descriptor
+                var desc = GetAdapterDesc(adapter.AdapterPtr);
+                if (desc == null)
+                    return -1;
+
+                var luid = desc.Value.AdapterLuid;
+
+                // Query adapter information to get node count
+                var queryAdapter = new D3DKMT_QUERYSTATISTICS
+                {
+                    Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_ADAPTER,
+                    AdapterLuid = luid
+                };
+
+                int hr = D3DKMTQueryStatistics(ref queryAdapter);
+                if (hr != 0)
+                    return -1;
+
+                uint nodeCount = queryAdapter.QueryResult.AdapterInformation.NodeCount;
+                if (nodeCount == 0)
+                    return 0.0;
+
+                // Query each node and calculate usage
+                double maxUsage = 0.0;
+                DateTime now = DateTime.UtcNow;
+
+                for (uint nodeId = 0; nodeId < nodeCount; nodeId++)
+                {
+                    var queryNode = new D3DKMT_QUERYSTATISTICS
+                    {
+                        Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_NODE,
+                        AdapterLuid = luid
+                    };
+
+                    // Set NodeId in the union (we need to use unsafe code or marshal)
+                    // For simplicity, we'll use the first node (3D engine)
+                    if (nodeId > 0)
+                        continue; // Only query first node for now
+
+                    hr = D3DKMTQueryStatistics(ref queryNode);
+                    if (hr != 0)
+                        continue;
+
+                    ulong runningTime = queryNode.QueryResult.NodeInformation.GlobalInformation.RunningTime;
+
+                    // Calculate usage based on time delta
+                    string cacheKey = $"{luid.LowPart}_{luid.HighPart}_{nodeId}";
+
+                    lock (_usageLock)
+                    {
+                        if (_nodeUsageCache.TryGetValue(cacheKey, out var cached))
+                        {
+                            var timeDelta = (now - cached.LastQueryTime).TotalMilliseconds;
+                            if (timeDelta > 0)
+                            {
+                                var runningDelta = runningTime - cached.LastRunningTime;
+                                // RunningTime is in 100-nanosecond units
+                                var runningMs = runningDelta / 10000.0;
+                                var usage = (runningMs / timeDelta) * 100.0;
+
+                                // Clamp to 0-100
+                                usage = Math.Max(0, Math.Min(100, usage));
+
+                                if (usage > maxUsage)
+                                    maxUsage = usage;
+                            }
+                        }
+
+                        // Update cache
+                        _nodeUsageCache[cacheKey] = new GpuNodeUsage
+                        {
+                            LastRunningTime = runningTime,
+                            LastQueryTime = now
+                        };
+                    }
+                }
+
+                return maxUsage;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        #endregion
+
         #region IDisposable
 
         public void Dispose()
