@@ -16,7 +16,7 @@ namespace XhMonitor.Core.Monitoring
 
         #region DXGI Structures and Enums
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct DXGI_ADAPTER_DESC1
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
@@ -292,14 +292,23 @@ namespace XhMonitor.Core.Monitoring
                 var queryInterface = Marshal.GetDelegateForFunctionPointer<QueryInterfaceDelegate>(queryInterfacePtr);
 
                 int hr = queryInterface(adapterPtr, ref iid, out adapter3Ptr);
+
                 if (hr < 0 || adapter3Ptr == IntPtr.Zero)
                     return null;
 
                 try
                 {
+                    // IDXGIAdapter3 vtable layout:
+                    // IUnknown (0-2): QueryInterface, AddRef, Release
+                    // IDXGIObject (3-6): SetPrivateData, SetPrivateDataInterface, GetPrivateData, GetParent
+                    // IDXGIAdapter (7-9): EnumOutputs, GetDesc, CheckInterfaceSupport
+                    // IDXGIAdapter1 (10): GetDesc1
+                    // IDXGIAdapter2 (11): GetDesc2
+                    // IDXGIAdapter3 (12-17): RegisterHardwareContentProtectionTeardownStatusEvent, UnregisterHardwareContentProtectionTeardownStatus, QueryVideoMemoryInfo, SetVideoMemoryReservation, RegisterVideoMemoryBudgetChangeNotificationEvent, UnregisterVideoMemoryBudgetChangeNotification
+
                     // Get QueryVideoMemoryInfo from IDXGIAdapter3 vtable
                     var adapter3Vtable = Marshal.ReadIntPtr(adapter3Ptr);
-                    var queryMemInfoPtr = Marshal.ReadIntPtr(adapter3Vtable, IntPtr.Size * 16); // QueryVideoMemoryInfo is at index 16
+                    var queryMemInfoPtr = Marshal.ReadIntPtr(adapter3Vtable, IntPtr.Size * 13); // QueryVideoMemoryInfo is at index 13
                     var queryMemInfo = Marshal.GetDelegateForFunctionPointer<QueryVideoMemoryInfoDelegate>(queryMemInfoPtr);
 
                     // Query local video memory (dedicated VRAM)
