@@ -301,7 +301,7 @@ namespace XhMonitor.Core.Monitoring
 
                     // Get QueryVideoMemoryInfo from IDXGIAdapter3 vtable
                     var adapter3Vtable = Marshal.ReadIntPtr(adapter3Ptr);
-                    var queryMemInfoPtr = Marshal.ReadIntPtr(adapter3Vtable, IntPtr.Size * 13); // QueryVideoMemoryInfo is at index 13
+                    var queryMemInfoPtr = Marshal.ReadIntPtr(adapter3Vtable, IntPtr.Size * 14); // QueryVideoMemoryInfo is at index 14
                     var queryMemInfo = Marshal.GetDelegateForFunctionPointer<QueryVideoMemoryInfoDelegate>(queryMemInfoPtr);
 
                     // Query local video memory (dedicated VRAM)
@@ -336,6 +336,7 @@ namespace XhMonitor.Core.Monitoring
         private const int SegmentGroupShift = 6;
         private const ulong SegmentGroupMask = 0x3;
         private const int D3dkmtSuccess = 0;
+        private const int SegmentBytesResidentOffset = 16;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct LUID
@@ -351,6 +352,25 @@ namespace XhMonitor.Core.Monitoring
             public LUID AdapterLuid;
             public IntPtr hProcess;
             public D3DKMT_QUERYSTATISTICS_RESULT QueryResult;
+            public D3DKMT_QUERYSTATISTICS_QUERY Query;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct D3DKMT_QUERYSTATISTICS_OVERLAY
+        {
+            public D3DKMT_QUERYSTATISTICS_TYPE Type;
+            public LUID AdapterLuid;
+            public IntPtr hProcess;
+            public D3DKMT_QUERYSTATISTICS_UNION Union;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = D3DKMT_QUERYSTATISTICS_RESULT_SIZE)]
+        private struct D3DKMT_QUERYSTATISTICS_UNION
+        {
+            [FieldOffset(0)]
+            public D3DKMT_QUERYSTATISTICS_RESULT QueryResult;
+
+            [FieldOffset(0)]
             public D3DKMT_QUERYSTATISTICS_QUERY Query;
         }
 
@@ -453,11 +473,34 @@ namespace XhMonitor.Core.Monitoring
         [DllImport("gdi32.dll", SetLastError = true)]
         private static extern int D3DKMTQueryStatistics(ref D3DKMT_QUERYSTATISTICS pData);
 
+        [DllImport("gdi32.dll", SetLastError = true, EntryPoint = "D3DKMTQueryStatistics")]
+        private static extern int D3DKMTQueryStatistics(ref D3DKMT_QUERYSTATISTICS_OVERLAY pData);
+
         // GPU usage tracking
         private class GpuNodeUsage
         {
             public ulong LastRunningTime { get; set; }
             public DateTime LastQueryTime { get; set; }
+        }
+
+        public readonly struct AdapterVramInfo
+        {
+            public AdapterVramInfo(string name, int luidHigh, uint luidLow, ulong segment0Bytes, bool skipped, bool success)
+            {
+                Name = name;
+                LuidHigh = luidHigh;
+                LuidLow = luidLow;
+                Segment0Bytes = segment0Bytes;
+                Skipped = skipped;
+                Success = success;
+            }
+
+            public string Name { get; }
+            public int LuidHigh { get; }
+            public uint LuidLow { get; }
+            public ulong Segment0Bytes { get; }
+            public bool Skipped { get; }
+            public bool Success { get; }
         }
 
         private readonly Dictionary<string, GpuNodeUsage> _nodeUsageCache = new();
@@ -473,20 +516,19 @@ namespace XhMonitor.Core.Monitoring
 
             try
             {
-                double totalUsage = 0.0;
-                int validAdapters = 0;
+                double maxUsage = 0.0;
 
                 foreach (var adapter in _adapters)
                 {
                     var usage = GetAdapterGpuUsage(adapter);
                     if (usage >= 0)
                     {
-                        totalUsage += usage;
-                        validAdapters++;
+                        if (usage > maxUsage)
+                            maxUsage = usage;
                     }
                 }
 
-                return validAdapters > 0 ? totalUsage / validAdapters : 0.0;
+                return maxUsage;
             }
             catch
             {
@@ -501,59 +543,59 @@ namespace XhMonitor.Core.Monitoring
         public long GetTotalVramUsageBytes()
         {
             if (_adapters.Count == 0)
+            {
                 return 0;
+            }
 
             try
             {
-                ulong totalBytes = 0;
+                var adapterInfos = GetAdapterSegment0VramBytes(true);
+                ulong maxBytes = 0;
+                int validAdapters = 0;
 
-                foreach (var adapter in _adapters)
+                foreach (var info in adapterInfos)
                 {
-                    var desc = GetAdapterDesc(adapter.AdapterPtr);
-                    if (desc == null)
+                    if (!info.Success || info.Skipped)
                         continue;
 
-                    var luid = desc.Value.AdapterLuid;
+                    if (info.Segment0Bytes > maxBytes)
+                        maxBytes = info.Segment0Bytes;
 
-                    var queryAdapter = new D3DKMT_QUERYSTATISTICS
-                    {
-                        Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_ADAPTER,
-                        AdapterLuid = luid
-                    };
-
-                    int hr = D3DKMTQueryStatistics(ref queryAdapter);
-                    if (hr != D3dkmtSuccess)
-                        continue;
-
-                    uint segmentCount = queryAdapter.QueryResult.AdapterInformation.NbSegments;
-                    for (uint segmentId = 0; segmentId < segmentCount; segmentId++)
-                    {
-                        var querySegment = new D3DKMT_QUERYSTATISTICS
-                        {
-                            Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_SEGMENT,
-                            AdapterLuid = luid
-                        };
-
-                        querySegment.Query.QuerySegment.SegmentId = segmentId;
-
-                        hr = D3DKMTQueryStatistics(ref querySegment);
-                        if (hr != D3dkmtSuccess)
-                            continue;
-
-                        var segmentInfo = querySegment.QueryResult.SegmentInformation;
-                        if (GetSegmentGroup(segmentInfo) == (int)D3DKMT_MEMORY_SEGMENT_GROUP.D3DKMT_MEMORY_SEGMENT_GROUP_LOCAL)
-                        {
-                            totalBytes += segmentInfo.BytesResident;
-                        }
-                    }
+                    validAdapters++;
                 }
 
-                return totalBytes > long.MaxValue ? long.MaxValue : (long)totalBytes;
+                if (validAdapters == 0)
+                {
+                    return -1;
+                }
+
+                return maxBytes > long.MaxValue ? long.MaxValue : (long)maxBytes;
             }
             catch
             {
                 return -1;
             }
+        }
+
+        public IReadOnlyList<AdapterVramInfo> GetAdapterSegment0VramBytes(bool skipBasicRenderDriver)
+        {
+            var results = new List<AdapterVramInfo>();
+            if (_adapters.Count == 0)
+                return results;
+
+            foreach (var adapter in _adapters)
+            {
+                var desc = GetAdapterDesc(adapter.AdapterPtr);
+                if (desc == null)
+                    continue;
+
+                var luid = desc.Value.AdapterLuid;
+                bool skip = skipBasicRenderDriver && IsBasicRenderAdapter(adapter.Name);
+                bool ok = TryGetSegment0BytesResident(luid, out var bytesResident);
+                results.Add(new AdapterVramInfo(adapter.Name, luid.HighPart, luid.LowPart, ok ? bytesResident : 0, skip, ok));
+            }
+
+            return results;
         }
 
         private double GetAdapterGpuUsage(GpuAdapter adapter)
@@ -611,6 +653,7 @@ namespace XhMonitor.Core.Monitoring
 
                     lock (_usageLock)
                     {
+                        double? usage = null;
                         if (_nodeUsageCache.TryGetValue(cacheKey, out var cached))
                         {
                             var timeDelta = (now - cached.LastQueryTime).TotalMilliseconds;
@@ -619,22 +662,22 @@ namespace XhMonitor.Core.Monitoring
                                 var runningDelta = runningTime - cached.LastRunningTime;
                                 // RunningTime is in 100-nanosecond units
                                 var runningMs = runningDelta / 10000.0;
-                                var usage = (runningMs / timeDelta) * 100.0;
-
-                                // Clamp to 0-100
-                                usage = Math.Max(0, Math.Min(100, usage));
-
-                                if (usage > maxUsage)
-                                    maxUsage = usage;
+                                usage = (runningMs / timeDelta) * 100.0;
                             }
                         }
 
-                        // Update cache
                         _nodeUsageCache[cacheKey] = new GpuNodeUsage
                         {
                             LastRunningTime = runningTime,
                             LastQueryTime = now
                         };
+
+                        if (usage.HasValue)
+                        {
+                            var clamped = Math.Max(0, Math.Min(100, usage.Value));
+                            if (clamped > maxUsage)
+                                maxUsage = clamped;
+                        }
                     }
                 }
 
@@ -649,6 +692,52 @@ namespace XhMonitor.Core.Monitoring
         private static int GetSegmentGroup(D3DKMT_QUERYSTATISTICS_SEGMENT_INFORMATION segmentInfo)
         {
             return (int)((segmentInfo.SegmentProperties >> SegmentGroupShift) & SegmentGroupMask);
+        }
+
+        private static bool IsBasicRenderAdapter(string name)
+        {
+            return name.IndexOf("Microsoft Basic Render Driver", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool TryGetSegment0BytesResident(LUID luid, out ulong bytesResident)
+        {
+            bytesResident = 0;
+
+            try
+            {
+                var querySegment = new D3DKMT_QUERYSTATISTICS_OVERLAY
+                {
+                    Type = D3DKMT_QUERYSTATISTICS_TYPE.D3DKMT_QUERYSTATISTICS_SEGMENT,
+                    AdapterLuid = luid
+                };
+                querySegment.Union.Query.QuerySegment.SegmentId = 0;
+
+                int hr = D3DKMTQueryStatistics(ref querySegment);
+                if (hr != D3dkmtSuccess)
+                    return false;
+
+                var segmentInfo = querySegment.Union.QueryResult.SegmentInformation;
+                bytesResident = ReadUlongAtOffset(ref segmentInfo, SegmentBytesResidentOffset);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static ulong ReadUlongAtOffset(ref D3DKMT_QUERYSTATISTICS_SEGMENT_INFORMATION segmentInfo, int offset)
+        {
+            var ptr = Marshal.AllocHGlobal(Marshal.SizeOf<D3DKMT_QUERYSTATISTICS_SEGMENT_INFORMATION>());
+            try
+            {
+                Marshal.StructureToPtr(segmentInfo, ptr, false);
+                return (ulong)Marshal.ReadInt64(ptr, offset);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
 
         #endregion

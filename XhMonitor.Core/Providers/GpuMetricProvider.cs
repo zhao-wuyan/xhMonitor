@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
@@ -56,10 +57,12 @@ public class GpuMetricProvider : IMetricProvider
 
     public async Task<double> GetSystemTotalAsync()
     {
-        // 优先使用 D3DKMT API（更准确，无需创建大量计数器）
-        if (_dxgiInitialized)
+        var task = Task.Run(() =>
         {
-            return await Task.Run(() =>
+            if (TryGetMaxEngineUsage(out var maxUsage))
+                return maxUsage;
+
+            if (_dxgiInitialized)
             {
                 try
                 {
@@ -70,52 +73,9 @@ public class GpuMetricProvider : IMetricProvider
                     _logger?.LogError(ex, "Failed to query GPU usage via D3DKMT");
                     return 0.0;
                 }
-            });
-        }
-
-        // Fallback: 使用 ReadCategory 批量读取（但无法获取正确的百分比值）
-        // 添加超时保护，避免首次调用时卡死
-        var task = Task.Run(() =>
-        {
-            if (!IsSupported()) return 0.0;
-
-            try
-            {
-                var category = new PerformanceCounterCategory("GPU Engine");
-                var data = category.ReadCategory();
-
-                if (!data.Contains("Utilization Percentage"))
-                    return 0.0;
-
-                var utilizationData = data["Utilization Percentage"];
-                float maxUtilization = 0;
-
-                foreach (string instanceName in utilizationData.Keys)
-                {
-                    try
-                    {
-                        var sample = utilizationData[instanceName];
-                        // RawValue 是纳秒级时间戳，需要通过 PerformanceCounter 计算才能得到百分比
-                        // 由于 ReadCategory 只返回 RawValue，我们需要使用单个计数器来获取正确的值
-                        // 暂时跳过，使用进程级计数器代替
-                        continue;
-                    }
-                    catch
-                    {
-                        // 跳过无效实例
-                        continue;
-                    }
-                }
-
-                // ReadCategory 无法获取 CookedValue，返回 0 表示不支持系统级 GPU 监控
-                // 用户应该查看进程级 GPU 使用率
-                return 0.0;
             }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to query system GPU usage");
-                return 0.0;
-            }
+
+            return 0.0;
         });
 
         // 5秒超时保护
@@ -127,6 +87,57 @@ public class GpuMetricProvider : IMetricProvider
         {
             _logger?.LogWarning("GPU usage query timed out after 5 seconds, returning 0");
             return 0.0;
+        }
+    }
+
+    private bool TryGetMaxEngineUsage(out double usage)
+    {
+        usage = 0.0;
+        if (!IsSupported()) return false;
+
+        List<PerformanceCounter> counters = new();
+        try
+        {
+            var category = new PerformanceCounterCategory("GPU Engine");
+            var instanceNames = category.GetInstanceNames();
+            if (instanceNames.Length == 0)
+                return false;
+
+            foreach (var name in instanceNames)
+            {
+                var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
+                counters.Add(counter);
+                try { counter.NextValue(); } catch { }
+            }
+
+            Thread.Sleep(100);
+
+            float maxUtilization = 0;
+            foreach (var counter in counters)
+            {
+                try
+                {
+                    var value = counter.NextValue();
+                    if (value > maxUtilization)
+                        maxUtilization = value;
+                }
+                catch { }
+            }
+
+            usage = Math.Round(maxUtilization, 1);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to query GPU usage via performance counters");
+            return false;
+        }
+        finally
+        {
+            foreach (var counter in counters)
+            {
+                try { counter.Dispose(); } catch { }
+            }
         }
     }
 

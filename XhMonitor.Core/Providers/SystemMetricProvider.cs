@@ -146,10 +146,15 @@ public class SystemMetricProvider : IDisposable
                 if (_dxgiAvailable)
                 {
                     var usedBytes = _dxgiMonitor.GetTotalVramUsageBytes();
+                    _logger?.LogDebug("GetVramUsageAsync: dxgiAvailable={DxgiAvailable}, usedBytes={UsedBytes}", _dxgiAvailable, usedBytes);
                     if (usedBytes >= 0)
                     {
                         return usedBytes / 1024.0 / 1024.0;
                     }
+                }
+                else
+                {
+                    _logger?.LogInformation("GetVramUsageAsync: dxgiAvailable=false");
                 }
 
                 // 使用性能计数器获取所有 GPU 适配器的内存使用总和
