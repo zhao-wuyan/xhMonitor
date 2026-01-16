@@ -1,0 +1,120 @@
+{
+  "project_structure": "XhMonitor is a 3-tier monitoring system: (1) XhMonitor.Core - shared models/providers/interfaces, (2) XhMonitor.Service - ASP.NET Core backend with Worker service collecting metrics every 5s, storing to SQLite, and broadcasting via SignalR, (3) XhMonitor.Desktop - WPF client receiving real-time data via SignalR. Data flows: Process.GetProcesses() → ProcessScanner (parallel filtering) → PerformanceMonitor (parallel metric collection) → MetricRepository (JSON serialization to DB) → SignalR Hub (broadcast) → Desktop ViewModels (ObservableCollections). Key modules: XhMonitor.Service/Core (ProcessScanner, PerformanceMonitor, MetricProviderRegistry), XhMonitor.Service/Data (MetricRepository, MonitorDbContext), XhMonitor.Desktop/ViewModels (FloatingWindowViewModel with 3 ObservableCollections), XhMonitor.Core/Providers (CPU/GPU/VRAM/Memory metric providers with caching).",
+
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Service/Core/ProcessScanner.cs",
+      "relevance": 0.95,
+      "rationale": "Primary data ingestion point - scans ALL system processes (Process.GetProcesses()) in parallel, reads command lines via WMI, filters by keywords. Creates ProcessInfo objects with full command line strings. Line 36-60: Parallel.ForEach with MaxDegreeOfParallelism=4 processes all system processes without disposal in loop body."
+    },
+    {
+      "path": "XhMonitor.Service/Core/PerformanceMonitor.cs",
+      "relevance": 0.95,
+      "rationale": "Core data collection orchestrator - receives ProcessInfo list from scanner, collects metrics from 4+ providers in parallel (MaxDegreeOfParallelism=4). Line 39-91: Creates ConcurrentBag<ProcessMetrics> and Dictionary<string, MetricValue> per process. No size limits on collections."
+    },
+    {
+      "path": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+      "relevance": 0.90,
+      "rationale": "Major memory consumer - maintains ConcurrentDictionary<int, List<PerformanceCounter>> (line 11) that grows unbounded. Each process can have multiple GPU engine counters. Line 16: _systemCounters List grows with all GPU instances. No cleanup of dead process counters until Dispose()."
+    },
+    {
+      "path": "XhMonitor.Core/Providers/CpuMetricProvider.cs",
+      "relevance": 0.85,
+      "rationale": "Batch data caching - line 12-13: Dictionary<int, double> _cachedCpuData and Dictionary<int, (long, DateTime)> _previousSamples store data for ALL processes in system. Line 104: ReadCategory() loads entire Process category into memory. Cache lifetime 1s but dictionaries grow with process count."
+    },
+    {
+      "path": "XhMonitor.Core/Providers/VramMetricProvider.cs",
+      "relevance": 0.80,
+      "rationale": "Expensive initialization - GetSystemTotalAsync() (line 30-84) tries 4 detection methods: PowerShell process spawn, Registry enumeration, DxDiag XML parsing, WMI queries. Each method allocates significant memory. Called on startup and hourly."
+    },
+    {
+      "path": "XhMonitor.Service/Data/Repositories/MetricRepository.cs",
+      "relevance": 0.85,
+      "rationale": "Serialization overhead - line 49: metrics.Select().ToList() creates full copy. Line 67: JsonSerializer.Serialize() for EACH ProcessMetrics creates JSON strings stored in DB. No batching or streaming. Line 53: AddRangeAsync loads all entities into EF Core change tracker."
+    },
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "relevance": 0.90,
+      "rationale": "Data flow coordinator - line 237-269: SendProcessDataAsync() collects all metrics, saves to DB, then broadcasts via SignalR. Line 248-260: Creates anonymous object with full process list for SignalR. No pagination or filtering. Runs every 5 seconds."
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "relevance": 0.85,
+      "rationale": "Client-side data accumulation - line 14: Dictionary<int, ProcessRowViewModel> _processIndex grows unbounded. Line 18-20: 3 ObservableCollections (TopProcesses, PinnedProcesses, AllProcesses). Line 284-308: SyncProcessIndex() updates all collections on every SignalR message (1s interval for system, 5s for processes)."
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/SignalRService.cs",
+      "relevance": 0.75,
+      "rationale": "SignalR event handlers - line 46-96: 4 event handlers deserialize JSON on every message. Line 44: JsonSerializerOptions created per connection. Line 50-76: GetRawText() + Deserialize creates temporary strings and objects. No message size limits."
+    },
+    {
+      "path": "XhMonitor.Core/Models/ProcessMetrics.cs",
+      "relevance": 0.70,
+      "rationale": "Data structure definition - line 5: ProcessInfo contains full command line string (can be 32KB+). Line 6: Dictionary<string, MetricValue> per process. Multiplied by process count creates significant memory footprint."
+    }
+  ],
+
+  "patterns": "**Data Collection Patterns**: (1) Batch collection without streaming - ProcessScanner.ScanProcesses() (line 36) loads ALL system processes into memory via Process.GetProcesses(), then filters in parallel. (2) Unbounded caching - GpuMetricProvider._counters (line 11) and CpuMetricProvider._cachedCpuData (line 12) grow with process count, no eviction policy. (3) Per-process dictionaries - PerformanceMonitor (line 62) creates Dictionary<string, MetricValue> for each process, no pooling. **Serialization Patterns**: (1) Full object serialization - MetricRepository.MapToEntity() (line 67) serializes entire Metrics dictionary to JSON string per process. (2) Anonymous object creation - Worker.SendProcessDataAsync() (line 248-260) creates new anonymous objects for SignalR broadcast. **Collection Management**: (1) ObservableCollection synchronization - FloatingWindowViewModel.SyncCollectionOrder() (line 319-348) performs complex collection manipulation on UI thread. (2) Dictionary indexing - _processIndex (line 14) maintains parallel index of all processes. **Memory Retention**: (1) Event handler subscriptions - SignalRService (line 46-96) holds references to deserialized DTOs until next message. (2) Performance counter retention - GpuMetricProvider keeps PerformanceCounter objects alive until Dispose().",
+
+  "dependencies": "**Core Dependencies**: System.Diagnostics.Process (process enumeration), System.Diagnostics.PerformanceCounter (metric collection), System.Management (WMI queries for command lines). **Data Storage**: Microsoft.EntityFrameworkCore (change tracking overhead), System.Text.Json (serialization/deserialization). **Communication**: Microsoft.AspNetCore.SignalR (message buffering), Microsoft.AspNetCore.SignalR.Client (client-side message queue). **Collections**: System.Collections.Concurrent (ConcurrentBag, ConcurrentDictionary - thread-safe but higher memory overhead), System.Collections.ObjectModel.ObservableCollection (WPF data binding with change notifications). **Memory Impact**: PerformanceCounter objects hold native resources, EF Core DbContext tracks all entities in memory until SaveChanges(), SignalR buffers messages per connection, ObservableCollection triggers UI updates on every change.",
+
+  "integration_points": "**Service Data Flow Entry**: ProcessScanner.ScanProcesses() (line 29) - called by PerformanceMonitor.CollectAllAsync() (line 32) every 5 seconds. Returns List<ProcessInfo> with full command lines. **Metric Collection Pipeline**: PerformanceMonitor.CollectAllAsync() (line 25) → CollectMetricSafeAsync() (line 101) → IMetricProvider.CollectAsync() for each provider. Creates ProcessMetrics with nested dictionaries. **Database Persistence**: MetricRepository.SaveMetricsAsync() (line 29) receives IReadOnlyCollection<ProcessMetrics>, maps to ProcessMetricRecord entities (line 49), serializes Metrics to JSON (line 67), calls AddRangeAsync() (line 53). **SignalR Broadcast**: Worker.SendProcessDataAsync() (line 232) → HubContext.Clients.All.SendAsync() (line 248) with anonymous object containing full process list. Broadcast to all connected clients. **Desktop Reception**: SignalRService event handlers (line 72-83) → FloatingWindowViewModel.OnProcessDataReceived() (line 186) → SyncProcessIndex() (line 284) updates 3 ObservableCollections. **Memory Hotspots**: ProcessScanner line 36 (Process.GetProcesses()), PerformanceMonitor line 39 (ConcurrentBag creation), GpuMetricProvider line 11 (ConcurrentDictionary growth), MetricRepository line 67 (JSON serialization), FloatingWindowViewModel line 14 (Dictionary growth).",
+
+  "constraints": "**Performance Constraints**: (1) Process scanning must complete within 5s interval to avoid backlog. (2) Parallel processing limited to MaxDegreeOfParallelism=4 to avoid thread pool exhaustion. (3) Metric provider timeout 2s per process (PerformanceMonitor line 106). **Memory Constraints**: (1) No explicit memory limits on collections - GpuMetricProvider._counters, CpuMetricProvider._cachedCpuData, FloatingWindowViewModel._processIndex all grow unbounded. (2) EF Core DbContext change tracker holds all entities until SaveChanges(). (3) SignalR message size not limited - full process list broadcast every 5s. **Platform Constraints**: (1) Windows-only - PerformanceCounter, WMI, Registry APIs. (2) Process.GetProcesses() requires elevated permissions for some processes. (3) GPU metrics require 'GPU Engine' and 'GPU Process Memory' performance counter categories. **Concurrency Constraints**: (1) CpuMetricProvider uses SemaphoreSlim (line 16) to serialize cache updates. (2) PerformanceMonitor uses SemaphoreSlim (line 13) to limit concurrent provider calls to 8. (3) ObservableCollection updates must occur on UI thread (Dispatcher.Invoke). **Data Retention**: (1) SQLite database grows unbounded - no automatic cleanup. (2) Performance counters retained until provider Dispose(). (3) Desktop _processIndex never removes entries except when process exits.",
+
+  "clarification_needs": [
+    {
+      "question": "Should process filtering occur BEFORE or AFTER metric collection to reduce memory footprint?",
+      "context": "Currently ProcessScanner filters by keywords but PerformanceMonitor still collects metrics for ALL matched processes. If keyword list is empty, ALL system processes are collected. Service memory spikes from 80MB to 800+MB after first collection cycle.",
+      "options": [
+        "Filter before collection - only collect metrics for keyword-matched processes (reduces provider overhead)",
+        "Filter after collection - collect all metrics then filter for broadcast (current behavior, more data but flexible)",
+        "Two-tier filtering - keyword filter before collection, top-N filter after collection (hybrid approach)"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "Should metric provider caches (CPU, GPU) have size limits or TTL-based eviction?",
+      "context": "GpuMetricProvider._counters (ConcurrentDictionary) and CpuMetricProvider._cachedCpuData (Dictionary) grow with process count and never evict dead processes until provider disposal. This causes unbounded memory growth as processes start/stop.",
+      "options": [
+        "Add LRU eviction with max size limit (e.g., 1000 processes)",
+        "Add TTL-based eviction (remove entries not accessed for 60s)",
+        "Hybrid: TTL + size limit (evict old entries first, then LRU if over limit)",
+        "Keep current behavior but add periodic cleanup task"
+      ],
+      "recommended": 2
+    },
+    {
+      "question": "Should SignalR broadcast full process list or use delta updates?",
+      "context": "Worker.SendProcessDataAsync() broadcasts entire process list (all ProcessInfo + Metrics) every 5 seconds via SignalR. Desktop receives and deserializes full list, then syncs 3 ObservableCollections. This creates significant serialization/deserialization overhead and network traffic.",
+      "options": [
+        "Full broadcast (current) - simple but high overhead",
+        "Delta updates - only send added/removed/changed processes (complex but efficient)",
+        "Pagination - send top N processes, client requests more if needed",
+        "Hybrid - full broadcast on connect, delta updates thereafter"
+      ],
+      "recommended": 3
+    },
+    {
+      "question": "Should Desktop maintain full process index or only display top N processes?",
+      "context": "FloatingWindowViewModel._processIndex (Dictionary) stores ProcessRowViewModel for every process received from service. AllProcesses ObservableCollection contains all processes. Only TopProcesses (5 items) is displayed. Desktop uses 110+MB memory.",
+      "options": [
+        "Keep full index - maintain all processes in memory (current behavior)",
+        "Top N only - only store displayed processes, request more on demand",
+        "Windowed index - keep top 100 processes, evict others",
+        "Lazy loading - load process details only when user expands view"
+      ],
+      "recommended": 2
+    }
+  ],
+
+  "_metadata": {
+    "timestamp": "2026-01-16T00:00:00Z",
+    "task_description": "分析service和desktop的内存占用过高的问题，service能占用800+mb的内存，desktop能占用110+mb的内存，service好像是在读取到进程数据之后暴涨。刚启动没读取进程之前是80MB左右的内存占用",
+    "source": "cli-explore-agent",
+    "exploration_angle": "dataflow",
+    "exploration_index": 2,
+    "total_explorations": 3,
+    "duration_seconds": 180
+  }
+}

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Models;
@@ -9,13 +10,22 @@ namespace XhMonitor.Core.Providers;
 public class GpuMetricProvider : IMetricProvider
 {
     private readonly ConcurrentDictionary<int, List<PerformanceCounter>> _counters = new();
+    private readonly ConcurrentDictionary<int, DateTime> _lastAccessTime = new();
+    private readonly ILogger<GpuMetricProvider>? _logger;
     private bool? _isSupported;
-    private PerformanceCounterCategory? _gpuEngineCategory;
+    private int _cycleCount = 0;
+    private const int CleanupIntervalCycles = 10; // 每 10 次调用清理一次
+    private const int TtlSeconds = 60; // 60 秒未访问则清理
 
-    // 缓存系统总量计数器
-    private readonly List<PerformanceCounter> _systemCounters = new();
-    private readonly object _systemCountersLock = new();
-    private bool _systemCountersInitialized = false;
+    // 缓存系统总量计数器（已禁用迭代，避免内存暴涨）
+    // private readonly List<PerformanceCounter> _systemCounters = new();
+    // private readonly object _systemCountersLock = new();
+    // private bool _systemCountersInitialized = false;
+
+    public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null)
+    {
+        _logger = logger;
+    }
 
     public string MetricId => "gpu";
     public string DisplayName => "GPU Usage";
@@ -31,59 +41,25 @@ public class GpuMetricProvider : IMetricProvider
 
     public async Task<double> GetSystemTotalAsync()
     {
-        if (!OperatingSystem.IsWindows()) return 0;
-
-        return await Task.Run(() =>
-        {
-            lock (_systemCountersLock)
-            {
-                try
-                {
-                    // 初始化系统GPU计数器（只在第一次执行）
-                    if (!_systemCountersInitialized)
-                    {
-                        _gpuEngineCategory ??= new PerformanceCounterCategory("GPU Engine");
-                        var instanceNames = _gpuEngineCategory.GetInstanceNames();
-
-                        foreach (var name in instanceNames)
-                        {
-                            try
-                            {
-                                var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
-                                _systemCounters.Add(counter);
-                            }
-                            catch { }
-                        }
-
-                        _systemCountersInitialized = true;
-                        _isSupported = _systemCounters.Count > 0;
-                    }
-
-                    // 读取缓存的计数器（快速）
-                    double maxUtilization = 0;
-                    foreach (var counter in _systemCounters)
-                    {
-                        try
-                        {
-                            maxUtilization = Math.Max(maxUtilization, counter.NextValue());
-                        }
-                        catch { }
-                    }
-
-                    return Math.Round(maxUtilization, 1);
-                }
-                catch
-                {
-                    _isSupported = false;
-                    return 0;
-                }
-            }
-        });
+        // 禁用系统级 GPU Engine 迭代（避免内存暴涨）
+        // 系统级 GPU 使用率现在由 SystemMetricProvider 通过 DXGI 提供
+        _logger?.LogDebug("GetSystemTotalAsync disabled - use SystemMetricProvider with DXGI instead");
+        return await Task.FromResult(0.0);
     }
 
     public async Task<MetricValue> CollectAsync(int processId)
     {
         if (!IsSupported()) return MetricValue.Error("Not supported");
+
+        // 更新访问时间
+        _lastAccessTime[processId] = DateTime.UtcNow;
+
+        // 定期清理过期条目
+        if (++_cycleCount >= CleanupIntervalCycles)
+        {
+            _cycleCount = 0;
+            CleanupExpiredEntries();
+        }
 
         return await Task.Run(() =>
         {
@@ -146,42 +122,36 @@ public class GpuMetricProvider : IMetricProvider
 
     public Task WarmupAsync()
     {
-        if (!IsSupported()) return Task.CompletedTask;
+        // 禁用系统级预热（避免迭代所有 GPU Engine 实例）
+        // 进程级计数器按需创建
+        _logger?.LogDebug("WarmupAsync disabled - process-level counters created on demand");
+        return Task.CompletedTask;
+    }
 
-        return Task.Run(() =>
+    private void CleanupExpiredEntries()
+    {
+        var now = DateTime.UtcNow;
+        var expiredPids = _lastAccessTime
+            .Where(kvp => (now - kvp.Value).TotalSeconds > TtlSeconds)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        foreach (var pid in expiredPids)
         {
-            lock (_systemCountersLock)
+            if (_counters.TryRemove(pid, out var counters))
             {
-                if (!_systemCountersInitialized)
+                foreach (var counter in counters)
                 {
-                    try
-                    {
-                        _gpuEngineCategory = new PerformanceCounterCategory("GPU Engine");
-                        var instanceNames = _gpuEngineCategory.GetInstanceNames();
-
-                        foreach (var name in instanceNames)
-                        {
-                            try
-                            {
-                                var counter = new PerformanceCounter("GPU Engine", "Utilization Percentage", name, true);
-                                _systemCounters.Add(counter);
-                            }
-                            catch { }
-                        }
-
-                        // Warmup all counters (first call always returns 0)
-                        foreach (var counter in _systemCounters)
-                        {
-                            try { counter.NextValue(); } catch { }
-                        }
-
-                        _systemCountersInitialized = true;
-                        _isSupported = _systemCounters.Count > 0;
-                    }
-                    catch { }
+                    try { counter.Dispose(); } catch { }
                 }
             }
-        });
+            _lastAccessTime.TryRemove(pid, out _);
+        }
+
+        if (expiredPids.Count > 0)
+        {
+            _logger?.LogDebug("Cleaned up {Count} expired GPU counter entries", expiredPids.Count);
+        }
     }
 
     public void Dispose()
@@ -190,13 +160,6 @@ public class GpuMetricProvider : IMetricProvider
             foreach(var c in list)
                 c.Dispose();
         _counters.Clear();
-
-        // 释放系统GPU计数器
-        lock (_systemCountersLock)
-        {
-            foreach (var c in _systemCounters)
-                c.Dispose();
-            _systemCounters.Clear();
-        }
+        _lastAccessTime.Clear();
     }
 }

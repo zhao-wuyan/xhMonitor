@@ -1,0 +1,113 @@
+{
+  "project_structure": "Three-tier architecture: XhMonitor.Core (shared models/interfaces), XhMonitor.Service (ASP.NET Core backend with SignalR, EF Core, background workers), XhMonitor.Desktop (WPF client with MVVM). Service uses background workers (Worker, AggregationWorker, DatabaseCleanupWorker) for periodic data collection. Desktop uses SignalRService for real-time updates and maintains in-memory collections (ObservableCollection) for UI binding. Data flow: ProcessScanner → PerformanceMonitor → MetricRepository (SQLite) → SignalR Hub → Desktop ViewModels.",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "relevance": 0.95,
+      "rationale": "Main background service orchestrating data collection cycles. Memory spike occurs after SendProcessDataAsync (line 232-269) which collects all process metrics and broadcasts via SignalR."
+    },
+    {
+      "path": "XhMonitor.Service/Core/ProcessScanner.cs",
+      "relevance": 0.90,
+      "rationale": "Scans all system processes using Process.GetProcesses() (line 36) and ProcessCommandLineReader. Uses ConcurrentBag<ProcessInfo> (line 32) which accumulates process data. Parallel processing with MaxDegreeOfParallelism=4 (line 40-60)."
+    },
+    {
+      "path": "XhMonitor.Service/Core/PerformanceMonitor.cs",
+      "relevance": 0.90,
+      "rationale": "Collects metrics for all matched processes using ConcurrentBag<ProcessMetrics> (line 39). Creates Dictionary<string, MetricValue> for each process (line 62). Parallel processing with MaxDegreeOfParallelism=4 (line 41-91)."
+    },
+    {
+      "path": "XhMonitor.Service/Data/Repositories/MetricRepository.cs",
+      "relevance": 0.85,
+      "rationale": "Persists metrics to SQLite using EF Core. Maps ProcessMetrics to ProcessMetricRecord entities (line 49) and serializes metrics to JSON (line 67). Uses AddRangeAsync which may hold entities in memory before SaveChangesAsync."
+    },
+    {
+      "path": "XhMonitor.Service/Data/MonitorDbContext.cs",
+      "relevance": 0.80,
+      "rationale": "EF Core DbContext without explicit QueryTrackingBehavior configuration. Default tracking behavior may cause ChangeTracker to hold entity references in memory. Uses DbContextFactory pattern (Program.cs line 81-86)."
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "relevance": 0.85,
+      "rationale": "Maintains three ObservableCollections (TopProcesses, PinnedProcesses, AllProcesses) and Dictionary<int, ProcessRowViewModel> _processIndex (line 14). Receives process data via SignalR events (line 186-204) and syncs collections on UI thread via Dispatcher.Invoke."
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/SignalRService.cs",
+      "relevance": 0.75,
+      "rationale": "SignalR client with event handlers for ProcessMetrics, SystemUsage, HardwareLimits. Deserializes JSON payloads (line 76-77) which may create temporary objects. Uses WithAutomaticReconnect (line 41) which may buffer messages."
+    },
+    {
+      "path": "XhMonitor.Core/Models/ProcessInfo.cs",
+      "relevance": 0.70,
+      "rationale": "Core data model with CommandLine (string, potentially long), DisplayName, MatchedKeywords (List<string>). Each instance allocated per process scan cycle."
+    },
+    {
+      "path": "XhMonitor.Core/Models/ProcessMetrics.cs",
+      "relevance": 0.70,
+      "rationale": "Contains ProcessInfo + Dictionary<string, MetricValue> + Timestamp. Created for every matched process in every collection cycle (5s interval default)."
+    },
+    {
+      "path": "XhMonitor.Service/Program.cs",
+      "relevance": 0.65,
+      "rationale": "Service startup configuration. Uses AddDbContextFactory (line 81-86) for DbContext pooling. Registers singletons (ProcessScanner, PerformanceMonitor, MetricProviderRegistry) which may hold state across cycles."
+    }
+  ],
+  "patterns": "1. **Data Collection Pipeline**: ProcessScanner.ScanProcesses() → Process.GetProcesses() → ConcurrentBag accumulation → PerformanceMonitor.CollectAllAsync() → ConcurrentBag<ProcessMetrics> → MetricRepository.SaveMetricsAsync() → EF Core AddRangeAsync + SaveChangesAsync. 2. **Parallel Processing**: Both ProcessScanner and PerformanceMonitor use Parallel.ForEach with MaxDegreeOfParallelism=4, creating multiple concurrent allocations. 3. **SignalR Broadcasting**: Worker.SendProcessDataAsync serializes all process data and broadcasts to all connected clients via HubContext.Clients.All.SendAsync (line 248-260). 4. **Desktop Data Binding**: SignalRService receives JSON → Deserializes to ProcessDataDto → Invokes event → FloatingWindowViewModel.OnProcessDataReceived → Dispatcher.Invoke → SyncProcessIndex creates/updates ProcessRowViewModel instances → SyncCollectionOrder manipulates ObservableCollections. 5. **EF Core Pattern**: DbContextFactory creates short-lived contexts, but default ChangeTracker behavior may hold entity references until SaveChangesAsync completes. 6. **String Allocations**: CommandLine strings (max 2000 chars), JSON serialization (MetricsJson), DisplayName resolution via ProcessNameResolver.",
+  "dependencies": "**Service**: Microsoft.EntityFrameworkCore (SQLite provider), Microsoft.AspNetCore.SignalR, System.Diagnostics.Process, System.Text.Json, Serilog. **Desktop**: Microsoft.AspNetCore.SignalR.Client, System.Text.Json, WPF (System.Windows, System.Collections.ObjectModel). **Core**: System.Diagnostics (Process, PerformanceCounter), System.Management (WMI for GPU metrics). **Key Memory-Intensive Dependencies**: Process.GetProcesses() allocates Process[] for all system processes; PerformanceCounter instances in metric providers; SignalR message buffers; EF Core ChangeTracker; WPF Dispatcher queue; ObservableCollection change notifications.",
+  "integration_points": "1. **ProcessScanner.ScanProcesses() (line 29-71)**: Entry point for process enumeration. Returns List<ProcessInfo> which is passed to PerformanceMonitor. 2. **PerformanceMonitor.CollectAllAsync() (line 25-99)**: Receives process list, collects metrics, returns List<ProcessMetrics>. Uses ConcurrentBag internally. 3. **MetricRepository.SaveMetricsAsync() (line 29-63)**: Receives IReadOnlyCollection<ProcessMetrics>, maps to entities (line 49), calls AddRangeAsync (line 53), SaveChangesAsync (line 55). 4. **Worker.SendProcessDataAsync() (line 232-269)**: Orchestrates collection → persistence → SignalR broadcast. SignalR payload includes all process data serialized to anonymous object (line 248-260). 5. **SignalRService event handlers (line 72-83)**: Deserializes ProcessDataDto from JsonElement, invokes ProcessDataReceived event. 6. **FloatingWindowViewModel.OnProcessDataReceived() (line 186-204)**: Dispatcher.Invoke wraps SyncProcessIndex (line 191) which updates _processIndex Dictionary and creates ProcessRowViewModel instances. 7. **SyncCollectionOrder() (line 319-348)**: Manipulates ObservableCollection using RemoveAt, Insert, Move, Add operations which trigger WPF change notifications.",
+  "constraints": "1. **Process Enumeration Overhead**: Process.GetProcesses() returns all system processes (potentially 100-300+), each requiring Process object allocation and disposal. 2. **Parallel Processing Amplification**: MaxDegreeOfParallelism=4 in both ProcessScanner and PerformanceMonitor creates concurrent allocations across 4 threads. 3. **String Duplication**: CommandLine strings (up to 2000 chars) stored in ProcessInfo, ProcessMetrics, ProcessMetricRecord, and serialized to JSON. 4. **EF Core ChangeTracker**: Default tracking behavior holds entity references until SaveChangesAsync completes. No AsNoTracking() usage found. 5. **SignalR Message Size**: Broadcasts entire process list (all matched processes with full metrics) to all clients every 5 seconds. Large payloads if many processes match keywords. 6. **Desktop Collection Synchronization**: SyncCollectionOrder performs O(n²) operations (IndexOf, Contains) on ObservableCollections, triggering WPF change notifications for each modification. 7. **Dispatcher Queue Pressure**: All SignalR events marshaled to UI thread via Dispatcher.Invoke, potentially queuing multiple updates if collection cycle faster than UI rendering. 8. **No Object Pooling**: ProcessInfo, ProcessMetrics, ProcessRowViewModel instances created fresh each cycle without reuse. 9. **JSON Serialization**: Metrics serialized to JSON twice: once for database persistence (MetricsJson column), once for SignalR broadcast. 10. **SQLite WAL Mode**: Enabled (MonitorDbContext line 13) but concurrent writes may still block if multiple workers active.",
+  "clarification_needs": [
+    {
+      "question": "What is the typical number of matched processes in production environment?",
+      "context": "Memory usage scales with number of matched processes. ProcessScanner filters by keywords (default: 'python', 'llama'). If many processes match, ConcurrentBag<ProcessInfo> and ConcurrentBag<ProcessMetrics> accumulate large collections. Service memory spike from 80MB to 800MB suggests 100+ matched processes or very long CommandLine strings.",
+      "options": [
+        "Few processes (1-10): Focus on per-process overhead (CommandLine strings, metric dictionaries)",
+        "Many processes (50-100+): Focus on collection size, parallel processing amplification, SignalR payload size",
+        "Unknown/Variable: Implement telemetry to measure process count and collection sizes first"
+      ],
+      "recommended": 2
+    },
+    {
+      "question": "Is EF Core ChangeTracker holding entity references after SaveChangesAsync?",
+      "context": "MetricRepository uses DbContextFactory pattern but no explicit AsNoTracking() or ChangeTracker.Clear(). Default tracking behavior may hold ProcessMetricRecord entities in memory until DbContext disposal. With 5-second collection cycles, multiple contexts may overlap if SaveChangesAsync takes >5s.",
+      "options": [
+        "Add AsNoTracking() to all queries (read-only scenarios)",
+        "Call ChangeTracker.Clear() after SaveChangesAsync in MetricRepository",
+        "Switch to bulk insert without EF Core tracking (e.g., raw SQL INSERT)",
+        "Investigate DbContext lifetime - ensure proper disposal after each cycle"
+      ],
+      "recommended": 1
+    },
+    {
+      "question": "Should Desktop maintain full process history or only current snapshot?",
+      "context": "FloatingWindowViewModel maintains _processIndex Dictionary<int, ProcessRowViewModel> which grows as new processes appear. No cleanup logic for exited processes except in SyncProcessIndex (line 303-307). If processes frequently start/stop, dictionary may accumulate stale entries between sync cycles.",
+      "options": [
+        "Current behavior is correct - SyncProcessIndex removes exited processes",
+        "Add explicit cleanup: periodically clear _processIndex for processes not seen in N cycles",
+        "Limit _processIndex size: keep only top N processes by resource usage",
+        "Investigate if SyncProcessIndex cleanup is working correctly - add logging"
+      ],
+      "recommended": 3
+    },
+    {
+      "question": "Is SignalR message buffering causing memory accumulation?",
+      "context": "SignalRService uses WithAutomaticReconnect() which may buffer messages during disconnection. If Desktop client disconnects/reconnects frequently, Service may accumulate unsent messages. Broadcast payload includes all process data (potentially large if 100+ processes).",
+      "options": [
+        "Reduce SignalR payload size: send only changed processes (delta updates)",
+        "Implement message size limits: cap process list to top N by resource usage",
+        "Disable automatic reconnect buffering: use manual reconnect without buffering",
+        "Add SignalR message size telemetry to measure actual payload sizes"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-16T00:00:00Z",
+    "task_description": "分析service和desktop的内存占用过高的问题,service能占用800+mb的内存,desktop能占用110+mb的内存,service好像是在读取到进程数据之后暴涨。刚启动没读取进程之前是80MB左右的内存占用",
+    "source": "cli-explore-agent",
+    "exploration_angle": "architecture",
+    "exploration_index": 3,
+    "total_explorations": 3,
+    "duration_seconds": 180
+  }
+}

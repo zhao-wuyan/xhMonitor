@@ -54,6 +54,10 @@ public sealed class MetricRepository : IProcessMetricRepository
             _logger.LogDebug("Calling SaveChangesAsync...");
             var savedCount = await context.SaveChangesAsync(cancellationToken);
 
+            // 清理 ChangeTracker 避免内存累积
+            context.ChangeTracker.Clear();
+            _logger.LogDebug("ChangeTracker cleared after SaveChangesAsync");
+
             _logger.LogInformation("Saved {Count} metric records to database", savedCount);
         }
         catch (Exception ex)

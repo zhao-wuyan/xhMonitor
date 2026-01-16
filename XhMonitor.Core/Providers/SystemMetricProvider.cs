@@ -1,36 +1,53 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Models;
+using XhMonitor.Core.Monitoring;
 
 namespace XhMonitor.Core.Providers;
 
 /// <summary>
 /// 系统级指标提供者 - 统一管理系统总量指标采集
 /// </summary>
-public class SystemMetricProvider
+public class SystemMetricProvider : IDisposable
 {
     private readonly IMetricProvider? _cpuProvider;
     private readonly IMetricProvider? _gpuProvider;
     private readonly IMetricProvider? _memoryProvider;
     private readonly IMetricProvider? _vramProvider;
+    private readonly ILogger<SystemMetricProvider>? _logger;
 
-    // 缓存VRAM性能计数器
-    private readonly List<PerformanceCounter> _vramCounters = new();
-    private readonly object _vramCountersLock = new();
-    private bool _vramCountersInitialized = false;
+    // DXGI GPU 监控（替代性能计数器迭代）
+    private readonly DxgiGpuMonitor _dxgiMonitor = new();
+    private bool _dxgiAvailable;
+    private bool _disposed;
 
     public SystemMetricProvider(
         IMetricProvider? cpuProvider,
         IMetricProvider? gpuProvider,
         IMetricProvider? memoryProvider,
-        IMetricProvider? vramProvider)
+        IMetricProvider? vramProvider,
+        ILogger<SystemMetricProvider>? logger = null)
     {
         _cpuProvider = cpuProvider;
         _gpuProvider = gpuProvider;
         _memoryProvider = memoryProvider;
         _vramProvider = vramProvider;
+        _logger = logger;
+
+        // 初始化 DXGI 监控
+        _dxgiAvailable = _dxgiMonitor.Initialize();
+        if (!_dxgiAvailable)
+        {
+            _logger?.LogWarning("DXGI GPU monitoring not available, VRAM metrics will be unavailable");
+        }
+        else
+        {
+            var adapters = _dxgiMonitor.GetAdapters();
+            _logger?.LogInformation("DXGI initialized with {Count} GPU adapter(s)", adapters.Count);
+        }
     }
 
     /// <summary>
@@ -120,59 +137,21 @@ public class SystemMetricProvider
     {
         return Task.Run(() =>
         {
-            lock (_vramCountersLock)
+            if (!_dxgiAvailable)
             {
-                // 初始化VRAM计数器（只在第一次执行）
-                if (!_vramCountersInitialized)
-                {
-                    try
-                    {
-                        // 优先使用 GPU Adapter Memory
-                        if (PerformanceCounterCategory.Exists("GPU Adapter Memory"))
-                        {
-                            var category = new PerformanceCounterCategory("GPU Adapter Memory");
-                            foreach (var instanceName in category.GetInstanceNames())
-                            {
-                                try
-                                {
-                                    var counter = new PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
-                                    _vramCounters.Add(counter);
-                                }
-                                catch { }
-                            }
-                        }
-                        // 备用: GPU Process Memory
-                        else if (PerformanceCounterCategory.Exists("GPU Process Memory"))
-                        {
-                            var category = new PerformanceCounterCategory("GPU Process Memory");
-                            foreach (var instanceName in category.GetInstanceNames())
-                            {
-                                try
-                                {
-                                    var counter = new PerformanceCounter("GPU Process Memory", "Dedicated Usage", instanceName, true);
-                                    _vramCounters.Add(counter);
-                                }
-                                catch { }
-                            }
-                        }
-                    }
-                    catch { }
+                return 0.0;
+            }
 
-                    _vramCountersInitialized = true;
-                }
-
-                // 读取缓存的计数器（快速）
-                double totalUsed = 0;
-                foreach (var counter in _vramCounters)
-                {
-                    try
-                    {
-                        totalUsed += counter.RawValue / 1024.0 / 1024.0;
-                    }
-                    catch { }
-                }
-
-                return totalUsed;
+            try
+            {
+                // 使用 DXGI 查询系统总 GPU 内存使用（轻量级，无迭代）
+                var (totalMemory, usedMemory, _) = _dxgiMonitor.GetTotalMemoryUsage();
+                return usedMemory / 1024.0 / 1024.0; // 转换为 MB
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to query DXGI GPU memory usage");
+                return 0.0;
             }
         });
     }
@@ -213,6 +192,15 @@ public class SystemMetricProvider
     }
 
     #endregion
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _dxgiMonitor?.Dispose();
+        _disposed = true;
+    }
 }
 
 /// <summary>
