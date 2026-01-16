@@ -17,5 +17,5 @@ public class ProcessInfoDto
     public string DisplayName { get; set; } = string.Empty;
 
     [JsonPropertyName("metrics")]
-    public Dictionary<string, MetricValue> Metrics { get; set; } = new();
+    public Dictionary<string, double> Metrics { get; set; } = new();
 }

@@ -380,7 +380,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
     }
 
     private static double GetMetricValue(ProcessInfoDto dto, string key)
-        => dto.Metrics.GetValueOrDefault(key)?.Value ?? 0d;
+        => dto.Metrics.GetValueOrDefault(key);
 
     public async Task CleanupAsync()
     {
@@ -459,10 +459,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
                 DisplayName = dto.DisplayName;
             else if (string.IsNullOrEmpty(DisplayName) && !string.IsNullOrEmpty(dto.ProcessName))
                 DisplayName = dto.ProcessName;
-            Cpu = dto.Metrics.GetValueOrDefault("cpu")?.Value ?? 0d;
-            Memory = dto.Metrics.GetValueOrDefault("memory")?.Value ?? 0d;
-            Gpu = dto.Metrics.GetValueOrDefault("gpu")?.Value ?? 0d;
-            Vram = dto.Metrics.GetValueOrDefault("vram")?.Value ?? 0d;
+            Cpu = dto.Metrics.GetValueOrDefault("cpu");
+            Memory = dto.Metrics.GetValueOrDefault("memory");
+            Gpu = dto.Metrics.GetValueOrDefault("gpu");
+            Vram = dto.Metrics.GetValueOrDefault("vram");
         }
 
         public void UpdateMetaFrom(ProcessMetaInfoDto dto)

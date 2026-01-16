@@ -29,7 +29,7 @@ export const calculateSystemSummary = (processes: ProcessInfo[]): Record<string,
       if (!summary[metricId]) {
         summary[metricId] = 0;
       }
-      summary[metricId] += metricValue.value;
+      summary[metricId] += metricValue;
     });
   });
 

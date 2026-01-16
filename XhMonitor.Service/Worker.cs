@@ -3,7 +3,6 @@ using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Constants;
-using XhMonitor.Core.Models;
 using XhMonitor.Core.Providers;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
@@ -284,7 +283,7 @@ public class Worker : BackgroundService
                 {
                     ProcessId = m.Info.ProcessId,
                     ProcessName = m.Info.ProcessName,
-                    Metrics = m.Metrics
+                    Metrics = m.Metrics.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value)
                 }).ToList()
             };
 
@@ -313,7 +312,7 @@ public class Worker : BackgroundService
                     {
                         p.ProcessId,
                         p.ProcessName,
-                        Metrics = p.Metrics
+                        p.Metrics
                     }).ToList()
                 }, stoppingToken);
             }
@@ -342,6 +341,6 @@ public class Worker : BackgroundService
     {
         public int ProcessId { get; init; }
         public string ProcessName { get; init; } = string.Empty;
-        public Dictionary<string, MetricValue> Metrics { get; init; } = new();
+        public Dictionary<string, double> Metrics { get; init; } = new();
     }
 }

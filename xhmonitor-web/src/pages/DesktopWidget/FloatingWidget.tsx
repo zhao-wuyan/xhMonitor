@@ -28,8 +28,8 @@ export const FloatingWidget = () => {
 
     return [...metricsData.processes]
       .sort((a, b) => {
-        const aCpu = a.metrics['cpu']?.value || 0;
-        const bCpu = b.metrics['cpu']?.value || 0;
+        const aCpu = a.metrics['cpu'] ?? 0;
+        const bCpu = b.metrics['cpu'] ?? 0;
         return bCpu - aCpu;
       })
       .slice(0, 5);
@@ -123,7 +123,7 @@ export const FloatingWidget = () => {
 
   // 获取指标值
   const getMetricValue = (process: ProcessInfo, metricId: string): number => {
-    return process.metrics[metricId]?.value || 0;
+    return process.metrics[metricId] ?? 0;
   };
 
   // 格式化指标值
