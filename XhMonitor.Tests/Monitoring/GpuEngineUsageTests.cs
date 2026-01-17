@@ -272,16 +272,17 @@ public class GpuEngineUsageTests
             if (nodeCount > 2)
             {
                 const uint targetNodeId = 2;
+                var targetLabel = GetNodeEngineLabel(perfByNode, targetNodeId);
                 if (TryQueryNodeRunningTime(luid, targetNodeId, out var prevRunning))
                 {
                     var prevTime = DateTime.UtcNow;
-                    _output.WriteLine($"D3DKMT Node {targetNodeId} burst baseline: 0.0%");
+                    _output.WriteLine($"D3DKMT Node {targetNodeId} {targetLabel} burst baseline: 0.0%");
                     for (int i = 0; i < 20; i++)
                     {
                         Thread.Sleep(100);
                         if (!TryQueryNodeRunningTime(luid, targetNodeId, out var runningTime))
                         {
-                            _output.WriteLine($"D3DKMT Node {targetNodeId} burst {i + 1}: failed");
+                            _output.WriteLine($"D3DKMT Node {targetNodeId} {targetLabel} burst {i + 1}: failed");
                             continue;
                         }
 
@@ -292,7 +293,7 @@ public class GpuEngineUsageTests
                         var usage = intervalMs > 0 ? (deltaMs / intervalMs) * 100.0 : 0.0;
                         usage = Math.Max(0, Math.Min(100, usage));
 
-                        _output.WriteLine($"D3DKMT Node {targetNodeId} burst {i + 1}: {usage:F1}% | deltaTicks {deltaTicks} | deltaMs {deltaMs:F2} | intervalMs {intervalMs:F2}");
+                        _output.WriteLine($"D3DKMT Node {targetNodeId} {targetLabel} burst {i + 1}: {usage:F1}% | deltaTicks {deltaTicks} | deltaMs {deltaMs:F2} | intervalMs {intervalMs:F2}");
 
                         prevRunning = runningTime;
                         prevTime = nowSample;
@@ -300,7 +301,7 @@ public class GpuEngineUsageTests
                 }
                 else
                 {
-                    _output.WriteLine($"D3DKMT Node {targetNodeId} burst: first sample failed");
+                    _output.WriteLine($"D3DKMT Node {targetNodeId} {targetLabel} burst: first sample failed");
                 }
             }
 
@@ -309,9 +310,10 @@ public class GpuEngineUsageTests
             var now = DateTime.UtcNow;
             for (uint nodeId = 0; nodeId < nodeCount; nodeId++)
             {
+                var nodeLabel = GetNodeEngineLabel(perfByNode, nodeId);
                 if (!TryQueryNodeRunningTime(luid, nodeId, out var runningTime))
                 {
-                    _output.WriteLine($"D3DKMT Node {nodeId}: first sample failed");
+                    _output.WriteLine($"D3DKMT Node {nodeId} {nodeLabel}: first sample failed");
                     continue;
                 }
 
@@ -325,15 +327,16 @@ public class GpuEngineUsageTests
             var nowSecond = DateTime.UtcNow;
             for (uint nodeId = 0; nodeId < nodeCount; nodeId++)
             {
+                var nodeLabel = GetNodeEngineLabel(perfByNode, nodeId);
                 if (!sampled.Contains(nodeId))
                 {
-                    _output.WriteLine($"D3DKMT Node {nodeId}: skipped");
+                    _output.WriteLine($"D3DKMT Node {nodeId} {nodeLabel}: skipped");
                     continue;
                 }
 
                 if (!TryQueryNodeRunningTime(luid, nodeId, out var runningTime))
                 {
-                    _output.WriteLine($"D3DKMT Node {nodeId}: second sample failed");
+                    _output.WriteLine($"D3DKMT Node {nodeId} {nodeLabel}: second sample failed");
                     continue;
                 }
 
@@ -343,14 +346,23 @@ public class GpuEngineUsageTests
                 {
                     var deltaTicks = runningTime - firstTime;
                     var deltaMs = deltaTicks / 1000.0;
-                    _output.WriteLine($"D3DKMT Node {nodeId}: {usage:F1}% | deltaTicks {deltaTicks} | deltaMs {deltaMs:F2} | intervalMs {timeDeltaMs:F2}");
+                    _output.WriteLine($"D3DKMT Node {nodeId} {nodeLabel}: {usage:F1}% | deltaTicks {deltaTicks} | deltaMs {deltaMs:F2} | intervalMs {timeDeltaMs:F2}");
                 }
                 else
                 {
-                    _output.WriteLine($"D3DKMT Node {nodeId}: {usage:F1}% | deltaTicks n/a | intervalMs {timeDeltaMs:F2}");
+                    _output.WriteLine($"D3DKMT Node {nodeId} {nodeLabel}: {usage:F1}% | deltaTicks n/a | intervalMs {timeDeltaMs:F2}");
                 }
             }
         }
+    }
+
+    private static string GetNodeEngineLabel(Dictionary<uint, Dictionary<string, double>> perfByNode, uint nodeId)
+    {
+        if (perfByNode == null || !perfByNode.TryGetValue(nodeId, out var entry) || entry.Count == 0)
+            return "[Unknown]";
+
+        var types = string.Join(", ", entry.OrderBy(k => k.Key).Select(k => k.Key));
+        return $"[{types}]";
     }
 
     private static List<(IntPtr AdapterPtr, string Name)> GetAdapterPointers(DxgiGpuMonitor monitor)

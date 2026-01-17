@@ -403,8 +403,9 @@ namespace XhMonitor.Core.Monitoring
         private const double MinUsageSampleIntervalMs = 50.0;  // 过短采样间隔会导致抖动
         private const uint DxgiAdapterFlagSoftware = 0x2;  // DXGI_ADAPTER_FLAG_SOFTWARE
         private const int QueryRetryDelayMs = 10;
-        private const int UsageSampleCount = 2;
-        private const int UsageSampleIntervalMs = 300;
+        private const int UsageSampleCount = 3;
+        private const int UsageSampleIntervalMs = 200;
+        private const double UsageEmaAlpha = 0.25;  // EMA smooth factor
 
         /// <summary>
         /// 本地唯一标识符（用于标识适配器）
@@ -644,6 +645,7 @@ namespace XhMonitor.Core.Monitoring
         }
 
         private readonly Dictionary<string, GpuNodeUsage> _nodeUsageCache = new();  // 节点使用率缓存
+        private readonly Dictionary<string, double> _adapterUsageEma = new();  // 适配器 EMA 平滑缓存
         private readonly object _usageLock = new object();  // 使用率锁
         private readonly GpuNodeRunningTimeSource _runningTimeSource;
 
@@ -811,13 +813,14 @@ namespace XhMonitor.Core.Monitoring
                     }
                 }
 
-                _logger?.LogInformation("[GPU Usage] Final result for adapter LUID {LuidLow}_{LuidHigh}: MaxUsage={MaxUsage}%",
-                    luid.LowPart, luid.HighPart, maxUsage);
-
                 if (!anyComputed)
                     return 0.0;
 
-                return maxUsage;
+                var smoothed = ApplyAdapterEma(luid, maxUsage);
+                _logger?.LogInformation("[GPU Usage] Final result for adapter LUID {LuidLow}_{LuidHigh}: MaxUsage={MaxUsage}%, Smoothed={Smoothed}%",
+                    luid.LowPart, luid.HighPart, maxUsage, smoothed);
+
+                return smoothed;
             }
             catch
             {
@@ -955,6 +958,23 @@ namespace XhMonitor.Core.Monitoring
                 return 0;
 
             return (now - last) * 1000.0 / Stopwatch.Frequency;
+        }
+
+        private double ApplyAdapterEma(LUID luid, double value)
+        {
+            var key = $"{luid.LowPart}_{luid.HighPart}";
+            lock (_usageLock)
+            {
+                if (_adapterUsageEma.TryGetValue(key, out var previous))
+                {
+                    var next = (UsageEmaAlpha * value) + ((1.0 - UsageEmaAlpha) * previous);
+                    _adapterUsageEma[key] = next;
+                    return next;
+                }
+
+                _adapterUsageEma[key] = value;
+                return value;
+            }
         }
 
         /// <summary>
