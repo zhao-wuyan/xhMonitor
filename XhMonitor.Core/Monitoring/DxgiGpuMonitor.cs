@@ -402,7 +402,8 @@ namespace XhMonitor.Core.Monitoring
         private const int SegmentBytesResidentOffset = 16;  // 段驻留字节偏移量
         private const double MinUsageSampleIntervalMs = 50.0;  // 过短采样间隔会导致抖动
         private const uint DxgiAdapterFlagSoftware = 0x2;  // DXGI_ADAPTER_FLAG_SOFTWARE
-        private const int UsageSampleCount = 1;
+        private const int QueryRetryDelayMs = 10;
+        private const int UsageSampleCount = 2;
         private const int UsageSampleIntervalMs = 300;
 
         /// <summary>
@@ -850,9 +851,18 @@ namespace XhMonitor.Core.Monitoring
                 int hr = D3DKMTQueryStatistics(ref queryNode);
                 if (hr != D3dkmtSuccess)
                 {
-                    failedNodes++;
-                    _logger?.LogWarning("[GPU Usage] Query failed for NodeId={NodeId}, HR=0x{HR:X8}", nodeId, hr);
-                    continue;
+                    int firstHr = hr;
+                    int firstError = Marshal.GetLastWin32Error();
+                    Thread.Sleep(QueryRetryDelayMs);
+                    hr = D3DKMTQueryStatistics(ref queryNode);
+                    if (hr != D3dkmtSuccess)
+                    {
+                        int retryError = Marshal.GetLastWin32Error();
+                        failedNodes++;
+                        _logger?.LogWarning("[GPU Usage] Query failed for NodeId={NodeId}, HR=0x{HR:X8}, LastError={LastError}, RetryHR=0x{RetryHR:X8}, RetryLastError={RetryLastError}",
+                            nodeId, firstHr, firstError, hr, retryError);
+                        continue;
+                    }
                 }
 
                 var globalTicks = queryNode.QueryResult.NodeInformation.GlobalInformation.RunningTime;
