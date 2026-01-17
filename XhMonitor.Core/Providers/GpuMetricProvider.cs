@@ -21,16 +21,33 @@ public class GpuMetricProvider : IMetricProvider
     private const int CleanupIntervalCycles = 10; // 每 10 次调用清理一次
     private const int TtlSeconds = 60; // 60 秒未访问则清理
 
+    /// <summary>
+    /// GPU 监控方式选择
+    /// true = 优先使用 Performance Counter (推荐用于 AMD GPU)
+    /// false = 优先使用 D3DKMT (推荐用于 NVIDIA/Intel GPU)
+    /// </summary>
+    public static bool PreferPerformanceCounter { get; set; } = true;
+
     public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null, ILoggerFactory? loggerFactory = null)
     {
         _logger = logger;
         _dxgiMonitor = new DxgiGpuMonitor(loggerFactory?.CreateLogger<DxgiGpuMonitor>());
+
+        _logger?.LogInformation("GPU monitoring mode: {Mode}",
+            PreferPerformanceCounter ? "Performance Counter (AMD 推荐)" : "D3DKMT (NVIDIA/Intel 推荐)");
+
         try
         {
             _dxgiInitialized = _dxgiMonitor.Initialize();
             if (_dxgiInitialized)
             {
                 _logger?.LogInformation("DXGI GPU monitor initialized successfully");
+
+                // 预热：两次调用填充缓存，确保后续调用能立即返回使用率
+                _dxgiMonitor.GetGpuUsage();  // 第一次：填充缓存
+                Thread.Sleep(100);  // 等待 100ms，确保时间差足够
+                _dxgiMonitor.GetGpuUsage();  // 第二次：验证能正常计算
+                _logger?.LogDebug("DXGI GPU monitor cache warmed up");
             }
         }
         catch (Exception ex)
@@ -60,22 +77,46 @@ public class GpuMetricProvider : IMetricProvider
     {
         var task = Task.Run(() =>
         {
-            // 优先使用 DXGI (更轻量，无内存泄漏)
-            if (_dxgiInitialized)
+            if (PreferPerformanceCounter)
             {
-                try
+                // 模式 1: 优先使用 Performance Counter (AMD GPU 推荐)
+                if (TryGetMaxEngineUsage(out var perfUsage))
+                    return perfUsage;
+
+                // Fallback 到 D3DKMT
+                if (_dxgiInitialized)
                 {
-                    return _dxgiMonitor.GetGpuUsage();
-                }
-                catch (Exception ex)
-                {
-                    _logger?.LogError(ex, "Failed to query GPU usage via D3DKMT");
+                    try
+                    {
+                        return _dxgiMonitor.GetGpuUsage();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Failed to query GPU usage via D3DKMT");
+                    }
                 }
             }
+            else
+            {
+                // 模式 2: 优先使用 D3DKMT (NVIDIA/Intel GPU 推荐)
+                if (_dxgiInitialized)
+                {
+                    try
+                    {
+                        var d3dUsage = _dxgiMonitor.GetGpuUsage();
+                        if (d3dUsage > 0)
+                            return d3dUsage;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Failed to query GPU usage via D3DKMT");
+                    }
+                }
 
-            // 降级到性能计数器 (非常重，仅作为最后的手段)
-            if (TryGetMaxEngineUsage(out var maxUsage))
-                return maxUsage;
+                // Fallback 到 Performance Counter
+                if (TryGetMaxEngineUsage(out var perfUsage))
+                    return perfUsage;
+            }
 
             return 0.0;
         });

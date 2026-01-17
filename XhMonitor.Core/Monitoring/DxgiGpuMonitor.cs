@@ -27,7 +27,7 @@ namespace XhMonitor.Core.Monitoring
         /// <param name="runningTimeSource">GPU 节点运行时间来源 / Running time source</param>
         public DxgiGpuMonitor(
             ILogger<DxgiGpuMonitor>? logger = null,
-            GpuNodeRunningTimeSource runningTimeSource = GpuNodeRunningTimeSource.Global)
+            GpuNodeRunningTimeSource runningTimeSource = GpuNodeRunningTimeSource.System)  // 改为 System
         {
             _logger = logger;
             _runningTimeSource = runningTimeSource;
@@ -400,13 +400,14 @@ namespace XhMonitor.Core.Monitoring
         private const ulong SegmentGroupMask = 0x3;  // 段组掩码
         private const int D3dkmtSuccess = 0;  // D3DKMT 成功返回值
         private const int SegmentBytesResidentOffset = 16;  // 段驻留字节偏移量
+        
         private const double MinUsageSampleIntervalMs = 50.0;  // 过短采样间隔会导致抖动
         private const uint DxgiAdapterFlagSoftware = 0x2;  // DXGI_ADAPTER_FLAG_SOFTWARE
         private const int QueryRetryDelayMs = 10;
-        private const int UsageSampleCount = 5;
-        private const int UsageSampleIntervalMs = 200;
-        private const double UsageEmaAlpha = 0.6;  // EMA smooth factor
-        private const bool UseAverageAcrossNodes = false;  // true = average all nodes, false = max node
+        private const int UsageSampleCount = 1;  // 单次采样,避免阻塞(参考 System Informer)
+        private const int UsageSampleIntervalMs = 0;  // 无需等待
+        private const double UsageEmaAlpha = 1;  // EMA 平滑因子(平衡响应速度和稳定性) 1 相当于关闭 值在 0-1之间
+        private const bool UseAverageAcrossNodes = false;  // 始终使用最大节点使用率(参考 System Informer)
 
         /// <summary>
         /// 本地唯一标识符（用于标识适配器）
@@ -661,14 +662,22 @@ namespace XhMonitor.Core.Monitoring
 
             try
             {
+                _logger?.LogInformation("[GPU Usage] Querying {AdapterCount} adapters", _adapters.Count);
                 double maxUsage = 0.0;
 
                 foreach (var adapter in _adapters)
                 {
+                    _logger?.LogInformation("[GPU Usage] Checking adapter: {Name}", adapter.Name);
+
                     if (ShouldSkipAdapterForUsage(adapter))
+                    {
+                        _logger?.LogInformation("[GPU Usage] Skipping adapter: {Name}", adapter.Name);
                         continue;
+                    }
 
                     var usage = GetAdapterGpuUsage(adapter);
+                    _logger?.LogInformation("[GPU Usage] Adapter {Name} usage: {Usage}%", adapter.Name, usage);
+
                     if (usage >= 0)
                     {
                         if (usage > maxUsage)
@@ -676,6 +685,7 @@ namespace XhMonitor.Core.Monitoring
                     }
                 }
 
+                _logger?.LogInformation("[GPU Usage] Final max usage across all adapters: {MaxUsage}%", maxUsage);
                 return maxUsage;
             }
             catch
@@ -790,6 +800,9 @@ namespace XhMonitor.Core.Monitoring
                     return 0.0;
                 }
 
+                _logger?.LogInformation("[GPU Usage] Adapter LUID {LuidLow}_{LuidHigh} has {NodeCount} nodes",
+                    luid.LowPart, luid.HighPart, nodeCount);
+
                 // 查询每个节点并计算使用率（多次采样取最大值）
                 double maxUsage = 0.0;
                 double sumUsage = 0.0;
@@ -820,7 +833,11 @@ namespace XhMonitor.Core.Monitoring
                 }
 
                 if (!anyComputed || sampleCount == 0)
+                {
+                    _logger?.LogWarning("[GPU Usage] No usage computed for adapter LUID {LuidLow}_{LuidHigh}, returning 0",
+                        luid.LowPart, luid.HighPart);
                     return 0.0;
+                }
 
                 var avgUsage = sumUsage / sampleCount;
                 var smoothed = ApplyAdapterEma(luid, avgUsage);
@@ -910,7 +927,7 @@ namespace XhMonitor.Core.Monitoring
                             var runningMs = runningDelta / 1000.0;
                             usage = (runningMs / timeDelta) * 100.0;
 
-                            _logger?.LogDebug("[GPU Usage] NodeId={NodeId}, TimeDelta={TimeDelta}ms, RunningDelta={RunningDelta} (us), RunningMs={RunningMs}ms, RawUsage={RawUsage}%",
+                            _logger?.LogInformation("[GPU Usage] NodeId={NodeId}, TimeDelta={TimeDelta}ms, RunningDelta={RunningDelta} (us), RunningMs={RunningMs}ms, RawUsage={RawUsage}%",
                                 nodeId, timeDelta, runningDelta, runningMs, usage.Value);
                         }
                         else
@@ -954,12 +971,17 @@ namespace XhMonitor.Core.Monitoring
                 }
             }
 
-            _logger?.LogDebug("[GPU Usage] Node query summary: Total={TotalNodes}, Valid={ValidNodes}, Failed={FailedNodes}",
+            _logger?.LogInformation("[GPU Usage] Node query summary: Total={TotalNodes}, Valid={ValidNodes}, Failed={FailedNodes}",
                 totalNodes, validNodes, failedNodes);
             if (maxNodeId.HasValue)
             {
-                _logger?.LogDebug("[GPU Usage] Sample max node for LUID {LuidLow}_{LuidHigh}: NodeId={NodeId}, Usage={Usage}%",
+                _logger?.LogInformation("[GPU Usage] Sample max node for LUID {LuidLow}_{LuidHigh}: NodeId={NodeId}, Usage={Usage}%",
                     luid.LowPart, luid.HighPart, maxNodeId.Value, maxUsage);
+            }
+            else
+            {
+                _logger?.LogWarning("[GPU Usage] No max node found for LUID {LuidLow}_{LuidHigh}, computedNodes={ComputedNodes}",
+                    luid.LowPart, luid.HighPart, computedNodes);
             }
 
             avgUsage = computedNodes > 0 ? sumUsage / computedNodes : 0.0;
