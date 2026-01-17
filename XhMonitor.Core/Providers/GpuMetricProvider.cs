@@ -59,9 +59,7 @@ public class GpuMetricProvider : IMetricProvider
     {
         var task = Task.Run(() =>
         {
-            if (TryGetMaxEngineUsage(out var maxUsage))
-                return maxUsage;
-
+            // 优先使用 DXGI (更轻量，无内存泄漏)
             if (_dxgiInitialized)
             {
                 try
@@ -71,9 +69,12 @@ public class GpuMetricProvider : IMetricProvider
                 catch (Exception ex)
                 {
                     _logger?.LogError(ex, "Failed to query GPU usage via D3DKMT");
-                    return 0.0;
                 }
             }
+
+            // 降级到性能计数器 (非常重，仅作为最后的手段)
+            if (TryGetMaxEngineUsage(out var maxUsage))
+                return maxUsage;
 
             return 0.0;
         });
