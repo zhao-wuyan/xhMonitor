@@ -217,6 +217,8 @@ public class GpuEngineUsageTests
             return;
         }
 
+        DumpPerfCounterPeaksAll(samples: 15, delayMs: 200);
+
         foreach (var adapter in adapters)
         {
             if (adapter.Name.Contains("Microsoft Basic Render Driver", StringComparison.OrdinalIgnoreCase))
@@ -263,6 +265,7 @@ public class GpuEngineUsageTests
                     var max = entry.Values.Count > 0 ? entry.Values.Max() : 0.0;
                     _output.WriteLine($"PerfCounter Node {nodeId}: max {max:F1}% | {types}");
                 }
+
             }
             else
             {
@@ -363,6 +366,85 @@ public class GpuEngineUsageTests
 
         var types = string.Join(", ", entry.OrderBy(k => k.Key).Select(k => k.Key));
         return $"[{types}]";
+    }
+
+    private void DumpPerfCounterPeaks(string luidKey, int samples, int delayMs)
+    {
+        for (int i = 0; i < samples; i++)
+        {
+            var snapshot = GetPerfCounterNodeUsage();
+            if (!snapshot.TryGetValue(luidKey, out var byNode))
+            {
+                _output.WriteLine($"PerfCounter peak sample {i + 1}: no LUID match.");
+            }
+            else
+            {
+                var peak = FindPeakNode(byNode);
+                if (peak.HasValue)
+                {
+                    var (nodeId, engineType, value) = peak.Value;
+                    _output.WriteLine($"PerfCounter peak sample {i + 1}: Node {nodeId} [{engineType}] {value:F1}%");
+                }
+                else
+                {
+                    _output.WriteLine($"PerfCounter peak sample {i + 1}: no non-zero usage.");
+                }
+            }
+
+            if (i < samples - 1)
+                Thread.Sleep(delayMs);
+        }
+    }
+
+    private static (uint NodeId, string EngineType, double Value)? FindPeakNode(Dictionary<uint, Dictionary<string, double>> byNode)
+    {
+        uint peakNode = 0;
+        string peakType = string.Empty;
+        double peakValue = 0.0;
+        bool found = false;
+
+        foreach (var (nodeId, byType) in byNode)
+        {
+            foreach (var (engineType, value) in byType)
+            {
+                if (value > peakValue)
+                {
+                    peakValue = value;
+                    peakNode = nodeId;
+                    peakType = engineType;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found)
+            return null;
+
+        return (peakNode, peakType, peakValue);
+    }
+
+    private void DumpPerfCounterPeaksAll(int samples, int delayMs)
+    {
+        for (int i = 0; i < samples; i++)
+        {
+            var snapshot = GetPerfCounterNodeUsage();
+            foreach (var (luidKey, byNode) in snapshot.OrderBy(k => k.Key))
+            {
+                var peak = FindPeakNode(byNode);
+                if (peak.HasValue)
+                {
+                    var (nodeId, engineType, value) = peak.Value;
+                    _output.WriteLine($"PerfCounter peak sample {i + 1} [{luidKey}]: Node {nodeId} [{engineType}] {value:F1}%");
+                }
+                else
+                {
+                    _output.WriteLine($"PerfCounter peak sample {i + 1} [{luidKey}]: no non-zero usage.");
+                }
+            }
+
+            if (i < samples - 1)
+                Thread.Sleep(delayMs);
+        }
     }
 
     private static List<(IntPtr AdapterPtr, string Name)> GetAdapterPointers(DxgiGpuMonitor monitor)

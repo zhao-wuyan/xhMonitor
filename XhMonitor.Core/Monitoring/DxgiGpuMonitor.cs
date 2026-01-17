@@ -403,9 +403,10 @@ namespace XhMonitor.Core.Monitoring
         private const double MinUsageSampleIntervalMs = 50.0;  // 过短采样间隔会导致抖动
         private const uint DxgiAdapterFlagSoftware = 0x2;  // DXGI_ADAPTER_FLAG_SOFTWARE
         private const int QueryRetryDelayMs = 10;
-        private const int UsageSampleCount = 3;
+        private const int UsageSampleCount = 5;
         private const int UsageSampleIntervalMs = 200;
-        private const double UsageEmaAlpha = 0.25;  // EMA smooth factor
+        private const double UsageEmaAlpha = 0.6;  // EMA smooth factor
+        private const bool UseAverageAcrossNodes = false;  // true = average all nodes, false = max node
 
         /// <summary>
         /// 本地唯一标识符（用于标识适配器）
@@ -791,17 +792,22 @@ namespace XhMonitor.Core.Monitoring
 
                 // 查询每个节点并计算使用率（多次采样取最大值）
                 double maxUsage = 0.0;
+                double sumUsage = 0.0;
+                int sampleCount = 0;
                 bool anyComputed = false;
 
                 for (int i = 0; i < UsageSampleCount; i++)
                 {
                     var now = GetTimestamp();
-                    var usage = SampleNodeUsage(luid, nodeCount, now, out var computedUsage, out var populatedCache);
+                    var usage = SampleNodeUsage(luid, nodeCount, now, out var computedUsage, out var populatedCache, out var sampleAvgUsage);
                     if (computedUsage)
                     {
                         anyComputed = true;
                         if (usage > maxUsage)
                             maxUsage = usage;
+                        var sampleValue = UseAverageAcrossNodes ? sampleAvgUsage : usage;
+                        sumUsage += sampleValue;
+                        sampleCount++;
                     }
 
                     if (i < UsageSampleCount - 1)
@@ -813,12 +819,13 @@ namespace XhMonitor.Core.Monitoring
                     }
                 }
 
-                if (!anyComputed)
+                if (!anyComputed || sampleCount == 0)
                     return 0.0;
 
-                var smoothed = ApplyAdapterEma(luid, maxUsage);
-                _logger?.LogInformation("[GPU Usage] Final result for adapter LUID {LuidLow}_{LuidHigh}: MaxUsage={MaxUsage}%, Smoothed={Smoothed}%",
-                    luid.LowPart, luid.HighPart, maxUsage, smoothed);
+                var avgUsage = sumUsage / sampleCount;
+                var smoothed = ApplyAdapterEma(luid, avgUsage);
+                _logger?.LogInformation("[GPU Usage] Final result for adapter LUID {LuidLow}_{LuidHigh}: MaxUsage={MaxUsage}%, AvgUsage={AvgUsage}%, Smoothed={Smoothed}%",
+                    luid.LowPart, luid.HighPart, maxUsage, avgUsage, smoothed);
 
                 return smoothed;
             }
@@ -828,11 +835,14 @@ namespace XhMonitor.Core.Monitoring
             }
         }
 
-        private double SampleNodeUsage(LUID luid, uint nodeCount, long nowTimestamp, out bool computedUsage, out bool populatedCache)
+        private double SampleNodeUsage(LUID luid, uint nodeCount, long nowTimestamp, out bool computedUsage, out bool populatedCache, out double avgUsage)
         {
             computedUsage = false;
             populatedCache = false;
             double maxUsage = 0.0;
+            double sumUsage = 0.0;
+            int computedNodes = 0;
+            uint? maxNodeId = null;
             int totalNodes = 0;
             int failedNodes = 0;
             int validNodes = 0;
@@ -926,11 +936,14 @@ namespace XhMonitor.Core.Monitoring
                     {
                         computedUsage = true;
                         var clamped = Math.Max(0, Math.Min(100, usage.Value));
+                        sumUsage += clamped;
+                        computedNodes++;
                         if (clamped > maxUsage)
                         {
                             _logger?.LogDebug("[GPU Usage] NodeId={NodeId}, Clamped={Clamped}%, New MaxUsage={MaxUsage}% (was {OldMaxUsage}%)",
                                 nodeId, clamped, clamped, maxUsage);
                             maxUsage = clamped;
+                            maxNodeId = nodeId;
                         }
                         else
                         {
@@ -943,7 +956,13 @@ namespace XhMonitor.Core.Monitoring
 
             _logger?.LogDebug("[GPU Usage] Node query summary: Total={TotalNodes}, Valid={ValidNodes}, Failed={FailedNodes}",
                 totalNodes, validNodes, failedNodes);
+            if (maxNodeId.HasValue)
+            {
+                _logger?.LogDebug("[GPU Usage] Sample max node for LUID {LuidLow}_{LuidHigh}: NodeId={NodeId}, Usage={Usage}%",
+                    luid.LowPart, luid.HighPart, maxNodeId.Value, maxUsage);
+            }
 
+            avgUsage = computedNodes > 0 ? sumUsage / computedNodes : 0.0;
             return maxUsage;
         }
 
