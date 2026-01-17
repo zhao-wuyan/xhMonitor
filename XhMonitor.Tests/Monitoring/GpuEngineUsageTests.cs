@@ -34,7 +34,7 @@ public class GpuEngineUsageTests
         _output.WriteLine($"PerfCounter Max D3D: {maxD3d:F1}%");
         // Keep test output short to avoid truncation in CI logs.
         // DumpEngineUsageByType("3D");
-        // DumpD3dkmtNodes();
+        DumpD3dkmtNodes();
 
         using var loggerFactory = LoggerFactory.Create(builder =>
         {
@@ -219,6 +219,12 @@ public class GpuEngineUsageTests
 
         foreach (var adapter in adapters)
         {
+            if (adapter.Name.Contains("Microsoft Basic Render Driver", StringComparison.OrdinalIgnoreCase))
+            {
+                _output.WriteLine($"D3DKMT Nodes | {adapter.Name}: skipped (software adapter).");
+                continue;
+            }
+
             if (!TryGetAdapterLuid(adapter.AdapterPtr, out var luid))
             {
                 _output.WriteLine($"D3DKMT Nodes | {adapter.Name}: no LUID.");
