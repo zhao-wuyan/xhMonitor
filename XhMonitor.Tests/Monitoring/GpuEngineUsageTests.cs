@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 using XhMonitor.Core.Monitoring;
@@ -31,10 +32,18 @@ public class GpuEngineUsageTests
         _output.WriteLine($"PerfCounter Max Engine: {maxEngine:F1}%");
         var maxD3d = GetMaxEngineUsageByType("3D");
         _output.WriteLine($"PerfCounter Max D3D: {maxD3d:F1}%");
-        DumpEngineUsageByType("3D");
-        DumpD3dkmtNodes();
+        // Keep test output short to avoid truncation in CI logs.
+        // DumpEngineUsageByType("3D");
+        // DumpD3dkmtNodes();
 
-        using var monitor = new DxgiGpuMonitor();
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.SetMinimumLevel(LogLevel.Debug);
+            builder.AddFilter("XhMonitor.Core.Monitoring.DxgiGpuMonitor", LogLevel.Debug);
+            builder.AddFilter("Microsoft", LogLevel.Warning);
+            builder.AddProvider(new TestOutputLoggerProvider(_output));
+        });
+        using var monitor = new DxgiGpuMonitor(loggerFactory.CreateLogger<DxgiGpuMonitor>());
         if (!monitor.Initialize())
         {
             _output.WriteLine("DXGI initialize failed.");
@@ -272,7 +281,7 @@ public class GpuEngineUsageTests
 
                         var nowSample = DateTime.UtcNow;
                         var deltaTicks = runningTime - prevRunning;
-                        var deltaMs = deltaTicks / 10000.0;
+                        var deltaMs = deltaTicks / 1000.0;
                         var intervalMs = (nowSample - prevTime).TotalMilliseconds;
                         var usage = intervalMs > 0 ? (deltaMs / intervalMs) * 100.0 : 0.0;
                         usage = Math.Max(0, Math.Min(100, usage));
@@ -327,7 +336,7 @@ public class GpuEngineUsageTests
                 if (firstRunningTime.TryGetValue(nodeId, out var firstTime) && runningTime >= firstTime)
                 {
                     var deltaTicks = runningTime - firstTime;
-                    var deltaMs = deltaTicks / 10000.0;
+                    var deltaMs = deltaTicks / 1000.0;
                     _output.WriteLine($"D3DKMT Node {nodeId}: {usage:F1}% | deltaTicks {deltaTicks} | deltaMs {deltaMs:F2} | intervalMs {timeDeltaMs:F2}");
                 }
                 else
@@ -460,7 +469,7 @@ public class GpuEngineUsageTests
         }
 
         var runningDelta = runningTime - cached.LastRunningTime;
-        var runningMs = runningDelta / 10000.0;
+        var runningMs = runningDelta / 1000.0;
         var usage = (runningMs / timeDelta) * 100.0;
         usage = Math.Max(0, Math.Min(100, usage));
 
@@ -711,4 +720,73 @@ public class GpuEngineUsageTests
 
     [DllImport("gdi32.dll", SetLastError = true)]
     private static extern int D3DKMTQueryStatistics(ref D3DKMT_QUERYSTATISTICS pData);
+
+    private sealed class TestOutputLoggerProvider : ILoggerProvider
+    {
+        private readonly ITestOutputHelper _output;
+
+        public TestOutputLoggerProvider(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new TestOutputLogger(_output, categoryName);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class TestOutputLogger : ILogger
+        {
+            private readonly ITestOutputHelper _output;
+            private readonly string _categoryName;
+
+            public TestOutputLogger(ITestOutputHelper output, string categoryName)
+            {
+                _output = output;
+                _categoryName = categoryName;
+            }
+
+            public IDisposable BeginScope<TState>(TState state) where TState : notnull
+            {
+                return NullScope.Instance;
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return true;
+            }
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                if (formatter == null)
+                    return;
+
+                string message = formatter(state, exception);
+                if (string.IsNullOrWhiteSpace(message) && exception == null)
+                    return;
+
+                try
+                {
+                    _output.WriteLine($"[{logLevel}] {_categoryName} {message}");
+                    if (exception != null)
+                        _output.WriteLine(exception.ToString());
+                }
+                catch
+                {
+                    // Ignore logging failures in tests.
+                }
+            }
+
+            private sealed class NullScope : IDisposable
+            {
+                public static readonly NullScope Instance = new();
+                public void Dispose() { }
+            }
+        }
+    }
 }

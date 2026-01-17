@@ -130,7 +130,7 @@ public sealed class MetricProviderRegistry : IDisposable
     {
         RegisterProvider(new CpuMetricProvider());
         RegisterProvider(new MemoryMetricProvider());
-        RegisterProvider(new GpuMetricProvider());
+        RegisterProvider(new GpuMetricProvider(_loggerFactory.CreateLogger<GpuMetricProvider>(), _loggerFactory));
         RegisterProvider(new VramMetricProvider(_loggerFactory.CreateLogger<VramMetricProvider>()));
     }
 

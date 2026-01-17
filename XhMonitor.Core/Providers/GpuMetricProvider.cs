@@ -14,16 +14,17 @@ public class GpuMetricProvider : IMetricProvider
     private readonly ConcurrentDictionary<int, List<PerformanceCounter>> _counters = new();
     private readonly ConcurrentDictionary<int, DateTime> _lastAccessTime = new();
     private readonly ILogger<GpuMetricProvider>? _logger;
-    private readonly DxgiGpuMonitor _dxgiMonitor = new();
+    private readonly DxgiGpuMonitor _dxgiMonitor;
     private bool? _isSupported;
     private bool _dxgiInitialized;
     private int _cycleCount = 0;
     private const int CleanupIntervalCycles = 10; // 每 10 次调用清理一次
     private const int TtlSeconds = 60; // 60 秒未访问则清理
 
-    public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null)
+    public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null, ILoggerFactory? loggerFactory = null)
     {
         _logger = logger;
+        _dxgiMonitor = new DxgiGpuMonitor(loggerFactory?.CreateLogger<DxgiGpuMonitor>());
         try
         {
             _dxgiInitialized = _dxgiMonitor.Initialize();
