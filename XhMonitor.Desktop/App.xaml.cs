@@ -71,9 +71,14 @@ public partial class App : WpfApplication
 
     private void InitializeTrayIcon()
     {
+        var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "icon.ico");
+        var icon = File.Exists(iconPath) 
+            ? new System.Drawing.Icon(iconPath) 
+            : System.Drawing.SystemIcons.Application;
+
         _trayIcon = new WinForms.NotifyIcon
         {
-            Icon = System.Drawing.SystemIcons.Application,
+            Icon = icon,
             Text = "XhMonitor",
             Visible = true,
             ContextMenuStrip = BuildTrayMenu()
@@ -109,6 +114,9 @@ public partial class App : WpfApplication
         // var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
         // settingsItem.Click += (_, _) => OpenSettingsWindow();
 
+        var aboutItem = new WinForms.ToolStripMenuItem("关于");
+        aboutItem.Click += (_, _) => OpenAboutWindow();
+
         var exitItem = new WinForms.ToolStripMenuItem("退出");
         exitItem.Click += (_, _) => ExitApplication();
 
@@ -118,6 +126,8 @@ public partial class App : WpfApplication
         menu.Items.Add(new WinForms.ToolStripSeparator());
         // menu.Items.Add(settingsItem); // 暂时隐藏设置菜单项
         // menu.Items.Add(new WinForms.ToolStripSeparator());
+        menu.Items.Add(aboutItem);
+        menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(exitItem);
 
         return menu;
@@ -136,6 +146,25 @@ public partial class App : WpfApplication
             _floatingWindow.Show();
             _floatingWindow.Activate();
         }
+    }
+
+    private void OpenAboutWindow()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            var existingWindow = Current.Windows.OfType<Windows.AboutWindow>().FirstOrDefault();
+            if (existingWindow != null)
+            {
+                existingWindow.Activate();
+                return;
+            }
+
+            var aboutWindow = new Windows.AboutWindow
+            {
+                Owner = _floatingWindow
+            };
+            aboutWindow.ShowDialog();
+        });
     }
 
     private void OpenWebInterface()

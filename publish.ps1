@@ -1,5 +1,6 @@
 ﻿# XhMonitor 绿色版发布脚本 (PowerShell)
-# 用法: .\publish.ps1 [-Version "1.0.0"] [-SkipDesktop] [-SkipService] [-NoZip] [-Lite] [-Debug]
+# 用法: .\publish.ps1 [-Version "1.0.0"] [-SkipDesktop] [-SkipService] [-NoZip] [-Lite] [-Debug] [-Help]
+# 使用 -Help 或 -h 查看详细帮助信息
 
 param(
     [string]$Version = "0.1.0",
@@ -7,11 +8,68 @@ param(
     [switch]$SkipService,
     [switch]$NoZip,
     [switch]$Lite,  # 轻量级模式，不包含.NET运行时
-    [switch]$Debug  # Debug模式，保留符号文件和控制台窗口
+    [switch]$Debug,  # Debug模式，保留符号文件和控制台窗口
+    [Alias("h")]
+    [switch]$Help  # 显示帮助信息
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+
+# 显示帮助信息
+if ($Help) {
+    Write-Host ""
+    Write-Host "====================================" -ForegroundColor Cyan
+    Write-Host "  XhMonitor 绿色版发布脚本" -ForegroundColor Cyan
+    Write-Host "====================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "用法:" -ForegroundColor Yellow
+    Write-Host "  .\publish.ps1 [参数]" -ForegroundColor White
+    Write-Host ""
+    Write-Host "参数:" -ForegroundColor Yellow
+    Write-Host "  -Version <版本号>    指定发布版本号 (默认: 0.1.0)" -ForegroundColor White
+    Write-Host "                       示例: -Version `"1.2.3`"" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  -SkipDesktop         跳过桌面应用发布" -ForegroundColor White
+    Write-Host "  -SkipService         跳过后端服务发布" -ForegroundColor White
+    Write-Host "  -NoZip               不创建 ZIP 压缩包" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  -Lite                轻量级模式 (不包含 .NET 运行时)" -ForegroundColor White
+    Write-Host "                       需要目标系统预装 .NET 8 Runtime" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  -Debug               Debug 模式 (保留符号文件和控制台窗口)" -ForegroundColor White
+    Write-Host "                       用于调试和开发" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  -Help, -h            显示此帮助信息" -ForegroundColor White
+    Write-Host ""
+    Write-Host "示例:" -ForegroundColor Yellow
+    Write-Host "  .\publish.ps1" -ForegroundColor White
+    Write-Host "    使用默认设置发布完整版" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  .\publish.ps1 -Version `"1.0.0`"" -ForegroundColor White
+    Write-Host "    发布 v1.0.0 版本" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  .\publish.ps1 -Lite -NoZip" -ForegroundColor White
+    Write-Host "    发布轻量级版本，不创建压缩包" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  .\publish.ps1 -Debug -SkipDesktop" -ForegroundColor White
+    Write-Host "    Debug 模式发布，仅发布后端服务" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "发布模式:" -ForegroundColor Yellow
+    Write-Host "  完整版 (默认)        包含 .NET 8 运行时，单文件发布" -ForegroundColor White
+    Write-Host "                       优点: 无需安装依赖，开箱即用" -ForegroundColor Gray
+    Write-Host "                       缺点: 文件体积较大 (~100MB)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  轻量级 (-Lite)       不包含运行时，需要系统预装 .NET 8" -ForegroundColor White
+    Write-Host "                       优点: 文件体积小 (~10MB)" -ForegroundColor Gray
+    Write-Host "                       缺点: 需要预装 .NET 8 Runtime" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "输出目录:" -ForegroundColor Yellow
+    Write-Host "  release\XhMonitor-v<版本号>\" -ForegroundColor White
+    Write-Host "  release\XhMonitor-v<版本号>.zip (如果未使用 -NoZip)" -ForegroundColor White
+    Write-Host ""
+    exit 0
+}
 
 # 确定发布配置
 $configuration = if ($Debug) { "Debug" } else { "Release" }
