@@ -29,23 +29,33 @@ public class SystemMetricProvider : IDisposable
         IMetricProvider? gpuProvider,
         IMetricProvider? memoryProvider,
         IMetricProvider? vramProvider,
-        ILogger<SystemMetricProvider>? logger = null)
+        ILogger<SystemMetricProvider>? logger = null,
+        bool initializeDxgi = true)
     {
         _cpuProvider = cpuProvider;
         _gpuProvider = gpuProvider;
         _memoryProvider = memoryProvider;
         _vramProvider = vramProvider;
         _logger = logger;
-        // 初始化 DXGI 监控
-        _dxgiAvailable = _dxgiMonitor.Initialize();
-        if (!_dxgiAvailable)
+
+        if (initializeDxgi)
         {
-            _logger?.LogWarning("DXGI GPU monitoring not available, VRAM metrics will be unavailable");
+            // 初始化 DXGI 监控
+            _dxgiAvailable = _dxgiMonitor.Initialize();
+            if (!_dxgiAvailable)
+            {
+                _logger?.LogWarning("DXGI GPU monitoring not available, VRAM metrics will be unavailable");
+            }
+            else
+            {
+                var adapters = _dxgiMonitor.GetAdapters();
+                _logger?.LogInformation("DXGI initialized with {Count} GPU adapter(s)", adapters.Count);
+            }
         }
         else
         {
-            var adapters = _dxgiMonitor.GetAdapters();
-            _logger?.LogInformation("DXGI initialized with {Count} GPU adapter(s)", adapters.Count);
+            _dxgiAvailable = false;
+            _logger?.LogInformation("DXGI GPU monitor initialization skipped");
         }
     }
 

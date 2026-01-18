@@ -66,7 +66,13 @@
       "mcp__MetaMCP__fetch__fetch",
       "Bash(grep:*)",
       "Bash(powershell:*)",
-      "mcp__ccw-tools__core_memory"
+      "mcp__ccw-tools__core_memory",
+      "Bash(node:*)",
+      "Bash(ccw cli:*)",
+      "mcp__MetaMCP__zread__get_repo_structure",
+      "mcp__MetaMCP__zread__search_doc",
+      "mcp__MetaMCP__zread__read_file",
+      "Bash(ccw task-output:*)"
     ]
   },
   "model": "sonnet[1m]",

@@ -31,11 +31,15 @@ public class ConfigController : ControllerBase
     [HttpGet]
     public IActionResult GetConfig()
     {
+        var processIntervalSeconds = _configuration.GetValue<int>("Monitor:IntervalSeconds", 5);
+        var systemIntervalSeconds = _configuration.GetValue<int>("Monitor:SystemUsageIntervalSeconds", 1);
+
         var config = new
         {
             Monitor = new
             {
-                IntervalSeconds = _configuration.GetValue<int>("Monitor:IntervalSeconds", 5),
+                IntervalSeconds = processIntervalSeconds,
+                SystemUsageIntervalSeconds = systemIntervalSeconds,
                 Keywords = _configuration.GetSection("Monitor:Keywords").Get<string[]>() ?? Array.Empty<string>()
             },
             MetricProviders = new

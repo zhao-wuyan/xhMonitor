@@ -799,6 +799,7 @@ console.log("Connected to XhMonitor");
   },
   "Monitor": {
     "IntervalSeconds": 5,
+    "SystemUsageIntervalSeconds": 1,
     "Keywords": ["python", "node", "docker"]
   },
   "MetricProviders": {
@@ -810,7 +811,8 @@ console.log("Connected to XhMonitor");
 
 **配置项说明**：
 
-- `Monitor:IntervalSeconds`: 数据采集间隔（秒）
+- `Monitor:IntervalSeconds`: 进程采集间隔（秒）
+- `Monitor:SystemUsageIntervalSeconds`: 系统使用率采集间隔（秒）
 - `Monitor:Keywords`: 进程过滤关键词数组
 - `MetricProviders:PluginDirectory`: 自定义指标插件目录
 - `MetricProviders:PreferLibreHardwareMonitor`: 是否优先使用 LibreHardwareMonitor 混合架构

@@ -75,7 +75,7 @@ public class ProcessScanner
         var pid = process.Id;
         var processName = process.ProcessName;
         string? commandLine = null;
-        _logger.LogDebug("进入ProcessSingleProcess");
+        _logger.LogTrace("进入ProcessSingleProcess");
         
         try
         {
@@ -108,7 +108,7 @@ public class ProcessScanner
         var resolvedName = _nameResolver.Resolve(processName, commandLine);
         var displayName = !string.IsNullOrEmpty(resolvedName) ? resolvedName : processName;
 
-        _logger.LogDebug("获取进程命令友好名称【{displayName}】 {commandLine} ({processName})",
+        _logger.LogTrace("获取进程命令友好名称【{displayName}】 {commandLine} ({processName})",
             displayName, commandLine, processName);
 
         results.Add(new ProcessInfo

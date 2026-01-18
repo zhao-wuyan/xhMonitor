@@ -266,7 +266,8 @@ XhMonitor-v$Version/
  
 ```json
 "Monitor": {
-  "IntervalSeconds": 3,                    // 监控间隔秒数
+  "IntervalSeconds": 3,                    // 进程采样间隔（秒）
+  "SystemUsageIntervalSeconds": 1,         // 系统使用率采样间隔（秒）
   "Keywords": ["--port 8188", "llama-server"]  // 监控关键词
 }
 ```

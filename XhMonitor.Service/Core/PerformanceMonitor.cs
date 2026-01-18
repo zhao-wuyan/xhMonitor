@@ -71,7 +71,7 @@ public class PerformanceMonitor
                     }
                     else
                     {
-                        _logger.LogDebug("  → 跳过错误指标 {MetricId} (PID {ProcessId}): {Error}",
+                        _logger.LogTrace("  → 跳过错误指标 {MetricId} (PID {ProcessId}): {Error}",
                             metricId, processInfo.ProcessId, value.Value);
                     }
                 }

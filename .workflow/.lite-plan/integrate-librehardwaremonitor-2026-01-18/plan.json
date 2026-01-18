@@ -1,0 +1,366 @@
+{
+  "summary": "集成 LibreHardwareMonitor 作为系统级指标的主要数据源，采用混合架构：系统级指标（GetSystemTotalAsync）使用 LibreHardwareMonitor，进程级指标（CollectAsync）保持现有 PerformanceCounter 实现。采用内置提供者模式，在启动时检测 LibreHardwareMonitor 可用性，若不可用则完全回退到现有实现。为 CPU、GPU、Memory、VRAM 四个维度创建独立提供者，共享单例 Computer 实例以优化资源使用。",
+  "approach": "采用混合架构集成策略：(1) 创建 LibreHardwareMonitor 管理服务作为单例，负责 Computer 实例的生命周期管理和线程安全访问；(2) 为每个指标维度实现独立的混合 IMetricProvider，GetSystemTotalAsync() 使用 LibreHardwareMonitor，CollectAsync(processId) 委托给现有 PerformanceCounter 提供者；(3) 在 MetricProviderRegistry 中实现启动时检测逻辑，根据 LibreHardwareMonitor 可用性动态选择提供者；(4) 升级依赖包版本以解决冲突，启用 unsafe 代码支持。整体遵循现有架构模式，保持进程监控功能完整性。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "创建 LibreHardwareMonitor 管理服务和基础设施",
+      "scope": "XhMonitor.Core/Services/",
+      "action": "Create",
+      "description": "创建 ILibreHardwareManager 接口和 LibreHardwareManager 实现类，负责管理 Computer 单例实例的初始化、更新、线程安全访问和资源释放。同时更新项目配置以支持 LibreHardwareMonitor 依赖。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Interfaces/ILibreHardwareManager.cs",
+          "target": "new file",
+          "change": "定义 Computer 实例管理接口，包含 Initialize()、GetSensorValue()、IsAvailable、Dispose() 方法"
+        },
+        {
+          "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+          "target": "new file",
+          "change": "实现单例 Computer 管理，包含线程安全的 Hardware.Update() 调用、传感器缓存（1秒生命周期）、初始化失败处理"
+        },
+        {
+          "file": "XhMonitor.Core/XhMonitor.Core.csproj",
+          "target": "PackageReference section",
+          "change": "添加 LibreHardwareMonitorLib NuGet 包，升级 System.Management 到 10.0.0，升级 Microsoft.Windows.CsWin32 到 0.3.257，添加 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>"
+        }
+      ],
+      "implementation": [
+        "创建 ILibreHardwareManager 接口，定义 Initialize()、GetSensorValue(HardwareType, SensorType)、IsAvailable 属性、Dispose() 方法",
+        "实现 LibreHardwareManager 类，构造函数接受 ILogger 参数，使用 Lazy<Computer> 实现延迟初始化",
+        "实现 Initialize() 方法：创建 Computer 实例（IsCpuEnabled=true, IsGpuEnabled=true, IsMemoryEnabled=true），调用 Open()，捕获异常并设置 IsAvailable=false",
+        "实现 GetSensorValue() 方法：使用 SemaphoreSlim 保护 Hardware.Update() 调用，实现 1 秒缓存避免频繁更新，返回匹配的 ISensor.Value",
+        "实现 Dispose() 方法：调用 Computer.Close()，释放 SemaphoreSlim 资源",
+        "更新 XhMonitor.Core.csproj：添加 LibreHardwareMonitorLib 包引用，升级 System.Management 和 Microsoft.Windows.CsWin32 版本，添加 AllowUnsafeBlocks 属性",
+        "添加单元测试验证 Computer 初始化、传感器读取、线程安全、资源释放"
+      ],
+      "reference": {
+        "pattern": "Singleton + Thread-Safe Resource Management",
+        "files": [
+          "XhMonitor.Core/Monitoring/DxgiGpuMonitor.cs",
+          "XhMonitor.Core/Providers/CpuMetricProvider.cs"
+        ],
+        "examples": "参考 DxgiGpuMonitor 的单例模式和 CpuMetricProvider 的缓存+锁机制"
+      },
+      "acceptance": [
+        "ILibreHardwareManager 接口定义完整，包含所有必需方法和属性",
+        "LibreHardwareManager 在无管理员权限时 Initialize() 返回 false，IsAvailable=false，不抛出异常",
+        "GetSensorValue() 在 1 秒内多次调用返回缓存值，不重复调用 Hardware.Update()",
+        "多线程并发调用 GetSensorValue() 无竞态条件，通过 100 次并发测试",
+        "Dispose() 后 Computer.Close() 被调用，所有资源释放",
+        "项目编译成功，AllowUnsafeBlocks 启用，依赖包版本正确"
+      ],
+      "depends_on": [],
+      "cli_execution_id": "integrate-lhm-T1",
+      "cli_execution": {
+        "strategy": "new"
+      }
+    },
+    {
+      "id": "T2",
+      "title": "实现 LibreHardwareMonitor CPU 提供者",
+      "scope": "XhMonitor.Core/Providers/",
+      "action": "Create",
+      "description": "创建 LibreHardwareMonitorCpuProvider 实现 IMetricProvider 接口，采用混合架构：GetSystemTotalAsync() 通过 ILibreHardwareManager 读取 CPU 总负载传感器，CollectAsync(processId) 委托给现有 CpuMetricProvider 实现进程级监控。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Providers/LibreHardwareMonitorCpuProvider.cs",
+          "target": "new file",
+          "change": "实现 IMetricProvider，MetricId='cpu'，通过 ILibreHardwareManager 读取 CPU Load 传感器"
+        }
+      ],
+      "implementation": [
+        "创建 LibreHardwareMonitorCpuProvider 类实现 IMetricProvider 接口",
+        "构造函数注入 ILibreHardwareManager、ILogger<LibreHardwareMonitorCpuProvider> 和 CpuMetricProvider（用于进程级监控）",
+        "实现 MetricId='cpu'，DisplayName='CPU 使用率 (LibreHardwareMonitor)'，Unit='%'，Type=MetricType.System",
+        "实现 IsSupported()：返回 _hardwareManager.IsAvailable && OperatingSystem.IsWindows()",
+        "实现 GetSystemTotalAsync()：调用 _hardwareManager.GetSensorValue(HardwareType.Cpu, SensorType.Load)，返回 CPU Total Load 值",
+        "实现 CollectAsync(processId)：委托给 _cpuMetricProvider.CollectAsync(processId)，保持现有进程级监控功能",
+        "实现 Dispose()：调用 _cpuMetricProvider.Dispose() 释放 PerformanceCounter 资源"
+      ],
+      "reference": {
+        "pattern": "IMetricProvider Implementation",
+        "files": [
+          "XhMonitor.Core/Providers/CpuMetricProvider.cs",
+          "XhMonitor.Core/Interfaces/IMetricProvider.cs"
+        ],
+        "examples": "参考 CpuMetricProvider 的结构，但简化为仅系统级监控"
+      },
+      "acceptance": [
+        "IsSupported() 在 LibreHardwareManager 可用时返回 true，不可用时返回 false",
+        "GetSystemTotalAsync() 返回 0-100 范围内的 CPU 使用率百分比（来自 LibreHardwareMonitor）",
+        "CollectAsync(processId) 正确返回进程级 CPU 使用率（委托给 CpuMetricProvider）",
+        "进程级监控功能与现有实现完全一致，无功能退化",
+        "在无管理员权限环境下 IsSupported() 返回 false，不崩溃"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "integrate-lhm-T2",
+      "cli_execution": {
+        "strategy": "resume",
+        "resume_from": "integrate-lhm-T1"
+      }
+    },
+    {
+      "id": "T3",
+      "title": "实现 LibreHardwareMonitor GPU 和 VRAM 提供者",
+      "scope": "XhMonitor.Core/Providers/",
+      "action": "Create",
+      "description": "创建 LibreHardwareMonitorGpuProvider 和 LibreHardwareMonitorVramProvider，采用混合架构：系统级指标使用 LibreHardwareMonitor，进程级指标委托给现有 GpuMetricProvider 和 VramMetricProvider，复用 ILibreHardwareManager 单例实例。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Providers/LibreHardwareMonitorGpuProvider.cs",
+          "target": "new file",
+          "change": "实现 IMetricProvider，MetricId='gpu'，读取 GPU Core Load 传感器"
+        },
+        {
+          "file": "XhMonitor.Core/Providers/LibreHardwareMonitorVramProvider.cs",
+          "target": "new file",
+          "change": "实现 IMetricProvider，MetricId='vram'，读取 GPU Memory Used/Total 传感器"
+        }
+      ],
+      "implementation": [
+        "创建 LibreHardwareMonitorGpuProvider：MetricId='gpu'，构造函数注入 ILibreHardwareManager、ILogger 和 GpuMetricProvider",
+        "GPU 提供者 GetSystemTotalAsync() 读取 HardwareType.GpuNvidia/GpuAmd 的 SensorType.Load，处理多 GPU 场景返回最大负载值",
+        "GPU 提供者 CollectAsync(processId) 委托给 _gpuMetricProvider.CollectAsync(processId)，保持现有进程级 GPU 监控",
+        "创建 LibreHardwareMonitorVramProvider：MetricId='vram'，构造函数注入 ILibreHardwareManager、ILogger 和 VramMetricProvider",
+        "VRAM 提供者 GetSystemTotalAsync() 读取 GPU Memory Used 和 Memory Total 传感器，计算使用率：(MemoryUsed / MemoryTotal) * 100",
+        "VRAM 提供者 CollectAsync(processId) 委托给 _vramMetricProvider.CollectAsync(processId)，保持现有进程级 VRAM 监控",
+        "添加传感器名称匹配逻辑：支持 'GPU Core'、'D3D 3D'、'GPU Memory Used' 等多种传感器名称变体",
+        "两个提供者均实现 Dispose()：调用委托提供者的 Dispose() 释放资源"
+      ],
+      "reference": {
+        "pattern": "Multi-Hardware Provider",
+        "files": [
+          "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+          "XhMonitor.Core/Providers/VramMetricProvider.cs"
+        ],
+        "examples": "参考 GpuMetricProvider 的多源处理和 VramMetricProvider 的容量计算"
+      },
+      "acceptance": [
+        "GPU 提供者在多 GPU 系统返回最高负载的 GPU 使用率（来自 LibreHardwareMonitor）",
+        "VRAM 提供者正确计算显存使用率百分比（0-100，来自 LibreHardwareMonitor）",
+        "GPU 和 VRAM 的 CollectAsync(processId) 正确返回进程级指标（委托给现有提供者）",
+        "进程级监控功能与现有实现完全一致，无功能退化",
+        "传感器不存在时返回 MetricValue.Error() 而非崩溃",
+        "两个提供者共享同一个 ILibreHardwareManager 实例（通过 DI 验证）"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "integrate-lhm-T3",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "integrate-lhm-T1"
+      }
+    },
+    {
+      "id": "T4",
+      "title": "实现 LibreHardwareMonitor Memory 提供者",
+      "scope": "XhMonitor.Core/Providers/",
+      "action": "Create",
+      "description": "创建 LibreHardwareMonitorMemoryProvider 监控系统内存使用情况，采用混合架构：GetSystemTotalAsync() 读取 LibreHardwareMonitor Memory Load 传感器，CollectAsync(processId) 委托给现有 MemoryMetricProvider 实现进程级监控。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Providers/LibreHardwareMonitorMemoryProvider.cs",
+          "target": "new file",
+          "change": "实现 IMetricProvider，MetricId='memory'，读取 Memory Load 传感器"
+        }
+      ],
+      "implementation": [
+        "创建 LibreHardwareMonitorMemoryProvider 类实现 IMetricProvider",
+        "构造函数注入 ILibreHardwareManager、ILogger 和 MemoryMetricProvider（用于进程级监控）",
+        "实现 MetricId='memory'，DisplayName='内存使用率 (LibreHardwareMonitor)'，Unit='%'",
+        "GetSystemTotalAsync() 读取 HardwareType.Memory 的 SensorType.Load 传感器",
+        "处理传感器名称变体：'Memory'、'Physical Memory'、'RAM' 等",
+        "CollectAsync(processId) 委托给 _memoryMetricProvider.CollectAsync(processId)，保持现有进程级内存监控",
+        "实现 Dispose()：调用 _memoryMetricProvider.Dispose() 释放资源"
+      ],
+      "reference": {
+        "pattern": "Simple Provider Implementation",
+        "files": [
+          "XhMonitor.Core/Providers/MemoryMetricProvider.cs"
+        ],
+        "examples": "参考 MemoryMetricProvider 的简洁实现模式"
+      },
+      "acceptance": [
+        "GetSystemTotalAsync() 返回 0-100 范围内的内存使用率（来自 LibreHardwareMonitor）",
+        "CollectAsync(processId) 正确返回进程级内存使用量（委托给 MemoryMetricProvider）",
+        "进程级监控功能与现有实现完全一致，无功能退化",
+        "在 LibreHardwareManager 不可用时 IsSupported() 返回 false",
+        "传感器读取失败时返回 MetricValue.Error() 且记录日志"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "integrate-lhm-T4",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "integrate-lhm-T1"
+      }
+    },
+    {
+      "id": "T5",
+      "title": "集成提供者注册和启动检测逻辑",
+      "scope": "XhMonitor.Service/",
+      "action": "Update",
+      "description": "修改 MetricProviderRegistry 和 Program.cs，实现启动时检测 LibreHardwareMonitor 可用性，根据检测结果动态注册混合架构提供者或回退到现有提供者。注册 ILibreHardwareManager 为单例服务，确保现有 PerformanceCounter 提供者也被注册以支持进程级监控。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Service/Program.cs",
+          "target": "DI configuration section (lines 96-123)",
+          "change": "注册 ILibreHardwareManager 为单例，在 MetricProviderRegistry 之前初始化"
+        },
+        {
+          "file": "XhMonitor.Service/Core/MetricProviderRegistry.cs",
+          "target": "RegisterBuiltInProviders method (lines 129-135)",
+          "change": "添加启动检测逻辑：尝试初始化 LibreHardwareManager，成功则注册 LHM 提供者，失败则注册现有提供者"
+        },
+        {
+          "file": "XhMonitor.Service/appsettings.json",
+          "target": "MetricProviders section",
+          "change": "添加 PreferLibreHardwareMonitor 配置项（默认 true）"
+        }
+      ],
+      "implementation": [
+        "在 Program.cs 的 DI 配置中注册 ILibreHardwareManager 为单例：builder.Services.AddSingleton<ILibreHardwareManager, LibreHardwareManager>()",
+        "在 Program.cs 中注册现有 PerformanceCounter 提供者为单例（CpuMetricProvider、GpuMetricProvider、MemoryMetricProvider、VramMetricProvider），供混合架构提供者使用",
+        "修改 MetricProviderRegistry 构造函数，注入 ILibreHardwareManager 参数",
+        "修改 RegisterBuiltInProviders() 方法：检查 _hardwareManager.IsAvailable",
+        "若 IsAvailable=true 且配置启用：注册混合架构提供者（LibreHardwareMonitorCpuProvider、LibreHardwareMonitorGpuProvider、LibreHardwareMonitorMemoryProvider、LibreHardwareMonitorVramProvider），这些提供者内部委托给现有提供者处理进程级监控",
+        "若 IsAvailable=false 或配置禁用：注册现有 CpuMetricProvider、GpuMetricProvider、MemoryMetricProvider、VramMetricProvider",
+        "添加日志记录：记录使用的提供者类型（LibreHardwareMonitor Hybrid 或 Legacy PerformanceCounter）",
+        "在 appsettings.json 添加 MetricProviders:PreferLibreHardwareMonitor 配置项"
+      ],
+      "reference": {
+        "pattern": "Conditional Provider Registration",
+        "files": [
+          "XhMonitor.Service/Core/MetricProviderRegistry.cs",
+          "XhMonitor.Service/Program.cs"
+        ],
+        "examples": "参考现有 RegisterBuiltInProviders 模式，添加条件分支"
+      },
+      "acceptance": [
+        "在有管理员权限环境下，混合架构提供者被注册，系统级指标使用 LibreHardwareMonitor，进程级指标使用 PerformanceCounter",
+        "在无管理员权限环境下，现有提供者被注册，所有指标使用 PerformanceCounter",
+        "启动日志明确显示使用的提供者类型（'Using LibreHardwareMonitor Hybrid providers' 或 'Fallback to legacy PerformanceCounter providers'）",
+        "配置 PreferLibreHardwareMonitor=false 时强制使用现有提供者",
+        "SystemMetricProvider 正确接收到注册的提供者实例",
+        "进程级监控功能在所有场景下正常工作，无功能退化"
+      ],
+      "depends_on": ["T2", "T3", "T4"],
+      "cli_execution_id": "integrate-lhm-T5",
+      "cli_execution": {
+        "strategy": "merge_fork",
+        "merge_from": ["integrate-lhm-T2", "integrate-lhm-T3", "integrate-lhm-T4"]
+      }
+    },
+    {
+      "id": "T6",
+      "title": "集成测试和文档更新",
+      "scope": "XhMonitor.Tests/ 和文档",
+      "action": "Create",
+      "description": "创建集成测试验证混合架构 LibreHardwareMonitor 提供者的功能、回退机制、资源管理和进程级监控。更新项目文档说明混合架构设计和配置选项。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Tests/Integration/LibreHardwareMonitorIntegrationTests.cs",
+          "target": "new file",
+          "change": "创建集成测试类，验证提供者注册、启动检测、回退机制、多线程安全"
+        },
+        {
+          "file": "README.md",
+          "target": "Configuration section",
+          "change": "添加 LibreHardwareMonitor 配置说明和管理员权限要求"
+        },
+        {
+          "file": "XhMonitor.Service/appsettings.json",
+          "target": "comments",
+          "change": "添加配置项注释说明"
+        }
+      ],
+      "implementation": [
+        "创建 LibreHardwareMonitorIntegrationTests 类，测试场景：(1) 有权限时系统级指标使用 LHM，进程级指标使用 PerformanceCounter，(2) 无权限时完全回退到现有提供者，(3) Computer 实例单例验证，(4) 进程级监控功能完整性验证",
+        "添加 LibreHardwareManagerTests 单元测试：测试 Initialize()、GetSensorValue()、线程安全、缓存机制、Dispose()",
+        "添加各混合架构提供者单元测试：验证 IsSupported()、GetSystemTotalAsync()（LibreHardwareMonitor）、CollectAsync()（PerformanceCounter 委托）、错误处理",
+        "添加进程级监控回归测试：确保 CollectAsync(processId) 在所有场景下返回正确的进程级指标，无功能退化",
+        "更新 README.md：添加 '系统要求' 章节说明管理员权限需求，添加 '混合架构' 章节说明系统级/进程级指标的不同数据源，添加 '配置' 章节说明 PreferLibreHardwareMonitor 选项",
+        "在 appsettings.json 添加配置注释：// 是否优先使用 LibreHardwareMonitor（系统级指标，需要管理员权限；进程级指标始终使用 PerformanceCounter）",
+        "创建 CHANGELOG.md 条目记录此次混合架构集成"
+      ],
+      "reference": {
+        "pattern": "Integration Testing",
+        "files": [
+          "XhMonitor.Tests/"
+        ],
+        "examples": "参考现有测试结构，添加 LibreHardwareMonitor 相关测试"
+      },
+      "acceptance": [
+        "所有集成测试通过（至少 5 个测试用例）",
+        "单元测试覆盖率 >= 80%（针对新增代码）",
+        "包含无管理员权限场景测试，验证自动回退到现有提供者",
+        "包含进程级监控回归测试，验证 CollectAsync(processId) 功能完整性",
+        "README.md 包含管理员权限说明、混合架构说明和配置示例",
+        "appsettings.json 配置项有清晰的中文注释，说明混合架构特性",
+        "文档说明了回退机制和混合架构的工作原理"
+      ],
+      "depends_on": ["T5"],
+      "cli_execution_id": "integrate-lhm-T6",
+      "cli_execution": {
+        "strategy": "resume",
+        "resume_from": "integrate-lhm-T5"
+      }
+    }
+  ],
+  "flow_control": {
+    "execution_order": [
+      {
+        "phase": "sequential-1",
+        "tasks": ["T1"],
+        "type": "sequential"
+      },
+      {
+        "phase": "parallel-1",
+        "tasks": ["T2", "T3", "T4"],
+        "type": "parallel"
+      },
+      {
+        "phase": "sequential-2",
+        "tasks": ["T5"],
+        "type": "sequential"
+      },
+      {
+        "phase": "sequential-3",
+        "tasks": ["T6"],
+        "type": "sequential"
+      }
+    ],
+    "exit_conditions": {
+      "success": "所有 6 个任务完成，集成测试通过，LibreHardwareMonitor 混合架构提供者在有权限环境下正常工作（系统级指标使用 LibreHardwareMonitor，进程级指标使用 PerformanceCounter），无权限环境下正确回退到完全使用 PerformanceCounter，进程级监控功能在所有场景下保持完整",
+      "failure": "任何任务的验收标准未满足，或集成测试失败率 > 20%，或进程级监控功能出现退化"
+    }
+  },
+  "focus_paths": [
+    "XhMonitor.Core/Interfaces/ILibreHardwareManager.cs",
+    "XhMonitor.Core/Services/LibreHardwareManager.cs",
+    "XhMonitor.Core/Providers/LibreHardwareMonitorCpuProvider.cs",
+    "XhMonitor.Core/Providers/LibreHardwareMonitorGpuProvider.cs",
+    "XhMonitor.Core/Providers/LibreHardwareMonitorMemoryProvider.cs",
+    "XhMonitor.Core/Providers/LibreHardwareMonitorVramProvider.cs",
+    "XhMonitor.Core/XhMonitor.Core.csproj",
+    "XhMonitor.Service/Core/MetricProviderRegistry.cs",
+    "XhMonitor.Service/Program.cs",
+    "XhMonitor.Service/appsettings.json",
+    "XhMonitor.Tests/Integration/LibreHardwareMonitorIntegrationTests.cs",
+    "README.md"
+  ],
+  "estimated_time": "4-6 小时",
+  "recommended_execution": "Agent",
+  "complexity": "High",
+  "_metadata": {
+    "timestamp": "2026-01-18T14:30:00.000Z",
+    "source": "cli-lite-planning-agent",
+    "planning_mode": "agent-based",
+    "exploration_angles": [
+      "architecture",
+      "dependencies",
+      "modularity",
+      "integration-points"
+    ],
+    "duration_seconds": 180
+  }
+}

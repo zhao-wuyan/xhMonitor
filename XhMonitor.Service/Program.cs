@@ -89,6 +89,15 @@ builder.Services.AddSingleton<IProcessMetricRepository, MetricRepository>();
 
 builder.Services.AddSingleton<IProcessNameResolver, ProcessNameResolver>();
 
+// 注册 LibreHardwareManager 为单例（在 MetricProviderRegistry 之前）
+builder.Services.AddSingleton<ILibreHardwareManager>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<LibreHardwareManager>>();
+    var config = sp.GetRequiredService<IConfiguration>();
+    var systemIntervalSeconds = Math.Max(1, config.GetValue("Monitor:SystemUsageIntervalSeconds", 1));
+    return new LibreHardwareManager(logger, TimeSpan.FromSeconds(systemIntervalSeconds));
+});
+
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<AggregationWorker>();
 builder.Services.AddHostedService<DatabaseCleanupWorker>();
@@ -106,7 +115,11 @@ builder.Services.AddSingleton(sp =>
         pluginDirectory = Path.Combine(env.ContentRootPath, "plugins");
     }
 
-    return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory);
+    // 获取 LibreHardwareManager 和配置
+    var hardwareManager = sp.GetRequiredService<ILibreHardwareManager>();
+    var preferLibreHardwareMonitor = config.GetValue<bool>("MetricProviders:PreferLibreHardwareMonitor", true);
+
+    return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory, hardwareManager, preferLibreHardwareMonitor);
 });
 
 builder.Services.AddSingleton<SystemMetricProvider>(sp =>
@@ -118,7 +131,8 @@ builder.Services.AddSingleton<SystemMetricProvider>(sp =>
         registry.GetProvider("gpu"),
         registry.GetProvider("memory"),
         registry.GetProvider("vram"),
-        logger
+        logger,
+        initializeDxgi: !registry.IsLibreHardwareMonitorEnabled
     );
 });
 

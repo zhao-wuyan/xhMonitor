@@ -69,17 +69,6 @@
         ],
         "matcher": "Write|Edit"
       }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c \"INPUT=$(cat); FILE=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.file_path // .tool_input.path // empty\\\"); [ -d \\\".codexlens\\\" ] && [ -n \\\"$FILE\\\" ] && (python -m codexlens update \\\"$FILE\\\" --json 2>/dev/null || ~/.codexlens/venv/bin/python -m codexlens update \\\"$FILE\\\" --json 2>/dev/null || true)\""
-          }
-        ],
-        "matcher": "Write|Edit"
-      }
     ]
   }
 }

@@ -1,0 +1,115 @@
+{
+  "project_structure": "Solution consists of 4 main projects: XhMonitor.Core (shared interfaces/providers), XhMonitor.Service (ASP.NET Core backend with MetricProviderRegistry), XhMonitor.Desktop (WPF UI), XhMonitor.Tests (unit tests). Plugin architecture uses MetricProviderRegistry (XhMonitor.Service/Core/MetricProviderRegistry.cs) for dynamic provider registration with built-in providers (CPU, GPU, Memory, VRAM) and plugin directory loading support. SystemMetricProvider aggregates individual metric providers for system-level metrics. Dependency injection configured in Program.cs with singleton registry and provider instances.",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Service/Core/MetricProviderRegistry.cs",
+      "relevance": 0.95,
+      "rationale": "Core plugin registry managing provider lifecycle, registration, and plugin loading - primary integration point for LibreHardwareMonitor providers"
+    },
+    {
+      "path": "XhMonitor.Core/Interfaces/IMetricProvider.cs",
+      "relevance": 0.90,
+      "rationale": "Interface contract that LibreHardwareMonitor providers must implement - defines MetricId, IsSupported(), CollectAsync(), GetSystemTotalAsync()"
+    },
+    {
+      "path": "XhMonitor.Service/Program.cs",
+      "relevance": 0.85,
+      "rationale": "Dependency injection configuration point (lines 96-123) - where LibreHardwareMonitor services and providers will be registered"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "relevance": 0.80,
+      "rationale": "System-level metric aggregator that receives individual providers via constructor - integration point for LibreHardwareMonitor-based providers"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/CpuMetricProvider.cs",
+      "relevance": 0.75,
+      "rationale": "Reference implementation showing PerformanceCounter-based CPU monitoring with caching and warmup - pattern to follow for LibreHardwareMonitor CPU provider"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+      "relevance": 0.75,
+      "rationale": "Demonstrates dual-source pattern (PerformanceCounter + DXGI) with fallback mechanism - architectural pattern for LibreHardwareMonitor integration"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/MemoryMetricProvider.cs",
+      "relevance": 0.70,
+      "rationale": "Simple provider implementation showing WMI/PerformanceCounter usage - reference for LibreHardwareMonitor memory provider"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/VramMetricProvider.cs",
+      "relevance": 0.70,
+      "rationale": "Multi-source VRAM detection (Registry, PowerShell, DxDiag, WMI) with caching - pattern for LibreHardwareMonitor VRAM provider"
+    },
+    {
+      "path": "XhMonitor.Core/Monitoring/DxgiGpuMonitor.cs",
+      "relevance": 0.65,
+      "rationale": "Low-level GPU monitoring implementation showing resource management and singleton pattern - reference for LibreHardwareMonitor Computer instance management"
+    },
+    {
+      "path": "XhMonitor.Service/appsettings.json",
+      "relevance": 0.60,
+      "rationale": "Configuration file with MetricProviders:PluginDirectory setting (line 109-111) - where LibreHardwareMonitor provider selection config will be added"
+    },
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "relevance": 0.55,
+      "rationale": "Background service consuming SystemMetricProvider - shows how providers are used in production workflow"
+    }
+  ],
+  "patterns": "1. Plugin Registration Pattern: MetricProviderRegistry.RegisterBuiltInProviders() (line 129-135) registers providers with IsSupported() validation and automatic disposal on failure. 2. Dual-Source Fallback: GpuMetricProvider demonstrates PreferPerformanceCounter flag with try-catch fallback between PerformanceCounter and DXGI (lines 73-108). 3. Singleton Resource Management: DxgiGpuMonitor uses single instance shared across providers with proper disposal chain. 4. Lazy Initialization: Providers initialize resources on first IsSupported()/CollectAsync() call, not in constructor. 5. Caching Strategy: CpuMetricProvider uses 1-second cache with SemaphoreSlim locking (lines 14-16, 83-159). 6. Dependency Injection: Program.cs uses builder.Services.AddSingleton for registry and providers (lines 96-123). 7. Interface Contract: All providers implement IMetricProvider with MetricId, IsSupported(), CollectAsync(processId), GetSystemTotalAsync(), Dispose(). 8. Error Handling: Providers return MetricValue.Error() on exceptions rather than throwing.",
+  "dependencies": "Internal: XhMonitor.Core.Interfaces.IMetricProvider, XhMonitor.Core.Models.MetricValue, XhMonitor.Core.Enums.MetricType. External: System.Diagnostics.PerformanceCounter (CPU/GPU/Memory/VRAM monitoring), System.Management (WMI queries for memory/VRAM), Microsoft.Extensions.Logging (ILogger<T>), Microsoft.Extensions.DependencyInjection (service registration). LibreHardwareMonitor Integration: Will require LibreHardwareMonitor NuGet package (LibreHardwareMonitorLib), Computer class for hardware access, ISensor interface for reading values. Plugin Loading: System.Reflection.Assembly.LoadFrom for dynamic DLL loading from plugins directory.",
+  "integration_points": "1. MetricProviderRegistry.RegisterBuiltInProviders() (XhMonitor.Service/Core/MetricProviderRegistry.cs:129-135) - Add LibreHardwareMonitor provider registration here or create separate RegisterLibreHardwareMonitorProviders() method. 2. Program.cs DI Configuration (XhMonitor.Service/Program.cs:96-123) - Register ILibreHardwareManager singleton service to manage shared Computer instance, inject into LibreHardwareMonitor providers. 3. IMetricProvider Implementation - Create LibreHardwareMonitorCpuProvider, LibreHardwareMonitorGpuProvider, LibreHardwareMonitorMemoryProvider, LibreHardwareMonitorVramProvider implementing IMetricProvider interface. 4. SystemMetricProvider Constructor (XhMonitor.Core/Providers/SystemMetricProvider.cs:27-50) - Receives LibreHardwareMonitor providers via DI, aggregates system metrics. 5. Fallback Mechanism - Implement CompositeMetricProvider wrapping LibreHardwareMonitor provider + existing provider, with IsSupported() checking LibreHardwareMonitor availability first. 6. Configuration Extension - Add MetricProviders:DataSourcePriority section to appsettings.json (XhMonitor.Service/appsettings.json:109-111) for per-metric source selection (e.g., cpu: librehardware, gpu: performance_counter). 7. Plugin Directory - Place LibreHardwareMonitor provider DLLs in plugins/ directory for dynamic loading via MetricProviderRegistry.LoadFromDirectory() (line 110-127). 8. Resource Management - Create ILibreHardwareManager service with singleton Computer instance, Initialize() on startup, Dispose() on shutdown.",
+  "constraints": "1. Windows-Only: LibreHardwareMonitor requires Windows, all providers must check OperatingSystem.IsWindows() in IsSupported(). 2. Administrator Privileges: LibreHardwareMonitor Computer.Open() requires elevated permissions for hardware access - must handle AccessDeniedException gracefully. 3. Thread Safety: Computer instance must be thread-safe or protected with locks when accessed by multiple providers concurrently. 4. Initialization Cost: Computer.Open() is expensive (100-500ms), must be called once at startup, not per-provider. 5. Sensor Discovery: LibreHardwareMonitor sensors vary by hardware, must handle missing sensors gracefully (e.g., no GPU temperature on some systems). 6. Memory Overhead: Computer instance maintains sensor history, implement periodic cleanup or limit history depth. 7. Backward Compatibility: Existing PerformanceCounter-based providers must remain functional as fallback when LibreHardwareMonitor unavailable. 8. Plugin Loading: LibreHardwareMonitor DLLs must be copied to plugins/ directory or output directory to avoid FileNotFoundException. 9. Disposal Order: Computer.Close() must be called before application exit to release hardware handles. 10. Configuration Validation: Invalid DataSourcePriority config must fallback to default provider without crashing.",
+  "clarification_needs": [
+    {
+      "question": "Should LibreHardwareMonitor providers be registered as built-in (compiled into XhMonitor.Core) or as external plugins (separate DLL in plugins/ directory)?",
+      "context": "Built-in approach simplifies deployment and dependency management but increases core assembly size. Plugin approach provides better modularity and allows independent updates but requires managing LibreHardwareMonitor DLL dependencies in plugins/ directory.",
+      "options": [
+        "Built-in: Register LibreHardwareMonitor providers in MetricProviderRegistry.RegisterBuiltInProviders() alongside existing providers",
+        "Plugin: Create separate XhMonitor.Providers.LibreHardwareMonitor.dll with providers, load via MetricProviderRegistry.LoadFromDirectory()",
+        "Hybrid: Built-in registration but with conditional compilation (#if LIBREHARDWARE) to allow disabling if LibreHardwareMonitor unavailable"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should the fallback mechanism be triggered - automatic on LibreHardwareMonitor failure or user-configurable priority?",
+      "context": "Automatic fallback provides seamless experience but may hide LibreHardwareMonitor initialization issues. User-configurable priority gives explicit control but requires configuration management.",
+      "options": [
+        "Automatic: CompositeMetricProvider tries LibreHardwareMonitor first, falls back to PerformanceCounter on any exception",
+        "Configurable: appsettings.json defines per-metric data source priority (e.g., cpu: [librehardware, performance_counter]), tries in order",
+        "Startup Detection: Check LibreHardwareMonitor availability at startup, register only working providers, no runtime fallback"
+      ],
+      "recommended": 1
+    },
+    {
+      "question": "Should the Computer instance be shared across all LibreHardwareMonitor providers or created per-provider?",
+      "context": "Shared instance reduces memory overhead and initialization cost but requires thread-safe access coordination. Per-provider instances simplify concurrency but waste resources and slow startup.",
+      "options": [
+        "Shared Singleton: Single ILibreHardwareManager service with one Computer instance, injected into all LibreHardwareMonitor providers",
+        "Per-Provider: Each LibreHardwareMonitor provider creates its own Computer instance with specific hardware enabled (e.g., CPU provider only enables CPU)",
+        "Lazy Shared: Computer instance created on first provider access, cached in static field, shared across providers"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should process-level metrics (CollectAsync) be handled when LibreHardwareMonitor doesn't provide per-process data?",
+      "context": "LibreHardwareMonitor provides system-level hardware metrics but not per-process breakdowns. Existing providers use PerformanceCounter for per-process CPU/GPU/Memory/VRAM.",
+      "options": [
+        "Hybrid Approach: Use LibreHardwareMonitor for GetSystemTotalAsync(), fallback to PerformanceCounter for CollectAsync(processId)",
+        "System-Only: LibreHardwareMonitor providers only implement GetSystemTotalAsync(), return MetricValue.Error() for CollectAsync()",
+        "Estimation: Use LibreHardwareMonitor for system total, calculate per-process values by proportional distribution based on PerformanceCounter ratios"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-18T14:08:38.000Z",
+    "task_description": "研究一下https://github.com/LibreHardwareMonitor/LibreHardwareMonitor的接入方式，我需要将其集成到系统种，请你分析项目现有架构，看如何接入。是否以插件的形式接入，当前架构是否要调整，要求代码具有可维护性和拓展性，我希望优先使用这个方式获取系统资源占用信息 包括系统 CPU,RAM,GPU,VARM。进程监控保持不变。当前已有的检测方式作为备选，在软件启动时判断，若libreHardwareMonitor可以使用，则不加载备选，否则启用备选。协调好资源，确保长期运行的稳定，当前只需要接入libreHardwareMonitor其中的4种对齐当前已有的监控维度，不排除后续新增维度，所以需要方便拓展，且可以灵活选择每个维度的数据源获取方式，且若多个源来自于同一个方式，则尽量保持使用同一个实例，防止重复初始化多次占用资源。",
+    "source": "cli-explore-agent",
+    "exploration_angle": "integration-points",
+    "exploration_index": 4,
+    "total_explorations": 4,
+    "duration_seconds": 145
+  }
+}

@@ -17,7 +17,8 @@ public class Worker : BackgroundService
     private readonly IHubContext<MetricsHub> _hubContext;
     private readonly SystemMetricProvider _systemMetricProvider;
     private readonly IProcessMetadataStore _processMetadataStore;
-    private readonly int _intervalSeconds;
+    private readonly int _processIntervalSeconds;
+    private readonly int _systemIntervalSeconds;
     private double _cachedMaxMemory;
     private double _cachedMaxVram;
     private readonly Channel<ProcessSnapshot> _processSnapshotChannel =
@@ -42,13 +43,17 @@ public class Worker : BackgroundService
         _hubContext = hubContext;
         _systemMetricProvider = systemMetricProvider;
         _processMetadataStore = processMetadataStore;
-        _intervalSeconds = config.GetValue("Monitor:IntervalSeconds", 5);
+        _processIntervalSeconds = Math.Max(1, config.GetValue("Monitor:IntervalSeconds", 5));
+        _systemIntervalSeconds = Math.Max(1, config.GetValue("Monitor:SystemUsageIntervalSeconds", 1));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var startupStopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("=== XhMonitor 启动开始 === Process interval: {IntervalSeconds}s, System usage interval: 1s", _intervalSeconds);
+        _logger.LogInformation(
+            "=== XhMonitor 启动开始 === Process interval: {ProcessIntervalSeconds}s, System usage interval: {SystemIntervalSeconds}s",
+            _processIntervalSeconds,
+            _systemIntervalSeconds);
 
         // Phase 1: 内存限制检测
         var phaseStopwatch = Stopwatch.StartNew();
@@ -100,7 +105,7 @@ public class Worker : BackgroundService
 
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(_processIntervalSeconds), stoppingToken);
             }
             catch (TaskCanceledException)
             {
@@ -213,7 +218,7 @@ public class Worker : BackgroundService
 
             try
             {
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(_systemIntervalSeconds), stoppingToken);
             }
             catch (TaskCanceledException)
             {

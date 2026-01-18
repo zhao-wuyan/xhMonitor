@@ -10,12 +10,23 @@ public sealed class MetricProviderRegistry : IDisposable
     private readonly ILogger<MetricProviderRegistry> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ConcurrentDictionary<string, IMetricProvider> _providers;
+    private readonly ILibreHardwareManager? _hardwareManager;
+    private readonly bool _preferLibreHardwareMonitor;
     private volatile bool _disposed;
 
-    public MetricProviderRegistry(ILogger<MetricProviderRegistry> logger, ILoggerFactory loggerFactory, string pluginDirectory)
+    public bool IsLibreHardwareMonitorEnabled { get; private set; }
+
+    public MetricProviderRegistry(
+        ILogger<MetricProviderRegistry> logger,
+        ILoggerFactory loggerFactory,
+        string pluginDirectory,
+        ILibreHardwareManager? hardwareManager = null,
+        bool preferLibreHardwareMonitor = true)
     {
         _logger = logger;
         _loggerFactory = loggerFactory;
+        _hardwareManager = hardwareManager;
+        _preferLibreHardwareMonitor = preferLibreHardwareMonitor;
         _providers = new ConcurrentDictionary<string, IMetricProvider>(StringComparer.OrdinalIgnoreCase);
 
         RegisterBuiltInProviders();
@@ -128,10 +139,97 @@ public sealed class MetricProviderRegistry : IDisposable
 
     private void RegisterBuiltInProviders()
     {
-        RegisterProvider(new CpuMetricProvider());
-        RegisterProvider(new MemoryMetricProvider());
-        RegisterProvider(new GpuMetricProvider(_loggerFactory.CreateLogger<GpuMetricProvider>(), _loggerFactory));
-        RegisterProvider(new VramMetricProvider(_loggerFactory.CreateLogger<VramMetricProvider>()));
+        // 检查是否使用 LibreHardwareMonitor 混合架构
+        bool useLibreHardwareMonitor = false;
+
+        if (_preferLibreHardwareMonitor && _hardwareManager != null)
+        {
+            try
+            {
+                // 尝试初始化 LibreHardwareManager
+                useLibreHardwareMonitor = _hardwareManager.Initialize();
+
+                if (useLibreHardwareMonitor)
+                {
+                    _logger.LogInformation("使用 LibreHardwareMonitor 混合架构提供者（系统级指标使用 LHM，进程级指标使用 PerformanceCounter）");
+                }
+                else
+                {
+                    _logger.LogWarning("LibreHardwareManager 初始化失败，回退到传统 PerformanceCounter 提供者");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "LibreHardwareManager 初始化异常，回退到传统 PerformanceCounter 提供者");
+                useLibreHardwareMonitor = false;
+            }
+        }
+        else
+        {
+            if (!_preferLibreHardwareMonitor)
+            {
+                _logger.LogInformation("配置禁用 LibreHardwareMonitor，使用传统 PerformanceCounter 提供者");
+            }
+            else
+            {
+                _logger.LogWarning("LibreHardwareManager 未注入，使用传统 PerformanceCounter 提供者");
+            }
+        }
+
+        IsLibreHardwareMonitorEnabled = useLibreHardwareMonitor;
+
+        if (useLibreHardwareMonitor)
+        {
+            // 注册混合架构提供者（系统级使用 LHM，进程级委托给现有提供者）
+            // 创建现有提供者实例供混合架构提供者使用
+            var cpuProvider = new CpuMetricProvider();
+            var memoryProvider = new MemoryMetricProvider();
+            var gpuProvider = new GpuMetricProvider(
+                _loggerFactory.CreateLogger<GpuMetricProvider>(),
+                _loggerFactory,
+                initializeDxgi: !useLibreHardwareMonitor);
+            var vramProvider = new VramMetricProvider(_loggerFactory.CreateLogger<VramMetricProvider>());
+
+            // 注册混合架构提供者
+            // LibreHardwareMonitorCpuProvider(ILibreHardwareManager, ILogger, CpuMetricProvider)
+            RegisterProvider(new LibreHardwareMonitorCpuProvider(
+                _hardwareManager,
+                _loggerFactory.CreateLogger<LibreHardwareMonitorCpuProvider>(),
+                cpuProvider));
+
+            // LibreHardwareMonitorMemoryProvider(ILibreHardwareManager, MemoryMetricProvider, ILogger?)
+            RegisterProvider(new LibreHardwareMonitorMemoryProvider(
+                _hardwareManager,
+                memoryProvider,
+                _loggerFactory.CreateLogger<LibreHardwareMonitorMemoryProvider>()));
+
+            // LibreHardwareMonitorGpuProvider(ILibreHardwareManager, GpuMetricProvider, ILogger?)
+            RegisterProvider(new LibreHardwareMonitorGpuProvider(
+                _hardwareManager,
+                gpuProvider,
+                _loggerFactory.CreateLogger<LibreHardwareMonitorGpuProvider>()));
+
+            // LibreHardwareMonitorVramProvider(ILibreHardwareManager, VramMetricProvider, ILogger?)
+            RegisterProvider(new LibreHardwareMonitorVramProvider(
+                _hardwareManager,
+                vramProvider,
+                _loggerFactory.CreateLogger<LibreHardwareMonitorVramProvider>()));
+
+            _logger.LogInformation("已注册 LibreHardwareMonitor 混合架构提供者: CPU, Memory, GPU, VRAM");
+        }
+        else
+        {
+            // 注册传统 PerformanceCounter 提供者
+            RegisterProvider(new CpuMetricProvider());
+            RegisterProvider(new MemoryMetricProvider());
+            RegisterProvider(new GpuMetricProvider(
+                _loggerFactory.CreateLogger<GpuMetricProvider>(),
+                _loggerFactory,
+                initializeDxgi: !useLibreHardwareMonitor));
+            RegisterProvider(new VramMetricProvider(_loggerFactory.CreateLogger<VramMetricProvider>()));
+
+            _logger.LogInformation("已注册传统 PerformanceCounter 提供者: CPU, Memory, GPU, VRAM");
+        }
     }
 
     private void LoadFromAssemblyPath(string path)

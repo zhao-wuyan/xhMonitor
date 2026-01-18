@@ -28,7 +28,10 @@ public class GpuMetricProvider : IMetricProvider
     /// </summary>
     public static bool PreferPerformanceCounter { get; set; } = true;
 
-    public GpuMetricProvider(ILogger<GpuMetricProvider>? logger = null, ILoggerFactory? loggerFactory = null)
+    public GpuMetricProvider(
+        ILogger<GpuMetricProvider>? logger = null,
+        ILoggerFactory? loggerFactory = null,
+        bool initializeDxgi = true)
     {
         _logger = logger;
         _dxgiMonitor = new DxgiGpuMonitor(loggerFactory?.CreateLogger<DxgiGpuMonitor>());
@@ -36,28 +39,37 @@ public class GpuMetricProvider : IMetricProvider
         _logger?.LogInformation("GPU monitoring mode: {Mode}",
             PreferPerformanceCounter ? "Performance Counter (AMD 推荐)" : "D3DKMT (NVIDIA/Intel 推荐)");
 
-        try
+        if (initializeDxgi)
         {
-            _dxgiInitialized = _dxgiMonitor.Initialize();
-            if (_dxgiInitialized)
+            try
             {
-                _logger?.LogInformation("DXGI GPU monitor initialized successfully");
+                _dxgiInitialized = _dxgiMonitor.Initialize();
+                if (_dxgiInitialized)
+                {
+                    _logger?.LogInformation("DXGI GPU monitor initialized successfully");
 
-                // 预热：两次调用填充缓存，确保后续调用能立即返回使用率
-                _dxgiMonitor.GetGpuUsage();  // 第一次：填充缓存
-                Thread.Sleep(100);  // 等待 100ms，确保时间差足够
-                _dxgiMonitor.GetGpuUsage();  // 第二次：验证能正常计算
-                _logger?.LogDebug("DXGI GPU monitor cache warmed up");
+                    // 预热：两次调用填充缓存，确保后续调用能立即返回使用率
+                    _dxgiMonitor.GetGpuUsage();  // 第一次：填充缓存
+                    Thread.Sleep(100);  // 等待 100ms，确保时间差足够
+                    _dxgiMonitor.GetGpuUsage();  // 第二次：验证能正常计算
+                    _logger?.LogDebug("DXGI GPU monitor cache warmed up");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to initialize DXGI GPU monitor");
+                _dxgiInitialized = false;
+            }
+
+            if (!_dxgiInitialized)
+            {
+                _logger?.LogDebug("DXGI GPU monitor not available, fallback to performance counters");
             }
         }
-        catch (Exception ex)
+        else
         {
-            _logger?.LogWarning(ex, "Failed to initialize DXGI GPU monitor");
             _dxgiInitialized = false;
-        }
-        if (!_dxgiInitialized)
-        {
-            _logger?.LogDebug("DXGI GPU monitor not available, fallback to performance counters");
+            _logger?.LogDebug("DXGI GPU monitor initialization skipped");
         }
     }
 
