@@ -28,20 +28,23 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
 
     public string MetricId => "vram";
     public string DisplayName => "VRAM Usage";
-    public string Unit => "MB";
-    public MetricType Type => MetricType.Size;
+    public string Unit => "%";
+    public MetricType Type => MetricType.Percentage;
 
     public bool IsSupported()
     {
         return _hardwareManager.IsAvailable;
     }
 
-    public async Task<double> GetSystemTotalAsync()
+    /// <summary>
+    /// 获取完整的 VRAM 指标（使用量、总量、使用率）
+    /// </summary>
+    public async Task<VramMetrics> GetVramMetricsAsync()
     {
         if (!IsSupported())
         {
             _logger?.LogWarning("[LibreHardwareMonitorVramProvider] Hardware manager not available");
-            return 0.0;
+            return VramMetrics.Empty;
         }
 
         return await Task.Run(() =>
@@ -139,29 +142,40 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
                     }
                 }
 
-                if (memoryTotal.HasValue && memoryTotal.Value > 0)
+                // 构建 VramMetrics 对象
+                var metrics = new VramMetrics
                 {
-                    if (memoryUsed.HasValue && memoryUsed.Value > 0)
-                    {
-                        var usagePercent = (memoryUsed.Value / memoryTotal.Value) * 100.0;
-                        _logger?.LogDebug("[LibreHardwareMonitorVramProvider] VRAM usage: {Used} MB / {Total} MB = {Percent}%",
-                            memoryUsed.Value, memoryTotal.Value, usagePercent);
-                    }
+                    Used = memoryUsed.HasValue ? Math.Round(memoryUsed.Value, 1) : 0.0,
+                    Total = memoryTotal.HasValue ? Math.Round(memoryTotal.Value, 1) : 0.0,
+                    Timestamp = DateTime.Now
+                };
 
-                    _logger?.LogDebug("[LibreHardwareMonitorVramProvider] VRAM total: {Total} MB", memoryTotal.Value);
-                    return Math.Round(memoryTotal.Value, 1);
+                if (metrics.IsValid)
+                {
+                    _logger?.LogInformation("[LibreHardwareMonitorVramProvider] ✅ VRAM metrics: Used={Used} MB, Total={Total} MB, Usage={Usage}%",
+                        metrics.Used, metrics.Total, metrics.UsagePercent);
+                }
+                else
+                {
+                    _logger?.LogWarning("[LibreHardwareMonitorVramProvider] ❌ No valid VRAM metrics found (Used={Used}, Total={Total})",
+                        memoryUsed, memoryTotal);
                 }
 
-                _logger?.LogDebug("[LibreHardwareMonitorVramProvider] No valid VRAM total sensor found (Used={Used}, Total={Total})",
-                    memoryUsed, memoryTotal);
-                return 0.0;
+                return metrics;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "[LibreHardwareMonitorVramProvider] Error getting system VRAM usage");
-                return 0.0;
+                _logger?.LogError(ex, "[LibreHardwareMonitorVramProvider] Error getting VRAM metrics");
+                return VramMetrics.Empty;
             }
         });
+    }
+
+    public async Task<double> GetSystemTotalAsync()
+    {
+        // 返回 VRAM 使用量（不是总量！）
+        var metrics = await GetVramMetricsAsync();
+        return metrics.Used;
     }
 
     public async Task<MetricValue> CollectAsync(int processId)

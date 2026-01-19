@@ -85,15 +85,41 @@ public class SystemMetricProvider : IDisposable
     public async Task<HardwareLimits> GetHardwareLimitsAsync()
     {
         var memoryTask = GetMaxMemoryAsync();
-        var vramTask = _vramProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var vramMaxTask = GetMaxVramAsync();
 
-        await Task.WhenAll(memoryTask, vramTask);
+        await Task.WhenAll(memoryTask, vramMaxTask);
 
         return new HardwareLimits
         {
             MaxMemory = memoryTask.Result,
-            MaxVram = vramTask.Result
+            MaxVram = vramMaxTask.Result
         };
+    }
+
+    /// <summary>
+    /// 获取 VRAM 最大容量
+    /// </summary>
+    private async Task<double> GetMaxVramAsync()
+    {
+        if (_vramProvider == null)
+        {
+            return 0.0;
+        }
+
+        // 如果是 LibreHardwareMonitorVramProvider，使用 GetVramMetricsAsync 获取总量
+        if (_vramProvider is LibreHardwareMonitorVramProvider lhmProvider)
+        {
+            var metrics = await lhmProvider.GetVramMetricsAsync();
+            return metrics.Total;
+        }
+
+        // 否则使用传统的 VramMetricProvider.GetSystemTotalAsync()（返回最大容量）
+        if (_vramProvider is VramMetricProvider vramProvider)
+        {
+            return await vramProvider.GetSystemTotalAsync();
+        }
+
+        return 0.0;
     }
 
     /// <summary>
@@ -142,15 +168,26 @@ public class SystemMetricProvider : IDisposable
         });
     }
 
-    private Task<double> GetVramUsageAsync()
+    private async Task<double> GetVramUsageAsync()
     {
-        return Task.Run(() =>
+        if (!OperatingSystem.IsWindows())
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                return 0.0;
-            }
+            return 0.0;
+        }
 
+        // 优先使用 LibreHardwareMonitorVramProvider（如果可用）
+        if (_vramProvider is LibreHardwareMonitorVramProvider lhmProvider)
+        {
+            var metrics = await lhmProvider.GetVramMetricsAsync();
+            _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync from LHM: Used={Used} MB, Total={Total} MB",
+                metrics.Used, metrics.Total);
+            return metrics.Used;
+        }
+
+        // 回退到 DXGI 或性能计数器
+        _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Falling back to DXGI/PerformanceCounter");
+        return await Task.Run(() =>
+        {
             try
             {
                 if (_dxgiAvailable)

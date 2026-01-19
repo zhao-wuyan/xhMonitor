@@ -27,6 +27,9 @@ public class VramMetricProvider : IMetricProvider
 
     public bool IsSupported() => OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Process Memory");
 
+    /// <summary>
+    /// 获取 VRAM 最大容量（用于 MaxVram）
+    /// </summary>
     public async Task<double> GetSystemTotalAsync()
     {
         if (!IsSupported())

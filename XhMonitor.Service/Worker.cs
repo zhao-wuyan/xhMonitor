@@ -55,11 +55,11 @@ public class Worker : BackgroundService
             _processIntervalSeconds,
             _systemIntervalSeconds);
 
-        // Phase 1: 内存限制检测
+        // Phase 1: 硬件限制检测（内存 + VRAM）
         var phaseStopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("[启动阶段 1/3] 正在检测内存限制...");
+        _logger.LogInformation("[启动阶段 1/3] 正在检测硬件限制（内存 + VRAM）...");
         await SendMemoryLimitAsync(DateTime.Now, stoppingToken);
-        _logger.LogInformation("[启动阶段 1/3] 内存限制检测完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+        _logger.LogInformation("[启动阶段 1/3] 硬件限制检测完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
 
         // Phase 2: 预热性能计数器（避免首次采集慢）
         phaseStopwatch.Restart();
@@ -143,35 +143,35 @@ public class Worker : BackgroundService
         {
             var limits = await _systemMetricProvider.GetHardwareLimitsAsync();
             _cachedMaxMemory = limits.MaxMemory;
+            _cachedMaxVram = limits.MaxVram;
 
-            _logger.LogInformation("  → 内存限制检测成功: MaxMemory={MaxMemory}MB, 耗时: {ElapsedMs}ms", _cachedMaxMemory, sw.ElapsedMilliseconds);
+            _logger.LogInformation("  → 硬件限制检测成功: MaxMemory={MaxMemory}MB, MaxVram={MaxVram}MB, 耗时: {ElapsedMs}ms",
+                _cachedMaxMemory, _cachedMaxVram, sw.ElapsedMilliseconds);
 
             await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
             {
                 Timestamp = timestamp,
                 MaxMemory = Math.Round(_cachedMaxMemory, 1),
-                MaxVram = 0.0  // VRAM will be updated by background task
+                MaxVram = Math.Round(_cachedMaxVram, 1)
             }, ct);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "  → 内存限制检测失败, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
+            _logger.LogError(ex, "  → 硬件限制检测失败, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
         }
     }
 
     private async Task RunVramLimitCheckAsync(CancellationToken stoppingToken)
     {
-        // 首次延迟5秒启动,避免阻塞服务启动
-        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-
+        // 每小时检测一次 VRAM 最大值（防止热插拔 GPU 等情况）
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await UpdateVramLimitAsync(DateTime.Now, stoppingToken);
-
-                // 每小时检测一次
+                // 延迟 1 小时后再次检测
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+
+                await UpdateVramLimitAsync(DateTime.Now, stoppingToken);
             }
             catch (TaskCanceledException)
             {
