@@ -29,15 +29,16 @@ public class LibreHardwareManager : ILibreHardwareManager
         {
             try
             {
+                // 配置硬件监控类型 - Configure hardware monitoring types
                 var computer = new Computer
                 {
-                    IsCpuEnabled = true,
-                    IsGpuEnabled = true,
-                    IsMemoryEnabled = true,
-                    IsMotherboardEnabled = false,
-                    IsControllerEnabled = false,
-                    IsNetworkEnabled = false,
-                    IsStorageEnabled = false
+                    IsCpuEnabled = true,              // 启用CPU监控 - Enable CPU monitoring
+                    IsGpuEnabled = true,              // 启用GPU监控 - Enable GPU monitoring
+                    IsMemoryEnabled = true,           // 启用内存监控 - Enable memory monitoring
+                    IsMotherboardEnabled = false,     // 禁用主板监控 - Disable motherboard monitoring
+                    IsControllerEnabled = false,      // 禁用控制器监控 - Disable controller monitoring
+                    IsNetworkEnabled = true,         // 禁用网络监控 - Disable network monitoring
+                    IsStorageEnabled = false          // 禁用存储监控 - Disable storage monitoring
                 };
 
                 computer.Open();

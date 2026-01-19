@@ -28,8 +28,8 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
 
     public string MetricId => "vram";
     public string DisplayName => "VRAM Usage";
-    public string Unit => "%";
-    public MetricType Type => MetricType.Percentage;
+    public string Unit => "MB";
+    public MetricType Type => MetricType.Size;
 
     public bool IsSupported()
     {
@@ -87,7 +87,7 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
                     {
                         foreach (var pattern in memoryTotalPatterns)
                         {
-                            var total = _hardwareManager.GetSensorValueByName(gpuType, SensorType.Data, pattern);
+                            var total = _hardwareManager.GetSensorValueByName(gpuType, SensorType.SmallData, pattern);
                             if (total.HasValue && total.Value > 0)
                             {
                                 memoryTotal = total.Value;
@@ -139,16 +139,20 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
                     }
                 }
 
-                // 计算使用率百分比
-                if (memoryUsed.HasValue && memoryTotal.HasValue && memoryTotal.Value > 0)
+                if (memoryTotal.HasValue && memoryTotal.Value > 0)
                 {
-                    var usagePercent = (memoryUsed.Value / memoryTotal.Value) * 100.0;
-                    _logger?.LogDebug("[LibreHardwareMonitorVramProvider] VRAM usage: {Used} MB / {Total} MB = {Percent}%",
-                        memoryUsed.Value, memoryTotal.Value, usagePercent);
-                    return Math.Round(usagePercent, 1);
+                    if (memoryUsed.HasValue && memoryUsed.Value > 0)
+                    {
+                        var usagePercent = (memoryUsed.Value / memoryTotal.Value) * 100.0;
+                        _logger?.LogDebug("[LibreHardwareMonitorVramProvider] VRAM usage: {Used} MB / {Total} MB = {Percent}%",
+                            memoryUsed.Value, memoryTotal.Value, usagePercent);
+                    }
+
+                    _logger?.LogDebug("[LibreHardwareMonitorVramProvider] VRAM total: {Total} MB", memoryTotal.Value);
+                    return Math.Round(memoryTotal.Value, 1);
                 }
 
-                _logger?.LogDebug("[LibreHardwareMonitorVramProvider] No valid VRAM sensors found (Used={Used}, Total={Total})",
+                _logger?.LogDebug("[LibreHardwareMonitorVramProvider] No valid VRAM total sensor found (Used={Used}, Total={Total})",
                     memoryUsed, memoryTotal);
                 return 0.0;
             }
