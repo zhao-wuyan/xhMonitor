@@ -24,4 +24,19 @@
     <PackageReference Include="System.Text.Json" Version="8.*" />
   </ItemGroup>
 
+  <!-- Build web assets before Desktop compilation -->
+  <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild">
+    <!-- Install npm dependencies if node_modules doesn't exist -->
+    <Exec Command="npm install" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" Condition="!Exists('$(ProjectDir)..\xhmonitor-web\node_modules')" />
+
+    <!-- Build web assets -->
+    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" />
+
+    <!-- Copy dist folder to output directory as wwwroot -->
+    <ItemGroup>
+      <WebAssets Include="$(ProjectDir)..\xhmonitor-web\dist\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WebAssets)" DestinationFiles="@(WebAssets->'$(OutputPath)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
 </Project>

@@ -92,18 +92,61 @@ $ServiceDir = Join-Path $OutputDir "Service"
 $DesktopDir = Join-Path $OutputDir "Desktop"
   
 # 清理旧文件
-Write-Host "[1/5] 清理旧的发布文件..." -ForegroundColor Yellow
+Write-Host "[1/6] 清理旧的发布文件..." -ForegroundColor Yellow
 if (Test-Path (Join-Path $RootDir "release")) {
     Remove-Item (Join-Path $RootDir "release") -Recurse -Force
 }
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 New-Item -ItemType Directory -Path $ServiceDir -Force | Out-Null
 New-Item -ItemType Directory -Path $DesktopDir -Force | Out-Null
-  
+
+# 构建 Web 前端资源
+Write-Host ""
+Write-Host "[2/6] 构建 Web 前端资源..." -ForegroundColor Yellow
+$webProjectPath = Join-Path $RootDir "xhmonitor-web"
+
+if (-not (Test-Path $webProjectPath)) {
+    Write-Host "错误: Web 项目目录不存在: $webProjectPath" -ForegroundColor Red
+    exit 1
+}
+
+Push-Location $webProjectPath
+try {
+    # 检查并安装 npm 依赖
+    if (-not (Test-Path (Join-Path $webProjectPath "node_modules"))) {
+        Write-Host "安装 npm 依赖..." -ForegroundColor Yellow
+        & npm install
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "错误: npm install 失败！" -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    # 构建 Web 资源
+    Write-Host "构建 Web 资源..." -ForegroundColor Yellow
+    & npm run build
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "错误: Web 资源构建失败！" -ForegroundColor Red
+        exit 1
+    }
+
+    # 验证 dist 目录是否存在
+    $distPath = Join-Path $webProjectPath "dist"
+    if (-not (Test-Path $distPath)) {
+        Write-Host "错误: dist 目录未生成！" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "✓ Web 资源构建成功" -ForegroundColor Green
+}
+finally {
+    Pop-Location
+}
+
 # 发布后端服务
 if (-not $SkipService) {
     Write-Host ""
-    Write-Host "[2/5] 发布后端服务 (XhMonitor.Service)..." -ForegroundColor Yellow
+    Write-Host "[3/6] 发布后端服务 (XhMonitor.Service)..." -ForegroundColor Yellow
 
     $publishArgs = @(
         "publish"
@@ -140,13 +183,13 @@ if (-not $SkipService) {
     }
     Write-Host "✓ 后端服务发布成功" -ForegroundColor Green
 } else {
-    Write-Host "[2/5] 跳过后端服务发布" -ForegroundColor Gray
+    Write-Host "[3/6] 跳过后端服务发布" -ForegroundColor Gray
 }
-  
+
 # 发布桌面应用
 if (-not $SkipDesktop) {
     Write-Host ""
-    Write-Host "[3/5] 发布桌面应用 (XhMonitor.Desktop)..." -ForegroundColor Yellow
+    Write-Host "[4/6] 发布桌面应用 (XhMonitor.Desktop)..." -ForegroundColor Yellow
 
     $publishArgs = @(
         "publish"
@@ -183,12 +226,12 @@ if (-not $SkipDesktop) {
     }
     Write-Host "✓ 桌面应用发布成功" -ForegroundColor Green
 } else {
-    Write-Host "[3/5] 跳过桌面应用发布" -ForegroundColor Gray
+    Write-Host "[4/6] 跳过桌面应用发布" -ForegroundColor Gray
 }
-  
+
 # 复制配置文件和创建脚本
 Write-Host ""
-Write-Host "[4/5] 复制配置文件和文档..." -ForegroundColor Yellow
+Write-Host "[5/6] 复制配置文件和文档..." -ForegroundColor Yellow
 
 # 复制 Service 配置文件（强制覆盖，确保发布后有配置）
 if (-not $SkipService) {
@@ -310,7 +353,7 @@ Write-Host "✓ 配置文件和文档已创建" -ForegroundColor Green
   
 # 清理临时文件
 Write-Host ""
-Write-Host "[5/5] 清理临时文件..." -ForegroundColor Yellow
+Write-Host "[6/6] 清理临时文件..." -ForegroundColor Yellow
 if (-not $Debug) {
     Get-ChildItem -Path $OutputDir -Recurse -Filter "*.pdb" | Remove-Item -Force
     Write-Host "✓ 临时文件已清理" -ForegroundColor Green

@@ -16,14 +16,35 @@ set OUTPUT_DIR=release\XhMonitor-v%VERSION%
 set SERVICE_DIR=%OUTPUT_DIR%\Service
 set DESKTOP_DIR=%OUTPUT_DIR%\Desktop
 
-echo [1/5] 清理旧的发布文件...
+echo [1/6] 清理旧的发布文件...
 if exist release rmdir /s /q release
 mkdir "%OUTPUT_DIR%"
 mkdir "%SERVICE_DIR%"
 mkdir "%DESKTOP_DIR%"
 
 echo.
-echo [2/5] 发布后端服务 (XhMonitor.Service)...
+echo [2/6] 构建 Web 前端资源...
+cd xhmonitor-web
+if not exist node_modules (
+    echo 安装 npm 依赖...
+    call npm install
+    if errorlevel 1 (
+        echo 错误: npm install 失败！
+        cd ..
+        exit /b 1
+    )
+)
+echo 构建 Web 资源...
+call npm run build
+if errorlevel 1 (
+    echo 错误: Web 资源构建失败！
+    cd ..
+    exit /b 1
+)
+cd ..
+
+echo.
+echo [3/6] 发布后端服务 (XhMonitor.Service)...
 dotnet publish XhMonitor.Service\XhMonitor.Service.csproj ^
     -c Release ^
     -r win-x64 ^
@@ -39,7 +60,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [3/5] 发布桌面应用 (XhMonitor.Desktop)...
+echo [4/6] 发布桌面应用 (XhMonitor.Desktop)...
 dotnet publish XhMonitor.Desktop\XhMonitor.Desktop.csproj ^
     -c Release ^
     -r win-x64 ^
@@ -55,7 +76,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [4/5] 复制配置文件和文档...
+echo [5/6] 复制配置文件和文档...
 
 :: 复制 Service 配置文件
 copy /y "XhMonitor.Service\appsettings.json" "%SERVICE_DIR%\appsettings.json" > nul
@@ -89,7 +110,7 @@ echo - IntervalSeconds: 监控间隔秒数 >> "%OUTPUT_DIR%\README.txt"
 echo - Keywords: 监控关键词列表 >> "%OUTPUT_DIR%\README.txt"
 
 echo.
-echo [5/5] 清理临时文件...
+echo [6/6] 清理临时文件...
 :: 删除不需要的 .pdb 文件
 del /s /q "%SERVICE_DIR%\*.pdb" 2>nul
 del /s /q "%DESKTOP_DIR%\*.pdb" 2>nul
