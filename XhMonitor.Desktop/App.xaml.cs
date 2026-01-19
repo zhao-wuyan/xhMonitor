@@ -1,22 +1,19 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.FileProviders;
-using WinForms = System.Windows.Forms;
+using Microsoft.Extensions.DependencyInjection;
+using XhMonitor.Desktop.Services;
 using WpfApplication = System.Windows.Application;
 
 namespace XhMonitor.Desktop;
 
 public partial class App : WpfApplication
 {
-    private WinForms.NotifyIcon? _trayIcon;
+    private ServiceProvider? _serviceProvider;
+    private IBackendServerService? _backendService;
+    private IWebServerService? _webService;
+    private ITrayIconService? _trayService;
     private FloatingWindow? _floatingWindow;
-    private Process? _serverProcess;
-    private Task? _webServerTask;
-    private CancellationTokenSource? _webServerCts;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -25,9 +22,19 @@ public partial class App : WpfApplication
         // 监听系统关闭事件
         SessionEnding += OnSessionEnding;
 
+        var services = new ServiceCollection();
+        services.AddSingleton<IBackendServerService, BackendServerService>();
+        services.AddSingleton<IWebServerService, WebServerService>();
+        services.AddSingleton<ITrayIconService, TrayIconService>();
+
+        _serviceProvider = services.BuildServiceProvider();
+        _backendService = _serviceProvider.GetRequiredService<IBackendServerService>();
+        _webService = _serviceProvider.GetRequiredService<IWebServerService>();
+        _trayService = _serviceProvider.GetRequiredService<ITrayIconService>();
+
         // 异步启动后端 Server 和 Web，避免阻塞 UI
-        _ = StartBackendServerAsync();
-        _ = StartWebAsync();
+        _ = _backendService.StartAsync();
+        _ = _webService.StartAsync();
 
         _floatingWindow = new FloatingWindow();
 
@@ -37,14 +44,19 @@ public partial class App : WpfApplication
 
         _floatingWindow.Show();
 
-        InitializeTrayIcon();
+        _trayService.Initialize(
+            _floatingWindow,
+            ToggleFloatingWindow,
+            OpenWebInterface,
+            OpenAboutWindow,
+            ExitApplication);
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        // 关闭后端 Server 和 Web
-        _ = StopBackendServerAsync();
-        _ = StopWebServerAsync();
+        _backendService = null;
+        _webService = null;
+        _trayService = null;
 
         if (_floatingWindow != null)
         {
@@ -52,11 +64,10 @@ public partial class App : WpfApplication
             _floatingWindow.Close();
         }
 
-        if (_trayIcon != null)
+        if (_serviceProvider != null)
         {
-            _trayIcon.Visible = false;
-            _trayIcon.Dispose();
-            _trayIcon = null;
+            _ = _serviceProvider.DisposeAsync().AsTask();
+            _serviceProvider = null;
         }
 
         base.OnExit(e);
@@ -65,72 +76,8 @@ public partial class App : WpfApplication
     private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
     {
         // 系统关机/注销时确保清理
-        _ = StopBackendServerAsync();
-        _ = StopWebServerAsync();
-    }
-
-    private void InitializeTrayIcon()
-    {
-        var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "icon.ico");
-        var icon = File.Exists(iconPath) 
-            ? new System.Drawing.Icon(iconPath) 
-            : System.Drawing.SystemIcons.Application;
-
-        _trayIcon = new WinForms.NotifyIcon
-        {
-            Icon = icon,
-            Text = "XhMonitor",
-            Visible = true,
-            ContextMenuStrip = BuildTrayMenu()
-        };
-        _trayIcon.DoubleClick += (_, _) => ToggleFloatingWindow();
-    }
-
-    private WinForms.ContextMenuStrip BuildTrayMenu()
-    {
-        var menu = new WinForms.ContextMenuStrip();
-
-        var showItem = new WinForms.ToolStripMenuItem("显示/隐藏");
-        showItem.Click += (_, _) => ToggleFloatingWindow();
-
-        var openWebItem = new WinForms.ToolStripMenuItem("打开 Web 界面");
-        openWebItem.Click += (_, _) => OpenWebInterface();
-
-        var clickThroughItem = new WinForms.ToolStripMenuItem("点击穿透")
-        {
-            CheckOnClick = true,
-            Checked = _floatingWindow?.IsClickThroughEnabled ?? false
-        };
-        clickThroughItem.Click += (_, _) =>
-        {
-            if (_floatingWindow != null)
-            {
-                _floatingWindow.SetClickThrough(clickThroughItem.Checked);
-            }
-        };
-
-        // TODO: 设置功能暂时隐藏 - 等待其他功能完善后继续开发
-        // 保留代码以便后续恢复
-        // var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
-        // settingsItem.Click += (_, _) => OpenSettingsWindow();
-
-        var aboutItem = new WinForms.ToolStripMenuItem("关于");
-        aboutItem.Click += (_, _) => OpenAboutWindow();
-
-        var exitItem = new WinForms.ToolStripMenuItem("退出");
-        exitItem.Click += (_, _) => ExitApplication();
-
-        menu.Items.Add(showItem);
-        menu.Items.Add(openWebItem);
-        menu.Items.Add(clickThroughItem);
-        menu.Items.Add(new WinForms.ToolStripSeparator());
-        // menu.Items.Add(settingsItem); // 暂时隐藏设置菜单项
-        // menu.Items.Add(new WinForms.ToolStripSeparator());
-        menu.Items.Add(aboutItem);
-        menu.Items.Add(new WinForms.ToolStripSeparator());
-        menu.Items.Add(exitItem);
-
-        return menu;
+        _ = _backendService?.StopAsync();
+        _ = _webService?.StopAsync();
     }
 
     private void ToggleFloatingWindow()
@@ -198,7 +145,7 @@ public partial class App : WpfApplication
     /// - UI 交互需要进一步优化
     ///
     /// 恢复步骤:
-    /// 1. 取消注释 BuildTrayMenu() 中的 settingsItem 相关代码 (App.xaml.cs:107-110, 119-120)
+    /// 1. 取消注释 TrayIconService.BuildTrayMenu() 中的 settingsItem 相关代码
     /// 2. 确保 SettingsWindow.xaml 和 SettingsViewModel.cs 功能完整
     /// 3. 测试设置保存和加载功能
     /// 4. 验证与后端 API 的通信
@@ -218,8 +165,8 @@ public partial class App : WpfApplication
     private async void ExitApplication()
     {
         // 先关闭后端服务，避免阻塞 UI 线程
-        var stopBackendTask = StopBackendServerAsync();
-        var stopWebTask = StopWebServerAsync();
+        var stopBackendTask = _backendService?.StopAsync() ?? Task.CompletedTask;
+        var stopWebTask = _webService?.StopAsync() ?? Task.CompletedTask;
         await Task.WhenAny(Task.WhenAll(stopBackendTask, stopWebTask), Task.Delay(TimeSpan.FromSeconds(3)));
 
         if (_floatingWindow != null)
@@ -235,7 +182,7 @@ public partial class App : WpfApplication
     {
         // 插件扩展点：在这里实现自定义的指标点击处理逻辑
         // 示例：记录日志
-        System.Diagnostics.Debug.WriteLine($"[Plugin Extension Point] Metric Action: {e.MetricId} -> {e.Action}");
+        Debug.WriteLine($"[Plugin Extension Point] Metric Action: {e.MetricId} -> {e.Action}");
 
         // TODO: 插件可以在这里注册自定义处理器
         // 例如：PluginManager.HandleMetricAction(e.MetricId, e.Action);
@@ -243,7 +190,7 @@ public partial class App : WpfApplication
 
     private void OnProcessActionRequested(object? sender, ProcessActionEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"[Plugin Extension Point] Process Action: {e.ProcessName} (PID: {e.ProcessId}) -> {e.Action}");
+        Debug.WriteLine($"[Plugin Extension Point] Process Action: {e.ProcessName} (PID: {e.ProcessId}) -> {e.Action}");
 
         if (e.Action == "kill")
         {
@@ -251,7 +198,7 @@ public partial class App : WpfApplication
             {
                 var process = Process.GetProcessById(e.ProcessId);
                 process.Kill(entireProcessTree: true);
-                System.Diagnostics.Debug.WriteLine($"Successfully killed process: {e.ProcessName} (PID: {e.ProcessId})");
+                Debug.WriteLine($"Successfully killed process: {e.ProcessName} (PID: {e.ProcessId})");
             }
             catch (UnauthorizedAccessException)
             {
@@ -267,408 +214,4 @@ public partial class App : WpfApplication
             }
         }
     }
-
-    private async Task StartBackendServerAsync()
-    {
-        try
-        {
-            // 检查是否为发布版本（Service 应该单独启动）
-            var serviceExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Service", "XhMonitor.Service.exe");
-            if (File.Exists(Path.GetFullPath(serviceExePath)))
-            {
-                Debug.WriteLine("Detected published version - waiting for Service to start");
-
-                // 等待最多 15 秒让 Service 启动
-                var maxWaitTime = TimeSpan.FromSeconds(15);
-                var startTime = DateTime.Now;
-
-                while (DateTime.Now - startTime < maxWaitTime)
-                {
-                    if (IsPortInUse(35179))
-                    {
-                        Debug.WriteLine("Backend server is now running");
-                        return;
-                    }
-                    await Task.Delay(500);
-                }
-
-                // 超时仍未启动，提示用户
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    System.Windows.MessageBox.Show(
-                        "后端服务未运行。\n请先运行根目录的 \"启动服务.bat\" 启动完整应用。",
-                        "服务未启动",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                });
-                return;
-            }
-
-            // 检查端口 35179 是否已被占用（Server 可能已在运行）
-            if (IsPortInUse(35179))
-            {
-                Debug.WriteLine("Backend server is already running on port 35179");
-                return;
-            }
-
-            var projectPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "XhMonitor.Service");
-            var fullPath = Path.GetFullPath(projectPath);
-
-            if (!Directory.Exists(fullPath))
-            {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    System.Windows.MessageBox.Show(
-                        $"找不到 Server 项目路径：{fullPath}\n请确保项目结构完整。",
-                        "启动失败",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                });
-                return;
-            }
-
-            _serverProcess = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "dotnet",
-                    Arguments = $"run --project \"{fullPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    StandardOutputEncoding = System.Text.Encoding.UTF8,
-                    StandardErrorEncoding = System.Text.Encoding.UTF8,
-                    WorkingDirectory = fullPath
-                }
-            };
-
-            _serverProcess.OutputDataReceived += (_, args) =>
-            {
-                if (!string.IsNullOrEmpty(args.Data))
-                    Debug.WriteLine($"[Server] {args.Data}");
-            };
-
-            _serverProcess.ErrorDataReceived += (_, args) =>
-            {
-                if (!string.IsNullOrEmpty(args.Data))
-                    Debug.WriteLine($"[Server Error] {args.Data}");
-            };
-
-            _serverProcess.Start();
-            _serverProcess.BeginOutputReadLine();
-            _serverProcess.BeginErrorReadLine();
-
-            Debug.WriteLine($"Backend server started with PID: {_serverProcess.Id}");
-
-            // 等待 Server 就绪（最多 30 秒）
-            var isReady = await WaitForServerReadyAsync(30);
-            if (isReady)
-            {
-                Debug.WriteLine("Backend server is ready!");
-            }
-            else
-            {
-                Debug.WriteLine("Backend server startup timeout (but process is still running)");
-            }
-        }
-        catch (Exception ex)
-        {
-            await Dispatcher.InvokeAsync(() =>
-            {
-                System.Windows.MessageBox.Show(
-                    $"启动后端服务失败：{ex.Message}\n\n您可以手动启动 XhMonitor.Service 项目。",
-                    "启动失败",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            });
-        }
-    }
-
-    private async Task<bool> WaitForServerReadyAsync(int timeoutSeconds)
-    {
-        var timeout = TimeSpan.FromSeconds(timeoutSeconds);
-        var startTime = DateTime.Now;
-
-        while (DateTime.Now - startTime < timeout)
-        {
-            if (IsPortInUse(35179))
-            {
-                // 端口已开放，再等待 1 秒确保 SignalR Hub 就绪
-                await Task.Delay(1000);
-                return true;
-            }
-
-            await Task.Delay(500);
-        }
-
-        return false;
-    }
-
-    private void StopBackendServer()
-    {
-        if (_serverProcess != null)
-        {
-            if (_serverProcess.HasExited)
-            {
-                _serverProcess.Dispose();
-                _serverProcess = null;
-            }
-            else
-            {
-                try
-                {
-                    // 优雅关闭：终止整个进程树
-                    _serverProcess.Kill(entireProcessTree: true);
-
-                    // 等待进程退出
-                    _serverProcess.WaitForExit(5000);
-
-                    Debug.WriteLine("Backend server stopped successfully");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error stopping backend server: {ex.Message}");
-                }
-                finally
-                {
-                    _serverProcess?.Dispose();
-                    _serverProcess = null;
-                }
-
-                return;
-            }
-        }
-
-        try
-        {
-            var processes = Process.GetProcessesByName("XhMonitor.Service");
-            foreach (var process in processes)
-            {
-                try
-                {
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit(5000);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error stopping backend service process: {ex.Message}");
-                }
-                finally
-                {
-                    process.Dispose();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error locating backend service processes: {ex.Message}");
-        }
-    }
-
-    private static bool IsPortInUse(int port)
-    {
-        try
-        {
-            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port);
-            listener.Start();
-            listener.Stop();
-            return false;
-        }
-        catch
-        {
-            return true;
-        }
-    }
-
-    private async Task StartWebAsync()
-    {
-        try
-        {
-            // 检查端口 35180 是否已被占用
-            if (IsPortInUse(35180))
-            {
-                Debug.WriteLine("Web frontend is already running on port 35180");
-                return;
-            }
-
-            var projectPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "xhmonitor-web");
-            var fullPath = Path.GetFullPath(projectPath);
-
-            if (!Directory.Exists(fullPath))
-            {
-                Debug.WriteLine($"Web project not found at: {fullPath}");
-                return;
-            }
-
-            // 检查 dist 目录是否存在，如果不存在则构建
-            var distPath = Path.Combine(fullPath, "dist");
-            if (!Directory.Exists(distPath))
-            {
-                Debug.WriteLine("Building web frontend...");
-
-                // 检查 node_modules 是否存在
-                var nodeModulesPath = Path.Combine(fullPath, "node_modules");
-                if (!Directory.Exists(nodeModulesPath))
-                {
-                    Debug.WriteLine("Installing web dependencies...");
-                    await RunNpmInstallAsync(fullPath);
-                }
-
-                // 执行构建
-                await RunNpmBuildAsync(fullPath);
-            }
-
-            // 使用内嵌的 Kestrel 静态文件服务器
-            _webServerCts = new CancellationTokenSource();
-            _webServerTask = Task.Run(async () =>
-            {
-                try
-                {
-                    var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
-                    builder.WebHost.UseKestrel(options =>
-                    {
-                        options.ListenLocalhost(35180);
-                    });
-                    builder.WebHost.UseUrls("http://localhost:35180");
-
-                    var app = builder.Build();
-
-                    // 注册 CancellationToken 回调来停止服务器
-                    _webServerCts.Token.Register(() =>
-                    {
-                        app.StopAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-                    });
-
-                    app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
-                    {
-                        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(distPath),
-                        RequestPath = ""
-                    });
-
-                    // SPA 回退路由
-                    app.MapFallbackToFile("index.html", new Microsoft.AspNetCore.Builder.StaticFileOptions
-                    {
-                        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(distPath)
-                    });
-
-                    Debug.WriteLine("Web frontend server starting at http://localhost:35180");
-                    await app.RunAsync();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Web server error: {ex.Message}");
-                }
-            }, _webServerCts.Token);
-
-            // 等待服务器就绪
-            await Task.Delay(1000);
-            Debug.WriteLine("Web frontend is ready at http://localhost:35180");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to start web frontend: {ex.Message}");
-        }
-    }
-
-    private async Task RunNpmInstallAsync(string webProjectPath)
-    {
-        try
-        {
-            var installProcess = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = "/c npm install",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    WorkingDirectory = webProjectPath
-                }
-            };
-
-            installProcess.Start();
-            await installProcess.WaitForExitAsync();
-
-            if (installProcess.ExitCode == 0)
-            {
-                Debug.WriteLine("Web dependencies installed successfully");
-            }
-            else
-            {
-                Debug.WriteLine($"npm install failed with exit code: {installProcess.ExitCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to install web dependencies: {ex.Message}");
-        }
-    }
-
-    private async Task RunNpmBuildAsync(string webProjectPath)
-    {
-        try
-        {
-            var buildProcess = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = "/c npm run build",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    WorkingDirectory = webProjectPath
-                }
-            };
-
-            buildProcess.Start();
-            await buildProcess.WaitForExitAsync();
-
-            if (buildProcess.ExitCode == 0)
-            {
-                Debug.WriteLine("Web frontend built successfully");
-            }
-            else
-            {
-                Debug.WriteLine($"npm run build failed with exit code: {buildProcess.ExitCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to build web frontend: {ex.Message}");
-        }
-    }
-
-    private void StopWebServer()
-    {
-        try
-        {
-            _webServerCts?.Cancel();
-            _webServerTask?.Wait(TimeSpan.FromSeconds(5));
-            _webServerCts?.Dispose();
-            _webServerCts = null;
-            _webServerTask = null;
-
-            Debug.WriteLine("Web frontend server stopped successfully");
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error stopping web server: {ex.Message}");
-        }
-    }
-
-    private Task StopBackendServerAsync()
-    {
-        return Task.Run(StopBackendServer);
-    }
-
-    private Task StopWebServerAsync()
-    {
-        return Task.Run(StopWebServer);
-    }
 }
-
