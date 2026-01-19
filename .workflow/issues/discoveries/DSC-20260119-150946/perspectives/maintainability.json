@@ -1,0 +1,383 @@
+{
+  "perspective": "maintainability",
+  "discovery_id": "DSC-20260119-150946",
+  "analysis_timestamp": "2026-01-19T15:15:00+08:00",
+  "cli_tool_used": "gemini",
+  "model": "gemini-3-pro-preview",
+  "analysis_duration_ms": 180900,
+  "summary": {
+    "total_findings": 15,
+    "critical": 2,
+    "high": 5,
+    "medium": 5,
+    "low": 3,
+    "files_analyzed": 79
+  },
+  "findings": [
+    {
+      "id": "dsc-maintainability-001-a1b2c3d4",
+      "title": "Concrete class dependency in Worker violates dependency inversion",
+      "perspective": "maintainability",
+      "priority": "high",
+      "category": "coupling",
+      "description": "Worker class directly injects the concrete SystemMetricProvider class instead of an interface (e.g., ISystemMetricService). This tight coupling makes it impossible to mock system metrics for unit testing and couples the Service layer to Core implementation details, violating the dependency inversion principle.",
+      "file": "XhMonitor.Service/Worker.cs",
+      "line": 33,
+      "snippet": "private readonly SystemMetricProvider _systemMetricProvider;",
+      "suggested_issue": {
+        "title": "Extract ISystemMetricProvider interface from SystemMetricProvider",
+        "type": "refactor",
+        "priority": 2,
+        "tags": [
+          "coupling",
+          "dependency-inversion",
+          "testability"
+        ]
+      },
+      "confidence": 0.95,
+      "impact": "Prevents unit testing of Worker class, increases coupling between Service and Core modules, makes it difficult to swap implementations",
+      "recommendation": "Extract ISystemMetricProvider interface with GetSystemUsageAsync() method and inject that into Worker. Update Program.cs to register the interface binding."
+    },
+    {
+      "id": "dsc-maintainability-002-b2c3d4e5",
+      "title": "Hardcoded service process paths couple Desktop to development directory structure",
+      "perspective": "maintainability",
+      "priority": "medium",
+      "category": "coupling",
+      "description": "App.xaml.cs contains hardcoded relative paths ('..\\..\\..\\..\\XhMonitor.Service') to locate the backend service. This couples the runtime application to a specific development directory structure, which will fail in different deployment environments (production, CI/CD, user installations).",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 314,
+      "snippet": "var projectPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, \"..\", \"..\", \"..\", \"..\", \"XhMonitor.Service\");",
+      "suggested_issue": {
+        "title": "Use configuration file for service executable location",
+        "type": "refactor",
+        "priority": 3,
+        "tags": [
+          "coupling",
+          "deployment",
+          "configuration"
+        ]
+      },
+      "confidence": 0.9,
+      "impact": "Application fails to start in production environments, requires manual path adjustments for different deployment scenarios",
+      "recommendation": "Use appsettings.json or registry lookup to locate the service executable, or bundle them in the same directory for release builds. Consider using a ServiceLocator pattern with configurable paths."
+    },
+    {
+      "id": "dsc-maintainability-003-c3d4e5f6",
+      "title": "God class: App.xaml.cs violates single responsibility principle",
+      "perspective": "maintainability",
+      "priority": "critical",
+      "category": "cohesion",
+      "description": "App.xaml.cs handles UI lifecycle, Tray Icon logic, Backend Service process management, Web Server process management, AND Node.js build steps (npm install/build). This massive violation of Single Responsibility Principle makes the class difficult to test, maintain, and understand. Changes to any one concern require modifying this central class.",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 14,
+      "snippet": "public partial class App : Application",
+      "suggested_issue": {
+        "title": "Refactor App.xaml.cs into separate service orchestrator classes",
+        "type": "refactor",
+        "priority": 1,
+        "tags": [
+          "cohesion",
+          "single-responsibility",
+          "architecture"
+        ]
+      },
+      "confidence": 0.98,
+      "impact": "High maintenance burden, difficult to test individual concerns, changes to one feature risk breaking others, poor code organization",
+      "recommendation": "Extract process management into ServiceOrchestrator class, web server logic into WebServerManager class, and build steps into BuildManager class. App.xaml.cs should only handle application lifecycle coordination.",
+      "exported": true,
+      "exported_at": "2026-01-19T07:45:36.541Z"
+    },
+    {
+      "id": "dsc-maintainability-004-d4e5f6a7",
+      "title": "Mixed abstraction levels in SystemMetricProvider",
+      "perspective": "maintainability",
+      "priority": "medium",
+      "category": "cohesion",
+      "description": "SystemMetricProvider orchestrates high-level providers (Cpu/GpuProvider) but also contains low-level implementation details for DXGI monitoring and Performance Counters directly within the class. This mixing of abstraction levels violates the Single Level of Abstraction Principle and makes the class harder to understand and maintain.",
+      "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "line": 13,
+      "snippet": "private readonly DxgiGpuMonitor _dxgiMonitor = new();",
+      "suggested_issue": {
+        "title": "Extract DXGI and Performance Counter logic into separate provider classes",
+        "type": "refactor",
+        "priority": 3,
+        "tags": [
+          "cohesion",
+          "abstraction",
+          "single-level"
+        ]
+      },
+      "confidence": 0.85,
+      "impact": "Class is harder to understand, mixes high-level orchestration with low-level implementation, increases cognitive load",
+      "recommendation": "Extract DXGI and Performance Counter logic into their own classes implementing a common IVramProvider interface. SystemMetricProvider should only orchestrate high-level providers."
+    },
+    {
+      "id": "dsc-maintainability-005-e5f6a7b8",
+      "title": "Development build tools in production runtime",
+      "perspective": "maintainability",
+      "priority": "critical",
+      "category": "tech-debt",
+      "description": "The application attempts to run 'npm install' and 'npm run build' on startup if the dist folder is missing. This introduces a runtime dependency on Node.js and npm, which is unacceptable for a production desktop application. Build steps should be part of CI/CD, not runtime logic.",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 518,
+      "snippet": "await RunNpmCommandAsync(\"install\", webProjectPath);",
+      "suggested_issue": {
+        "title": "Remove npm build logic from runtime application",
+        "type": "refactor",
+        "priority": 1,
+        "tags": [
+          "tech-debt",
+          "deployment",
+          "build-process"
+        ]
+      },
+      "confidence": 1,
+      "impact": "Requires Node.js/npm in production, slow startup times, unpredictable behavior, security risks from runtime package installation",
+      "recommendation": "Remove this logic entirely. The build process (CI/CD) should generate the static frontend assets. The application should only serve pre-built files. Add validation to fail fast if dist folder is missing.",
+      "exported": true,
+      "exported_at": "2026-01-19T07:45:36.541Z"
+    },
+    {
+      "id": "dsc-maintainability-006-f6a7b8c9",
+      "title": "Hardcoded ports in multiple locations",
+      "perspective": "maintainability",
+      "priority": "medium",
+      "category": "tech-debt",
+      "description": "Ports 35179 (Service) and 35180 (Web) are hardcoded in multiple places across Desktop, Service, and configuration files. Port conflicts will cause the application to fail start without recourse. Changes require updating multiple files, increasing maintenance burden.",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 308,
+      "snippet": "if (IsPortInUse(35179))",
+      "suggested_issue": {
+        "title": "Centralize port configuration with dynamic fallback",
+        "type": "refactor",
+        "priority": 3,
+        "tags": [
+          "tech-debt",
+          "configuration",
+          "resilience"
+        ]
+      },
+      "confidence": 0.9,
+      "impact": "Application fails to start on port conflicts, requires code changes to adjust ports, poor user experience",
+      "recommendation": "Move port numbers to a shared configuration file (appsettings.json) and implement a dynamic port selection or fallback mechanism. Desktop should read ports from Service's configuration."
+    },
+    {
+      "id": "dsc-maintainability-007-a7b8c9d0",
+      "title": "Open/Closed Principle violation: type checking in SystemMetricProvider",
+      "perspective": "maintainability",
+      "priority": "high",
+      "category": "extensibility",
+      "description": "SystemMetricProvider uses 'is' type checking to cast generic IMetricProvider to concrete types (LibreHardwareMonitorVramProvider, VramMetricProvider) to access specific methods not in the interface. Adding a new provider requires modifying this class, violating the Open/Closed Principle.",
+      "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "line": 179,
+      "snippet": "if (_vramProvider is LibreHardwareMonitorVramProvider lhmProvider)",
+      "suggested_issue": {
+        "title": "Refactor IMetricProvider to include detailed metrics method",
+        "type": "refactor",
+        "priority": 2,
+        "tags": [
+          "extensibility",
+          "open-closed",
+          "interface-design"
+        ]
+      },
+      "confidence": 0.92,
+      "impact": "Adding new providers requires modifying SystemMetricProvider, violates Open/Closed Principle, increases coupling",
+      "recommendation": "Refactor IMetricProvider to include GetDetailedMetricsAsync() method or introduce a specific IVramMetricProvider interface that exposes GetVramMetricsAsync(). Use polymorphism instead of type checking."
+    },
+    {
+      "id": "dsc-maintainability-008-b8c9d0e1",
+      "title": "Rigid provider fields prevent dynamic metric addition",
+      "perspective": "maintainability",
+      "priority": "medium",
+      "category": "extensibility",
+      "description": "SystemMetricProvider defines specific fields for CPU, GPU, Memory, VRAM providers (_cpuProvider, _gpuProvider, etc.). This prevents dynamically adding new system-level metrics (e.g., Disk, Network) without changing the class structure. The design is not extensible for future metric types.",
+      "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "line": 16,
+      "snippet": "private readonly IMetricProvider? _cpuProvider;\nprivate readonly IMetricProvider? _gpuProvider;",
+      "suggested_issue": {
+        "title": "Use collection-based provider management for dynamic metrics",
+        "type": "enhancement",
+        "priority": 3,
+        "tags": [
+          "extensibility",
+          "architecture",
+          "future-proofing"
+        ]
+      },
+      "confidence": 0.88,
+      "impact": "Cannot add new system metrics without code changes, limits extensibility, requires recompilation for new metric types",
+      "recommendation": "Use a collection IEnumerable<IMetricProvider> or dictionary Dictionary<string, IMetricProvider> to manage providers dynamically. Allow registration of new providers at runtime."
+    },
+    {
+      "id": "dsc-maintainability-009-c9d0e1f2",
+      "title": "Scattered configuration management across modules",
+      "perspective": "maintainability",
+      "priority": "high",
+      "category": "module-boundary",
+      "description": "Configuration is scattered across multiple locations: appsettings.json (Service), database ApplicationSettings table, hardcoded defaults in SettingsViewModel, and hardcoded values in App.xaml.cs. This creates inconsistency, makes it difficult to understand the source of truth, and increases maintenance burden.",
+      "file": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "line": 13,
+      "snippet": "private const string ApiBaseUrl = \"http://localhost:35179/api/v1/config\";",
+      "suggested_issue": {
+        "title": "Establish single source of truth for configuration",
+        "type": "refactor",
+        "priority": 2,
+        "tags": [
+          "module-boundary",
+          "configuration",
+          "consistency"
+        ]
+      },
+      "confidence": 0.9,
+      "impact": "Configuration inconsistencies, difficult to track settings, maintenance burden, potential runtime errors from mismatched values",
+      "recommendation": "Establish a clear configuration hierarchy: appsettings.json as default, database for user overrides, Desktop reads from Service API. Remove hardcoded values and defaults from ViewModels."
+    },
+    {
+      "id": "dsc-maintainability-010-d0e1f2a3",
+      "title": "Desktop module directly depends on Service port configuration",
+      "perspective": "maintainability",
+      "priority": "high",
+      "category": "module-boundary",
+      "description": "Desktop module hardcodes the Service API endpoint (localhost:35179) in SettingsViewModel and App.xaml.cs. This creates a tight coupling between modules and prevents independent deployment or configuration. Changes to Service port require updating Desktop code.",
+      "file": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "line": 13,
+      "snippet": "private const string ApiBaseUrl = \"http://localhost:35179/api/v1/config\";",
+      "suggested_issue": {
+        "title": "Desktop should discover Service endpoint dynamically",
+        "type": "refactor",
+        "priority": 2,
+        "tags": [
+          "module-boundary",
+          "coupling",
+          "service-discovery"
+        ]
+      },
+      "confidence": 0.93,
+      "impact": "Tight coupling between Desktop and Service, prevents independent configuration, requires code changes for port adjustments",
+      "recommendation": "Desktop should read Service endpoint from its own configuration file or use a service discovery mechanism (e.g., registry, shared config file, environment variable). Consider using a ServiceLocator pattern."
+    },
+    {
+      "id": "dsc-maintainability-011-e1f2a3b4",
+      "title": "Inconsistent default values across configuration sources",
+      "perspective": "maintainability",
+      "priority": "medium",
+      "category": "tech-debt",
+      "description": "Default values for settings are defined in multiple places with potential inconsistencies: appsettings.json (IntervalSeconds: 3), SettingsViewModel (_processInterval: 5000), database seed (SystemInterval: 1000), and RestoreDefaults method. This creates confusion about the actual defaults and maintenance burden.",
+      "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+      "line": 56,
+      "snippet": "_viewModel.SystemInterval = 1000;\n_viewModel.ProcessInterval = 5000;",
+      "suggested_issue": {
+        "title": "Centralize default configuration values",
+        "type": "refactor",
+        "priority": 3,
+        "tags": [
+          "tech-debt",
+          "configuration",
+          "consistency"
+        ]
+      },
+      "confidence": 0.87,
+      "impact": "Inconsistent defaults across modules, confusion about actual default values, maintenance burden when changing defaults",
+      "recommendation": "Define defaults in a single location (appsettings.json) and have all modules read from there. Remove hardcoded defaults from ViewModels and database seeds."
+    },
+    {
+      "id": "dsc-maintainability-012-f2a3b4c5",
+      "title": "MetricProviderRegistry uses concrete types in registration logic",
+      "perspective": "maintainability",
+      "priority": "medium",
+      "category": "coupling",
+      "description": "MetricProviderRegistry's RegisterBuiltInProviders method directly instantiates concrete provider classes (CpuMetricProvider, GpuMetricProvider, etc.) instead of using dependency injection or factory patterns. This creates tight coupling and makes it difficult to test or swap implementations.",
+      "file": "XhMonitor.Service/Core/MetricProviderRegistry.cs",
+      "line": 185,
+      "snippet": "var cpuProvider = new CpuMetricProvider();\nvar memoryProvider = new MemoryMetricProvider();",
+      "suggested_issue": {
+        "title": "Use factory pattern or DI for provider instantiation",
+        "type": "refactor",
+        "priority": 3,
+        "tags": [
+          "coupling",
+          "dependency-injection",
+          "testability"
+        ]
+      },
+      "confidence": 0.82,
+      "impact": "Tight coupling to concrete implementations, difficult to test, cannot easily swap provider implementations",
+      "recommendation": "Use a factory pattern or inject IServiceProvider to resolve providers from DI container. This allows for better testability and flexibility."
+    },
+    {
+      "id": "dsc-maintainability-013-a3b4c5d6",
+      "title": "Dual configuration systems: appsettings.json and database",
+      "perspective": "maintainability",
+      "priority": "high",
+      "category": "interface-design",
+      "description": "The system uses two parallel configuration systems: appsettings.json for Service configuration and ApplicationSettings database table for user preferences. The boundary between these systems is unclear, leading to confusion about where to store new settings and potential synchronization issues.",
+      "file": "XhMonitor.Service/Data/MonitorDbContext.cs",
+      "line": 85,
+      "snippet": "new ApplicationSettings { Id = 9, Category = \"System\", Key = \"SignalRPort\", Value = \"35179\" }",
+      "suggested_issue": {
+        "title": "Clarify configuration system boundaries and synchronization",
+        "type": "refactor",
+        "priority": 2,
+        "tags": [
+          "interface-design",
+          "configuration",
+          "architecture"
+        ]
+      },
+      "confidence": 0.88,
+      "impact": "Confusion about where to store settings, potential synchronization issues, duplicate configuration values",
+      "recommendation": "Establish clear rules: appsettings.json for system/deployment settings (read-only), database for user preferences (read-write). Implement a configuration service that merges both sources with clear precedence rules."
+    },
+    {
+      "id": "dsc-maintainability-014-b4c5d6e7",
+      "title": "No abstraction for process management in Desktop module",
+      "perspective": "maintainability",
+      "priority": "low",
+      "category": "cohesion",
+      "description": "App.xaml.cs directly manages Process objects for Service and Web Server without any abstraction layer. This makes it difficult to test process lifecycle management and couples the application to specific process management implementation details.",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 342,
+      "snippet": "_backendProcess = new Process()",
+      "suggested_issue": {
+        "title": "Extract process management into IProcessManager interface",
+        "type": "enhancement",
+        "priority": 4,
+        "tags": [
+          "cohesion",
+          "testability",
+          "abstraction"
+        ]
+      },
+      "confidence": 0.75,
+      "impact": "Difficult to test process management logic, tight coupling to System.Diagnostics.Process",
+      "recommendation": "Create IProcessManager interface with Start/Stop/IsRunning methods. Implement ProcessManager class that wraps System.Diagnostics.Process. This enables testing with mock implementations."
+    },
+    {
+      "id": "dsc-maintainability-015-c5d6e7f8",
+      "title": "Inconsistent error handling across configuration loading",
+      "perspective": "maintainability",
+      "priority": "low",
+      "category": "tech-debt",
+      "description": "Configuration loading in SettingsViewModel uses try-catch with generic error handling, while Program.cs throws exceptions for missing connection strings. This inconsistency makes it difficult to understand error handling patterns and leads to unpredictable behavior.",
+      "file": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "line": 85,
+      "snippet": "catch (Exception ex)\n{\n    Debug.WriteLine($\"Failed to load settings: {ex.Message}\");\n}",
+      "suggested_issue": {
+        "title": "Establish consistent error handling patterns for configuration",
+        "type": "enhancement",
+        "priority": 4,
+        "tags": [
+          "tech-debt",
+          "error-handling",
+          "consistency"
+        ]
+      },
+      "confidence": 0.78,
+      "impact": "Inconsistent error handling, difficult to debug configuration issues, unpredictable behavior",
+      "recommendation": "Establish consistent error handling patterns: fail-fast for critical configuration (connection strings), graceful degradation with logging for user preferences. Document the patterns in architecture guidelines."
+    }
+  ],
+  "cross_references": []
+}

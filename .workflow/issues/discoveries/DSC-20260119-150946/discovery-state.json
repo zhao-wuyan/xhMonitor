@@ -1,0 +1,43 @@
+{
+  "discovery_id": "DSC-20260119-150946",
+  "target_pattern": "XhMonitor.Service/**/*.cs,XhMonitor.Core/**/*.cs,XhMonitor.Desktop/**/*.cs",
+  "phase": "complete",
+  "created_at": "2026-01-19T15:09:46+08:00",
+  "updated_at": "2026-01-19T15:30:00+08:00",
+  "target": {
+    "files_count": {
+      "total": 79,
+      "service": 22,
+      "core": 36,
+      "desktop": 21
+    },
+    "project": {
+      "name": "xhMonitor",
+      "type": ".NET 8 Multi-module Application",
+      "modules": [
+        "XhMonitor.Service",
+        "XhMonitor.Core",
+        "XhMonitor.Desktop"
+      ]
+    }
+  },
+  "perspectives": [
+    "maintainability",
+    "best-practices"
+  ],
+  "external_research": {
+    "enabled": true,
+    "completed": true
+  },
+  "results": {
+    "total_findings": 27,
+    "issues_generated": 11,
+    "priority_distribution": {
+      "critical": 2,
+      "high": 9,
+      "medium": 10,
+      "low": 6
+    }
+  },
+  "issues_generated": 2
+}

@@ -21,7 +21,7 @@ export const formatTimestamp = (timestamp: string): string => {
   });
 };
 
-export const calculateSystemSummary = (processes: ProcessInfo[]) => {
+export const calculateSystemSummary = (processes: ProcessInfo[]): Record<string, number> & { processCount: number } => {
   const summary: Record<string, number> = {};
 
   processes.forEach((p) => {
@@ -29,7 +29,7 @@ export const calculateSystemSummary = (processes: ProcessInfo[]) => {
       if (!summary[metricId]) {
         summary[metricId] = 0;
       }
-      summary[metricId] += metricValue.value;
+      summary[metricId] += metricValue;
     });
   });
 

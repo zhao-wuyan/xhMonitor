@@ -56,7 +56,7 @@ function App() {
 
   const summary = metricsData
     ? calculateSystemSummary(metricsData.processes)
-    : { processCount: 0 };
+    : ({ processCount: 0 } as Record<string, number> & { processCount: number });
 
   const primaryMetrics = config.metadata.slice(0, 2);
 

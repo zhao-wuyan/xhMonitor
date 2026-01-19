@@ -1,0 +1,150 @@
+{
+  "summary": "Fix UI/UX style inconsistencies in the settings window by extracting hardcoded colors to resources, adding missing visual states to controls, and implementing custom dark theme styles for native WPF controls.",
+  "root_cause": "Settings window contains hardcoded color values, missing control visual states (IsPressed, IsKeyboardFocused), and unstyled native controls (ScrollViewer, ComboBox) that clash with the dark theme design.",
+  "strategy": "comprehensive_fix",
+  "tasks": [
+    {
+      "id": "FIX1",
+      "title": "Extract hardcoded colors to resource dictionaries",
+      "scope": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "action": "Refactor",
+      "description": "Extract all hardcoded hex color values to Window.Resources as SolidColorBrush resources for better maintainability and consistency.",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "Window.Resources:16-65",
+          "change": "Add SolidColorBrush resources for all theme colors"
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "Background/Foreground attributes:8-10",
+          "change": "Replace hardcoded colors with StaticResource references"
+        }
+      ],
+      "implementation": [
+        "Create named SolidColorBrush resources in Window.Resources for all colors (#1E1E1E, #333333, #252526, #AAAAAA, #E0E0E0, #3F3F46, #007ACC, #2D2D30)",
+        "Replace all inline color values throughout the XAML with {StaticResource ResourceName}",
+        "Verify all controls use consistent color scheme"
+      ],
+      "verification": [
+        "Open settings window and verify visual appearance unchanged",
+        "Check that all colors are applied correctly",
+        "Confirm no hardcoded hex values remain in control definitions"
+      ],
+      "risk": "low"
+    },
+    {
+      "id": "FIX2",
+      "title": "Add missing visual states to Button and ListBoxItem controls",
+      "scope": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "action": "Update",
+      "description": "Enhance Button and ListBoxItem ControlTemplates with IsPressed and IsKeyboardFocused visual states for better accessibility and tactile feedback.",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "Button Style:18-37",
+          "change": "Add IsPressed and IsKeyboardFocused triggers"
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "ListBoxItem Style:40-64",
+          "change": "Add IsKeyboardFocused trigger"
+        }
+      ],
+      "implementation": [
+        "Add Trigger for IsPressed in Button ControlTemplate (darker background on press)",
+        "Add Trigger for IsKeyboardFocused in Button ControlTemplate (border highlight)",
+        "Add Trigger for IsKeyboardFocused in ListBoxItem ControlTemplate (border highlight)",
+        "Test keyboard navigation and visual feedback"
+      ],
+      "verification": [
+        "Click buttons and verify pressed state visual feedback",
+        "Use Tab key to navigate and verify focus visual states",
+        "Verify accessibility compliance"
+      ],
+      "depends_on": ["FIX1"],
+      "risk": "low"
+    },
+    {
+      "id": "FIX3",
+      "title": "Implement dark theme styles for ScrollViewer and ComboBox",
+      "scope": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "action": "Add",
+      "description": "Create custom dark theme styles for ScrollViewer scrollbars and ComboBox dropdown to match the overall dark theme and eliminate light/white default controls.",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "Window.Resources:16-65",
+          "change": "Add ScrollBar style with dark track/thumb"
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "Window.Resources:16-65",
+          "change": "Add ComboBox style with dark dropdown background"
+        }
+      ],
+      "implementation": [
+        "Create custom ScrollBar ControlTemplate with dark background (#2D2D30) and thumb (#555555)",
+        "Create custom ComboBox style with dark popup background (#2D2D30) and border (#3F3F46)",
+        "Apply styles to all ScrollViewer and ComboBox instances in the window",
+        "Test scrolling and dropdown interactions"
+      ],
+      "verification": [
+        "Scroll through settings pages and verify dark scrollbars",
+        "Open ComboBox dropdown and verify dark themed popup",
+        "Confirm no light/white default controls visible"
+      ],
+      "depends_on": ["FIX1"],
+      "risk": "medium"
+    },
+    {
+      "id": "FIX4",
+      "title": "Replace emoji icons with vector Path geometries",
+      "scope": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "action": "Update",
+      "description": "Replace unprofessional emoji icons (🎨, 📊, ⚙️, ℹ️) with proper vector Path geometries for consistent cross-platform rendering.",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "ListBoxItem Content:78-81",
+          "change": "Replace emoji prefixes with vector icons"
+        }
+      ],
+      "implementation": [
+        "Create PathGeometry resources for each icon in Window.Resources",
+        "Replace ListBoxItem Content text with Grid containing Path + TextBlock",
+        "Adjust layout and margins for icon+text alignment",
+        "Verify icon rendering on different DPI settings"
+      ],
+      "verification": [
+        "Open settings window and verify all icons display correctly",
+        "Test on different screen resolutions and DPI settings",
+        "Confirm icons are crisp and properly aligned with text"
+      ],
+      "depends_on": ["FIX1"],
+      "risk": "low"
+    }
+  ],
+  "focus_paths": [
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml"
+  ],
+  "test_strategy": {
+    "scope": "smoke",
+    "manual_verification": [
+      "Open settings window and verify all visual styles are applied correctly",
+      "Test all interactive controls (buttons, sliders, checkboxes, comboboxes)",
+      "Verify keyboard navigation and focus visual states",
+      "Test on different screen resolutions and DPI settings"
+    ]
+  },
+  "estimated_time": "45-60 minutes",
+  "recommended_execution": "Agent",
+  "severity": "Medium",
+  "risk_level": "low",
+  "_metadata": {
+    "timestamp": "2026-01-01T00:00:00+08:00",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "diagnosis_angles": ["ui-style"]
+  }
+}

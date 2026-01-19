@@ -1,0 +1,15 @@
+{
+  "session_id": "process-hover-kill-2026-01-15",
+  "task_description": "进程悬浮窗添加kill进程的功能，鼠标悬浮在进程上的同时进程名称右边会有个 x 出现，点击后会关闭该进程",
+  "timestamp": "2026-01-15T08:00:00+08:00",
+  "complexity": "Low",
+  "exploration_count": 1,
+  "explorations": [
+    {
+      "angle": "patterns",
+      "file": "exploration-patterns.json",
+      "path": ".workflow/.lite-plan/process-hover-kill-2026-01-15/exploration-patterns.json",
+      "index": 1
+    }
+  ]
+}

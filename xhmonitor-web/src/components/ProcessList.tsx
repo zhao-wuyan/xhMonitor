@@ -31,7 +31,7 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
     let filtered = processes.filter(
       (p) =>
         p.processName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.commandLine.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.commandLine ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
@@ -41,8 +41,8 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
           : b.processName.localeCompare(a.processName);
       }
 
-      const aValue = a.metrics[sortField]?.value || 0;
-      const bValue = b.metrics[sortField]?.value || 0;
+      const aValue = a.metrics[sortField] ?? 0;
+      const bValue = b.metrics[sortField] ?? 0;
 
       return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
     });
@@ -125,9 +125,9 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
                   <div className="font-medium">{process.processName}</div>
                   <div
                     className="text-xs text-gray-400 truncate max-w-xs cursor-help"
-                    title={process.commandLine}
+                    title={process.commandLine ?? ''}
                   >
-                    {process.commandLine}
+                    {process.commandLine ?? ''}
                   </div>
                 </td>
                 <td className="py-3 px-4 font-mono text-sm">
@@ -137,13 +137,13 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
                   const metricValue = process.metrics[metric.metricId];
                   return (
                     <td key={metric.metricId} className="py-3 px-4">
-                      {metricValue ? (
+                      {metricValue !== undefined ? (
                         <div className="space-y-1">
                           <div className="text-sm font-mono">
-                            {formatValue(metricValue.value, metric.unit)}
+                            {formatValue(metricValue, metric.unit)}
                           </div>
                           {renderMetricBar(
-                            metricValue.value,
+                            metricValue,
                             metric.metricId,
                             metric.unit === '%' ? 100 : 1024
                           )}

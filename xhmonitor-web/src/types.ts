@@ -1,18 +1,12 @@
-export interface MetricValue {
-  value: number;
-  unit: string;
-  displayName: string;
-  timestamp: string;
-}
-
 export interface ProcessMetrics {
-  [key: string]: MetricValue;
+  [key: string]: number;
 }
 
 export interface ProcessInfo {
   processId: number;
   processName: string;
-  commandLine: string;
+  commandLine?: string;
+  displayName?: string;
   metrics: ProcessMetrics;
 }
 
@@ -20,6 +14,19 @@ export interface MetricsData {
   timestamp: string;
   processCount: number;
   processes: ProcessInfo[];
+}
+
+export interface ProcessMetaInfo {
+  processId: number;
+  processName: string;
+  commandLine: string;
+  displayName: string;
+}
+
+export interface ProcessMetaData {
+  timestamp: string;
+  processCount: number;
+  processes: ProcessMetaInfo[];
 }
 
 export interface AlertConfig {

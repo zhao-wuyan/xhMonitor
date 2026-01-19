@@ -40,4 +40,10 @@ public interface IMetricProvider : IDisposable
     /// </summary>
     /// <returns>是否支持</returns>
     bool IsSupported();
+
+    /// <summary>
+    /// 获取系统总量（用于百分比类型获取系统使用率，用于容量类型获取系统总容量）
+    /// </summary>
+    /// <returns>系统总量或使用率</returns>
+    Task<double> GetSystemTotalAsync();
 }

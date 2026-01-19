@@ -1,0 +1,335 @@
+{
+  "perspective": "best-practices",
+  "discovery_id": "DSC-20260119-150946",
+  "analysis_timestamp": "2026-01-19T15:25:00+08:00",
+  "cli_tool_used": "gemini",
+  "model": "gemini-2.5-pro",
+  "analysis_duration_ms": 479300,
+  "summary": {
+    "total_findings": 12,
+    "critical": 0,
+    "high": 4,
+    "medium": 5,
+    "low": 3,
+    "files_analyzed": 79
+  },
+  "findings": [
+    {
+      "id": "dsc-best-practices-001-a1f8c2d4",
+      "title": "Fake Asynchrony - Sync-over-Async Wrapper in SystemMetricProvider",
+      "perspective": "best-practices",
+      "priority": "high",
+      "category": "anti-pattern",
+      "description": "Wrapping fast, synchronous P/Invoke calls (GlobalMemoryStatusEx) in Task.Run introduces thread pool overhead without scalability benefits. This is 'fake async' that shifts CPU-bound work to the thread pool unnecessarily, degrading throughput under load. The operation is fast enough that async wrapping provides no benefit.",
+      "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "line": 149,
+      "snippet": "private Task<double> GetMaxMemoryAsync()\n{\n    return Task.Run(() =>\n    {\n        if (OperatingSystem.IsWindows() && TryGetPhysicalMemoryDetails(out var totalMb, out _))\n        {\n            return totalMb;\n        }\n        return 0.0;\n    });\n}",
+      "suggested_issue": {
+        "title": "Remove fake async wrappers from SystemMetricProvider",
+        "type": "refactor",
+        "priority": 2,
+        "tags": ["best-practices", "performance", "async"]
+      },
+      "external_reference": {
+        "source": "Microsoft - Stephen Toub",
+        "url": "https://devblogs.microsoft.com/pfxteam/should-i-expose-asynchronous-wrappers-for-synchronous-methods/",
+        "relevance": "Industry standard guidance on when to use Task.Run wrappers"
+      },
+      "confidence": 0.95,
+      "impact": "Thread pool exhaustion under high load, unnecessary context switching overhead",
+      "recommendation": "Expose the method as synchronous (GetMemoryUsage()) or use ValueTask if interface compliance is required. Only use Task.Run at the consumer level (UI event handler) if offloading is strictly necessary for responsiveness."
+    },
+    {
+      "id": "dsc-best-practices-002-b2e9d3f5",
+      "title": "Weakly-Typed SignalR Hub Context - Magic Strings",
+      "perspective": "best-practices",
+      "priority": "high",
+      "category": "framework-usage",
+      "description": "Using IHubContext<T> with SendAsync and magic strings (SignalREvents.HardwareLimits) relies on runtime string matching. This is error-prone, hard to refactor, and lacks compile-time safety. SignalR best practices recommend strongly-typed hubs for type safety and refactoring support.",
+      "file": "XhMonitor.Service/Worker.cs",
+      "line": 17,
+      "snippet": "private readonly IHubContext<MetricsHub> _hubContext;\n...\nawait _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, ...);",
+      "suggested_issue": {
+        "title": "Implement strongly-typed SignalR hub interface",
+        "type": "refactor",
+        "priority": 2,
+        "tags": ["best-practices", "signalr", "type-safety"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs",
+        "relevance": "Official guidance on strongly-typed hubs in ASP.NET Core SignalR"
+      },
+      "confidence": 0.98,
+      "impact": "Runtime errors from typos, difficult refactoring, no IntelliSense support",
+      "recommendation": "Define a client interface IMetricsClient (e.g., Task ReceiveHardwareLimits(object data);) and inject IHubContext<MetricsHub, IMetricsClient>. Call methods directly: _hubContext.Clients.All.ReceiveHardwareLimits(...)."
+    },
+    {
+      "id": "dsc-best-practices-003-c3f0e4a6",
+      "title": "Configuration Anti-Pattern - Direct IConfiguration Access",
+      "perspective": "best-practices",
+      "priority": "medium",
+      "category": "convention",
+      "description": "Injecting IConfiguration directly creates high coupling to configuration keys and structure. It makes unit testing difficult and bypasses the validation/binding capabilities of the Options pattern. This violates .NET configuration best practices.",
+      "file": "XhMonitor.Service/Worker.cs",
+      "line": 46,
+      "snippet": "_processIntervalSeconds = Math.Max(1, config.GetValue(\"Monitor:IntervalSeconds\", 5));",
+      "suggested_issue": {
+        "title": "Adopt IOptions pattern for configuration management",
+        "type": "refactor",
+        "priority": 3,
+        "tags": ["best-practices", "configuration", "testability"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/options",
+        "relevance": "Official guidance on Options pattern in ASP.NET Core"
+      },
+      "confidence": 0.90,
+      "impact": "Tight coupling to configuration structure, difficult unit testing, no validation",
+      "recommendation": "Create a MonitorSettings class. Register it with services.Configure<MonitorSettings>(configuration). Inject IOptions<MonitorSettings> into Worker."
+    },
+    {
+      "id": "dsc-best-practices-004-d4a1f5b7",
+      "title": "WPF God Class - Application Lifecycle Mixing Concerns",
+      "perspective": "best-practices",
+      "priority": "medium",
+      "category": "architecture",
+      "description": "App.xaml.cs is acting as a composition root and process orchestrator, mixing UI logic (creating windows) with backend service management. This violates separation of concerns and makes the application hard to test and maintain. Modern WPF applications should use Generic Host pattern.",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 25,
+      "snippet": "protected override void OnStartup(StartupEventArgs e)\n{\n    _ = StartBackendServerAsync();\n    _ = StartWebAsync();\n    _floatingWindow = new FloatingWindow();\n    ...",
+      "suggested_issue": {
+        "title": "Refactor App.xaml.cs to use Generic Host pattern",
+        "type": "refactor",
+        "priority": 3,
+        "tags": ["best-practices", "wpf", "architecture"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host",
+        "relevance": "Generic Host pattern for WPF applications"
+      },
+      "confidence": 0.85,
+      "impact": "Difficult to test, tight coupling, violation of single responsibility principle",
+      "recommendation": "Adopt the Microsoft.Extensions.Hosting pattern for WPF. Move startup logic to a IHostedService or configure the DI container in CreateHostBuilder. Use dependency injection to resolve and show the main window."
+    },
+    {
+      "id": "dsc-best-practices-005-e5b2a6c8",
+      "title": "Missing Modern C# 12 Idioms - Primary Constructors",
+      "perspective": "best-practices",
+      "priority": "low",
+      "category": "industry-standard",
+      "description": "Verbose boilerplate for constructor dependency injection. .NET 8 / C# 12 supports Primary Constructors to reduce verbosity and improve code readability. The project targets .NET 8 but doesn't leverage modern C# 12 features.",
+      "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "line": 27,
+      "snippet": "public class SystemMetricProvider : IDisposable\n{\n    private readonly IMetricProvider? _cpuProvider;\n    ...\n    public SystemMetricProvider(\n        IMetricProvider? cpuProvider,\n        ...",
+      "suggested_issue": {
+        "title": "Adopt C# 12 primary constructors for cleaner code",
+        "type": "enhancement",
+        "priority": 4,
+        "tags": ["best-practices", "csharp-12", "code-quality"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-12",
+        "relevance": "C# 12 primary constructors feature documentation"
+      },
+      "confidence": 0.80,
+      "impact": "Increased boilerplate code, reduced readability",
+      "recommendation": "Refactor to: public class SystemMetricProvider(IMetricProvider? cpuProvider, ...) : IDisposable. This reduces boilerplate while maintaining functionality."
+    },
+    {
+      "id": "dsc-best-practices-006-f6c3b7d9",
+      "title": "Unsafe Async Termination - Fire-and-Forget in Shutdown",
+      "perspective": "best-practices",
+      "priority": "medium",
+      "category": "anti-pattern",
+      "description": "Calling async methods with _ = inside OnExit (a void method) creates a race condition. The application process may terminate before the cleanup tasks complete, potentially leaving orphaned backend processes or incomplete cleanup.",
+      "file": "XhMonitor.Desktop/App.xaml.cs",
+      "line": 46,
+      "snippet": "protected override void OnExit(ExitEventArgs e)\n{\n    _ = StopBackendServerAsync();\n    _ = StopWebServerAsync();\n    ...",
+      "suggested_issue": {
+        "title": "Fix unsafe async cleanup in application shutdown",
+        "type": "bug",
+        "priority": 2,
+        "tags": ["best-practices", "async", "cleanup"]
+      },
+      "external_reference": {
+        "source": "Microsoft - Async Best Practices",
+        "url": "https://learn.microsoft.com/en-us/archive/msdn-magazine/2013/march/async-await-best-practices-in-asynchronous-programming",
+        "relevance": "Best practices for async cleanup in .NET"
+      },
+      "confidence": 0.88,
+      "impact": "Orphaned processes, incomplete cleanup, resource leaks",
+      "recommendation": "Since OnExit cannot be async, ensure synchronous blocking cleanup or robust orphan-process detection on startup. Alternatively, use the Generic Host lifecycle which supports StopAsync gracefully."
+    },
+    {
+      "id": "dsc-best-practices-007-a7d4c8e0",
+      "title": "Blocking Async Operations - .Result and .Wait() Usage",
+      "perspective": "best-practices",
+      "priority": "high",
+      "category": "anti-pattern",
+      "description": "Multiple instances of blocking async operations using .Result, .Wait(), and .GetAwaiter().GetResult() found. This can cause deadlocks in UI contexts and defeats the purpose of async/await. Found in FloatingWindow.xaml.cs:716, App.xaml.cs:540, App.xaml.cs:651, and SystemMetricProvider.cs:94-142.",
+      "file": "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+      "line": 716,
+      "snippet": "_viewModel.CleanupAsync().ConfigureAwait(false).GetAwaiter().GetResult();",
+      "suggested_issue": {
+        "title": "Remove blocking async calls to prevent deadlocks",
+        "type": "bug",
+        "priority": 2,
+        "tags": ["best-practices", "async", "deadlock-risk"]
+      },
+      "external_reference": {
+        "source": "Stephen Cleary - Don't Block on Async Code",
+        "url": "https://blog.stephencleary.com/2012/07/dont-block-on-async-code.html",
+        "relevance": "Industry standard guidance on avoiding blocking async operations"
+      },
+      "confidence": 0.92,
+      "impact": "Potential deadlocks in UI thread, thread pool starvation, poor responsiveness",
+      "recommendation": "Refactor to use proper async/await patterns. For UI cleanup, consider using async event handlers or restructure lifecycle management to support async operations."
+    },
+    {
+      "id": "dsc-best-practices-008-b8e5d9f1",
+      "title": "HttpClient Instance Per Request - Socket Exhaustion Risk",
+      "perspective": "best-practices",
+      "priority": "high",
+      "category": "anti-pattern",
+      "description": "Creating new HttpClient() in SettingsViewModel constructor violates HttpClient best practices. HttpClient should be reused or created via IHttpClientFactory to avoid socket exhaustion. Each instance holds connections that aren't released immediately.",
+      "file": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "line": 35,
+      "snippet": "public SettingsViewModel()\n{\n    _httpClient = new HttpClient();\n}",
+      "suggested_issue": {
+        "title": "Use IHttpClientFactory for HttpClient management",
+        "type": "bug",
+        "priority": 2,
+        "tags": ["best-practices", "httpclient", "resource-management"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/dotnet/architecture/microservices/implement-resilient-applications/use-httpclientfactory-to-implement-resilient-http-requests",
+        "relevance": "Official guidance on HttpClient usage and IHttpClientFactory"
+      },
+      "confidence": 0.95,
+      "impact": "Socket exhaustion under load, connection pool depletion, DNS resolution issues",
+      "recommendation": "Inject IHttpClientFactory or use a static/singleton HttpClient instance. For WPF without DI, use a static readonly HttpClient or implement IDisposable properly."
+    },
+    {
+      "id": "dsc-best-practices-009-c9f6e0a2",
+      "title": "Missing Collection Expressions - Old C# Syntax",
+      "perspective": "best-practices",
+      "priority": "low",
+      "category": "industry-standard",
+      "description": "Project uses old collection initialization syntax (new List<>, new Dictionary<>) instead of C# 12 collection expressions. Modern syntax improves readability and is more concise. Found in multiple files including LibreHardwareManager.cs:100, DxgiGpuMonitor.cs:199.",
+      "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+      "line": 100,
+      "snippet": "var readings = new List<SensorReading>();",
+      "suggested_issue": {
+        "title": "Adopt C# 12 collection expressions for modern syntax",
+        "type": "enhancement",
+        "priority": 5,
+        "tags": ["best-practices", "csharp-12", "code-quality"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-12#collection-expressions",
+        "relevance": "C# 12 collection expressions feature documentation"
+      },
+      "confidence": 0.75,
+      "impact": "Slightly more verbose code, missed opportunity for modern syntax",
+      "recommendation": "Replace with collection expressions: var readings = []; or List<SensorReading> readings = [];. This is a low-priority enhancement for code modernization."
+    },
+    {
+      "id": "dsc-best-practices-010-d0a7f1b3",
+      "title": "Semaphore Blocking in Async Context",
+      "perspective": "best-practices",
+      "priority": "medium",
+      "category": "anti-pattern",
+      "description": "Using _updateLock.Wait() (synchronous semaphore wait) in LibreHardwareManager.UpdateSnapshot() can cause thread pool starvation. Should use WaitAsync() for async-friendly synchronization.",
+      "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+      "line": 86,
+      "snippet": "_updateLock.Wait();\ntry\n{\n    now = DateTime.UtcNow;\n    if (now - _snapshotAt < _snapshotLifetime)\n    {\n        return;\n    }",
+      "suggested_issue": {
+        "title": "Replace synchronous semaphore wait with async WaitAsync",
+        "type": "refactor",
+        "priority": 3,
+        "tags": ["best-practices", "async", "concurrency"]
+      },
+      "external_reference": {
+        "source": "Microsoft - Async Synchronization Primitives",
+        "url": "https://learn.microsoft.com/en-us/dotnet/standard/threading/semaphore-and-semaphoreslim",
+        "relevance": "Guidance on async-friendly synchronization"
+      },
+      "confidence": 0.87,
+      "impact": "Thread pool blocking, reduced scalability under concurrent access",
+      "recommendation": "Change UpdateSnapshot() to async and use await _updateLock.WaitAsync(). Update all callers to await the method."
+    },
+    {
+      "id": "dsc-best-practices-011-e1b8c2d4",
+      "title": "Missing IAsyncDisposable for Async Resources",
+      "perspective": "best-practices",
+      "priority": "medium",
+      "category": "convention",
+      "description": "Classes with async cleanup operations (LibreHardwareManager, SystemMetricProvider) only implement IDisposable, not IAsyncDisposable. This forces blocking async operations in Dispose(), which is an anti-pattern. SignalRService correctly implements IAsyncDisposable.",
+      "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+      "line": 11,
+      "snippet": "public interface ILibreHardwareManager : IDisposable",
+      "suggested_issue": {
+        "title": "Implement IAsyncDisposable for async resource cleanup",
+        "type": "enhancement",
+        "priority": 3,
+        "tags": ["best-practices", "async", "disposal"]
+      },
+      "external_reference": {
+        "source": "Microsoft Learn",
+        "url": "https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-disposeasync",
+        "relevance": "Official guidance on implementing IAsyncDisposable"
+      },
+      "confidence": 0.85,
+      "impact": "Blocking async operations during disposal, potential deadlocks",
+      "recommendation": "Implement IAsyncDisposable alongside IDisposable. Provide DisposeAsync() for async cleanup and make Dispose() call DisposeAsync().GetAwaiter().GetResult() or use synchronous cleanup only."
+    },
+    {
+      "id": "dsc-best-practices-012-f2c9d3e5",
+      "title": "Empty Catch Blocks - Swallowing Exceptions",
+      "perspective": "best-practices",
+      "priority": "medium",
+      "category": "anti-pattern",
+      "description": "Multiple empty catch blocks found that silently swallow exceptions without logging or handling. This makes debugging difficult and hides potential issues. Found in test files and tools, but pattern should be avoided.",
+      "file": "XhMonitor.Desktop/Services/SignalRService.cs",
+      "line": 142,
+      "snippet": "catch\n{\n    // Ignore stop errors\n}",
+      "suggested_issue": {
+        "title": "Add logging to exception handlers instead of empty catch",
+        "type": "enhancement",
+        "priority": 3,
+        "tags": ["best-practices", "error-handling", "observability"]
+      },
+      "external_reference": {
+        "source": "Microsoft - Exception Handling Best Practices",
+        "url": "https://learn.microsoft.com/en-us/dotnet/standard/exceptions/best-practices-for-exceptions",
+        "relevance": "Official guidance on exception handling"
+      },
+      "confidence": 0.80,
+      "impact": "Hidden errors, difficult debugging, reduced observability",
+      "recommendation": "Add logging even for expected exceptions: catch (Exception ex) { _logger.LogDebug(ex, \"Expected error during stop\"); }. This maintains observability while handling expected failures."
+    }
+  ],
+  "cross_references": [
+    {
+      "finding_id": "dsc-best-practices-007-a7d4c8e0",
+      "related_perspectives": ["bug", "performance"],
+      "reason": "Blocking async operations can cause deadlocks (bug) and performance degradation"
+    },
+    {
+      "finding_id": "dsc-best-practices-008-b8e5d9f1",
+      "related_perspectives": ["bug", "performance"],
+      "reason": "HttpClient misuse can cause socket exhaustion (bug) and performance issues"
+    },
+    {
+      "finding_id": "dsc-best-practices-001-a1f8c2d4",
+      "related_perspectives": ["performance"],
+      "reason": "Fake async wrappers degrade performance under load"
+    }
+  ]
+}

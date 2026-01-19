@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import * as signalR from '@microsoft/signalr';
-import type { MetricsData } from '../types';
+import type { MetricsData, ProcessMetaData, ProcessInfo } from '../types';
 
 const HUB_URL = 'http://localhost:35179/hubs/metrics';
 
@@ -9,6 +9,20 @@ export const useMetricsHub = () => {
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const metaMapRef = useRef<Map<number, ProcessMetaData['processes'][number]>>(new Map());
+
+  const mergeMeta = useCallback((processes: ProcessInfo[]): ProcessInfo[] => {
+    if (metaMapRef.current.size === 0) return processes;
+    return processes.map((p) => {
+      const meta = metaMapRef.current.get(p.processId);
+      if (!meta) return p;
+      return {
+        ...p,
+        commandLine: meta.commandLine,
+        displayName: meta.displayName
+      };
+    });
+  }, []);
 
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
@@ -42,8 +56,25 @@ export const useMetricsHub = () => {
       }
     };
 
-    connection.on('metrics.latest', (data: MetricsData) => {
-      setMetricsData(data);
+    connection.on('metrics.processes', (data: MetricsData) => {
+      setMetricsData({
+        ...data,
+        processes: mergeMeta(data.processes)
+      });
+    });
+
+    connection.on('metrics.processes.meta', (data: ProcessMetaData) => {
+      data.processes.forEach((p) => {
+        metaMapRef.current.set(p.processId, p);
+      });
+
+      setMetricsData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          processes: mergeMeta(prev.processes)
+        };
+      });
     });
 
     connection.onreconnecting(() => {

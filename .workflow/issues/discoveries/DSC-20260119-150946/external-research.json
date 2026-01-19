@@ -1,0 +1,107 @@
+{
+  "perspective": "best-practices",
+  "research_timestamp": "2026-01-19T15:12:00+08:00",
+  "sources": [
+    {
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection",
+      "title": "Dependency injection in ASP.NET Core",
+      "key_points": [
+        "Services should be registered in Program.cs using AddScoped/AddSingleton/AddTransient",
+        "Constructor injection is the preferred pattern",
+        "Service lifetimes: Scoped (per request), Singleton (app lifetime), Transient (each time)",
+        "Avoid service locator anti-pattern"
+      ]
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/dotnet/desktop/wpf/data/data-binding-overview",
+      "title": "WPF Data Binding Overview",
+      "key_points": [
+        "Target property must be a dependency property",
+        "INotifyPropertyChanged is essential for two-way binding",
+        "DataContext establishes binding source",
+        "Binding has four components: target object, target property, binding source, path to value"
+      ]
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-12",
+      "title": "What's new in C# 12",
+      "key_points": [
+        "Primary constructors for classes and structs",
+        "Collection expressions with spread operator",
+        "ref readonly parameters",
+        "Default lambda parameters",
+        "Alias any type"
+      ]
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction",
+      "title": "Introduction to SignalR",
+      "key_points": [
+        "Hubs are high-level pipeline for client-server communication",
+        "Automatic connection management",
+        "Supports WebSockets, Server-Sent Events, Long Polling",
+        "Strongly-typed parameters for methods"
+      ]
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-disposeasync",
+      "title": "Implement a DisposeAsync method",
+      "key_points": [
+        "IAsyncDisposable for async resource cleanup",
+        "Use await using for async disposal",
+        "Implement both IDisposable and IAsyncDisposable when needed",
+        "Avoid blocking on async disposal in sync Dispose()"
+      ]
+    },
+    {
+      "url": "https://medium.com/@shahzaib.eu/dependency-injection-in-net-8-best-practices-and-advanced-techniques-4310059a60da",
+      "title": "Dependency Injection in .NET 8: Best Practices",
+      "key_points": [
+        "Use keyed services for multiple implementations",
+        "Avoid captive dependencies (shorter lifetime captured by longer)",
+        "Use IOptions pattern for configuration",
+        "Register services by interface, not concrete type"
+      ]
+    },
+    {
+      "url": "https://binodmahto.medium.com/wpf-data-binding-best-practices-1735a80077ab",
+      "title": "WPF Data Binding Best Practices",
+      "key_points": [
+        "Use Facade pattern for Models",
+        "Implement INotifyPropertyChanged in ViewModels",
+        "Avoid code-behind logic, use Commands",
+        "Use ObservableCollection for collections"
+      ]
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/aspnet/core/signalr/hubs",
+      "title": "Use hubs in ASP.NET Core SignalR",
+      "key_points": [
+        "Hub methods should be async",
+        "Use strongly-typed hubs for type safety",
+        "Handle connection lifecycle events",
+        "Use groups for targeted messaging"
+      ]
+    }
+  ],
+  "key_findings": [
+    "Modern C# 12 features like primary constructors and collection expressions should be adopted",
+    "IAsyncDisposable should be implemented for async resource cleanup",
+    "Dependency injection should follow service lifetime best practices",
+    "WPF MVVM should use INotifyPropertyChanged and avoid code-behind logic",
+    "SignalR hubs should be async and strongly-typed",
+    "Configuration should use IOptions pattern",
+    "Avoid service locator anti-pattern"
+  ],
+  "gap_analysis": "The xhMonitor project uses .NET 8 but may not fully leverage modern C# 12 features. Key areas to investigate: (1) Async disposal patterns for LibreHardwareMonitor resources, (2) Service lifetime management in DI container, (3) MVVM implementation quality in WPF Desktop, (4) SignalR hub design patterns, (5) Configuration management approach, (6) Use of modern C# syntax.",
+  "recommendations": [
+    "Adopt C# 12 primary constructors where appropriate",
+    "Implement IAsyncDisposable for async cleanup operations",
+    "Review service lifetimes to avoid captive dependencies",
+    "Ensure WPF ViewModels properly implement INotifyPropertyChanged",
+    "Make SignalR hub methods async",
+    "Use IOptions pattern for configuration",
+    "Replace collection initializers with collection expressions",
+    "Avoid blocking async operations in sync contexts"
+  ]
+}

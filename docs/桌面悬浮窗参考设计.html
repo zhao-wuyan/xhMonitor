@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No-Flicker Monitor</title>
+    <style>
+        /* --- 样式保持不变，沿用上一版的精美设计 --- */
+        body {
+            margin: 0; padding: 0; height: 100vh; overflow: hidden;
+            background: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2574&auto=format&fit=crop') center/cover no-repeat;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+        }
+
+        #monitor-widget {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; display: flex; flex-direction: column; align-items: center;
+            width: fit-content;
+        }
+
+        /* Pinned Stack */
+        #pinned-stack {
+            display: flex; flex-direction: column; gap: 4px; width: 100%; margin-bottom: 6px; align-items: center; pointer-events: none;
+        }
+        .pinned-card {
+            pointer-events: auto; display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 12px;
+            width: 320px; background: rgba(20, 20, 20, 0.75); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-left: 3px solid #4ade80; border-radius: 4px; padding: 4px 10px;
+            font-size: 10px; color: #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            /* 关键：动画只在创建时播放一次 */
+            animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            cursor: context-menu; transition: transform 0.2s, background 0.2s;
+        }
+        .pinned-card:hover { background: rgba(40,40,40,0.9); transform: scale(1.02); }
+        .pinned-name { color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+        .pinned-val { font-family: 'Consolas', monospace; font-weight: 700; transition: color 0.3s; } /* 数值颜色变化加过渡 */
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Panel */
+        .process-panel {
+            position: absolute; left: 50%; width: 480px; background: rgba(15, 15, 15, 0.90); backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            padding: 10px 12px; opacity: 0; visibility: hidden; pointer-events: none; transition: all 0.25s; z-index: 10;
+        }
+        .process-panel.visible { opacity: 1; visibility: visible; pointer-events: auto; }
+        .process-panel.pop-up { bottom: 100%; margin-bottom: 8px; transform: translateX(-50%) translateY(10px); }
+        .process-panel.visible.pop-up { transform: translateX(-50%) translateY(0); }
+        .process-panel.pop-down { top: 100%; margin-top: 8px; transform: translateX(-50%) translateY(-10px); }
+        .process-panel.visible.pop-down { transform: translateX(-50%) translateY(0); }
+
+        /* Monitor Bar */
+        .monitor-bar {
+            display: flex; align-items: center; background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-radius: 8px; padding: 6px 14px; gap: 16px; cursor: move; transition: all 0.2s; position: relative; z-index: 20;
+        }
+        .monitor-bar:active { transform: scale(0.98); }
+        .monitor-bar.state-locked { border-color: rgba(74, 222, 128, 0.5); background: rgba(5, 5, 5, 0.95); }
+        #monitor-widget.ghost-mode { opacity: 0.5; pointer-events: none; }
+        #monitor-widget.ghost-mode .monitor-bar { background: rgba(0,0,0,0.3); border-color: rgba(250, 204, 21, 0.3); }
+        #monitor-widget.ghost-mode .pin-indicator { pointer-events: auto; cursor: pointer; background: #facc15; box-shadow: 0 0 8px #facc15; }
+
+        .stat-item { display: flex; flex-direction: column; width: 44px; cursor: pointer; border-radius: 4px; padding: 2px; margin: -2px; transition: background 0.2s; }
+        .stat-item:hover { background: rgba(255,255,255,0.1); }
+        .stat-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; line-height: 1; pointer-events: none;}
+        .stat-label { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 700; }
+        .stat-value { font-size: 12px; color: #fff; font-family: 'Consolas', monospace; font-weight: 700; }
+        .progress-bg { width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; pointer-events: none;}
+        .progress-bar { height: 100%; border-radius: 2px; transition: width 0.3s; background: #4ade80; }
+        .divider { width: 1px; height: 16px; background: rgba(255,255,255,0.1); pointer-events: none; }
+        .pin-indicator { position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; background: #4ade80; border-radius: 50%; opacity: 0; transition: all 0.3s; box-shadow: 0 0 5px #4ade80; z-index: 30; }
+        .monitor-bar.state-locked .pin-indicator { opacity: 1; cursor: pointer; }
+        .pin-indicator:hover { transform: scale(1.5); }
+
+        /* Grid Table */
+        .proc-table { display: grid; grid-template-columns: 2fr 45px 55px 55px 55px 55px; column-gap: 8px; row-gap: 4px; font-size: 11px; color: #ddd; }
+        .proc-head { font-weight: 700; color: rgba(255,255,255,0.3); padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 2px; font-size: 9px; text-transform: uppercase; pointer-events: none; }
+        .proc-row { display: contents; }
+        .col-name, .col-stat { pointer-events: auto; cursor: pointer; } /* 确保可点击 */
+        .proc-row:hover .name-main { color: #4ade80; }
+        .proc-row.is-pinned .name-main::before { content: '📌 '; font-size: 9px; filter: grayscale(1); opacity: 0.8; }
+        .proc-row.is-pinned .name-main { color: #4ade80; }
+        .col-name { display: flex; flex-direction: column; overflow: hidden; white-space: nowrap; justify-content: center; }
+        .name-main { color: #eee; font-weight: 600; font-size: 11px; transition: color 0.2s; }
+        .name-sub { color: rgba(255,255,255,0.35); font-size: 8px; line-height: 1.2; }
+        .col-stat { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+        .stat-text { font-family: 'Consolas', monospace; margin-bottom: 1px; font-size: 11px; line-height: 1; }
+        .mini-track { width: 100%; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden; pointer-events: none; }
+        .mini-fill { height: 100%; border-radius: 1px; pointer-events: none; transition: width 0.3s; }
+
+    </style>
+</head>
+<body>
+
+    <div id="monitor-widget">
+        <!-- Details Panel -->
+        <div class="process-panel pop-up" id="details-panel">
+            <div class="proc-table" id="process-list">
+                <div class="proc-row proc-head">
+                    <div>Process</div><div>PID</div><div>VRAM</div><div>GPU</div><div>CPU</div><div>RAM</div>
+                </div>
+                <!-- Rows injected/updated by JS -->
+            </div>
+        </div>
+
+        <!-- Pinned Stack -->
+        <div id="pinned-stack">
+            <!-- Pinned Cards injected/updated by JS -->
+        </div>
+
+        <!-- Main Bar -->
+        <div class="monitor-bar" id="drag-bar">
+            <div class="pin-indicator" id="toggle-clickthrough"></div>
+            <div class="stat-item" data-metric="cpu">
+                <div class="stat-header"><span class="stat-label">CPU</span><span class="stat-value" id="val-cpu">0</span></div>
+                <div class="progress-bg"><div class="progress-bar" id="bar-cpu"></div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-item" data-metric="ram">
+                <div class="stat-header"><span class="stat-label">RAM</span><span class="stat-value" id="val-ram">0</span></div>
+                <div class="progress-bg"><div class="progress-bar" id="bar-ram"></div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-item" data-metric="gpu">
+                <div class="stat-header"><span class="stat-label">GPU</span><span class="stat-value" id="val-gpu">0</span></div>
+                <div class="progress-bg"><div class="progress-bar" id="bar-gpu"></div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-item" data-metric="vram">
+                <div class="stat-header"><span class="stat-label">VRAM</span><span class="stat-value" id="val-vram">0</span></div>
+                <div class="progress-bg"><div class="progress-bar" id="bar-vram"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Mock Data ---
+        const dummyProcesses = [
+            { name: 'python.exe', sub: 'comfyui/main.py', pid: 32288, vram: 4.2, vramMax: 24, gpu: 92, cpu: 12, ram: 3.8, ramMax: 64 },
+            { name: 'chrome.exe', sub: 'Youtube 4K Video', pid: 1452, vram: 0.8, vramMax: 24, gpu: 15, cpu: 8, ram: 1.5, ramMax: 64 },
+            { name: 'llama-server', sub: 'model-7b-q4.gguf', pid: 17716, vram: 6.1, vramMax: 24, gpu: 0, cpu: 1, ram: 4.2, ramMax: 64 },
+            { name: 'blender.exe', sub: 'Rendering...', pid: 5521, vram: 8.5, vramMax: 24, gpu: 99, cpu: 20, ram: 6.1, ramMax: 64 }
+        ];
+
+        function getColor(pct, type) {
+            if (type === 'mem') return '#22d3ee';
+            return pct < 50 ? '#4ade80' : (pct < 80 ? '#facc15' : '#f87171');
+        }
+
+        // --- Core Variables ---
+        const widget = document.getElementById('monitor-widget');
+        const bar = document.getElementById('drag-bar');
+        const panel = document.getElementById('details-panel');
+        const pinnedStack = document.getElementById('pinned-stack');
+        const processListContainer = document.getElementById('process-list');
+        const indicator = document.getElementById('toggle-clickthrough');
+        
+        let currentState = 'collapsed';
+        let pinnedPids = new Set(); 
+
+        // --- 1. State & Interaction (Optimized) ---
+        function setState(newState) {
+            currentState = newState;
+            bar.classList.remove('state-locked');
+            widget.classList.remove('ghost-mode');
+            panel.classList.remove('visible');
+            switch (newState) {
+                case 'expanded': panel.classList.add('visible'); break;
+                case 'locked': bar.classList.add('state-locked'); panel.classList.add('visible'); break;
+                case 'clickthrough': bar.classList.add('state-locked'); widget.classList.add('ghost-mode'); break;
+            }
+        }
+
+        // Drag Logic
+        let isDragging = false, startX, startY, hasMoved = false;
+        bar.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.pin-indicator')) return;
+            isDragging = true; hasMoved = false; startX = e.clientX; startY = e.clientY;
+            const rect = widget.getBoundingClientRect();
+            widget.style.bottom = 'auto'; widget.style.left = rect.left + 'px'; widget.style.top = rect.top + 'px'; widget.style.transform = 'none';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+        function onMouseMove(e) {
+            if (!isDragging) return;
+            if (Math.abs(e.clientX - startX) > 3) hasMoved = true;
+            widget.style.top = (parseFloat(widget.style.top) + e.clientY - startY) + 'px';
+            widget.style.left = (parseFloat(widget.style.left) + e.clientX - startX) + 'px';
+            startX = e.clientX; startY = e.clientY;
+            checkPanelPosition();
+        }
+        function onMouseUp() { isDragging = false; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+
+        function checkPanelPosition() {
+            // Adjust panel pop direction and offset
+            const rect = widget.getBoundingClientRect();
+            if (rect.top < 350) { 
+                panel.classList.remove('pop-up'); panel.classList.add('pop-down'); 
+            } else { 
+                panel.classList.remove('pop-down'); panel.classList.add('pop-up'); 
+                if(pinnedStack.offsetHeight > 0) {
+                     panel.style.bottom = (bar.offsetHeight + pinnedStack.offsetHeight + 10) + 'px';
+                } else {
+                     panel.style.bottom = '100%';
+                }
+            }
+        }
+
+        // Hover & Click Logic
+        bar.addEventListener('mouseenter', () => { if (!isDragging && currentState === 'collapsed') { setState('expanded'); checkPanelPosition(); } });
+        widget.addEventListener('mouseleave', () => { if (!isDragging && currentState === 'expanded') setState('collapsed'); });
+        bar.addEventListener('click', (e) => {
+            if (hasMoved || e.target.closest('.stat-item') || e.target.closest('.pin-indicator')) return;
+            currentState === 'expanded' ? setState('locked') : (currentState === 'locked' ? setState('collapsed') : null);
+        });
+        indicator.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentState === 'locked' ? setState('clickthrough') : (currentState === 'clickthrough' ? setState('locked') : null);
+        });
+
+        // Pinning Logic
+        function togglePin(pid) {
+            pinnedPids.has(pid) ? pinnedPids.delete(pid) : pinnedPids.add(pid);
+            renderData(); // Trigger immediate update
+        }
+        processListContainer.addEventListener('contextmenu', (e) => {
+            const row = e.target.closest('.proc-row');
+            if (row && !row.classList.contains('proc-head')) {
+                e.preventDefault();
+                const pid = parseInt(row.dataset.pid);
+                if (pid) togglePin(pid);
+            }
+        });
+
+        // --- 2. Advanced Rendering (No Flicker) ---
+        
+        function renderData() {
+            renderPinnedStack();
+            renderMainList();
+            renderMainBar();
+        }
+
+        // A. 渲染钉住的卡片 (Diffing Update)
+        function renderPinnedStack() {
+            const existingCards = Array.from(pinnedStack.children);
+            const processedPids = new Set();
+
+            pinnedPids.forEach(pid => {
+                const p = dummyProcesses.find(proc => proc.pid === pid);
+                if (!p) return; // Process died
+                
+                processedPids.add(pid);
+                
+                // 查找 DOM 中是否已存在
+                let card = existingCards.find(c => parseInt(c.dataset.pid) === pid);
+
+                if (card) {
+                    // [更新] 只更新文本和颜色，不重置 innerHTML，不重置动画
+                    card.querySelector('.gpu-val').innerText = `GPU ${p.gpu}%`;
+                    card.querySelector('.gpu-val').style.color = getColor(p.gpu);
+                    
+                    card.querySelector('.cpu-val').innerText = `CPU ${p.cpu}%`;
+                    card.querySelector('.cpu-val').style.color = getColor(p.cpu);
+                    
+                    card.querySelector('.ram-val').innerText = `RAM ${p.ram}G`;
+                    card.querySelector('.ram-val').style.color = getColor(p.ram, 'mem');
+                } else {
+                    // [创建] 只有新元素才创建，触发 slideIn 动画
+                    card = document.createElement('div');
+                    card.className = 'pinned-card';
+                    card.dataset.pid = pid;
+                    card.addEventListener('contextmenu', (e) => { e.preventDefault(); togglePin(pid); });
+                    
+                    // 使用 class 标记数值，方便查找更新
+                    card.innerHTML = `
+                        <div class="pinned-name" title="${p.name} - ${p.sub}">${p.name}</div>
+                        <span class="pinned-val gpu-val" style="color:${getColor(p.gpu)}">GPU ${p.gpu}%</span>
+                        <span class="pinned-val cpu-val" style="color:${getColor(p.cpu)}">CPU ${p.cpu}%</span>
+                        <span class="pinned-val ram-val" style="color:${getColor(p.ram, 'mem')}">RAM ${p.ram}G</span>
+                    `;
+                    pinnedStack.appendChild(card);
+                }
+            });
+
+            // [清理] 移除不在 pinnedPids 里的卡片
+            existingCards.forEach(c => {
+                const pid = parseInt(c.dataset.pid);
+                if (!processedPids.has(pid)) c.remove();
+            });
+
+            // 更新面板位置
+            if(currentState === 'expanded' || currentState === 'locked') checkPanelPosition();
+        }
+
+        // B. 渲染主列表 (Diffing Update)
+        function renderMainList() {
+            const existingRows = Array.from(processListContainer.querySelectorAll('.proc-row:not(.proc-head)'));
+            const dataPids = new Set();
+
+            dummyProcesses.forEach(p => {
+                dataPids.add(p.pid);
+                
+                let row = existingRows.find(r => parseInt(r.dataset.pid) === p.pid);
+                const vramPct = (p.vram/p.vramMax)*100;
+                const ramPct = (p.ram/p.ramMax)*100;
+                const isPinned = pinnedPids.has(p.pid);
+
+                if (row) {
+                    // [更新] 
+                    if(isPinned) row.classList.add('is-pinned'); else row.classList.remove('is-pinned');
+                    
+                    // 精细更新每个单元格，避免全部重绘
+                    // 这里为了代码简洁，使用了 querySelector。如果追求极致性能，可以在 create 时缓存 DOM 引用。
+                    updateText(row, '.col-stat:nth-child(2) .stat-text', p.pid);
+                    
+                    updateBar(row, '.col-stat:nth-child(3)', `${p.vram}G`, vramPct, getColor(vramPct, 'mem'));
+                    updateBar(row, '.col-stat:nth-child(4)', `${p.gpu}%`, p.gpu, getColor(p.gpu));
+                    updateBar(row, '.col-stat:nth-child(5)', `${p.cpu}%`, p.cpu, getColor(p.cpu));
+                    updateBar(row, '.col-stat:nth-child(6)', `${p.ram}G`, ramPct, getColor(ramPct, 'mem'));
+
+                } else {
+                    // [创建]
+                    row = document.createElement('div');
+                    row.className = `proc-row ${isPinned ? 'is-pinned' : ''}`;
+                    row.dataset.pid = p.pid;
+                    
+                    row.innerHTML = `
+                        <div class="col-name"><span class="name-main">${p.name}</span><span class="name-sub">${p.sub}</span></div>
+                        <div class="col-stat" style="color:#888"><span class="stat-text">${p.pid}</span></div>
+                        <div class="col-stat"><span class="stat-text">${p.vram}G</span><div class="mini-track"><div class="mini-fill" style="width:${vramPct}%; background:${getColor(vramPct, 'mem')}"></div></div></div>
+                        <div class="col-stat"><span class="stat-text" style="color:${getColor(p.gpu)}">${p.gpu}%</span><div class="mini-track"><div class="mini-fill" style="width:${p.gpu}%; background:${getColor(p.gpu)}"></div></div></div>
+                        <div class="col-stat"><span class="stat-text">${p.cpu}%</span><div class="mini-track"><div class="mini-fill" style="width:${p.cpu}%; background:${getColor(p.cpu)}"></div></div></div>
+                        <div class="col-stat"><span class="stat-text">${p.ram}G</span><div class="mini-track"><div class="mini-fill" style="width:${ramPct}%; background:${getColor(ramPct, 'mem')}"></div></div></div>
+                    `;
+                    processListContainer.appendChild(row);
+                }
+            });
+
+            // [清理]
+            existingRows.forEach(r => {
+                if (!dataPids.has(parseInt(r.dataset.pid))) r.remove();
+            });
+        }
+
+        // Helper helpers
+        function updateText(row, selector, text) {
+            const el = row.querySelector(selector);
+            if(el && el.innerText != text) el.innerText = text;
+        }
+        function updateBar(row, colSelector, text, width, color) {
+            const col = row.querySelector(colSelector);
+            const txt = col.querySelector('.stat-text');
+            const fill = col.querySelector('.mini-fill');
+            if(txt.innerText !== text) {
+                txt.innerText = text;
+                if(colSelector.includes('gpu')) txt.style.color = color; // 只有 GPU 列文字变色
+            }
+            fill.style.width = width + '%';
+            fill.style.background = color;
+        }
+
+        // C. 渲染主控条 (简单更新)
+        function renderMainBar() {
+             ['cpu','gpu','ram','vram'].forEach(k => {
+                let v = Math.floor(Math.random()*60); if(k==='gpu') v+=20;
+                document.getElementById(`val-${k}`).innerText = v;
+                document.getElementById(`bar-${k}`).style.width = v+'%';
+                document.getElementById(`bar-${k}`).style.background = getColor(v, k==='ram'?'mem':'');
+            });
+        }
+
+        // --- Start ---
+        setInterval(renderData, 2000); 
+        renderData(); 
+        checkPanelPosition();
+
+    </script>
+</body>
+</html>

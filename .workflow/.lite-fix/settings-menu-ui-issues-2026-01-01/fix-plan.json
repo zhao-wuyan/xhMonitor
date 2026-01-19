@@ -1,0 +1,164 @@
+{
+  "summary": "修复设置菜单的进程监控关键词管理功能和样式问题。核心修复包括:创建自定义 WPF InputDialog 替代 VisualBasic.InputBox,添加 ListBox ItemTemplate 和右键删除功能,优化深色模式样式一致性。",
+  "root_cause": "SettingsWindow.xaml.cs 第 67 行使用 Microsoft.VisualBasic.Interaction.InputBox 但项目缺少程序集引用,导致添加关键词功能运行时异常。同时 SettingsWindow.xaml 第 132-137 行 ListBox 缺少 ItemTemplate 导致无法显示内容,且缺少删除功能和样式优化。",
+  "strategy": "comprehensive_fix",
+  "tasks": [
+    {
+      "id": "FIX1",
+      "title": "创建自定义 WPF InputDialog 组件",
+      "scope": "XhMonitor.Desktop/Dialogs/",
+      "action": "Add",
+      "description": "创建独立的 InputDialog.xaml 窗口组件,用于替代 Microsoft.VisualBasic.InputBox,提供与深色主题一致的样式和用户体验。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Dialogs/InputDialog.xaml",
+          "target": "Window:1-50",
+          "change": "创建 WPF 窗口 XAML,包含标题栏、问题文本、输入框、确认/取消按钮"
+        },
+        {
+          "file": "XhMonitor.Desktop/Dialogs/InputDialog.xaml.cs",
+          "target": "InputDialog:1-35",
+          "change": "实现 code-behind,包含 ResponseText 属性和按钮事件处理器"
+        }
+      ],
+      "implementation": [
+        "创建 XhMonitor.Desktop/Dialogs 目录 (如不存在)",
+        "创建 InputDialog.xaml,设置窗口样式(深色主题,400x200,居中显示,ResizeMode=NoResize)",
+        "添加 UI 元素:TextBlock (问题文本),TextBox (输入框),StackPanel (按钮容器),Button (确认/取消)",
+        "创建 InputDialog.xaml.cs code-behind,定义 ResponseText 属性,实现 OkButton_Click (设置 DialogResult = true) 和 CancelButton_Click (DialogResult = false)",
+        "应用深色主题样式:Background=#2D2D30,Foreground=#E0E0E0,BorderBrush=#3F3F46"
+      ],
+      "verification": [
+        "编译项目,确保无编译错误",
+        "手动测试:var dialog = new InputDialog(\"测试问题\", \"测试标题\"); dialog.ShowDialog()",
+        "验证对话框显示正常,输入文本后点击确认返回 DialogResult = true 且 ResponseText 包含输入内容"
+      ],
+      "reference": {
+        "pattern": "WPF 对话框模式",
+        "files": [
+          "XhMonitor.Desktop/Windows/SettingsWindow.xaml"
+        ],
+        "examples": "参考 SettingsWindow 的深色主题样式定义 (line 16-64),保持一致的颜色方案"
+      },
+      "risk": "low"
+    },
+    {
+      "id": "FIX2",
+      "title": "修复添加关键词功能并添加删除功能",
+      "scope": "XhMonitor.Desktop/Windows/SettingsWindow",
+      "action": "Fix",
+      "description": "替换 AddKeyword_Click 中的 VisualBasic.InputBox 为自定义 InputDialog,并在 ListBox 添加右键菜单实现删除关键词功能。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+          "target": "AddKeyword_Click:65-72",
+          "change": "替换 Microsoft.VisualBasic.Interaction.InputBox 为 new InputDialog().ShowDialog()"
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+          "target": "新增 DeleteKeyword_Click:73-80",
+          "change": "添加删除关键词事件处理器,从 ViewModel.ProcessKeywords 移除选中项"
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "ListBox:132-137",
+          "change": "添加 Name=\"KeywordsListBox\",ContextMenu 包含删除菜单项"
+        }
+      ],
+      "implementation": [
+        "在 SettingsWindow.xaml.cs 添加 using XhMonitor.Desktop.Dialogs;",
+        "修改 AddKeyword_Click:创建 InputDialog 实例,ShowDialog() 后检查 DialogResult 和 ResponseText,调用 _viewModel.ProcessKeywords.Add()",
+        "添加 DeleteKeyword_Click 方法:检查 KeywordsListBox.SelectedItem,调用 _viewModel.ProcessKeywords.Remove()",
+        "在 SettingsWindow.xaml ListBox 添加 Name=\"KeywordsListBox\" 和 ContextMenu 包含 MenuItem (Header=\"删除\",Click=\"DeleteKeyword_Click\")"
+      ],
+      "verification": [
+        "点击\"+ 添加关键词\"按钮,验证弹出自定义对话框而非崩溃",
+        "输入关键词后点击确认,验证关键词出现在 ListBox 中",
+        "右键点击已添加的关键词,验证删除菜单出现且点击后关键词被移除"
+      ],
+      "depends_on": ["FIX1"],
+      "risk": "low"
+    },
+    {
+      "id": "FIX3",
+      "title": "优化 ListBox 样式和显示",
+      "scope": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "action": "Update",
+      "description": "为 ProcessKeywords ListBox 添加 ItemTemplate 确保内容正确显示,优化深色模式对比度和间距,统一字体大小。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "ListBox:132-137",
+          "change": "添加 ListBox.ItemTemplate DataTemplate,设置 Background/Foreground/BorderBrush,调整 Padding/Margin"
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+          "target": "Resources:16-64 (可选)",
+          "change": "提取通用样式常量 (LabelFontSize=14, InputHeight=35, ControlMargin=0,0,0,20)"
+        }
+      ],
+      "implementation": [
+        "在 ListBox 添加 ItemTemplate:DataTemplate 包含 TextBlock,绑定到 {Binding},设置 Foreground=#E0E0E0,FontSize=12",
+        "更新 ListBox 样式:Background=#2D2D30,Foreground=#E0E0E0,BorderBrush=#3F3F46,BorderThickness=1,Padding=8",
+        "可选:在 Window.Resources 添加样式常量 (Double/Thickness 资源),在 ListBox 及其他控件中引用 StaticResource"
+      ],
+      "verification": [
+        "启动应用,打开设置窗口,导航到\"数据采集\"选项卡",
+        "验证进程监控关键词 ListBox 正确显示默认关键词 (如 chrome, vscode 等)",
+        "检查对比度:文本清晰可读,边框可见,与深色主题一致"
+      ],
+      "depends_on": ["FIX2"],
+      "risk": "low"
+    }
+  ],
+  "flow_control": {
+    "execution_order": [
+      {
+        "phase": "sequential-1",
+        "tasks": ["FIX1"],
+        "type": "sequential"
+      },
+      {
+        "phase": "sequential-2",
+        "tasks": ["FIX2"],
+        "type": "sequential"
+      },
+      {
+        "phase": "sequential-3",
+        "tasks": ["FIX3"],
+        "type": "sequential"
+      }
+    ],
+    "exit_conditions": {
+      "success": "所有任务完成且验证通过:InputDialog 正常弹出,关键词可添加/删除,ListBox 样式优化完成",
+      "failure": "编译失败或运行时异常,或功能验证未通过"
+    }
+  },
+  "focus_paths": [
+    "XhMonitor.Desktop/Dialogs/InputDialog.xaml",
+    "XhMonitor.Desktop/Dialogs/InputDialog.xaml.cs",
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs"
+  ],
+  "test_strategy": {
+    "scope": "manual",
+    "manual_verification": [
+      "启动应用,打开设置窗口,点击\"+ 添加关键词\"验证自定义对话框显示",
+      "输入关键词并确认,验证关键词出现在列表中",
+      "右键点击关键词选择删除,验证关键词被移除",
+      "检查 ListBox 样式:文本显示正常,对比度足够,边框清晰",
+      "保存设置后重启应用,验证关键词持久化正常"
+    ]
+  },
+  "estimated_time": "45 minutes",
+  "recommended_execution": "Agent",
+  "severity": "Medium",
+  "risk_level": "low",
+  "_metadata": {
+    "timestamp": "2026-01-01T12:40:00.000Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "diagnosis_angles": ["ui-bug", "state-management"],
+    "duration_seconds": 180
+  }
+}

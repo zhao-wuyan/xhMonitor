@@ -28,8 +28,8 @@
 - **框架**：.NET 8 + ASP.NET Core
 - **数据库**：SQLite + EF Core 8
 - **实时通信**：SignalR
-- **性能监控**：PerformanceCounter API
-- **日志**：Microsoft.Extensions.Logging
+- **性能监控**：LibreHardwareMonitor (系统级) + PerformanceCounter API (进程级)
+- **日志**：Serilog
 
 ### 前端
 - **框架**：React 19 + TypeScript
@@ -399,12 +399,35 @@ connection.on('metrics.latest', (data: MetricsData) => {
 await connection.start();
 ```
 
+## 系统要求
+
+### 后端
+- **操作系统**：Windows 10/11 (1709+)
+- **.NET 版本**：.NET 8 SDK
+- **开发工具**：Visual Studio 2022 或 VS Code
+- **权限要求**：
+  - **推荐**：管理员权限（启用 LibreHardwareMonitor 混合架构，获取更准确的系统级指标）
+  - **最低**：普通用户权限（自动回退到 PerformanceCounter，功能完整但系统级指标精度略低）
+
+### 混合架构说明
+
+本项目采用 **LibreHardwareMonitor + PerformanceCounter 混合架构**：
+
+| 指标类型 | 数据源 | 权限要求 | 说明 |
+|---------|--------|---------|------|
+| **系统级指标** | LibreHardwareMonitor | 管理员权限 | CPU/GPU/Memory 总使用率，精度更高 |
+| **进程级指标** | PerformanceCounter | 普通用户权限 | 单个进程的资源占用，功能完整 |
+
+**自动回退机制**：
+- 有管理员权限：系统级指标使用 LibreHardwareMonitor，进程级指标使用 PerformanceCounter
+- 无管理员权限：所有指标自动回退到 PerformanceCounter，功能不受影响
+
 ## 快速开始
 
 ### 环境要求
 
 **后端**：
-- Windows 10/11
+- Windows 10/11 (1709+)
 - .NET 8 SDK
 - Visual Studio 2022 或 VS Code
 
@@ -776,19 +799,26 @@ console.log("Connected to XhMonitor");
   },
   "Monitor": {
     "IntervalSeconds": 5,
+    "SystemUsageIntervalSeconds": 1,
     "Keywords": ["python", "node", "docker"]
   },
   "MetricProviders": {
-    "PluginDirectory": ""
+    "PluginDirectory": "",
+    "PreferLibreHardwareMonitor": true
   }
 }
 ```
 
 **配置项说明**：
 
-- `Monitor:IntervalSeconds`: 数据采集间隔（秒）
+- `Monitor:IntervalSeconds`: 进程采集间隔（秒）
+- `Monitor:SystemUsageIntervalSeconds`: 系统使用率采集间隔（秒）
 - `Monitor:Keywords`: 进程过滤关键词数组
 - `MetricProviders:PluginDirectory`: 自定义指标插件目录
+- `MetricProviders:PreferLibreHardwareMonitor`: 是否优先使用 LibreHardwareMonitor 混合架构
+  - `true`（默认）：系统级指标使用 LibreHardwareMonitor（需管理员权限），进程级指标使用 PerformanceCounter
+  - `false`：所有指标使用传统 PerformanceCounter
+  - **注意**：无管理员权限时自动回退到 PerformanceCounter，无需手动配置
 
 ### 数据库
 
@@ -1031,6 +1061,12 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 - ⏳ **阶段7**: 测试与优化
 - ⏳ **阶段8**: 部署与文档
+
+#### 小功能点
+
+- 桌面端：进程详情，双击悬浮卡片进程名称可以查看进程详情。
+- 桌面端：可以管理进程，鼠标悬浮在对应进程行上，进程最后会有一个关闭按点击后强制结束进程，需二次确认。
+- 整体：新增网速监控（集成），功耗监控（插件）
 
 ## 贡献指南
 

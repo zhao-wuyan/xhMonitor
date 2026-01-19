@@ -1,5 +1,9 @@
+using System.Diagnostics;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR;
 using XhMonitor.Core.Interfaces;
+using XhMonitor.Core.Constants;
+using XhMonitor.Core.Providers;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
 
@@ -11,81 +15,97 @@ public class Worker : BackgroundService
     private readonly PerformanceMonitor _monitor;
     private readonly IProcessMetricRepository _repository;
     private readonly IHubContext<MetricsHub> _hubContext;
-    private readonly int _intervalSeconds;
+    private readonly SystemMetricProvider _systemMetricProvider;
+    private readonly IProcessMetadataStore _processMetadataStore;
+    private readonly int _processIntervalSeconds;
+    private readonly int _systemIntervalSeconds;
+    private double _cachedMaxMemory;
+    private double _cachedMaxVram;
+    private readonly Channel<ProcessSnapshot> _processSnapshotChannel =
+        Channel.CreateBounded<ProcessSnapshot>(new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            SingleWriter = true
+        });
 
     public Worker(
         ILogger<Worker> logger,
         PerformanceMonitor monitor,
         IProcessMetricRepository repository,
         IHubContext<MetricsHub> hubContext,
+        SystemMetricProvider systemMetricProvider,
+        IProcessMetadataStore processMetadataStore,
         IConfiguration config)
     {
         _logger = logger;
         _monitor = monitor;
         _repository = repository;
         _hubContext = hubContext;
-        _intervalSeconds = config.GetValue("Monitor:IntervalSeconds", 5);
+        _systemMetricProvider = systemMetricProvider;
+        _processMetadataStore = processMetadataStore;
+        _processIntervalSeconds = Math.Max(1, config.GetValue("Monitor:IntervalSeconds", 5));
+        _systemIntervalSeconds = Math.Max(1, config.GetValue("Monitor:SystemUsageIntervalSeconds", 1));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("XhMonitor service started. Collection interval: {IntervalSeconds}s", _intervalSeconds);
+        var startupStopwatch = Stopwatch.StartNew();
+        _logger.LogInformation(
+            "=== XhMonitor 启动开始 === Process interval: {ProcessIntervalSeconds}s, System usage interval: {SystemIntervalSeconds}s",
+            _processIntervalSeconds,
+            _systemIntervalSeconds);
 
-        await Task.Delay(1000, stoppingToken);
+        // Phase 1: 硬件限制检测（内存 + VRAM）
+        var phaseStopwatch = Stopwatch.StartNew();
+        _logger.LogInformation("[启动阶段 1/3] 正在检测硬件限制（内存 + VRAM）...");
+        await SendMemoryLimitAsync(DateTime.Now, stoppingToken);
+        _logger.LogInformation("[启动阶段 1/3] 硬件限制检测完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
 
+        // Phase 2: 预热性能计数器（避免首次采集慢）
+        phaseStopwatch.Restart();
+        _logger.LogInformation("[启动阶段 2/3] 正在预热性能计数器...");
+        await WarmupPerformanceCountersAsync(stoppingToken);
+        _logger.LogInformation("[启动阶段 2/3] 性能计数器预热完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+
+        // Phase 2.5: 启动后台任务（VRAM检测、系统使用率监控）
+        phaseStopwatch.Restart();
+        _logger.LogInformation("[启动阶段 2.5/3] 正在启动后台任务...");
+        var vramTask = RunVramLimitCheckAsync(stoppingToken);
+        var systemUsageTask = RunSystemUsageLoopAsync(stoppingToken);
+        var processPushTask = RunProcessPushLoopAsync(stoppingToken);
+        _logger.LogInformation("[启动阶段 2.5/3] 后台任务启动完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+
+        // Phase 3: 首次进程数据采集
+        phaseStopwatch.Restart();
+        _logger.LogInformation("[启动阶段 3/3] 正在执行首次进程数据采集...");
+        try
+        {
+            await SendProcessDataAsync(DateTime.Now, stoppingToken);
+            _logger.LogInformation("[启动阶段 3/3] 首次进程数据采集完成，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[启动阶段 3/3] 首次进程数据采集失败，耗时: {ElapsedMs}ms", phaseStopwatch.ElapsedMilliseconds);
+        }
+
+        startupStopwatch.Stop();
+        _logger.LogInformation("=== XhMonitor 启动完成 === 总耗时: {TotalMs}ms ===", startupStopwatch.ElapsedMilliseconds);
+
+        // Process data loop (configurable interval)
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                _logger.LogDebug("Calling CollectAllAsync...");
-                var metrics = await _monitor.CollectAllAsync();
-                _logger.LogDebug("CollectAllAsync returned {Count} metrics", metrics.Count);
-
-                if (metrics.Count > 0)
-                {
-                    _logger.LogInformation("Collected metrics for {Count} processes", metrics.Count);
-
-                    foreach (var pm in metrics.Take(3))
-                    {
-                        var metricSummary = string.Join(", ", pm.Metrics.Select(m => $"{m.Key}={m.Value.Value:F1}{m.Value.Unit}"));
-                        _logger.LogDebug("Process {ProcessId} ({ProcessName}): {Metrics}",
-                            pm.Info.ProcessId, pm.Info.ProcessName, metricSummary);
-                    }
-
-                    var cycleTimestamp = metrics[0].Timestamp;
-                    _logger.LogDebug("Calling SaveMetricsAsync with {Count} metrics and timestamp {Timestamp}",
-                        metrics.Count, cycleTimestamp);
-                    await _repository.SaveMetricsAsync(metrics, cycleTimestamp, stoppingToken);
-                    _logger.LogDebug("SaveMetricsAsync completed");
-
-                    await _hubContext.Clients.All.SendAsync("metrics.latest", new
-                    {
-                        Timestamp = cycleTimestamp,
-                        ProcessCount = metrics.Count,
-                        Processes = metrics.Select(m => new
-                        {
-                            m.Info.ProcessId,
-                            m.Info.ProcessName,
-                            m.Info.CommandLine,
-                            Metrics = m.Metrics
-                        }).ToList()
-                    }, stoppingToken);
-
-                    _logger.LogDebug("Pushed metrics to SignalR clients");
-                }
-                else
-                {
-                    _logger.LogInformation("No matching processes found");
-                }
+                await SendProcessDataAsync(DateTime.Now, stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during metric collection");
+                _logger.LogError(ex, "Error during process data collection");
             }
 
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(_processIntervalSeconds), stoppingToken);
             }
             catch (TaskCanceledException)
             {
@@ -93,6 +113,239 @@ public class Worker : BackgroundService
             }
         }
 
+        _processSnapshotChannel.Writer.TryComplete();
+        await Task.WhenAll(vramTask, systemUsageTask, processPushTask);
         _logger.LogInformation("XhMonitor service stopped");
+    }
+
+    private async Task WarmupPerformanceCountersAsync(CancellationToken ct)
+    {
+        try
+        {
+            // 预热所有性能计数器
+            await _systemMetricProvider.WarmupAsync();
+
+            // 验证预热结果
+            var usage = await _systemMetricProvider.GetSystemUsageAsync();
+            _logger.LogDebug("  → 预热完成: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
+                usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "  → 性能计数器预热失败（不影响后续运行）");
+        }
+    }
+
+    private async Task SendMemoryLimitAsync(DateTime timestamp, CancellationToken ct)
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var limits = await _systemMetricProvider.GetHardwareLimitsAsync();
+            _cachedMaxMemory = limits.MaxMemory;
+            _cachedMaxVram = limits.MaxVram;
+
+            _logger.LogInformation("  → 硬件限制检测成功: MaxMemory={MaxMemory}MB, MaxVram={MaxVram}MB, 耗时: {ElapsedMs}ms",
+                _cachedMaxMemory, _cachedMaxVram, sw.ElapsedMilliseconds);
+
+            await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
+            {
+                Timestamp = timestamp,
+                MaxMemory = Math.Round(_cachedMaxMemory, 1),
+                MaxVram = Math.Round(_cachedMaxVram, 1)
+            }, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "  → 硬件限制检测失败, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
+        }
+    }
+
+    private async Task RunVramLimitCheckAsync(CancellationToken stoppingToken)
+    {
+        // 每小时检测一次 VRAM 最大值（防止热插拔 GPU 等情况）
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                // 延迟 1 小时后再次检测
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+
+                await UpdateVramLimitAsync(DateTime.Now, stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in VRAM limit check loop");
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+            }
+        }
+    }
+
+    private async Task UpdateVramLimitAsync(DateTime timestamp, CancellationToken ct)
+    {
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation("正在更新VRAM限制...");
+
+        var limits = await _systemMetricProvider.GetHardwareLimitsAsync();
+        _cachedMaxVram = limits.MaxVram;
+
+        _logger.LogInformation("VRAM限制更新完成: MaxVram={MaxVram}MB, 耗时: {ElapsedMs}ms", _cachedMaxVram, sw.ElapsedMilliseconds);
+
+        await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
+        {
+            Timestamp = timestamp,
+            MaxMemory = Math.Round(_cachedMaxMemory, 1),
+            MaxVram = Math.Round(_cachedMaxVram, 1)
+        }, ct);
+    }
+
+    private async Task RunSystemUsageLoopAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await SendSystemUsageAsync(DateTime.Now, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during system usage collection");
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(_systemIntervalSeconds), stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private async Task SendSystemUsageAsync(DateTime timestamp, CancellationToken ct)
+    {
+        var usage = await _systemMetricProvider.GetSystemUsageAsync();
+
+        _logger.LogInformation("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
+            usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
+
+        await _hubContext.Clients.All.SendAsync(SignalREvents.SystemUsage, new
+        {
+            Timestamp = timestamp,
+            TotalCpu = usage.TotalCpu,
+            TotalGpu = usage.TotalGpu,
+            TotalMemory = Math.Round(usage.TotalMemory, 1),
+            TotalVram = Math.Round(usage.TotalVram, 1),
+            MaxMemory = Math.Round(_cachedMaxMemory, 1),
+            MaxVram = Math.Round(_cachedMaxVram, 1)
+        }, ct);
+    }
+
+    private async Task SendProcessDataAsync(DateTime timestamp, CancellationToken ct)
+    {
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug("开始采集进程指标...");
+
+        var metrics = await _monitor.CollectAllAsync();
+        var collectElapsed = sw.ElapsedMilliseconds;
+
+        if (metrics.Count > 0)
+        {
+            _logger.LogDebug("进程指标采集完成: 采集到 {Count} 个进程, 采集耗时: {CollectMs}ms", metrics.Count, collectElapsed);
+
+            var saveStart = Stopwatch.GetTimestamp();
+            await _repository.SaveMetricsAsync(metrics, timestamp, ct);
+            var saveElapsed = Stopwatch.GetElapsedTime(saveStart).TotalMilliseconds;
+
+            var metaUpdates = _processMetadataStore.Update(metrics);
+
+            if (metaUpdates.Count > 0)
+            {
+                await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetadata, new
+                {
+                    Timestamp = timestamp,
+                    ProcessCount = metaUpdates.Count,
+                    Processes = metaUpdates.Select(m => new
+                    {
+                        m.ProcessId,
+                        m.ProcessName,
+                        m.CommandLine,
+                        m.DisplayName
+                    }).ToList()
+                }, ct);
+            }
+
+            var snapshot = new ProcessSnapshot
+            {
+                Timestamp = timestamp,
+                ProcessCount = metrics.Count,
+                Processes = metrics.Select(m => new ProcessMetricSnapshot
+                {
+                    ProcessId = m.Info.ProcessId,
+                    ProcessName = m.Info.ProcessName,
+                    Metrics = m.Metrics.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value)
+                }).ToList()
+            };
+
+            EnqueueProcessSnapshot(snapshot);
+
+            _logger.LogDebug("进程数据处理完成: 保存耗时: {SaveMs}ms, 推送完成, 总耗时: {TotalMs}ms",
+                saveElapsed, sw.ElapsedMilliseconds);
+        }
+        else
+        {
+            _logger.LogDebug("未发现匹配的进程, 耗时: {ElapsedMs}ms", sw.ElapsedMilliseconds);
+        }
+    }
+
+    private async Task RunProcessPushLoopAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await foreach (var snapshot in _processSnapshotChannel.Reader.ReadAllAsync(stoppingToken))
+            {
+                await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetrics, new
+                {
+                    Timestamp = snapshot.Timestamp,
+                    ProcessCount = snapshot.ProcessCount,
+                    Processes = snapshot.Processes.Select(p => new
+                    {
+                        p.ProcessId,
+                        p.ProcessName,
+                        p.Metrics
+                    }).ToList()
+                }, stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void EnqueueProcessSnapshot(ProcessSnapshot snapshot)
+    {
+        while (!_processSnapshotChannel.Writer.TryWrite(snapshot))
+        {
+            _processSnapshotChannel.Reader.TryRead(out _);
+        }
+    }
+
+    private sealed class ProcessSnapshot
+    {
+        public DateTime Timestamp { get; init; }
+        public int ProcessCount { get; init; }
+        public List<ProcessMetricSnapshot> Processes { get; init; } = new();
+    }
+
+    private sealed class ProcessMetricSnapshot
+    {
+        public int ProcessId { get; init; }
+        public string ProcessName { get; init; } = string.Empty;
+        public Dictionary<string, double> Metrics { get; init; } = new();
     }
 }

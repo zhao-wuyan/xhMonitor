@@ -1,0 +1,110 @@
+{
+  "symptom": {
+    "description": "控制台打印的系统 GPU 占用率不准确，与任务管理器显示的 GPU 使用率存在显著差异",
+    "error_message": null,
+    "stack_trace": null,
+    "frequency": "always",
+    "user_impact": "用户无法准确监控系统 GPU 使用情况，导致性能分析和资源管理决策失准"
+  },
+  "root_cause": {
+    "file": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+    "line_range": "62-73",
+    "function": "GetSystemTotalAsync",
+    "issue": "GPU 性能计数器数据聚合逻辑错误：直接累加所有 GPU Engine 实例的 Utilization Percentage 值。Windows 性能计数器 'GPU Engine\\Utilization Percentage' 返回的是每个引擎的独立使用率（0-100%），而不是总量的分量。多个引擎（3D、Copy、Video Decode 等）的使用率应该取最大值或加权平均，而非简单累加，否则会导致总使用率超过 100% 或严重偏离实际值。",
+    "confidence": 0.95,
+    "introduced_by": "unknown",
+    "category": "logic_error"
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+      "relevance": 1.0,
+      "rationale": "包含错误的 GPU 数据聚合逻辑（直接累加所有引擎使用率），是根本原因所在",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "relevance": 0.75,
+      "rationale": "调用 GpuMetricProvider.GetSystemTotalAsync() 获取 GPU 数据并传递给上层，数据流转的中间环节",
+      "change_type": "reference_only"
+    },
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "relevance": 0.65,
+      "rationale": "通过 SystemMetricProvider.GetSystemUsageAsync() 获取 GPU 数据并打印日志，数据流转的最终消费者",
+      "change_type": "reference_only"
+    },
+    {
+      "path": "XhMonitor.Core/Models/SystemSummary.cs",
+      "relevance": 0.3,
+      "rationale": "定义 TotalGpu 字段用于存储 GPU 使用率数据，数据模型定义",
+      "change_type": "reference_only"
+    }
+  ],
+  "reproduction_steps": [
+    "启动 XhMonitor.Service 服务",
+    "观察控制台输出的 'System usage: CPU=X%, GPU=Y%, Memory=ZMB, VRAM=WMB' 日志",
+    "同时打开 Windows 任务管理器，切换到性能标签页，查看 GPU 使用率",
+    "对比控制台输出的 GPU 值与任务管理器显示的 GPU 使用率",
+    "预期现象：控制台输出的 GPU 值显著高于任务管理器（可能超过 100%），或者与实际使用情况不符"
+  ],
+  "fix_hints": [
+    {
+      "description": "修正 GPU 性能计数器聚合逻辑",
+      "approach": "将 GpuMetricProvider.GetSystemTotalAsync() 中的简单累加逻辑改为取最大值或加权平均。推荐方案：按引擎类型分组（3D、Copy、Video Decode 等），每组取最大值，然后对所有组取平均值。或者直接取所有引擎的最大值作为总 GPU 使用率。",
+      "code_example": "// 方案 1: 取所有引擎的最大值\ndouble maxUtilization = 0;\nforeach (var counter in _systemCounters)\n{\n    try\n    {\n        var value = counter.NextValue();\n        if (value > maxUtilization) maxUtilization = value;\n    }\n    catch { }\n}\nreturn Math.Round(maxUtilization, 1);\n\n// 方案 2: 按引擎类型分组取最大值后平均\nvar engineGroups = _systemCounters\n    .Select(c => new { Counter = c, Type = ExtractEngineType(c.InstanceName) })\n    .GroupBy(x => x.Type);\ndouble totalUtilization = 0;\nint groupCount = 0;\nforeach (var group in engineGroups)\n{\n    double maxInGroup = group.Max(x => x.Counter.NextValue());\n    totalUtilization += maxInGroup;\n    groupCount++;\n}\nreturn groupCount > 0 ? Math.Round(totalUtilization / groupCount, 1) : 0;",
+      "risk": "low"
+    },
+    {
+      "description": "添加数据验证和边界检查",
+      "approach": "在返回 GPU 使用率前，验证数值是否在合理范围内（0-100%）。如果超出范围，记录警告日志并进行截断或使用备用计算方法。",
+      "code_example": "var result = Math.Round(totalUtilization, 1);\nif (result > 100)\n{\n    _logger?.LogWarning(\"GPU utilization exceeded 100% ({Value}%), using max value logic\", result);\n    result = Math.Min(result, 100);\n}\nreturn result;",
+      "risk": "low"
+    },
+    {
+      "description": "增强日志输出以便调试",
+      "approach": "在 GetSystemTotalAsync() 中添加详细日志，输出每个性能计数器实例的名称和值，帮助理解数据来源和聚合过程。",
+      "code_example": "foreach (var counter in _systemCounters)\n{\n    try\n    {\n        var value = counter.NextValue();\n        _logger?.LogDebug(\"GPU Engine instance: {Name}, Utilization: {Value}%\", counter.InstanceName, value);\n        totalUtilization += value;\n    }\n    catch { }\n}",
+      "risk": "low"
+    }
+  ],
+  "dependencies": "System.Diagnostics.PerformanceCounter (Windows 性能计数器 API)，依赖 Windows 'GPU Engine' 性能计数器类别",
+  "constraints": "修复必须保持与 Windows 性能计数器 API 的兼容性；不能破坏现有的进程级 GPU 监控功能（CollectAsync 方法）；需要考虑多 GPU 系统的场景",
+  "related_issues": [
+    {
+      "type": "similar_bug",
+      "reference": "XhMonitor.Core/Providers/GpuMetricProvider.cs:105-112",
+      "description": "进程级 GPU 监控（CollectAsync）也使用相同的累加逻辑，可能存在类似问题"
+    }
+  ],
+  "clarification_needs": [
+    {
+      "question": "GPU 使用率聚合策略选择",
+      "context": "Windows 'GPU Engine' 性能计数器包含多个引擎实例（3D、Copy、Video Decode 等），每个引擎的使用率独立。需要确定如何将这些值聚合为单一的系统 GPU 使用率。",
+      "options": [
+        "取所有引擎的最大值（简单直接，反映峰值负载）",
+        "按引擎类型分组，每组取最大值后平均（更平衡的视图）",
+        "加权平均（需要定义权重规则，复杂度高）",
+        "参考任务管理器的计算方法（需要逆向工程或查阅文档）"
+      ]
+    },
+    {
+      "question": "多 GPU 系统处理策略",
+      "context": "系统可能包含多个 GPU（集成显卡 + 独立显卡），性能计数器会返回所有 GPU 的引擎实例。需要确定是分别显示每个 GPU 的使用率，还是聚合为单一值。",
+      "options": [
+        "聚合所有 GPU 为单一使用率（当前行为，但需要修正聚合逻辑）",
+        "分别显示每个 GPU 的使用率（需要修改数据模型和前端）",
+        "只显示主 GPU 的使用率（需要识别主 GPU）"
+      ]
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-12T00:00:00Z",
+    "bug_description": "在控制台打印当前系统占用情况的日志，我要分析为什么 GPU 占用监控不准",
+    "source": "cli-explore-agent",
+    "diagnosis_angle": "dataflow",
+    "diagnosis_index": 2,
+    "total_diagnoses": 2,
+    "duration_seconds": 180
+  }
+}

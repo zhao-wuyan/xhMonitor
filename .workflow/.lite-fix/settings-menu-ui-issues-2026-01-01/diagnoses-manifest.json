@@ -1,0 +1,21 @@
+{
+  "session_id": "settings-menu-ui-issues-2026-01-01",
+  "bug_description": "使用gemini审查设置菜单的UI问题,有无法添加进程监控关键词,还有各种样式问题",
+  "timestamp": "2026-01-01T12:37:00.000Z",
+  "severity": "Medium",
+  "diagnosis_count": 2,
+  "diagnoses": [
+    {
+      "angle": "ui-bug",
+      "file": "diagnosis-ui-bug.json",
+      "path": ".workflow/.lite-fix/settings-menu-ui-issues-2026-01-01/diagnosis-ui-bug.json",
+      "index": 1
+    },
+    {
+      "angle": "state-management",
+      "file": "diagnosis-state-management.json",
+      "path": ".workflow/.lite-fix/settings-menu-ui-issues-2026-01-01/diagnosis-state-management.json",
+      "index": 2
+    }
+  ]
+}

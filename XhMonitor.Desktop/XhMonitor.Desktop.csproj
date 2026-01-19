@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Version>0.1.0</Version>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.*" />
+    <PackageReference Include="System.Text.Json" Version="8.*" />
+  </ItemGroup>
+
+  <!-- Build web assets before Desktop compilation -->
+  <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild">
+    <!-- Install npm dependencies if node_modules doesn't exist -->
+    <Exec Command="npm install" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" Condition="!Exists('$(ProjectDir)..\xhmonitor-web\node_modules')" />
+
+    <!-- Build web assets -->
+    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" />
+
+    <!-- Copy dist folder to output directory as wwwroot -->
+    <ItemGroup>
+      <WebAssets Include="$(ProjectDir)..\xhmonitor-web\dist\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WebAssets)" DestinationFiles="@(WebAssets->'$(OutputPath)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+</Project>

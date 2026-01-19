@@ -1,0 +1,74 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"ccw tool exec update_module_claude '{\\\"strategy\\\":\\\"related\\\",\\\"tool\\\":\\\"qwen\\\"}'\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"ccw tool exec memory_queue \\\"{\\\\\"action\\\\\":\\\\\"add\\\\\",\\\\\"path\\\\\":\\\\\"$CLAUDE_PROJECT_DIR\\\\\"}\\\"\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"ccw tool exec skill_context_loader '{\\\"mode\\\":\\\"auto\\\",\\\"prompt\\\":\\\"$CLAUDE_PROMPT\\\"}'\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"INPUT=$(cat); TOOL=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_name // empty\\\"); if [ \\\"$TOOL\\\" = \\\"Bash\\\" ]; then CMD=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.command // empty\\\"); SYS_PATHS=\\\"/etc/|/usr/|/bin/|/sbin/|/boot/|/sys/|/proc/|C:\\\\Windows|C:\\\\Program Files\\\"; if echo \\\"$CMD\\\" | grep -qiE \\\"$SYS_PATHS\\\"; then echo \\\"{\\\\\"hookSpecificOutput\\\\\":{\\\\\"hookEventName\\\\\":\\\\\"PreToolUse\\\\\",\\\\\"permissionDecision\\\\\":\\\\\"ask\\\\\",\\\\\"permissionDecisionReason\\\\\":\\\\\"System path operation requires confirmation\\\\\"}}\\\" && exit 0; fi; else FILE=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.file_path // .tool_input.path // empty\\\"); SYS_PATHS=\\\"/etc/|/usr/|/bin/|/sbin/|C:\\\\Windows|C:\\\\Program Files\\\"; if echo \\\"$FILE\\\" | grep -qiE \\\"$SYS_PATHS\\\"; then echo \\\"{\\\\\"hookSpecificOutput\\\\\":{\\\\\"hookEventName\\\\\":\\\\\"PreToolUse\\\\\",\\\\\"permissionDecision\\\\\":\\\\\"deny\\\\\",\\\\\"permissionDecisionReason\\\\\":\\\\\"Cannot modify system file: $FILE\\\\\"}}\\\" && exit 0; fi; fi; exit 0\"",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Write|Edit|Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"INPUT=$(cat); CMD=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.command // empty\\\"); PERM_CMDS=\\\"chmod|chown|chgrp|setfacl|icacls|takeown|cacls\\\"; if echo \\\"$CMD\\\" | grep -qiE \\\"^($PERM_CMDS)\\\"; then echo \\\"{\\\\\"hookSpecificOutput\\\\\":{\\\\\"hookEventName\\\\\":\\\\\"PreToolUse\\\\\",\\\\\"permissionDecision\\\\\":\\\\\"ask\\\\\",\\\\\"permissionDecisionReason\\\\\":\\\\\"Permission change requires confirmation: $CMD\\\\\"}}\\\" && exit 0; fi; exit 0\"",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"INPUT=$(cat); TOOL=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_name // empty\\\"); if [ \\\"$TOOL\\\" = \\\"WebFetch\\\" ]; then URL=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.url // empty\\\"); echo \\\"{\\\\\"hookSpecificOutput\\\\\":{\\\\\"hookEventName\\\\\":\\\\\"PreToolUse\\\\\",\\\\\"permissionDecision\\\\\":\\\\\"ask\\\\\",\\\\\"permissionDecisionReason\\\\\":\\\\\"Network request to: $URL\\\\\"}}\\\" && exit 0; fi; CMD=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.command // empty\\\"); NET_CMDS=\\\"curl|wget|nc |netcat|ssh |scp |rsync|ftp \\\"; if echo \\\"$CMD\\\" | grep -qiE \\\"^($NET_CMDS)\\\"; then echo \\\"{\\\\\"hookSpecificOutput\\\\\":{\\\\\"hookEventName\\\\\":\\\\\"PreToolUse\\\\\",\\\\\"permissionDecision\\\\\":\\\\\"ask\\\\\",\\\\\"permissionDecisionReason\\\\\":\\\\\"Network command requires confirmation: $CMD\\\\\"}}\\\" && exit 0; fi; exit 0\"",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Bash|WebFetch"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"INPUT=$(cat); FILE=$(echo \\\"$INPUT\\\" | jq -r \\\".tool_input.file_path // .tool_input.path // empty\\\"); PROTECTED=\\\".env|.git/|package-lock.json|yarn.lock|.credentials|secrets|id_rsa|.pem$|.key$\\\"; if echo \\\"$FILE\\\" | grep -qiE \\\"$PROTECTED\\\"; then echo \\\"{\\\\\"hookSpecificOutput\\\\\":{\\\\\"hookEventName\\\\\":\\\\\"PreToolUse\\\\\",\\\\\"permissionDecision\\\\\":\\\\\"deny\\\\\",\\\\\"permissionDecisionReason\\\\\":\\\\\"Protected file cannot be modified: $FILE\\\\\"}}\\\" && exit 0; fi; exit 0\"",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Write|Edit"
+      }
+    ]
+  }
+}

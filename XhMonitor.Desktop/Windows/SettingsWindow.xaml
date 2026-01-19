@@ -1,0 +1,443 @@
+<Window x:Class="XhMonitor.Desktop.Windows.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:XhMonitor.Desktop.ViewModels"
+        mc:Ignorable="d"
+        Title="XhMonitor 设置" Height="600" Width="800"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Background="#1E1E1E" Foreground="#E0E0E0">
+
+    <Window.DataContext>
+        <vm:SettingsViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <!-- 颜色资源 -->
+        <SolidColorBrush x:Key="WindowBackground" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="WindowForeground" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="ButtonBackground" Color="#333333"/>
+        <SolidColorBrush x:Key="ButtonHover" Color="#444444"/>
+        <SolidColorBrush x:Key="NavBackground" Color="#252526"/>
+        <SolidColorBrush x:Key="NavBorder" Color="#3F3F46"/>
+        <SolidColorBrush x:Key="NavItemHover" Color="#2D2D30"/>
+        <SolidColorBrush x:Key="NavItemSelected" Color="#252526"/>
+        <SolidColorBrush x:Key="AccentBlue" Color="#007ACC"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#AAAAAA"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="White"/>
+        <SolidColorBrush x:Key="InputBackground" Color="#333333"/>
+        <SolidColorBrush x:Key="ListBackground" Color="#2D2D30"/>
+        <SolidColorBrush x:Key="SeparatorColor" Color="#3F3F46"/>
+
+        <!-- 图标 Path 资源 -->
+        <PathGeometry x:Key="IconPalette" Figures="M12 2C11.5 2 11 2.19 10.59 2.59L2.59 10.59C1.8 11.37 1.8 12.63 2.59 13.41L10.59 21.41C11.37 22.2 12.63 22.2 13.41 21.41L21.41 13.41C22.2 12.63 22.2 11.37 21.41 10.59L13.41 2.59C13 2.19 12.5 2 12 2M12 4L20 12L12 20L4 12M7 12C7 14.76 9.24 17 12 17S17 14.76 17 12H7Z"/>
+        <PathGeometry x:Key="IconChart" Figures="M3 3V21H21V19H5V3H3M9 17H11V10H9V17M13 17H15V7H13V17M17 17H19V13H17V17Z"/>
+        <PathGeometry x:Key="IconSettings" Figures="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5A3.5 3.5 0 0 1 15.5 12A3.5 3.5 0 0 1 12 15.5M19.43 12.97C19.47 12.65 19.5 12.33 19.5 12C19.5 11.67 19.47 11.34 19.43 11L21.54 9.37C21.73 9.22 21.78 8.95 21.66 8.73L19.66 5.27C19.54 5.05 19.27 4.96 19.05 5.05L16.56 6.05C16.04 5.66 15.5 5.32 14.87 5.07L14.5 2.42C14.46 2.18 14.25 2 14 2H10C9.75 2 9.54 2.18 9.5 2.42L9.13 5.07C8.5 5.32 7.96 5.66 7.44 6.05L4.95 5.05C4.73 4.96 4.46 5.05 4.34 5.27L2.34 8.73C2.21 8.95 2.27 9.22 2.46 9.37L4.57 11C4.53 11.34 4.5 11.67 4.5 12C4.5 12.33 4.53 12.65 4.57 12.97L2.46 14.63C2.27 14.78 2.21 15.05 2.34 15.27L4.34 18.73C4.46 18.95 4.73 19.03 4.95 18.95L7.44 17.94C7.96 18.34 8.5 18.68 9.13 18.93L9.5 21.58C9.54 21.82 9.75 22 10 22H14C14.25 22 14.46 21.82 14.5 21.58L14.87 18.93C15.5 18.67 16.04 18.34 16.56 17.94L19.05 18.95C19.27 19.03 19.54 18.95 19.66 18.73L21.66 15.27C21.78 15.05 21.73 14.78 21.54 14.63L19.43 12.97Z"/>
+        <PathGeometry x:Key="IconInfo" Figures="M13 9H11V7H13M13 17H11V11H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+
+        <!-- ScrollBar 暗色主题样式 -->
+        <Style x:Key="DarkScrollBar" TargetType="ScrollBar">
+            <Setter Property="Background" Value="{StaticResource ListBackground}"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6"/>
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate>
+                                                <Border Background="{TemplateBinding Foreground}" CornerRadius="6" Margin="2"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ScrollViewer 暗色主题样式 -->
+        <Style TargetType="ScrollViewer">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <ScrollContentPresenter Grid.Column="0" Grid.Row="0"/>
+                            <ScrollBar x:Name="PART_VerticalScrollBar"
+                                     Grid.Column="1" Grid.Row="0"
+                                     Style="{StaticResource DarkScrollBar}"
+                                     Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                     Value="{TemplateBinding VerticalOffset}"
+                                     Maximum="{TemplateBinding ScrollableHeight}"
+                                     ViewportSize="{TemplateBinding ViewportHeight}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBox 暗色主题样式 -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource InputBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource NavBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                        ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}"
+                                              BorderBrush="{TemplateBinding BorderBrush}"
+                                              BorderThickness="{TemplateBinding BorderThickness}"
+                                              CornerRadius="4">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                                <Path Grid.Column="1" Fill="{StaticResource TextSecondary}"
+                                                    Data="M 0 0 L 4 4 L 8 0 Z"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite"
+                                            IsHitTestVisible="False"
+                                            Content="{TemplateBinding SelectionBoxItem}"
+                                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                            Margin="5,3,25,3"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Left"/>
+                            <Popup x:Name="Popup"
+                                 Placement="Bottom"
+                                 IsOpen="{TemplateBinding IsDropDownOpen}"
+                                 AllowsTransparency="True"
+                                 Focusable="False"
+                                 PopupAnimation="Slide">
+                                <Grid MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border Background="{StaticResource ListBackground}"
+                                          BorderBrush="{StaticResource NavBorder}"
+                                          BorderThickness="1"
+                                          CornerRadius="4">
+                                        <ScrollViewer>
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBoxItem 暗色主题样式 -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource WindowForeground}"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Border" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource NavItemHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource NavItemSelected}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 现代化按钮样式 -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource ButtonHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{StaticResource InputBackground}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 导航列表项样式 -->
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="20,15"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Border" Background="Transparent" BorderThickness="4,0,0,0" BorderBrush="Transparent">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource NavItemSelected}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource NavItemHover}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧导航栏 -->
+        <Border Background="{StaticResource NavBackground}" BorderBrush="{StaticResource NavBorder}" BorderThickness="0,0,1,0">
+            <StackPanel>
+                <TextBlock Text="设置" FontSize="24" FontWeight="Bold" Margin="20,30,20,30" Foreground="{StaticResource TextPrimary}"/>
+                <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0" SelectedIndex="0">
+                    <ListBoxItem Tag="Appearance">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Path Grid.Column="0" Data="{StaticResource IconPalette}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                  Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="外观设置" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Data">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Path Grid.Column="0" Data="{StaticResource IconChart}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                  Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="数据采集" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="System">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Path Grid.Column="0" Data="{StaticResource IconSettings}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                  Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="系统选项" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="About">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Path Grid.Column="0" Data="{StaticResource IconInfo}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                  Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="关于" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ListBoxItem>
+                </ListBox>
+            </StackPanel>
+        </Border>
+
+        <!-- 右侧内容区 -->
+        <Grid Grid.Column="1" Margin="30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 分页内容 -->
+            <TabControl x:Name="ContentTabControl"
+                        Grid.Row="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        SelectedIndex="{Binding ElementName=NavList, Path=SelectedIndex}">
+
+                <!-- 页面 1: 外观设置 -->
+                <TabItem Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="外观设置" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="{StaticResource TextPrimary}"/>
+
+                            <TextBlock Text="主题颜色" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <ComboBox Height="35" Margin="0,0,0,20" SelectedIndex="0">
+                                <ComboBoxItem Content="深色 (Dark)"/>
+                                <ComboBoxItem Content="浅色 (Light)"/>
+                            </ComboBox>
+
+                            <TextBlock Text="窗口透明度" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <Grid Margin="0,0,0,20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="50"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider Maximum="100" Minimum="20" Value="{Binding Opacity}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Opacity, StringFormat={}{0}%}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- 页面 2: 数据采集 -->
+                <TabItem Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="数据采集" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
+
+                            <TextBlock Text="进程监控关键词" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <ListBox x:Name="KeywordsListBox"
+                                     ItemsSource="{Binding ProcessKeywords}"
+                                     Height="120"
+                                     Background="{StaticResource ListBackground}"
+                                     Foreground="{StaticResource WindowForeground}"
+                                     BorderBrush="{StaticResource NavBorder}"
+                                     BorderThickness="1"
+                                     Padding="8"
+                                     Margin="0,0,0,10">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Foreground="{StaticResource WindowForeground}" FontSize="12"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ContextMenu>
+                                    <ContextMenu Background="{StaticResource ListBackground}" BorderBrush="{StaticResource NavBorder}">
+                                        <MenuItem Header="删除" Click="DeleteKeyword_Click" Foreground="{StaticResource WindowForeground}"/>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                            </ListBox>
+                            <Button Content="+ 添加关键词"
+                                    Click="AddKeyword_Click"
+                                    Margin="0,0,0,20"
+                                    HorizontalAlignment="Left"
+                                    Padding="10,5"/>
+
+                            <TextBlock Text="系统指标采集间隔 (毫秒)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBox Height="35" Text="{Binding SystemInterval}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
+
+                            <TextBlock Text="进程指标采集间隔 (毫秒)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBox Height="35" Text="{Binding ProcessInterval}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
+
+                            <TextBlock Text="Top 进程数量" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBox Height="35" Text="{Binding TopProcessCount}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
+
+                            <TextBlock Text="历史数据保留时长 (天)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBox Height="35" Text="{Binding DataRetentionDays}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- 页面 3: 系统选项 -->
+                <TabItem Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="系统选项" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
+
+                            <CheckBox Content="开机自启动" IsChecked="{Binding StartWithWindows}" Foreground="White" Margin="0,0,0,20"/>
+
+                            <TextBlock Text="SignalR 后端端口" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBox Height="35" Text="{Binding SignalRPort}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
+
+                            <TextBlock Text="Web 前端端口" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBox Height="35" Text="{Binding WebPort}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- 页面 4: 关于 -->
+                <TabItem Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="关于" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
+
+                            <TextBlock Text="XhMonitor" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+                            <TextBlock Text="版本：0.1.0" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBlock Text="轻量级系统性能监控工具" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20" TextWrapping="Wrap"/>
+
+                            <Separator Margin="0,10,0,20" Background="{StaticResource SeparatorColor}"/>
+
+                            <TextBlock Text="技术栈" FontSize="14" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,10"/>
+                            <TextBlock Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap">
+                                • 前端：WPF (.NET 8)<LineBreak/>
+                                • 后端：ASP.NET Core + SignalR<LineBreak/>
+                                • 数据库：SQLite + EF Core<LineBreak/>
+                                • Web：Vue 3 + TypeScript
+                            </TextBlock>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+
+            <!-- 底部操作栏 -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                <Button Content="恢复默认" Margin="0,0,10,0" Background="Transparent" Foreground="{StaticResource TextSecondary}" Click="RestoreDefaults_Click"/>
+                <Button Content="取 消" Width="100" Margin="0,0,10,0" Click="Cancel_Click"/>
+                <Button Content="保 存" Width="100" Background="{StaticResource AccentBlue}" Click="Save_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

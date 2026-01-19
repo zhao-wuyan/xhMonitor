@@ -20,6 +20,9 @@ public class ProcessMetricRecord
     [MaxLength(2000)]
     public string? CommandLine { get; init; }
 
+    [MaxLength(500)]
+    public string? DisplayName { get; set; }
+
     public DateTime Timestamp { get; init; }
 
     [Column(TypeName = "TEXT")]
