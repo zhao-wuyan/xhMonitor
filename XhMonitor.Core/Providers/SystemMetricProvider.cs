@@ -84,11 +84,9 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
     /// </summary>
     public async Task<HardwareLimits> GetHardwareLimitsAsync()
     {
-        var memoryTask = GetMaxMemoryAsync();
         var vramMaxTask = GetMaxVramAsync();
 
-        await Task.WhenAll(memoryTask, vramMaxTask);
-        var maxMemory = await memoryTask;
+        var maxMemory = GetMaxMemory();
         var maxVram = await vramMaxTask;
 
         return new HardwareLimits
@@ -126,13 +124,13 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
     {
         var cpuTask = _cpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
         var gpuTask = _gpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
-        var memoryTask = GetMemoryUsageAsync();
         var vramTask = GetVramUsageAsync();
 
-        await Task.WhenAll(cpuTask, gpuTask, memoryTask, vramTask);
+        var totalMemory = GetMemoryUsage();
+
+        await Task.WhenAll(cpuTask, gpuTask, vramTask);
         var totalCpu = await cpuTask;
         var totalGpu = await gpuTask;
-        var totalMemory = await memoryTask;
         var totalVram = await vramTask;
 
         return new SystemUsage
@@ -145,28 +143,22 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
         };
     }
 
-    private Task<double> GetMaxMemoryAsync()
+    private double GetMaxMemory()
     {
-        return Task.Run(() =>
+        if (OperatingSystem.IsWindows() && TryGetPhysicalMemoryDetails(out var totalMb, out _))
         {
-            if (OperatingSystem.IsWindows() && TryGetPhysicalMemoryDetails(out var totalMb, out _))
-            {
-                return totalMb;
-            }
-            return 0.0;
-        });
+            return totalMb;
+        }
+        return 0.0;
     }
 
-    private Task<double> GetMemoryUsageAsync()
+    private double GetMemoryUsage()
     {
-        return Task.Run(() =>
+        if (OperatingSystem.IsWindows() && TryGetPhysicalMemoryDetails(out var totalMb, out var availMb))
         {
-            if (OperatingSystem.IsWindows() && TryGetPhysicalMemoryDetails(out var totalMb, out var availMb))
-            {
-                return totalMb - availMb;
-            }
-            return 0.0;
-        });
+            return totalMb - availMb;
+        }
+        return 0.0;
     }
 
     private async Task<double> GetVramUsageAsync()
