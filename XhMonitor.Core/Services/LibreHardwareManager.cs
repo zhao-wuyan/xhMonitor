@@ -83,7 +83,11 @@ public class LibreHardwareManager : ILibreHardwareManager
             return;
         }
 
-        _updateLock.Wait();
+        var acquired = _updateLock.WaitAsync(0).GetAwaiter().GetResult();
+        if (!acquired)
+        {
+            return;
+        }
         try
         {
             now = DateTime.UtcNow;

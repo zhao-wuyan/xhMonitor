@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -52,11 +53,6 @@ public sealed class WebServerService : IWebServerService
 
                     var app = builder.Build();
 
-                    _webServerCts.Token.Register(() =>
-                    {
-                        app.StopAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-                    });
-
                     app.UseStaticFiles(new StaticFileOptions
                     {
                         FileProvider = new PhysicalFileProvider(distPath),
@@ -69,7 +65,8 @@ public sealed class WebServerService : IWebServerService
                     });
 
                     Debug.WriteLine($"Web frontend server starting at http://localhost:{WebPort}");
-                    await app.RunAsync().ConfigureAwait(false);
+                    await app.StartAsync(_webServerCts.Token).ConfigureAwait(false);
+                    await app.WaitForShutdownAsync(_webServerCts.Token).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

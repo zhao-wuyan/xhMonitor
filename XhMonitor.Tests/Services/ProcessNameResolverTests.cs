@@ -262,7 +262,7 @@ public class ProcessNameResolverTests
     }
 
     [Fact]
-    public void Resolve_ThreadSafety_ShouldHandleConcurrentCalls()
+    public async Task Resolve_ThreadSafety_ShouldHandleConcurrentCalls()
     {
         // Arrange
         var resolver = new ProcessNameResolver(_configuration, _loggerMock.Object);
@@ -275,10 +275,10 @@ public class ProcessNameResolverTests
             tasks.Add(task);
         }
 
-        Task.WaitAll(tasks.ToArray());
+        var taskResults = await Task.WhenAll(tasks);
 
         // Assert - All results should be consistent
-        var results = tasks.Select(t => t.Result).Distinct().ToList();
+        var results = taskResults.Distinct().ToList();
         results.Should().HaveCount(1, "all concurrent calls should return the same result");
         results[0].Should().Be("Python: FastAPI");
     }

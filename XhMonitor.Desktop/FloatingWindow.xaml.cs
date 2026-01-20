@@ -713,7 +713,13 @@ public partial class FloatingWindow : Window
 
         try
         {
-            _viewModel.CleanupAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            // Fire-and-forget cleanup: Closing is synchronous; avoid blocking the UI thread during shutdown.
+            var cleanupTask = _viewModel.DisposeAsync().AsTask();
+            _ = cleanupTask.ContinueWith(
+                t => System.Diagnostics.Debug.WriteLine($"Failed to dispose FloatingWindowViewModel: {t.Exception?.GetBaseException().Message}"),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
         }
         catch
         {
