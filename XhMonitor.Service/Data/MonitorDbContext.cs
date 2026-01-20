@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Text.Json;
+using XhMonitor.Core.Configuration;
 using XhMonitor.Core.Entities;
 
 namespace XhMonitor.Service.Data;
@@ -74,20 +76,18 @@ public sealed class MonitorDbContext : DbContext
         // ApplicationSettings 种子数据
         modelBuilder.Entity<ApplicationSettings>().HasData(
             // 外观设置 (2项)
-            new ApplicationSettings { Id = 1, Category = "Appearance", Key = "ThemeColor", Value = "\"Dark\"", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 2, Category = "Appearance", Key = "Opacity", Value = "60", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 1, Category = "Appearance", Key = "ThemeColor", Value = JsonSerializer.Serialize(ConfigurationDefaults.Appearance.ThemeColor), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 2, Category = "Appearance", Key = "Opacity", Value = ConfigurationDefaults.Appearance.Opacity.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
 
-            // 数据采集设置 (5项)
-            new ApplicationSettings { Id = 3, Category = "DataCollection", Key = "ProcessKeywords", Value = "[\"python\",\"llama\"]", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 4, Category = "DataCollection", Key = "SystemInterval", Value = "1000", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 5, Category = "DataCollection", Key = "ProcessInterval", Value = "5000", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 6, Category = "DataCollection", Key = "TopProcessCount", Value = "10", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 7, Category = "DataCollection", Key = "DataRetentionDays", Value = "30", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            // 数据采集设置 (3项) - 仅保留可在运行时由用户配置的设置项。
+            // 采集间隔由 appsettings.json 管理（Monitor:IntervalSeconds / Monitor:SystemUsageIntervalSeconds）。
+            new ApplicationSettings { Id = 3, Category = "DataCollection", Key = "ProcessKeywords", Value = JsonSerializer.Serialize(ConfigurationDefaults.DataCollection.ProcessKeywords), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 6, Category = "DataCollection", Key = "TopProcessCount", Value = ConfigurationDefaults.DataCollection.TopProcessCount.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 7, Category = "DataCollection", Key = "DataRetentionDays", Value = ConfigurationDefaults.DataCollection.DataRetentionDays.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
 
-            // 系统设置 (3项)
-            new ApplicationSettings { Id = 8, Category = "System", Key = "StartWithWindows", Value = "false", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 9, Category = "System", Key = "SignalRPort", Value = "35179", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 10, Category = "System", Key = "WebPort", Value = "35180", CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp }
+            // 系统设置 (1项) - 仅保留可在运行时由用户配置的设置项。
+            // 端口等基础设施配置由 appsettings.json 管理（例如 Server:Port）。
+            new ApplicationSettings { Id = 8, Category = "System", Key = "StartWithWindows", Value = ConfigurationDefaults.System.StartWithWindows.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp }
         );
 
         modelBuilder.Entity<AlertConfiguration>().HasData(

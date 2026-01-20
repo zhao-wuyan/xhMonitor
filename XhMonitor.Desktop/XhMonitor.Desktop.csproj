@@ -24,6 +24,14 @@
     <PackageReference Include="System.Text.Json" Version="8.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\\XhMonitor.Core\\XhMonitor.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XhMonitor.Core\XhMonitor.Core.csproj" />
+  </ItemGroup>
+
   <!-- Build web assets before Desktop compilation -->
   <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild">
     <!-- Install npm dependencies if node_modules doesn't exist -->

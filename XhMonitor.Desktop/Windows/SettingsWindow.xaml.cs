@@ -1,6 +1,7 @@
 using System.Windows;
 using XhMonitor.Desktop.Dialogs;
 using XhMonitor.Desktop.ViewModels;
+using XhMonitor.Core.Configuration;
 
 namespace XhMonitor.Desktop.Windows;
 
@@ -48,18 +49,16 @@ public partial class SettingsWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             // 恢复默认值
-            _viewModel.ThemeColor = "Dark";
-            _viewModel.Opacity = 60;
+            _viewModel.ThemeColor = ConfigurationDefaults.Appearance.ThemeColor;
+            _viewModel.Opacity = ConfigurationDefaults.Appearance.Opacity;
             _viewModel.ProcessKeywords.Clear();
-            _viewModel.ProcessKeywords.Add("python");
-            _viewModel.ProcessKeywords.Add("llama");
-            _viewModel.SystemInterval = 1000;
-            _viewModel.ProcessInterval = 5000;
-            _viewModel.TopProcessCount = 10;
-            _viewModel.DataRetentionDays = 30;
-            _viewModel.StartWithWindows = false;
-            _viewModel.SignalRPort = 35179;
-            _viewModel.WebPort = 35180;
+            foreach (var keyword in ConfigurationDefaults.DataCollection.ProcessKeywords)
+            {
+                _viewModel.ProcessKeywords.Add(keyword);
+            }
+            _viewModel.TopProcessCount = ConfigurationDefaults.DataCollection.TopProcessCount;
+            _viewModel.DataRetentionDays = ConfigurationDefaults.DataCollection.DataRetentionDays;
+            _viewModel.StartWithWindows = ConfigurationDefaults.System.StartWithWindows;
         }
     }
 
