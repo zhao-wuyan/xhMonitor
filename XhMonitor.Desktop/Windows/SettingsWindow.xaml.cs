@@ -1,7 +1,6 @@
 using System.Windows;
 using XhMonitor.Desktop.Dialogs;
 using XhMonitor.Desktop.ViewModels;
-using XhMonitor.Desktop.Services;
 using XhMonitor.Core.Configuration;
 
 namespace XhMonitor.Desktop.Windows;
@@ -10,10 +9,10 @@ public partial class SettingsWindow : Window
 {
     private readonly SettingsViewModel _viewModel;
 
-    public SettingsWindow(IServiceDiscovery serviceDiscovery)
+    public SettingsWindow(SettingsViewModel viewModel)
     {
         InitializeComponent();
-        _viewModel = new SettingsViewModel(serviceDiscovery);
+        _viewModel = viewModel;
         DataContext = _viewModel;
 
         Loaded += async (s, e) => await _viewModel.LoadSettingsAsync();

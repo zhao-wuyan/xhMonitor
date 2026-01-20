@@ -29,14 +29,10 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     private bool _isSaving = false;
 
-    public SettingsViewModel()
-        : this(new ServiceDiscovery())
+    /// <param name="httpClient">HttpClient instance from IHttpClientFactory</param>
+    public SettingsViewModel(HttpClient httpClient, IServiceDiscovery serviceDiscovery)
     {
-    }
-
-    public SettingsViewModel(IServiceDiscovery serviceDiscovery)
-    {
-        _httpClient = new HttpClient();
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
 
