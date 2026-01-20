@@ -88,11 +88,13 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
         var vramMaxTask = GetMaxVramAsync();
 
         await Task.WhenAll(memoryTask, vramMaxTask);
+        var maxMemory = await memoryTask;
+        var maxVram = await vramMaxTask;
 
         return new HardwareLimits
         {
-            MaxMemory = memoryTask.Result,
-            MaxVram = vramMaxTask.Result
+            MaxMemory = maxMemory,
+            MaxVram = maxVram
         };
     }
 
@@ -106,20 +108,15 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
             return 0.0;
         }
 
-        // 如果是 LibreHardwareMonitorVramProvider，使用 GetVramMetricsAsync 获取总量
-        if (_vramProvider is LibreHardwareMonitorVramProvider lhmProvider)
+        // Try GetVramMetricsAsync first (works for any provider that implements it)
+        var vramMetrics = await _vramProvider.GetVramMetricsAsync();
+        if (vramMetrics != null && vramMetrics.IsValid)
         {
-            var metrics = await lhmProvider.GetVramMetricsAsync();
-            return metrics.Total;
+            return vramMetrics.Total;
         }
 
-        // 否则使用传统的 VramMetricProvider.GetSystemTotalAsync()（返回最大容量）
-        if (_vramProvider is VramMetricProvider vramProvider)
-        {
-            return await vramProvider.GetSystemTotalAsync();
-        }
-
-        return 0.0;
+        // Fallback to the provider's total (legacy providers return max capacity here)
+        return await _vramProvider.GetSystemTotalAsync();
     }
 
     /// <summary>
@@ -133,13 +130,17 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
         var vramTask = GetVramUsageAsync();
 
         await Task.WhenAll(cpuTask, gpuTask, memoryTask, vramTask);
+        var totalCpu = await cpuTask;
+        var totalGpu = await gpuTask;
+        var totalMemory = await memoryTask;
+        var totalVram = await vramTask;
 
         return new SystemUsage
         {
-            TotalCpu = cpuTask.Result,
-            TotalGpu = gpuTask.Result,
-            TotalMemory = memoryTask.Result,
-            TotalVram = vramTask.Result,
+            TotalCpu = totalCpu,
+            TotalGpu = totalGpu,
+            TotalMemory = totalMemory,
+            TotalVram = totalVram,
             Timestamp = DateTime.UtcNow
         };
     }
@@ -175,13 +176,16 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
             return 0.0;
         }
 
-        // 优先使用 LibreHardwareMonitorVramProvider（如果可用）
-        if (_vramProvider is LibreHardwareMonitorVramProvider lhmProvider)
+        // Try GetVramMetricsAsync first (works for any provider that implements it)
+        if (_vramProvider != null)
         {
-            var metrics = await lhmProvider.GetVramMetricsAsync();
-            _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync from LHM: Used={Used} MB, Total={Total} MB",
-                metrics.Used, metrics.Total);
-            return metrics.Used;
+            var vramMetrics = await _vramProvider.GetVramMetricsAsync();
+            if (vramMetrics != null && vramMetrics.IsValid)
+            {
+                _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Used={Used} MB, Total={Total} MB",
+                    vramMetrics.Used, vramMetrics.Total);
+                return vramMetrics.Used;
+            }
         }
 
         // 回退到 DXGI 或性能计数器

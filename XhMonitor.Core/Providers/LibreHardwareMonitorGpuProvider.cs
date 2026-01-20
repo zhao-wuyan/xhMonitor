@@ -141,6 +141,14 @@ public class LibreHardwareMonitorGpuProvider : IMetricProvider
         });
     }
 
+    /// <summary>
+    /// 获取完整的 VRAM 指标（不适用于此提供者）
+    /// </summary>
+    public Task<VramMetrics?> GetVramMetricsAsync()
+    {
+        return Task.FromResult<VramMetrics?>(null);
+    }
+
     public async Task<MetricValue> CollectAsync(int processId)
     {
         // 委托给现有的 GpuMetricProvider 处理进程级监控

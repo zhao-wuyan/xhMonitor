@@ -46,4 +46,11 @@ public interface IMetricProvider : IDisposable
     /// </summary>
     /// <returns>系统总量或使用率</returns>
     Task<double> GetSystemTotalAsync();
+
+    /// <summary>
+    /// 获取完整的 VRAM 指标（仅 VRAM 提供者实现，其他返回 null）
+    /// Get complete VRAM metrics (only implemented by VRAM providers, others return null)
+    /// </summary>
+    /// <returns>VRAM metrics or null if not applicable</returns>
+    Task<VramMetrics?> GetVramMetricsAsync() => Task.FromResult<VramMetrics?>(null);
 }
