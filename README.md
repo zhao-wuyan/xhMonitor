@@ -811,6 +811,53 @@ console.log("Connected to XhMonitor");
 
 **配置项说明**：
 
+### Configuration Management
+
+XhMonitor 的配置分为两类来源：
+
+- `appsettings.json`：基础设施/部署/系统级配置（通常需要重启服务生效）
+- 数据库 `ApplicationSettings`：用户运行时偏好（可由设置界面修改，通常无需重启）
+
+> 说明：端口、连接字符串、采集间隔等属于基础设施/系统级配置；UI 外观、筛选关键词、展示偏好等属于用户偏好。
+
+#### `appsettings.json`（服务端）常见配置
+
+- `Server:Host`, `Server:Port`, `Server:HubPath`
+- `ConnectionStrings:DatabaseConnection`
+- `Monitor:IntervalSeconds`, `Monitor:SystemUsageIntervalSeconds`, `Monitor:Keywords`
+- `MetricProviders:PluginDirectory`, `MetricProviders:PreferLibreHardwareMonitor`
+- `Database:RetentionDays`, `Database:CleanupIntervalHours`
+
+#### 数据库 `ApplicationSettings`（用户偏好）常见配置
+
+- `Appearance`: `ThemeColor`, `Opacity`
+- `DataCollection`: `ProcessKeywords`, `TopProcessCount`, `DataRetentionDays`
+- `System`: `StartWithWindows`
+
+#### 配置位置速查表
+
+| Setting | Location | Rationale |
+| --- | --- | --- |
+| `Server:Host` | `appsettings.json` | 基础设施配置，影响服务绑定地址 |
+| `Server:Port` | `appsettings.json` | 基础设施配置，影响服务端口；需重启 |
+| `Server:HubPath` | `appsettings.json` | 基础设施配置，影响 Hub 路由；需重启 |
+| `ConnectionStrings:DatabaseConnection` | `appsettings.json` | 部署配置/敏感信息，不应由 UI 修改 |
+| `Monitor:IntervalSeconds` | `appsettings.json` | 系统级采集节奏；需重启以保证一致性 |
+| `Monitor:SystemUsageIntervalSeconds` | `appsettings.json` | 系统级采集节奏；需重启以保证一致性 |
+| `Monitor:Keywords` | `appsettings.json` | 系统级筛选规则；通常随部署调整 |
+| `MetricProviders:PluginDirectory` | `appsettings.json` | 部署路径配置；需重启 |
+| `MetricProviders:PreferLibreHardwareMonitor` | `appsettings.json` | 系统级采集策略；需重启 |
+| `Database:RetentionDays` | `appsettings.json` | 系统级数据保留策略；需重启 |
+| `Database:CleanupIntervalHours` | `appsettings.json` | 系统级后台任务调度；需重启 |
+| `Appearance.ThemeColor` | 数据库 `ApplicationSettings` | 用户外观偏好；运行时可修改 |
+| `Appearance.Opacity` | 数据库 `ApplicationSettings` | 用户外观偏好；运行时可修改 |
+| `DataCollection.ProcessKeywords` | 数据库 `ApplicationSettings` | 用户筛选偏好；运行时可修改 |
+| `DataCollection.TopProcessCount` | 数据库 `ApplicationSettings` | 用户展示偏好；运行时可修改 |
+| `DataCollection.DataRetentionDays` | 数据库 `ApplicationSettings` | 用户数据偏好；运行时可修改 |
+| `System.StartWithWindows` | 数据库 `ApplicationSettings` | 用户系统偏好；运行时可修改 |
+
+更多边界规则与迁移策略参考：`XhMonitor.Service/docs/configuration-boundaries.md`
+
 - `Monitor:IntervalSeconds`: 进程采集间隔（秒）
 - `Monitor:SystemUsageIntervalSeconds`: 系统使用率采集间隔（秒）
 - `Monitor:Keywords`: 进程过滤关键词数组

@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.Services;
+using XhMonitor.Desktop.ViewModels;
 using WpfApplication = System.Windows.Application;
 
 namespace XhMonitor.Desktop;
@@ -23,9 +25,13 @@ public partial class App : WpfApplication
         SessionEnding += OnSessionEnding;
 
         var services = new ServiceCollection();
+        services.AddSingleton<IServiceDiscovery, ServiceDiscovery>();
         services.AddSingleton<IBackendServerService, BackendServerService>();
         services.AddSingleton<IWebServerService, WebServerService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
+        services.AddHttpClient();
+        services.AddTransient<HttpClient>(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient());
+        services.AddTransient<SettingsViewModel>();
 
         _serviceProvider = services.BuildServiceProvider();
         _backendService = _serviceProvider.GetRequiredService<IBackendServerService>();
@@ -154,7 +160,12 @@ public partial class App : WpfApplication
     {
         Dispatcher.Invoke(() =>
         {
-            var settingsWindow = new Windows.SettingsWindow
+            if (_serviceProvider == null)
+            {
+                return;
+            }
+
+            var settingsWindow = new Windows.SettingsWindow(_serviceProvider.GetRequiredService<SettingsViewModel>())
             {
                 Owner = _floatingWindow
             };

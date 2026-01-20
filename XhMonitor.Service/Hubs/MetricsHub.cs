@@ -1,11 +1,11 @@
 using System.Linq;
 using Microsoft.AspNetCore.SignalR;
-using XhMonitor.Core.Constants;
+using XhMonitor.Core.Interfaces;
 using XhMonitor.Service.Core;
 
 namespace XhMonitor.Service.Hubs;
 
-public sealed class MetricsHub : Hub
+public sealed class MetricsHub : Hub<IMetricsClient>
 {
     private readonly ILogger<MetricsHub> _logger;
     private readonly IProcessMetadataStore _processMetadataStore;
@@ -37,7 +37,7 @@ public sealed class MetricsHub : Hub
             return;
         }
 
-        await Clients.Caller.SendAsync(SignalREvents.ProcessMetadata, new
+        await Clients.Caller.ReceiveProcessMetadata(new
         {
             Timestamp = DateTime.Now,
             ProcessCount = snapshot.Count,

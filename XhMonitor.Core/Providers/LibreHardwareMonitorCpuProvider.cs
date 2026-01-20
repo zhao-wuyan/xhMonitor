@@ -75,6 +75,14 @@ public class LibreHardwareMonitorCpuProvider : IMetricProvider
     }
 
     /// <summary>
+    /// 获取完整的 VRAM 指标（不适用于此提供者）
+    /// </summary>
+    public Task<VramMetrics?> GetVramMetricsAsync()
+    {
+        return Task.FromResult<VramMetrics?>(null);
+    }
+
+    /// <summary>
     /// 采集进程级 CPU 指标（委托给 CpuMetricProvider）
     /// </summary>
     public async Task<MetricValue> CollectAsync(int processId)

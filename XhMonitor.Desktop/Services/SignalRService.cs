@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Text.Json;
 using XhMonitor.Desktop.Models;
-using XhMonitor.Desktop.Constants;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -44,7 +43,7 @@ public class SignalRService : IAsyncDisposable
 
         var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        _connection.On<JsonElement>(SignalREvents.HardwareLimits, (data) =>
+        _connection.On<JsonElement>("ReceiveHardwareLimits", (data) =>
         {
             try
             {
@@ -57,7 +56,7 @@ public class SignalRService : IAsyncDisposable
             }
         });
 
-        _connection.On<JsonElement>(SignalREvents.SystemUsage, (data) =>
+        _connection.On<JsonElement>("ReceiveSystemUsage", (data) =>
         {
             try
             {
@@ -70,7 +69,7 @@ public class SignalRService : IAsyncDisposable
             }
         });
 
-        _connection.On<JsonElement>(SignalREvents.ProcessMetrics, (data) =>
+        _connection.On<JsonElement>("ReceiveProcessMetrics", (data) =>
         {
             try
             {
@@ -83,7 +82,7 @@ public class SignalRService : IAsyncDisposable
             }
         });
 
-        _connection.On<JsonElement>(SignalREvents.ProcessMetadata, (data) =>
+        _connection.On<JsonElement>("ReceiveProcessMetadata", (data) =>
         {
             try
             {

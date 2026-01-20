@@ -15,7 +15,7 @@ namespace XhMonitor.Service.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.22");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.23");
 
             modelBuilder.Entity("XhMonitor.Core.Entities.AggregatedMetricRecord", b =>
                 {
@@ -184,24 +184,6 @@ namespace XhMonitor.Service.Migrations
                         },
                         new
                         {
-                            Id = 4,
-                            Category = "DataCollection",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Key = "SystemInterval",
-                            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "1000"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Category = "DataCollection",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Key = "ProcessInterval",
-                            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "5000"
-                        },
-                        new
-                        {
                             Id = 6,
                             Category = "DataCollection",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -226,24 +208,6 @@ namespace XhMonitor.Service.Migrations
                             Key = "StartWithWindows",
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Value = "false"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Category = "System",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Key = "SignalRPort",
-                            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "35179"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Category = "System",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Key = "WebPort",
-                            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "35180"
                         });
                 });
 

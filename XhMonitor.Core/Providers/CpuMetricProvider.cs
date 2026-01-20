@@ -53,6 +53,14 @@ public class CpuMetricProvider : IMetricProvider
         });
     }
 
+    /// <summary>
+    /// 获取完整的 VRAM 指标（不适用于此提供者）
+    /// </summary>
+    public Task<VramMetrics?> GetVramMetricsAsync()
+    {
+        return Task.FromResult<VramMetrics?>(null);
+    }
+
     public async Task<MetricValue> CollectAsync(int processId)
     {
         if (!IsSupported()) return MetricValue.Error("Not supported");

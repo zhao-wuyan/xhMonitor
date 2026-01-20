@@ -2,8 +2,6 @@ using System.Diagnostics;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR;
 using XhMonitor.Core.Interfaces;
-using XhMonitor.Core.Constants;
-using XhMonitor.Core.Providers;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
 
@@ -14,8 +12,8 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly PerformanceMonitor _monitor;
     private readonly IProcessMetricRepository _repository;
-    private readonly IHubContext<MetricsHub> _hubContext;
-    private readonly SystemMetricProvider _systemMetricProvider;
+    private readonly IHubContext<MetricsHub, IMetricsClient> _hubContext;
+    private readonly ISystemMetricProvider _systemMetricProvider;
     private readonly IProcessMetadataStore _processMetadataStore;
     private readonly int _processIntervalSeconds;
     private readonly int _systemIntervalSeconds;
@@ -32,8 +30,8 @@ public class Worker : BackgroundService
         ILogger<Worker> logger,
         PerformanceMonitor monitor,
         IProcessMetricRepository repository,
-        IHubContext<MetricsHub> hubContext,
-        SystemMetricProvider systemMetricProvider,
+        IHubContext<MetricsHub, IMetricsClient> hubContext,
+        ISystemMetricProvider systemMetricProvider,
         IProcessMetadataStore processMetadataStore,
         IConfiguration config)
     {
@@ -148,12 +146,12 @@ public class Worker : BackgroundService
             _logger.LogInformation("  → 硬件限制检测成功: MaxMemory={MaxMemory}MB, MaxVram={MaxVram}MB, 耗时: {ElapsedMs}ms",
                 _cachedMaxMemory, _cachedMaxVram, sw.ElapsedMilliseconds);
 
-            await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
+            await _hubContext.Clients.All.ReceiveHardwareLimits(new
             {
                 Timestamp = timestamp,
                 MaxMemory = Math.Round(_cachedMaxMemory, 1),
                 MaxVram = Math.Round(_cachedMaxVram, 1)
-            }, ct);
+            });
         }
         catch (Exception ex)
         {
@@ -195,12 +193,12 @@ public class Worker : BackgroundService
 
         _logger.LogInformation("VRAM限制更新完成: MaxVram={MaxVram}MB, 耗时: {ElapsedMs}ms", _cachedMaxVram, sw.ElapsedMilliseconds);
 
-        await _hubContext.Clients.All.SendAsync(SignalREvents.HardwareLimits, new
+        await _hubContext.Clients.All.ReceiveHardwareLimits(new
         {
             Timestamp = timestamp,
             MaxMemory = Math.Round(_cachedMaxMemory, 1),
             MaxVram = Math.Round(_cachedMaxVram, 1)
-        }, ct);
+        });
     }
 
     private async Task RunSystemUsageLoopAsync(CancellationToken stoppingToken)
@@ -234,7 +232,7 @@ public class Worker : BackgroundService
         _logger.LogInformation("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
             usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
 
-        await _hubContext.Clients.All.SendAsync(SignalREvents.SystemUsage, new
+        await _hubContext.Clients.All.ReceiveSystemUsage(new
         {
             Timestamp = timestamp,
             TotalCpu = usage.TotalCpu,
@@ -243,7 +241,7 @@ public class Worker : BackgroundService
             TotalVram = Math.Round(usage.TotalVram, 1),
             MaxMemory = Math.Round(_cachedMaxMemory, 1),
             MaxVram = Math.Round(_cachedMaxVram, 1)
-        }, ct);
+        });
     }
 
     private async Task SendProcessDataAsync(DateTime timestamp, CancellationToken ct)
@@ -266,7 +264,7 @@ public class Worker : BackgroundService
 
             if (metaUpdates.Count > 0)
             {
-                await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetadata, new
+                await _hubContext.Clients.All.ReceiveProcessMetadata(new
                 {
                     Timestamp = timestamp,
                     ProcessCount = metaUpdates.Count,
@@ -277,7 +275,7 @@ public class Worker : BackgroundService
                         m.CommandLine,
                         m.DisplayName
                     }).ToList()
-                }, ct);
+                });
             }
 
             var snapshot = new ProcessSnapshot
@@ -309,7 +307,7 @@ public class Worker : BackgroundService
         {
             await foreach (var snapshot in _processSnapshotChannel.Reader.ReadAllAsync(stoppingToken))
             {
-                await _hubContext.Clients.All.SendAsync(SignalREvents.ProcessMetrics, new
+                await _hubContext.Clients.All.ReceiveProcessMetrics(new
                 {
                     Timestamp = snapshot.Timestamp,
                     ProcessCount = snapshot.ProcessCount,
@@ -319,7 +317,7 @@ public class Worker : BackgroundService
                         p.ProcessName,
                         p.Metrics
                     }).ToList()
-                }, stoppingToken);
+                });
             }
         }
         catch (OperationCanceledException)

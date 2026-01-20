@@ -3,15 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:XhMonitor.Desktop.ViewModels"
         mc:Ignorable="d"
         Title="XhMonitor 设置" Height="600" Width="800"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
         Background="#1E1E1E" Foreground="#E0E0E0">
-
-    <Window.DataContext>
-        <vm:SettingsViewModel />
-    </Window.DataContext>
 
     <Window.Resources>
         <!-- 颜色资源 -->
@@ -325,9 +320,12 @@
                             <TextBlock Text="外观设置" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="{StaticResource TextPrimary}"/>
 
                             <TextBlock Text="主题颜色" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                            <ComboBox Height="35" Margin="0,0,0,20" SelectedIndex="0">
-                                <ComboBoxItem Content="深色 (Dark)"/>
-                                <ComboBoxItem Content="浅色 (Light)"/>
+                            <ComboBox Height="35"
+                                      Margin="0,0,0,20"
+                                      SelectedValue="{Binding ThemeColor, Mode=TwoWay}"
+                                      SelectedValuePath="Tag">
+                                <ComboBoxItem Content="深色 (Dark)" Tag="Dark"/>
+                                <ComboBoxItem Content="浅色 (Light)" Tag="Light"/>
                             </ComboBox>
 
                             <TextBlock Text="窗口透明度" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
@@ -376,12 +374,6 @@
                                     HorizontalAlignment="Left"
                                     Padding="10,5"/>
 
-                            <TextBlock Text="系统指标采集间隔 (毫秒)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                            <TextBox Height="35" Text="{Binding SystemInterval}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
-
-                            <TextBlock Text="进程指标采集间隔 (毫秒)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                            <TextBox Height="35" Text="{Binding ProcessInterval}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
-
                             <TextBlock Text="Top 进程数量" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
                             <TextBox Height="35" Text="{Binding TopProcessCount}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
 
@@ -398,12 +390,6 @@
                             <TextBlock Text="系统选项" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
 
                             <CheckBox Content="开机自启动" IsChecked="{Binding StartWithWindows}" Foreground="White" Margin="0,0,0,20"/>
-
-                            <TextBlock Text="SignalR 后端端口" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                            <TextBox Height="35" Text="{Binding SignalRPort}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
-
-                            <TextBlock Text="Web 前端端口" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                            <TextBox Height="35" Text="{Binding WebPort}" VerticalContentAlignment="Center" Padding="5" Background="{StaticResource InputBackground}" Foreground="{StaticResource TextPrimary}" BorderThickness="0" Margin="0,0,0,20"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>

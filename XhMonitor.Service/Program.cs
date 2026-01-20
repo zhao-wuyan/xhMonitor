@@ -13,6 +13,7 @@ using XhMonitor.Service;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Data;
 using XhMonitor.Service.Data.Repositories;
+using XhMonitor.Service.Configuration;
 using XhMonitor.Service.Workers;
 using XhMonitor.Service.Hubs;
 
@@ -34,6 +35,21 @@ catch
 // 单文件发布时 AppContext.BaseDirectory 指向临时解压目录，需要使用 exe 实际路径
 var appDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName)
     ?? AppContext.BaseDirectory;
+
+// dotnet run / dotnet-ef 等场景下，MainModule 可能是 dotnet.exe，导致 appDirectory 指向 dotnet 安装目录。
+// 这里在找不到配置文件时回退到项目目录（或工作目录），保证开发/迁移工具可用。
+if (!File.Exists(Path.Combine(appDirectory, "appsettings.json")))
+{
+    var currentDirectory = Directory.GetCurrentDirectory();
+    if (File.Exists(Path.Combine(currentDirectory, "appsettings.json")))
+    {
+        appDirectory = currentDirectory;
+    }
+    else if (File.Exists(Path.Combine(currentDirectory, "XhMonitor.Service", "appsettings.json")))
+    {
+        appDirectory = Path.Combine(currentDirectory, "XhMonitor.Service");
+    }
+}
 
 // 创建临时配置以读取日志设置（使用应用程序目录而非工作目录）
 var tempConfig = new ConfigurationBuilder()
@@ -122,7 +138,7 @@ builder.Services.AddSingleton(sp =>
     return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory, hardwareManager, preferLibreHardwareMonitor);
 });
 
-builder.Services.AddSingleton<SystemMetricProvider>(sp =>
+builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
 {
     var registry = sp.GetRequiredService<MetricProviderRegistry>();
     var logger = sp.GetRequiredService<ILogger<SystemMetricProvider>>();
@@ -164,25 +180,28 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 var app = builder.Build();
 
 // 自动应用数据库迁移
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<MonitorDbContext>();
-    try
-    {
-        Log.Information("正在检查并应用数据库迁移...");
-        dbContext.Database.Migrate();
-        Log.Information("数据库迁移完成");
-    }
-    catch (Exception ex)
-    {
-        Log.Warning(ex, "数据库迁移失败，将尝试继续运行");
-    }
-}
+ using (var scope = app.Services.CreateScope())
+ {
+     var dbContext = scope.ServiceProvider.GetRequiredService<MonitorDbContext>();
+     try
+     {
+         Log.Information("正在检查并应用数据库迁移...");
+         dbContext.Database.Migrate();
+         Log.Information("数据库迁移完成");
+     }
+     catch (Exception ex)
+     {
+         Log.Warning(ex, "数据库迁移失败，将尝试继续运行");
+     }
+ }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
+ // 启动配置校验（appsettings.json + 数据库）
+ ConfigurationValidator.ValidateConfiguration(app.Services);
+ 
+ if (app.Environment.IsDevelopment())
+ {
+     app.UseDeveloperExceptionPage();
+ }
 
 app.UseCors("AllowAll");
 app.UseRouting();

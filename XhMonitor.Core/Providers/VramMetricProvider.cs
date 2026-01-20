@@ -86,6 +86,14 @@ public class VramMetricProvider : IMetricProvider
         });
     }
 
+    /// <summary>
+    /// 获取完整的 VRAM 指标（PerformanceCounter 提供者不支持，返回 null）
+    /// </summary>
+    public Task<VramMetrics?> GetVramMetricsAsync()
+    {
+        return Task.FromResult<VramMetrics?>(null);
+    }
+
     private double TryGetVramCapacityFromRegistry()
     {
         // Try multiple ControlSet paths

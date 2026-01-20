@@ -39,7 +39,7 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
     /// <summary>
     /// 获取完整的 VRAM 指标（使用量、总量、使用率）
     /// </summary>
-    public async Task<VramMetrics> GetVramMetricsAsync()
+    public async Task<VramMetrics?> GetVramMetricsAsync()
     {
         if (!IsSupported())
         {
@@ -175,7 +175,7 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
     {
         // 返回 VRAM 使用量（不是总量！）
         var metrics = await GetVramMetricsAsync();
-        return metrics.Used;
+        return metrics?.Used ?? 0.0;
     }
 
     public async Task<MetricValue> CollectAsync(int processId)

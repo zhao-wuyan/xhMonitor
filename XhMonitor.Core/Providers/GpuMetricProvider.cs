@@ -145,6 +145,14 @@ public class GpuMetricProvider : IMetricProvider
         }
     }
 
+    /// <summary>
+    /// 获取完整的 VRAM 指标（不适用于此提供者）
+    /// </summary>
+    public Task<VramMetrics?> GetVramMetricsAsync()
+    {
+        return Task.FromResult<VramMetrics?>(null);
+    }
+
     private bool TryGetMaxEngineUsage(out double usage)
     {
         usage = 0.0;

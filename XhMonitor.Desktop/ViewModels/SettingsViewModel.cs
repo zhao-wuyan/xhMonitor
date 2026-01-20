@@ -4,35 +4,36 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using XhMonitor.Core.Configuration;
+using XhMonitor.Desktop.Services;
 
 namespace XhMonitor.Desktop.ViewModels;
 
 public class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly HttpClient _httpClient;
-    private const string ApiBaseUrl = "http://localhost:35179/api/v1/config";
+    private readonly string _apiBaseUrl;
+    // 端口属于基础设施配置：由服务端 appsettings.json (Server:Port) 管理，不在数据库/设置界面中暴露。
 
     // 外观设置
-    private string _themeColor = "Dark";
-    private int _opacity = 60;
+    private string _themeColor = ConfigurationDefaults.Appearance.ThemeColor;
+    private int _opacity = ConfigurationDefaults.Appearance.Opacity;
 
     // 数据采集设置
     private ObservableCollection<string> _processKeywords = new();
-    private int _systemInterval = 1000;
-    private int _processInterval = 5000;
-    private int _topProcessCount = 10;
-    private int _dataRetentionDays = 30;
+    private int _topProcessCount = ConfigurationDefaults.DataCollection.TopProcessCount;
+    private int _dataRetentionDays = ConfigurationDefaults.DataCollection.DataRetentionDays;
 
     // 系统设置
-    private bool _startWithWindows = false;
-    private int _signalRPort = 35179;
-    private int _webPort = 35180;
+    private bool _startWithWindows = ConfigurationDefaults.System.StartWithWindows;
 
     private bool _isSaving = false;
 
-    public SettingsViewModel()
+    /// <param name="httpClient">HttpClient instance from IHttpClientFactory</param>
+    public SettingsViewModel(HttpClient httpClient, IServiceDiscovery serviceDiscovery)
     {
-        _httpClient = new HttpClient();
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
 
     public string ThemeColor
@@ -53,18 +54,6 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _processKeywords, value);
     }
 
-    public int SystemInterval
-    {
-        get => _systemInterval;
-        set => SetProperty(ref _systemInterval, value);
-    }
-
-    public int ProcessInterval
-    {
-        get => _processInterval;
-        set => SetProperty(ref _processInterval, value);
-    }
-
     public int TopProcessCount
     {
         get => _topProcessCount;
@@ -83,18 +72,6 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _startWithWindows, value);
     }
 
-    public int SignalRPort
-    {
-        get => _signalRPort;
-        set => SetProperty(ref _signalRPort, value);
-    }
-
-    public int WebPort
-    {
-        get => _webPort;
-        set => SetProperty(ref _webPort, value);
-    }
-
     public bool IsSaving
     {
         get => _isSaving;
@@ -105,7 +82,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{ApiBaseUrl}/settings");
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/settings");
             response.EnsureSuccessStatusCode();
 
             var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
@@ -114,7 +91,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             // 外观设置
             if (settings.TryGetValue("Appearance", out var appearance))
             {
-                ThemeColor = JsonSerializer.Deserialize<string>(appearance["ThemeColor"]) ?? "Dark";
+                ThemeColor = JsonSerializer.Deserialize<string>(appearance["ThemeColor"]) ?? ConfigurationDefaults.Appearance.ThemeColor;
                 Opacity = int.Parse(appearance["Opacity"]);
             }
 
@@ -123,8 +100,6 @@ public class SettingsViewModel : INotifyPropertyChanged
             {
                 var keywords = JsonSerializer.Deserialize<string[]>(dataCollection["ProcessKeywords"]) ?? Array.Empty<string>();
                 ProcessKeywords = new ObservableCollection<string>(keywords);
-                SystemInterval = int.Parse(dataCollection["SystemInterval"]);
-                ProcessInterval = int.Parse(dataCollection["ProcessInterval"]);
                 TopProcessCount = int.Parse(dataCollection["TopProcessCount"]);
                 DataRetentionDays = int.Parse(dataCollection["DataRetentionDays"]);
             }
@@ -133,8 +108,6 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (settings.TryGetValue("System", out var system))
             {
                 StartWithWindows = bool.Parse(system["StartWithWindows"]);
-                SignalRPort = int.Parse(system["SignalRPort"]);
-                WebPort = int.Parse(system["WebPort"]);
             }
         }
         catch (Exception ex)
@@ -158,20 +131,16 @@ public class SettingsViewModel : INotifyPropertyChanged
                 ["DataCollection"] = new()
                 {
                     ["ProcessKeywords"] = JsonSerializer.Serialize(ProcessKeywords.ToArray()),
-                    ["SystemInterval"] = SystemInterval.ToString(),
-                    ["ProcessInterval"] = ProcessInterval.ToString(),
                     ["TopProcessCount"] = TopProcessCount.ToString(),
                     ["DataRetentionDays"] = DataRetentionDays.ToString()
                 },
                 ["System"] = new()
                 {
-                    ["StartWithWindows"] = StartWithWindows.ToString().ToLower(),
-                    ["SignalRPort"] = SignalRPort.ToString(),
-                    ["WebPort"] = WebPort.ToString()
+                    ["StartWithWindows"] = StartWithWindows.ToString().ToLower()
                 }
             };
 
-            var response = await _httpClient.PutAsJsonAsync($"{ApiBaseUrl}/settings", settings);
+            var response = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/settings", settings);
             response.EnsureSuccessStatusCode();
 
             return true;

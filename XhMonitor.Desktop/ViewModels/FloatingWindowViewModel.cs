@@ -8,7 +8,7 @@ using XhMonitor.Desktop.Services;
 
 namespace XhMonitor.Desktop.ViewModels;
 
-public class FloatingWindowViewModel : INotifyPropertyChanged
+public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 {
     private readonly SignalRService _signalRService;
     private readonly Dictionary<int, ProcessRowViewModel> _processIndex = new();
@@ -382,7 +382,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged
     private static double GetMetricValue(ProcessInfoDto dto, string key)
         => dto.Metrics.GetValueOrDefault(key);
 
-    public async Task CleanupAsync()
+    public async ValueTask DisposeAsync()
     {
         _signalRService.MetricsReceived -= OnMetricsReceived;
         _signalRService.HardwareLimitsReceived -= OnHardwareLimitsReceived;
