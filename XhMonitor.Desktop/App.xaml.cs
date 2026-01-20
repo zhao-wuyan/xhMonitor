@@ -23,6 +23,7 @@ public partial class App : WpfApplication
         SessionEnding += OnSessionEnding;
 
         var services = new ServiceCollection();
+        services.AddSingleton<IServiceDiscovery, ServiceDiscovery>();
         services.AddSingleton<IBackendServerService, BackendServerService>();
         services.AddSingleton<IWebServerService, WebServerService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
@@ -154,7 +155,13 @@ public partial class App : WpfApplication
     {
         Dispatcher.Invoke(() =>
         {
-            var settingsWindow = new Windows.SettingsWindow
+            if (_serviceProvider == null)
+            {
+                return;
+            }
+
+            var serviceDiscovery = _serviceProvider.GetRequiredService<IServiceDiscovery>();
+            var settingsWindow = new Windows.SettingsWindow(serviceDiscovery)
             {
                 Owner = _floatingWindow
             };

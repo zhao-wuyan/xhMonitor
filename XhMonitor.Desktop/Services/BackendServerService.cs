@@ -3,14 +3,20 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Windows;
+using XhMonitor.Core.Configuration;
 
 namespace XhMonitor.Desktop.Services;
 
 public sealed class BackendServerService : IBackendServerService
 {
-    private const int BackendPort = 35179;
+    private readonly int _backendPort;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Process? _serverProcess;
+
+    public BackendServerService(IServiceDiscovery serviceDiscovery)
+    {
+        _backendPort = GetBackendPort(serviceDiscovery.ApiBaseUrl);
+    }
 
     public bool IsRunning => _serverProcess != null && !_serverProcess.HasExited;
 
@@ -28,9 +34,9 @@ public sealed class BackendServerService : IBackendServerService
                 return;
             }
 
-            if (IsPortInUse(BackendPort))
+            if (IsPortInUse(_backendPort))
             {
-                Debug.WriteLine($"Backend server is already running on port {BackendPort}");
+                Debug.WriteLine($"Backend server is already running on port {_backendPort}");
                 return;
             }
 
@@ -137,7 +143,7 @@ public sealed class BackendServerService : IBackendServerService
 
         while (DateTime.Now - startTime < maxWaitTime)
         {
-            if (IsPortInUse(BackendPort))
+            if (IsPortInUse(_backendPort))
             {
                 Debug.WriteLine("Backend server is now running");
                 return;
@@ -159,7 +165,7 @@ public sealed class BackendServerService : IBackendServerService
 
         while (DateTime.Now - startTime < timeout)
         {
-            if (IsPortInUse(BackendPort))
+            if (IsPortInUse(_backendPort))
             {
                 // 端口已开放，再等待 1 秒确保 SignalR Hub 就绪
                 await Task.Delay(1000).ConfigureAwait(false);
@@ -253,5 +259,15 @@ public sealed class BackendServerService : IBackendServerService
         {
             System.Windows.MessageBox.Show(message, title, System.Windows.MessageBoxButton.OK, icon);
         }).Task;
+    }
+
+    private static int GetBackendPort(string apiBaseUrl)
+    {
+        if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var uri))
+        {
+            return ConfigurationDefaults.System.SignalRPort;
+        }
+
+        return uri.Port;
     }
 }

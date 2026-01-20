@@ -1,0 +1,7 @@
+{
+  "$schema": "./service-endpoints.schema.json",
+  "ServiceEndpoints": {
+    "ApiBaseUrl": "http://localhost:35179",
+    "SignalRUrl": "http://localhost:35179/hubs/metrics"
+  }
+}

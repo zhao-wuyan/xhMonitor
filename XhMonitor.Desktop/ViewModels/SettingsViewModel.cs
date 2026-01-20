@@ -5,13 +5,14 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using XhMonitor.Core.Configuration;
+using XhMonitor.Desktop.Services;
 
 namespace XhMonitor.Desktop.ViewModels;
 
 public class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly HttpClient _httpClient;
-    private static readonly string ApiBaseUrl = $"http://localhost:{ConfigurationDefaults.System.SignalRPort}/api/v1/config";
+    private readonly string _apiBaseUrl;
     // 端口属于基础设施配置：由服务端 appsettings.json (Server:Port) 管理，不在数据库/设置界面中暴露。
 
     // 外观设置
@@ -29,8 +30,14 @@ public class SettingsViewModel : INotifyPropertyChanged
     private bool _isSaving = false;
 
     public SettingsViewModel()
+        : this(new ServiceDiscovery())
+    {
+    }
+
+    public SettingsViewModel(IServiceDiscovery serviceDiscovery)
     {
         _httpClient = new HttpClient();
+        _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
 
     public string ThemeColor
@@ -79,7 +86,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{ApiBaseUrl}/settings");
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/settings");
             response.EnsureSuccessStatusCode();
 
             var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
@@ -137,7 +144,7 @@ public class SettingsViewModel : INotifyPropertyChanged
                 }
             };
 
-            var response = await _httpClient.PutAsJsonAsync($"{ApiBaseUrl}/settings", settings);
+            var response = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/settings", settings);
             response.EnsureSuccessStatusCode();
 
             return true;

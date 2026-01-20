@@ -6,15 +6,21 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using XhMonitor.Core.Configuration;
 
 namespace XhMonitor.Desktop.Services;
 
 public sealed class WebServerService : IWebServerService
 {
-    private const int WebPort = 35180;
+    private readonly int _webPort;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Task? _webServerTask;
     private CancellationTokenSource? _webServerCts;
+
+    public WebServerService(IServiceDiscovery serviceDiscovery)
+    {
+        _webPort = ConfigurationDefaults.System.WebPort;
+    }
 
     public bool IsRunning => _webServerTask != null && !_webServerTask.IsCompleted;
 
@@ -23,9 +29,9 @@ public sealed class WebServerService : IWebServerService
         await _gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (IsPortInUse(WebPort))
+            if (IsPortInUse(_webPort))
             {
-                Debug.WriteLine($"Web frontend is already running on port {WebPort}");
+                Debug.WriteLine($"Web frontend is already running on port {_webPort}");
                 return;
             }
 
@@ -47,9 +53,9 @@ public sealed class WebServerService : IWebServerService
             {
                 try
                 {
-                    var builder = WebApplication.CreateBuilder();
-                    builder.WebHost.UseKestrel(options => { options.ListenLocalhost(WebPort); });
-                    builder.WebHost.UseUrls($"http://localhost:{WebPort}");
+                     var builder = WebApplication.CreateBuilder();
+                    builder.WebHost.UseKestrel(options => { options.ListenLocalhost(_webPort); });
+                    builder.WebHost.UseUrls($"http://localhost:{_webPort}");
 
                     var app = builder.Build();
 
@@ -64,7 +70,7 @@ public sealed class WebServerService : IWebServerService
                         FileProvider = new PhysicalFileProvider(distPath)
                     });
 
-                    Debug.WriteLine($"Web frontend server starting at http://localhost:{WebPort}");
+                    Debug.WriteLine($"Web frontend server starting at http://localhost:{_webPort}");
                     await app.StartAsync(_webServerCts.Token).ConfigureAwait(false);
                     await app.WaitForShutdownAsync(_webServerCts.Token).ConfigureAwait(false);
                 }
@@ -75,7 +81,7 @@ public sealed class WebServerService : IWebServerService
             }, _webServerCts.Token);
 
             await Task.Delay(1000).ConfigureAwait(false);
-            Debug.WriteLine($"Web frontend is ready at http://localhost:{WebPort}");
+            Debug.WriteLine($"Web frontend is ready at http://localhost:{_webPort}");
         }
         catch (Exception ex)
         {

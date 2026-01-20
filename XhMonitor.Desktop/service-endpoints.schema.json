@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "XhMonitor Desktop Service Endpoints",
+  "type": "object",
+  "properties": {
+    "ServiceEndpoints": {
+      "type": "object",
+      "properties": {
+        "ApiBaseUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "SignalRUrl": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "ApiBaseUrl",
+        "SignalRUrl"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "ServiceEndpoints"
+  ],
+  "additionalProperties": false
+}
