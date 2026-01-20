@@ -56,14 +56,14 @@ export const useMetricsHub = () => {
       }
     };
 
-    connection.on('metrics.processes', (data: MetricsData) => {
+    connection.on('ReceiveProcessMetrics', (data: MetricsData) => {
       setMetricsData({
         ...data,
         processes: mergeMeta(data.processes)
       });
     });
 
-    connection.on('metrics.processes.meta', (data: ProcessMetaData) => {
+    connection.on('ReceiveProcessMetadata', (data: ProcessMetaData) => {
       data.processes.forEach((p) => {
         metaMapRef.current.set(p.processId, p);
       });
