@@ -122,7 +122,7 @@ builder.Services.AddSingleton(sp =>
     return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory, hardwareManager, preferLibreHardwareMonitor);
 });
 
-builder.Services.AddSingleton<SystemMetricProvider>(sp =>
+builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
 {
     var registry = sp.GetRequiredService<MetricProviderRegistry>();
     var logger = sp.GetRequiredService<ILogger<SystemMetricProvider>>();

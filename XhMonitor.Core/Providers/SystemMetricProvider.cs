@@ -11,7 +11,7 @@ namespace XhMonitor.Core.Providers;
 /// <summary>
 /// 系统级指标提供者 - 统一管理系统总量指标采集
 /// </summary>
-public class SystemMetricProvider : IDisposable
+public class SystemMetricProvider : ISystemMetricProvider, IDisposable
 {
     private readonly IMetricProvider? _cpuProvider;
     private readonly IMetricProvider? _gpuProvider;

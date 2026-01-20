@@ -3,7 +3,6 @@ using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Constants;
-using XhMonitor.Core.Providers;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
 
@@ -15,7 +14,7 @@ public class Worker : BackgroundService
     private readonly PerformanceMonitor _monitor;
     private readonly IProcessMetricRepository _repository;
     private readonly IHubContext<MetricsHub> _hubContext;
-    private readonly SystemMetricProvider _systemMetricProvider;
+    private readonly ISystemMetricProvider _systemMetricProvider;
     private readonly IProcessMetadataStore _processMetadataStore;
     private readonly int _processIntervalSeconds;
     private readonly int _systemIntervalSeconds;
@@ -33,7 +32,7 @@ public class Worker : BackgroundService
         PerformanceMonitor monitor,
         IProcessMetricRepository repository,
         IHubContext<MetricsHub> hubContext,
-        SystemMetricProvider systemMetricProvider,
+        ISystemMetricProvider systemMetricProvider,
         IProcessMetadataStore processMetadataStore,
         IConfiguration config)
     {

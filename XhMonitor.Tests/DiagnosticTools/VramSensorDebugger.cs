@@ -92,8 +92,10 @@ public class VramSensorDebugger
         Console.WriteLine("\n=== Debug Complete ===");
     }
 
+#if DIAGNOSTIC_TOOLS
     public static void Main(string[] args)
     {
         DebugVramSensors();
     }
+#endif
 }

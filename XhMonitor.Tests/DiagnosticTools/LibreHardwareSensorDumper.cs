@@ -64,8 +64,10 @@ public class LibreHardwareSensorDumper
         Console.WriteLine("\n=== Dump Complete ===");
     }
 
+#if DIAGNOSTIC_TOOLS
     public static void Main(string[] args)
     {
         DumpAllSensors();
     }
+#endif
 }
