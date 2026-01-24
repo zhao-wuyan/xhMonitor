@@ -8,14 +8,6 @@
             "command": "bash -c \"ccw tool exec update_module_claude '{\\\"strategy\\\":\\\"related\\\",\\\"tool\\\":\\\"qwen\\\"}'\""
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c \"ccw tool exec memory_queue \\\"{\\\\\"action\\\\\":\\\\\"add\\\\\",\\\\\"path\\\\\":\\\\\"$CLAUDE_PROJECT_DIR\\\\\"}\\\"\""
-          }
-        ]
       }
     ],
     "UserPromptSubmit": [

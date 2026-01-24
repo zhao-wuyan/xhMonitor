@@ -1,0 +1,144 @@
+{
+  "project_name": "xhMonitor",
+  "initialized_at": "2026-01-24T08:38:40Z",
+  "overview": {
+    "description": "High-performance Windows resource monitoring system with real-time metrics collection, aggregation analysis, and web visualization for CPU, Memory, GPU, and VRAM",
+    "technology_stack": {
+      "languages": [
+        {
+          "name": "C#",
+          "file_count": 121,
+          "primary": true
+        },
+        {
+          "name": "TypeScript",
+          "file_count": 16,
+          "primary": false
+        },
+        {
+          "name": "XAML",
+          "file_count": 6,
+          "primary": false
+        }
+      ],
+      "frameworks": [
+        ".NET 8",
+        "ASP.NET Core",
+        "WPF",
+        "Entity Framework Core 8",
+        "React 19",
+        "SignalR",
+        "Vite 7",
+        "TailwindCSS v4"
+      ],
+      "build_tools": [
+        "dotnet",
+        "npm",
+        "MSBuild",
+        "Vite"
+      ],
+      "test_frameworks": [
+        "xUnit",
+        "Moq",
+        "FluentAssertions"
+      ]
+    },
+    "architecture": {
+      "style": "Layered Architecture with Client-Server Pattern",
+      "layers": [
+        "presentation",
+        "business-logic",
+        "data-access"
+      ],
+      "patterns": [
+        "Repository",
+        "Provider",
+        "MVVM",
+        "Dependency Injection",
+        "Background Worker",
+        "Hub (SignalR)",
+        "Factory"
+      ]
+    },
+    "key_components": [
+      {
+        "name": "XhMonitor.Core",
+        "path": "XhMonitor.Core",
+        "description": "Core library containing entities, interfaces, models, and metric providers (CPU, Memory, GPU, VRAM) with LibreHardwareMonitor integration",
+        "importance": "high"
+      },
+      {
+        "name": "XhMonitor.Service",
+        "path": "XhMonitor.Service",
+        "description": "ASP.NET Core backend service with REST API, SignalR hub, background workers for metrics collection and aggregation, SQLite persistence",
+        "importance": "high"
+      },
+      {
+        "name": "XhMonitor.Desktop",
+        "path": "XhMonitor.Desktop",
+        "description": "WPF desktop application with MVVM architecture, floating window, system tray integration, and SignalR client for real-time metrics display",
+        "importance": "high"
+      },
+      {
+        "name": "xhmonitor-web",
+        "path": "xhmonitor-web",
+        "description": "React 19 + TypeScript web frontend with real-time SignalR connection, ECharts visualization, i18n support, and Glassmorphism UI design",
+        "importance": "high"
+      },
+      {
+        "name": "Metric Providers",
+        "path": "XhMonitor.Core/Providers",
+        "description": "Pluggable metric collection providers implementing IMetricProvider interface for CPU, Memory, GPU, VRAM with PerformanceCounter and LibreHardwareMonitor backends",
+        "importance": "high"
+      },
+      {
+        "name": "Data Layer",
+        "path": "XhMonitor.Service/Data",
+        "description": "Entity Framework Core data access layer with AppDbContext, repositories, and SQLite database for raw and aggregated metrics storage",
+        "importance": "medium"
+      },
+      {
+        "name": "Background Workers",
+        "path": "XhMonitor.Service/Workers",
+        "description": "Background services for periodic metrics collection (Worker) and multi-level data aggregation (AggregationWorker) with minute/hour/day granularity",
+        "importance": "medium"
+      },
+      {
+        "name": "SignalR Hub",
+        "path": "XhMonitor.Service/Hubs",
+        "description": "Real-time communication hub (MetricsHub) for pushing latest metrics to connected clients via WebSocket with automatic reconnection",
+        "importance": "medium"
+      },
+      {
+        "name": "REST API Controllers",
+        "path": "XhMonitor.Service/Controllers",
+        "description": "RESTful API endpoints for metrics queries, configuration management, and health checks (MetricsController, ConfigController)",
+        "importance": "medium"
+      },
+      {
+        "name": "Test Suite",
+        "path": "XhMonitor.Tests",
+        "description": "Comprehensive test suite with unit tests, integration tests, and diagnostic tools using xUnit, Moq, and FluentAssertions",
+        "importance": "low"
+      }
+    ]
+  },
+  "features": [],
+  "development_index": {
+    "feature": [],
+    "enhancement": [],
+    "bugfix": [],
+    "refactor": [],
+    "docs": []
+  },
+  "statistics": {
+    "total_features": 0,
+    "total_sessions": 0,
+    "last_updated": "2026-01-24T08:38:40Z"
+  },
+  "_metadata": {
+    "initialized_by": "cli-explore-agent",
+    "analysis_timestamp": "2026-01-24T08:38:40Z",
+    "analysis_mode": "deep-scan"
+  }
+}
