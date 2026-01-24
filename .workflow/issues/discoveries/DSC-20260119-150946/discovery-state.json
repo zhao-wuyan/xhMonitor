@@ -1,7 +1,7 @@
 {
   "discovery_id": "DSC-20260119-150946",
   "target_pattern": "XhMonitor.Service/**/*.cs,XhMonitor.Core/**/*.cs,XhMonitor.Desktop/**/*.cs",
-  "phase": "complete",
+  "phase": "completed",
   "created_at": "2026-01-19T15:09:46+08:00",
   "updated_at": "2026-01-19T15:30:00+08:00",
   "target": {
@@ -37,7 +37,9 @@
       "high": 9,
       "medium": 10,
       "low": 6
-    }
+    },
+    "issues_completed": 11
   },
-  "issues_generated": 2
+  "issues_generated": 27,
+  "completed_at": "2026-01-24T07:03:15.441Z"
 }

@@ -28,7 +28,11 @@
         "title": "Remove fake async wrappers from SystemMetricProvider",
         "type": "refactor",
         "priority": 2,
-        "tags": ["best-practices", "performance", "async"]
+        "tags": [
+          "best-practices",
+          "performance",
+          "async"
+        ]
       },
       "external_reference": {
         "source": "Microsoft - Stephen Toub",
@@ -37,7 +41,9 @@
       },
       "confidence": 0.95,
       "impact": "Thread pool exhaustion under high load, unnecessary context switching overhead",
-      "recommendation": "Expose the method as synchronous (GetMemoryUsage()) or use ValueTask if interface compliance is required. Only use Task.Run at the consumer level (UI event handler) if offloading is strictly necessary for responsiveness."
+      "recommendation": "Expose the method as synchronous (GetMemoryUsage()) or use ValueTask if interface compliance is required. Only use Task.Run at the consumer level (UI event handler) if offloading is strictly necessary for responsiveness.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-002-b2e9d3f5",
@@ -53,7 +59,11 @@
         "title": "Implement strongly-typed SignalR hub interface",
         "type": "refactor",
         "priority": 2,
-        "tags": ["best-practices", "signalr", "type-safety"]
+        "tags": [
+          "best-practices",
+          "signalr",
+          "type-safety"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
@@ -62,7 +72,9 @@
       },
       "confidence": 0.98,
       "impact": "Runtime errors from typos, difficult refactoring, no IntelliSense support",
-      "recommendation": "Define a client interface IMetricsClient (e.g., Task ReceiveHardwareLimits(object data);) and inject IHubContext<MetricsHub, IMetricsClient>. Call methods directly: _hubContext.Clients.All.ReceiveHardwareLimits(...)."
+      "recommendation": "Define a client interface IMetricsClient (e.g., Task ReceiveHardwareLimits(object data);) and inject IHubContext<MetricsHub, IMetricsClient>. Call methods directly: _hubContext.Clients.All.ReceiveHardwareLimits(...).",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-003-c3f0e4a6",
@@ -78,16 +90,22 @@
         "title": "Adopt IOptions pattern for configuration management",
         "type": "refactor",
         "priority": 3,
-        "tags": ["best-practices", "configuration", "testability"]
+        "tags": [
+          "best-practices",
+          "configuration",
+          "testability"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/options",
         "relevance": "Official guidance on Options pattern in ASP.NET Core"
       },
-      "confidence": 0.90,
+      "confidence": 0.9,
       "impact": "Tight coupling to configuration structure, difficult unit testing, no validation",
-      "recommendation": "Create a MonitorSettings class. Register it with services.Configure<MonitorSettings>(configuration). Inject IOptions<MonitorSettings> into Worker."
+      "recommendation": "Create a MonitorSettings class. Register it with services.Configure<MonitorSettings>(configuration). Inject IOptions<MonitorSettings> into Worker.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-004-d4a1f5b7",
@@ -103,7 +121,11 @@
         "title": "Refactor App.xaml.cs to use Generic Host pattern",
         "type": "refactor",
         "priority": 3,
-        "tags": ["best-practices", "wpf", "architecture"]
+        "tags": [
+          "best-practices",
+          "wpf",
+          "architecture"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
@@ -112,7 +134,9 @@
       },
       "confidence": 0.85,
       "impact": "Difficult to test, tight coupling, violation of single responsibility principle",
-      "recommendation": "Adopt the Microsoft.Extensions.Hosting pattern for WPF. Move startup logic to a IHostedService or configure the DI container in CreateHostBuilder. Use dependency injection to resolve and show the main window."
+      "recommendation": "Adopt the Microsoft.Extensions.Hosting pattern for WPF. Move startup logic to a IHostedService or configure the DI container in CreateHostBuilder. Use dependency injection to resolve and show the main window.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-005-e5b2a6c8",
@@ -128,16 +152,22 @@
         "title": "Adopt C# 12 primary constructors for cleaner code",
         "type": "enhancement",
         "priority": 4,
-        "tags": ["best-practices", "csharp-12", "code-quality"]
+        "tags": [
+          "best-practices",
+          "csharp-12",
+          "code-quality"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-12",
         "relevance": "C# 12 primary constructors feature documentation"
       },
-      "confidence": 0.80,
+      "confidence": 0.8,
       "impact": "Increased boilerplate code, reduced readability",
-      "recommendation": "Refactor to: public class SystemMetricProvider(IMetricProvider? cpuProvider, ...) : IDisposable. This reduces boilerplate while maintaining functionality."
+      "recommendation": "Refactor to: public class SystemMetricProvider(IMetricProvider? cpuProvider, ...) : IDisposable. This reduces boilerplate while maintaining functionality.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-006-f6c3b7d9",
@@ -153,7 +183,11 @@
         "title": "Fix unsafe async cleanup in application shutdown",
         "type": "bug",
         "priority": 2,
-        "tags": ["best-practices", "async", "cleanup"]
+        "tags": [
+          "best-practices",
+          "async",
+          "cleanup"
+        ]
       },
       "external_reference": {
         "source": "Microsoft - Async Best Practices",
@@ -162,7 +196,9 @@
       },
       "confidence": 0.88,
       "impact": "Orphaned processes, incomplete cleanup, resource leaks",
-      "recommendation": "Since OnExit cannot be async, ensure synchronous blocking cleanup or robust orphan-process detection on startup. Alternatively, use the Generic Host lifecycle which supports StopAsync gracefully."
+      "recommendation": "Since OnExit cannot be async, ensure synchronous blocking cleanup or robust orphan-process detection on startup. Alternatively, use the Generic Host lifecycle which supports StopAsync gracefully.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-007-a7d4c8e0",
@@ -178,7 +214,11 @@
         "title": "Remove blocking async calls to prevent deadlocks",
         "type": "bug",
         "priority": 2,
-        "tags": ["best-practices", "async", "deadlock-risk"]
+        "tags": [
+          "best-practices",
+          "async",
+          "deadlock-risk"
+        ]
       },
       "external_reference": {
         "source": "Stephen Cleary - Don't Block on Async Code",
@@ -187,7 +227,9 @@
       },
       "confidence": 0.92,
       "impact": "Potential deadlocks in UI thread, thread pool starvation, poor responsiveness",
-      "recommendation": "Refactor to use proper async/await patterns. For UI cleanup, consider using async event handlers or restructure lifecycle management to support async operations."
+      "recommendation": "Refactor to use proper async/await patterns. For UI cleanup, consider using async event handlers or restructure lifecycle management to support async operations.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-008-b8e5d9f1",
@@ -203,7 +245,11 @@
         "title": "Use IHttpClientFactory for HttpClient management",
         "type": "bug",
         "priority": 2,
-        "tags": ["best-practices", "httpclient", "resource-management"]
+        "tags": [
+          "best-practices",
+          "httpclient",
+          "resource-management"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
@@ -212,7 +258,9 @@
       },
       "confidence": 0.95,
       "impact": "Socket exhaustion under load, connection pool depletion, DNS resolution issues",
-      "recommendation": "Inject IHttpClientFactory or use a static/singleton HttpClient instance. For WPF without DI, use a static readonly HttpClient or implement IDisposable properly."
+      "recommendation": "Inject IHttpClientFactory or use a static/singleton HttpClient instance. For WPF without DI, use a static readonly HttpClient or implement IDisposable properly.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-009-c9f6e0a2",
@@ -228,7 +276,11 @@
         "title": "Adopt C# 12 collection expressions for modern syntax",
         "type": "enhancement",
         "priority": 5,
-        "tags": ["best-practices", "csharp-12", "code-quality"]
+        "tags": [
+          "best-practices",
+          "csharp-12",
+          "code-quality"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
@@ -237,7 +289,9 @@
       },
       "confidence": 0.75,
       "impact": "Slightly more verbose code, missed opportunity for modern syntax",
-      "recommendation": "Replace with collection expressions: var readings = []; or List<SensorReading> readings = [];. This is a low-priority enhancement for code modernization."
+      "recommendation": "Replace with collection expressions: var readings = []; or List<SensorReading> readings = [];. This is a low-priority enhancement for code modernization.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-010-d0a7f1b3",
@@ -253,7 +307,11 @@
         "title": "Replace synchronous semaphore wait with async WaitAsync",
         "type": "refactor",
         "priority": 3,
-        "tags": ["best-practices", "async", "concurrency"]
+        "tags": [
+          "best-practices",
+          "async",
+          "concurrency"
+        ]
       },
       "external_reference": {
         "source": "Microsoft - Async Synchronization Primitives",
@@ -262,7 +320,9 @@
       },
       "confidence": 0.87,
       "impact": "Thread pool blocking, reduced scalability under concurrent access",
-      "recommendation": "Change UpdateSnapshot() to async and use await _updateLock.WaitAsync(). Update all callers to await the method."
+      "recommendation": "Change UpdateSnapshot() to async and use await _updateLock.WaitAsync(). Update all callers to await the method.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-011-e1b8c2d4",
@@ -278,7 +338,11 @@
         "title": "Implement IAsyncDisposable for async resource cleanup",
         "type": "enhancement",
         "priority": 3,
-        "tags": ["best-practices", "async", "disposal"]
+        "tags": [
+          "best-practices",
+          "async",
+          "disposal"
+        ]
       },
       "external_reference": {
         "source": "Microsoft Learn",
@@ -287,7 +351,9 @@
       },
       "confidence": 0.85,
       "impact": "Blocking async operations during disposal, potential deadlocks",
-      "recommendation": "Implement IAsyncDisposable alongside IDisposable. Provide DisposeAsync() for async cleanup and make Dispose() call DisposeAsync().GetAwaiter().GetResult() or use synchronous cleanup only."
+      "recommendation": "Implement IAsyncDisposable alongside IDisposable. Provide DisposeAsync() for async cleanup and make Dispose() call DisposeAsync().GetAwaiter().GetResult() or use synchronous cleanup only.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-best-practices-012-f2c9d3e5",
@@ -303,32 +369,46 @@
         "title": "Add logging to exception handlers instead of empty catch",
         "type": "enhancement",
         "priority": 3,
-        "tags": ["best-practices", "error-handling", "observability"]
+        "tags": [
+          "best-practices",
+          "error-handling",
+          "observability"
+        ]
       },
       "external_reference": {
         "source": "Microsoft - Exception Handling Best Practices",
         "url": "https://learn.microsoft.com/en-us/dotnet/standard/exceptions/best-practices-for-exceptions",
         "relevance": "Official guidance on exception handling"
       },
-      "confidence": 0.80,
+      "confidence": 0.8,
       "impact": "Hidden errors, difficult debugging, reduced observability",
-      "recommendation": "Add logging even for expected exceptions: catch (Exception ex) { _logger.LogDebug(ex, \"Expected error during stop\"); }. This maintains observability while handling expected failures."
+      "recommendation": "Add logging even for expected exceptions: catch (Exception ex) { _logger.LogDebug(ex, \"Expected error during stop\"); }. This maintains observability while handling expected failures.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     }
   ],
   "cross_references": [
     {
       "finding_id": "dsc-best-practices-007-a7d4c8e0",
-      "related_perspectives": ["bug", "performance"],
+      "related_perspectives": [
+        "bug",
+        "performance"
+      ],
       "reason": "Blocking async operations can cause deadlocks (bug) and performance degradation"
     },
     {
       "finding_id": "dsc-best-practices-008-b8e5d9f1",
-      "related_perspectives": ["bug", "performance"],
+      "related_perspectives": [
+        "bug",
+        "performance"
+      ],
       "reason": "HttpClient misuse can cause socket exhaustion (bug) and performance issues"
     },
     {
       "finding_id": "dsc-best-practices-001-a1f8c2d4",
-      "related_perspectives": ["performance"],
+      "related_perspectives": [
+        "performance"
+      ],
       "reason": "Fake async wrappers degrade performance under load"
     }
   ]

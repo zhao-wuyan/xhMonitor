@@ -36,7 +36,9 @@
       },
       "confidence": 0.95,
       "impact": "Prevents unit testing of Worker class, increases coupling between Service and Core modules, makes it difficult to swap implementations",
-      "recommendation": "Extract ISystemMetricProvider interface with GetSystemUsageAsync() method and inject that into Worker. Update Program.cs to register the interface binding."
+      "recommendation": "Extract ISystemMetricProvider interface with GetSystemUsageAsync() method and inject that into Worker. Update Program.cs to register the interface binding.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-002-b2c3d4e5",
@@ -60,7 +62,9 @@
       },
       "confidence": 0.9,
       "impact": "Application fails to start in production environments, requires manual path adjustments for different deployment scenarios",
-      "recommendation": "Use appsettings.json or registry lookup to locate the service executable, or bundle them in the same directory for release builds. Consider using a ServiceLocator pattern with configurable paths."
+      "recommendation": "Use appsettings.json or registry lookup to locate the service executable, or bundle them in the same directory for release builds. Consider using a ServiceLocator pattern with configurable paths.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-003-c3d4e5f6",
@@ -110,7 +114,9 @@
       },
       "confidence": 0.85,
       "impact": "Class is harder to understand, mixes high-level orchestration with low-level implementation, increases cognitive load",
-      "recommendation": "Extract DXGI and Performance Counter logic into their own classes implementing a common IVramProvider interface. SystemMetricProvider should only orchestrate high-level providers."
+      "recommendation": "Extract DXGI and Performance Counter logic into their own classes implementing a common IVramProvider interface. SystemMetricProvider should only orchestrate high-level providers.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-005-e5f6a7b8",
@@ -160,7 +166,9 @@
       },
       "confidence": 0.9,
       "impact": "Application fails to start on port conflicts, requires code changes to adjust ports, poor user experience",
-      "recommendation": "Move port numbers to a shared configuration file (appsettings.json) and implement a dynamic port selection or fallback mechanism. Desktop should read ports from Service's configuration."
+      "recommendation": "Move port numbers to a shared configuration file (appsettings.json) and implement a dynamic port selection or fallback mechanism. Desktop should read ports from Service's configuration.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-007-a7b8c9d0",
@@ -184,7 +192,9 @@
       },
       "confidence": 0.92,
       "impact": "Adding new providers requires modifying SystemMetricProvider, violates Open/Closed Principle, increases coupling",
-      "recommendation": "Refactor IMetricProvider to include GetDetailedMetricsAsync() method or introduce a specific IVramMetricProvider interface that exposes GetVramMetricsAsync(). Use polymorphism instead of type checking."
+      "recommendation": "Refactor IMetricProvider to include GetDetailedMetricsAsync() method or introduce a specific IVramMetricProvider interface that exposes GetVramMetricsAsync(). Use polymorphism instead of type checking.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-008-b8c9d0e1",
@@ -208,7 +218,9 @@
       },
       "confidence": 0.88,
       "impact": "Cannot add new system metrics without code changes, limits extensibility, requires recompilation for new metric types",
-      "recommendation": "Use a collection IEnumerable<IMetricProvider> or dictionary Dictionary<string, IMetricProvider> to manage providers dynamically. Allow registration of new providers at runtime."
+      "recommendation": "Use a collection IEnumerable<IMetricProvider> or dictionary Dictionary<string, IMetricProvider> to manage providers dynamically. Allow registration of new providers at runtime.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-009-c9d0e1f2",
@@ -232,7 +244,9 @@
       },
       "confidence": 0.9,
       "impact": "Configuration inconsistencies, difficult to track settings, maintenance burden, potential runtime errors from mismatched values",
-      "recommendation": "Establish a clear configuration hierarchy: appsettings.json as default, database for user overrides, Desktop reads from Service API. Remove hardcoded values and defaults from ViewModels."
+      "recommendation": "Establish a clear configuration hierarchy: appsettings.json as default, database for user overrides, Desktop reads from Service API. Remove hardcoded values and defaults from ViewModels.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-010-d0e1f2a3",
@@ -256,7 +270,9 @@
       },
       "confidence": 0.93,
       "impact": "Tight coupling between Desktop and Service, prevents independent configuration, requires code changes for port adjustments",
-      "recommendation": "Desktop should read Service endpoint from its own configuration file or use a service discovery mechanism (e.g., registry, shared config file, environment variable). Consider using a ServiceLocator pattern."
+      "recommendation": "Desktop should read Service endpoint from its own configuration file or use a service discovery mechanism (e.g., registry, shared config file, environment variable). Consider using a ServiceLocator pattern.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-011-e1f2a3b4",
@@ -280,7 +296,9 @@
       },
       "confidence": 0.87,
       "impact": "Inconsistent defaults across modules, confusion about actual default values, maintenance burden when changing defaults",
-      "recommendation": "Define defaults in a single location (appsettings.json) and have all modules read from there. Remove hardcoded defaults from ViewModels and database seeds."
+      "recommendation": "Define defaults in a single location (appsettings.json) and have all modules read from there. Remove hardcoded defaults from ViewModels and database seeds.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.523Z"
     },
     {
       "id": "dsc-maintainability-012-f2a3b4c5",
@@ -304,7 +322,9 @@
       },
       "confidence": 0.82,
       "impact": "Tight coupling to concrete implementations, difficult to test, cannot easily swap provider implementations",
-      "recommendation": "Use a factory pattern or inject IServiceProvider to resolve providers from DI container. This allows for better testability and flexibility."
+      "recommendation": "Use a factory pattern or inject IServiceProvider to resolve providers from DI container. This allows for better testability and flexibility.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.524Z"
     },
     {
       "id": "dsc-maintainability-013-a3b4c5d6",
@@ -328,7 +348,9 @@
       },
       "confidence": 0.88,
       "impact": "Confusion about where to store settings, potential synchronization issues, duplicate configuration values",
-      "recommendation": "Establish clear rules: appsettings.json for system/deployment settings (read-only), database for user preferences (read-write). Implement a configuration service that merges both sources with clear precedence rules."
+      "recommendation": "Establish clear rules: appsettings.json for system/deployment settings (read-only), database for user preferences (read-write). Implement a configuration service that merges both sources with clear precedence rules.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.524Z"
     },
     {
       "id": "dsc-maintainability-014-b4c5d6e7",
@@ -352,7 +374,9 @@
       },
       "confidence": 0.75,
       "impact": "Difficult to test process management logic, tight coupling to System.Diagnostics.Process",
-      "recommendation": "Create IProcessManager interface with Start/Stop/IsRunning methods. Implement ProcessManager class that wraps System.Diagnostics.Process. This enables testing with mock implementations."
+      "recommendation": "Create IProcessManager interface with Start/Stop/IsRunning methods. Implement ProcessManager class that wraps System.Diagnostics.Process. This enables testing with mock implementations.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.524Z"
     },
     {
       "id": "dsc-maintainability-015-c5d6e7f8",
@@ -376,7 +400,9 @@
       },
       "confidence": 0.78,
       "impact": "Inconsistent error handling, difficult to debug configuration issues, unpredictable behavior",
-      "recommendation": "Establish consistent error handling patterns: fail-fast for critical configuration (connection strings), graceful degradation with logging for user preferences. Document the patterns in architecture guidelines."
+      "recommendation": "Establish consistent error handling patterns: fail-fast for critical configuration (connection strings), graceful degradation with logging for user preferences. Document the patterns in architecture guidelines.",
+      "exported": true,
+      "exported_at": "2026-01-24T07:18:17.524Z"
     }
   ],
   "cross_references": []
