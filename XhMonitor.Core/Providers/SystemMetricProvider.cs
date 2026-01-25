@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
@@ -10,14 +11,65 @@ namespace XhMonitor.Core.Providers;
 /// <summary>
 /// 系统级指标提供者 - 统一管理系统总量指标采集
 /// </summary>
-public class SystemMetricProvider(
-    IMetricProvider? cpuProvider,
-    IMetricProvider? gpuProvider,
-    IMetricProvider? memoryProvider,
-    IMetricProvider? vramProvider,
-    ILogger<SystemMetricProvider>? logger = null) : ISystemMetricProvider, IAsyncDisposable, IDisposable
+public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDisposable
 {
+    private readonly Dictionary<string, IMetricProvider> _providers;
+    private readonly ILogger<SystemMetricProvider>? _logger;
     private bool _disposed;
+
+    public SystemMetricProvider(IEnumerable<IMetricProvider> providers, ILogger<SystemMetricProvider>? logger = null)
+    {
+        _logger = logger;
+        _providers = BuildProviderMap(providers, logger);
+    }
+
+    private static Dictionary<string, IMetricProvider> BuildProviderMap(
+        IEnumerable<IMetricProvider> providers,
+        ILogger<SystemMetricProvider>? logger)
+    {
+        var map = new Dictionary<string, IMetricProvider>(StringComparer.OrdinalIgnoreCase);
+        if (providers == null)
+        {
+            return map;
+        }
+
+        foreach (var provider in providers)
+        {
+            if (provider == null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(provider.MetricId))
+            {
+                logger?.LogWarning("SystemMetricProvider: provider MetricId is empty: {ProviderType}", provider.GetType().FullName);
+                continue;
+            }
+
+            if (!map.TryAdd(provider.MetricId, provider))
+            {
+                logger?.LogWarning("SystemMetricProvider: duplicate MetricId ignored: {MetricId}", provider.MetricId);
+            }
+        }
+
+        return map;
+    }
+
+    private IMetricProvider? GetProvider(string metricId)
+    {
+        if (string.IsNullOrWhiteSpace(metricId))
+        {
+            return null;
+        }
+
+        _providers.TryGetValue(metricId, out var provider);
+        return provider;
+    }
+
+    private bool HasProvider(string metricId)
+    {
+        return GetProvider(metricId) != null;
+    }
 
     /// <summary>
     /// 预热所有性能计数器
@@ -26,17 +78,23 @@ public class SystemMetricProvider(
     {
         List<Task> tasks = [];
 
-        if (cpuProvider is CpuMetricProvider cpuMetricProvider)
+        foreach (var provider in _providers.Values)
         {
-            tasks.Add(cpuMetricProvider.WarmupAsync());
+            switch (provider)
+            {
+                case CpuMetricProvider cpuMetricProvider:
+                    tasks.Add(cpuMetricProvider.WarmupAsync());
+                    break;
+                case GpuMetricProvider gpuMetricProvider:
+                    tasks.Add(gpuMetricProvider.WarmupAsync());
+                    break;
+            }
         }
 
-        if (gpuProvider is GpuMetricProvider gpuMetricProvider)
+        if (tasks.Count > 0)
         {
-            tasks.Add(gpuMetricProvider.WarmupAsync());
+            await Task.WhenAll(tasks);
         }
-
-        await Task.WhenAll(tasks);
     }
 
     /// <summary>
@@ -61,6 +119,7 @@ public class SystemMetricProvider(
     /// </summary>
     private async Task<double> GetMaxVramAsync()
     {
+        var vramProvider = GetProvider("vram");
         if (vramProvider == null)
         {
             return 0.0;
@@ -82,8 +141,8 @@ public class SystemMetricProvider(
     /// </summary>
     public async Task<SystemUsage> GetSystemUsageAsync()
     {
-        var cpuTask = cpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
-        var gpuTask = gpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var cpuTask = GetProvider("cpu")?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var gpuTask = GetProvider("gpu")?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
         var vramTask = GetVramUsageAsync();
 
         var totalMemory = GetMemoryUsage();
@@ -123,6 +182,7 @@ public class SystemMetricProvider(
 
     private async Task<double> GetVramUsageAsync()
     {
+        var vramProvider = GetProvider("vram");
         if (vramProvider == null)
         {
             return 0.0;
@@ -131,7 +191,7 @@ public class SystemMetricProvider(
         var vramMetrics = await vramProvider.GetVramMetricsAsync();
         if (vramMetrics != null && vramMetrics.IsValid)
         {
-            logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Used={Used} MB, Total={Total} MB",
+            _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Used={Used} MB, Total={Total} MB",
                 vramMetrics.Used, vramMetrics.Total);
             return vramMetrics.Used;
         }

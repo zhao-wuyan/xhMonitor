@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Linq;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
 
@@ -51,10 +52,18 @@ public sealed class MetricProviderRegistry : IDisposable
         return provider;
     }
 
-    public IEnumerable<IMetricProvider> GetAllProviders()
+    /// <summary>
+    /// 获取所有已注册的指标提供者，可选过滤条件
+    /// </summary>
+    public IEnumerable<IMetricProvider> GetAllProviders(Func<IMetricProvider, bool>? filter = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        return _providers.Values;
+        if (filter == null)
+        {
+            return _providers.Values;
+        }
+
+        return _providers.Values.Where(filter).ToArray();
     }
 
     public bool RegisterProvider(IMetricProvider provider)

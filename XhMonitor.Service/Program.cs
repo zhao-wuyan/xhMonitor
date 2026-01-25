@@ -166,13 +166,7 @@ builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
 {
     var registry = sp.GetRequiredService<MetricProviderRegistry>();
     var logger = sp.GetRequiredService<ILogger<SystemMetricProvider>>();
-    return new SystemMetricProvider(
-        registry.GetProvider("cpu"),
-        registry.GetProvider("gpu"),
-        registry.GetProvider("memory"),
-        registry.GetProvider("vram"),
-        logger
-    );
+    return new SystemMetricProvider(registry.GetAllProviders(), logger);
 });
 
 builder.Services.AddSingleton<ProcessScanner>();

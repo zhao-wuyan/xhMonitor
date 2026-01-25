@@ -106,7 +106,7 @@ public class MetricProviderRegistryIntegrationTests : IDisposable
         cpuProvider!.GetType().Name.Should().Be("CpuMetricProvider");
         memoryProvider!.GetType().Name.Should().Be("MemoryMetricProvider");
         gpuProvider!.GetType().Name.Should().Be("GpuMetricProvider");
-        vramProvider!.GetType().Name.Should().Be("VramMetricProvider");
+        vramProvider!.GetType().Name.Should().Be("DxgiVramProvider");
 
         // 验证日志记录
         _mockLogger.Verify(
@@ -155,7 +155,7 @@ public class MetricProviderRegistryIntegrationTests : IDisposable
         cpuProvider!.GetType().Name.Should().Be("CpuMetricProvider");
         memoryProvider!.GetType().Name.Should().Be("MemoryMetricProvider");
         gpuProvider!.GetType().Name.Should().Be("GpuMetricProvider");
-        vramProvider!.GetType().Name.Should().Be("VramMetricProvider");
+        vramProvider!.GetType().Name.Should().Be("DxgiVramProvider");
 
         // 验证日志记录
         _mockLogger.Verify(

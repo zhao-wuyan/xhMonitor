@@ -108,8 +108,8 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
             "无 LibreHardwareManager 时应使用传统 Memory 提供者");
         gpuProvider!.GetType().Name.Should().Be("GpuMetricProvider",
             "无 LibreHardwareManager 时应使用传统 GPU 提供者");
-        vramProvider!.GetType().Name.Should().Be("VramMetricProvider",
-            "无 LibreHardwareManager 时应使用传统 VRAM 提供者");
+        vramProvider!.GetType().Name.Should().Be("DxgiVramProvider",
+            "无 LibreHardwareManager 时应使用 DXGI/PerformanceCounter VRAM 提供者");
     }
 
     [Fact]
