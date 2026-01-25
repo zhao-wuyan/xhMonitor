@@ -171,8 +171,7 @@ builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
         registry.GetProvider("gpu"),
         registry.GetProvider("memory"),
         registry.GetProvider("vram"),
-        logger,
-        initializeDxgi: !registry.IsLibreHardwareMonitorEnabled
+        logger
     );
 });
 

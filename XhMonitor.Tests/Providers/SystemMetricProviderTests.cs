@@ -20,8 +20,7 @@ public class SystemMetricProviderTests : IDisposable
             gpuProvider: null,
             memoryProvider: null,
             vramProvider: null,
-            logger: null,
-            initializeDxgi: false);
+            logger: null);
     }
 
     [Fact]
@@ -151,8 +150,7 @@ public class SystemMetricProviderTests : IDisposable
             gpuProvider: null,
             memoryProvider: null,
             vramProvider: vramProvider.Object,
-            logger: null,
-            initializeDxgi: false);
+            logger: null);
 
         var result = await provider.GetHardwareLimitsAsync();
 
@@ -183,8 +181,7 @@ public class SystemMetricProviderTests : IDisposable
             gpuProvider: gpuProvider.Object,
             memoryProvider: null,
             vramProvider: vramProvider.Object,
-            logger: null,
-            initializeDxgi: false);
+            logger: null);
 
         var limits = await provider.GetHardwareLimitsAsync();
         var usage = await provider.GetSystemUsageAsync();

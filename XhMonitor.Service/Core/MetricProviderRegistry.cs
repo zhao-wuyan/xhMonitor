@@ -226,9 +226,12 @@ public sealed class MetricProviderRegistry : IDisposable
                 _loggerFactory.CreateLogger<GpuMetricProvider>(),
                 _loggerFactory,
                 initializeDxgi: !useLibreHardwareMonitor));
-            RegisterProvider(new VramMetricProvider(_loggerFactory.CreateLogger<VramMetricProvider>()));
+            RegisterProvider(new DxgiVramProvider(
+                _loggerFactory.CreateLogger<DxgiVramProvider>(),
+                _loggerFactory,
+                initializeDxgi: !useLibreHardwareMonitor));
 
-            _logger.LogInformation("已注册传统 PerformanceCounter 提供者: CPU, Memory, GPU, VRAM");
+            _logger.LogInformation("已注册传统 PerformanceCounter 提供者: CPU, Memory, GPU, VRAM(DXGI+PerformanceCounter)");
         }
     }
 
