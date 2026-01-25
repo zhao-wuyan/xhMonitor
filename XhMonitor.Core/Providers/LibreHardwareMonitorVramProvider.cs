@@ -8,21 +8,21 @@ namespace XhMonitor.Core.Providers;
 
 /// <summary>
 /// VRAM 指标提供者（混合架构）
-/// 系统级指标使用 LibreHardwareMonitor，进程级指标委托给 VramMetricProvider
+/// 系统级指标使用 LibreHardwareMonitor，进程级指标委托给提供者实现
 /// </summary>
 public class LibreHardwareMonitorVramProvider : IMetricProvider
 {
     private readonly ILibreHardwareManager _hardwareManager;
     private readonly ILogger<LibreHardwareMonitorVramProvider>? _logger;
-    private readonly VramMetricProvider _vramMetricProvider;
+    private readonly IMetricProvider _processVramProvider;
 
     public LibreHardwareMonitorVramProvider(
         ILibreHardwareManager hardwareManager,
-        VramMetricProvider vramMetricProvider,
+        IMetricProvider processVramProvider,
         ILogger<LibreHardwareMonitorVramProvider>? logger = null)
     {
         _hardwareManager = hardwareManager ?? throw new ArgumentNullException(nameof(hardwareManager));
-        _vramMetricProvider = vramMetricProvider ?? throw new ArgumentNullException(nameof(vramMetricProvider));
+        _processVramProvider = processVramProvider ?? throw new ArgumentNullException(nameof(processVramProvider));
         _logger = logger;
     }
 
@@ -180,12 +180,12 @@ public class LibreHardwareMonitorVramProvider : IMetricProvider
 
     public async Task<MetricValue> CollectAsync(int processId)
     {
-        // 委托给现有的 VramMetricProvider 处理进程级监控
-        return await _vramMetricProvider.CollectAsync(processId);
+        // 委托给现有的进程级 VRAM 提供者处理监控
+        return await _processVramProvider.CollectAsync(processId);
     }
 
     public void Dispose()
     {
-        _vramMetricProvider?.Dispose();
+        _processVramProvider.Dispose();
     }
 }

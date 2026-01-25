@@ -820,6 +820,26 @@ XhMonitor 的配置分为两类来源：
 
 > 说明：端口、连接字符串、采集间隔等属于基础设施/系统级配置；UI 外观、筛选关键词、展示偏好等属于用户偏好。
 
+#### 端口发现与回退
+
+Desktop 端通过 `service-endpoints.json` 读取 API/SignalR 地址（默认 `http://localhost:35179`）。当默认端口被占用时，`ServiceDiscovery` 会尝试在 `+1 ~ +10` 范围内寻找可用端口并自动回退。Web 前端默认端口为 `35180`，同样支持自动回退。
+
+如需固定端口，请更新 `service-endpoints.json` 并确保端口未被占用。
+
+### Error Handling
+
+对于**可预期的失败**（例如配置缺失、输入校验失败、网络不可达），优先使用 `Result<T, TError>` 进行结果返回，避免用异常作为流程控制。对于**不可预期的错误**（例如程序缺陷、环境异常），继续使用异常并记录日志。
+
+示例：
+```csharp
+var result = await _viewModel.LoadSettingsAsync();
+if (result.IsFailure)
+{
+    MessageBox.Show(result.Error, "错误");
+    return;
+}
+```
+
 #### `appsettings.json`（服务端）常见配置
 
 - `Server:Host`, `Server:Port`, `Server:HubPath`
@@ -968,6 +988,15 @@ public class CustomMetricProvider : IMetricProvider
     }
 
     public void Dispose() { }
+}
+```
+
+**编码规范**：对有依赖注入参数的 Provider，优先使用 C# 12 primary constructor，例如：
+
+```csharp
+public class CustomMetricProvider(ILogger<CustomMetricProvider>? logger = null) : IMetricProvider
+{
+    // ...
 }
 ```
 

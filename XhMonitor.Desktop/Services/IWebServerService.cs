@@ -4,7 +4,7 @@ public interface IWebServerService : IAsyncDisposable
 {
     bool IsRunning { get; }
 
-    Task StartAsync();
+    Task StartAsync(CancellationToken cancellationToken = default);
 
-    Task StopAsync();
+    Task StopAsync(CancellationToken cancellationToken = default);
 }

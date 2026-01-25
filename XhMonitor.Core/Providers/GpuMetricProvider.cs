@@ -9,14 +9,17 @@ using XhMonitor.Core.Monitoring;
 
 namespace XhMonitor.Core.Providers;
 
-public class GpuMetricProvider : IMetricProvider
+public class GpuMetricProvider(
+    ILogger<GpuMetricProvider>? logger = null,
+    ILoggerFactory? loggerFactory = null,
+    bool initializeDxgi = true) : IMetricProvider
 {
     private readonly ConcurrentDictionary<int, List<PerformanceCounter>> _counters = new();
     private readonly ConcurrentDictionary<int, DateTime> _lastAccessTime = new();
-    private readonly ILogger<GpuMetricProvider>? _logger;
-    private readonly DxgiGpuMonitor _dxgiMonitor;
+    private readonly ILogger<GpuMetricProvider>? _logger = logger;
+    private readonly DxgiGpuMonitor _dxgiMonitor = new(loggerFactory?.CreateLogger<DxgiGpuMonitor>());
     private bool? _isSupported;
-    private bool _dxgiInitialized;
+    private bool? _dxgiInitialized;
     private int _cycleCount = 0;
     private const int CleanupIntervalCycles = 10; // 每 10 次调用清理一次
     private const int TtlSeconds = 60; // 60 秒未访问则清理
@@ -28,49 +31,53 @@ public class GpuMetricProvider : IMetricProvider
     /// </summary>
     public static bool PreferPerformanceCounter { get; set; } = true;
 
-    public GpuMetricProvider(
-        ILogger<GpuMetricProvider>? logger = null,
-        ILoggerFactory? loggerFactory = null,
-        bool initializeDxgi = true)
+    private static bool InitializeDxgi(
+        bool initializeDxgi,
+        ILogger<GpuMetricProvider>? logger,
+        DxgiGpuMonitor dxgiMonitor)
     {
-        _logger = logger;
-        _dxgiMonitor = new DxgiGpuMonitor(loggerFactory?.CreateLogger<DxgiGpuMonitor>());
-
-        _logger?.LogInformation("GPU monitoring mode: {Mode}",
+        logger?.LogInformation("GPU monitoring mode: {Mode}",
             PreferPerformanceCounter ? "Performance Counter (AMD 推荐)" : "D3DKMT (NVIDIA/Intel 推荐)");
 
-        if (initializeDxgi)
+        if (!initializeDxgi)
         {
-            try
-            {
-                _dxgiInitialized = _dxgiMonitor.Initialize();
-                if (_dxgiInitialized)
-                {
-                    _logger?.LogInformation("DXGI GPU monitor initialized successfully");
+            logger?.LogDebug("DXGI GPU monitor initialization skipped");
+            return false;
+        }
 
-                    // 预热：两次调用填充缓存，确保后续调用能立即返回使用率
-                    _dxgiMonitor.GetGpuUsage();  // 第一次：填充缓存
-                    Thread.Sleep(100);  // 等待 100ms，确保时间差足够
-                    _dxgiMonitor.GetGpuUsage();  // 第二次：验证能正常计算
-                    _logger?.LogDebug("DXGI GPU monitor cache warmed up");
-                }
-            }
-            catch (Exception ex)
+        try
+        {
+            var initialized = dxgiMonitor.Initialize();
+            if (initialized)
             {
-                _logger?.LogWarning(ex, "Failed to initialize DXGI GPU monitor");
-                _dxgiInitialized = false;
-            }
+                logger?.LogInformation("DXGI GPU monitor initialized successfully");
 
-            if (!_dxgiInitialized)
-            {
-                _logger?.LogDebug("DXGI GPU monitor not available, fallback to performance counters");
+                // 预热：两次调用填充缓存，确保后续调用能立即返回使用率
+                dxgiMonitor.GetGpuUsage();  // 第一次：填充缓存
+                Thread.Sleep(100);  // 等待 100ms，确保时间差足够
+                dxgiMonitor.GetGpuUsage();  // 第二次：验证能正常计算
+                logger?.LogDebug("DXGI GPU monitor cache warmed up");
+                return true;
             }
         }
-        else
+        catch (Exception ex)
         {
-            _dxgiInitialized = false;
-            _logger?.LogDebug("DXGI GPU monitor initialization skipped");
+            logger?.LogWarning(ex, "Failed to initialize DXGI GPU monitor");
         }
+
+        logger?.LogDebug("DXGI GPU monitor not available, fallback to performance counters");
+        return false;
+    }
+
+    private bool IsDxgiInitialized()
+    {
+        if (_dxgiInitialized.HasValue)
+        {
+            return _dxgiInitialized.Value;
+        }
+
+        _dxgiInitialized = InitializeDxgi(initializeDxgi, _logger, _dxgiMonitor);
+        return _dxgiInitialized.Value;
     }
 
     public string MetricId => "gpu";
@@ -96,7 +103,7 @@ public class GpuMetricProvider : IMetricProvider
                     return perfUsage;
 
                 // Fallback 到 D3DKMT
-                if (_dxgiInitialized)
+                if (IsDxgiInitialized())
                 {
                     try
                     {
@@ -111,7 +118,7 @@ public class GpuMetricProvider : IMetricProvider
             else
             {
                 // 模式 2: 优先使用 D3DKMT (NVIDIA/Intel GPU 推荐)
-                if (_dxgiInitialized)
+                if (IsDxgiInitialized())
                 {
                     try
                     {

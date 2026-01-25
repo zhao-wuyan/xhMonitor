@@ -1,0 +1,45 @@
+{
+  "id": "QUE-20260124074500",
+  "status": "completed",
+  "created_at": "2026-01-24T07:45:00.000Z",
+  "items": [
+    {
+      "id": "S-15",
+      "issue_id": "ISS-1769239097521-21",
+      "solution_id": "SOL-ISS-1769239097521-21-c5m2",
+      "status": "completed",
+      "priority": 0.76,
+      "execution_group": "S10",
+      "dependencies": [
+        "S-14"
+      ],
+      "conflicts": [
+        {
+          "with": "S-14",
+          "type": "architecture",
+          "severity": "high",
+          "files": [
+            "MetricProviderRegistry.cs",
+            "Program.cs"
+          ],
+          "rationale": "S-15 adds factory pattern, requires S-14 collection-based providers"
+        }
+      ]
+    }
+  ],
+  "execution_groups": [
+    {
+      "id": "S10",
+      "type": "sequential",
+      "items": [
+        "S-15"
+      ],
+      "solution_count": 1
+    }
+  ],
+  "metadata": {
+    "total_solutions": 1,
+    "total_tasks": 1,
+    "total_conflicts": 1
+  }
+}

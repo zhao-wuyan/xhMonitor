@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using XhMonitor.Core.Common;
 using XhMonitor.Core.Configuration;
 using XhMonitor.Desktop.Services;
 
@@ -78,7 +79,7 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _isSaving, value);
     }
 
-    public async Task LoadSettingsAsync()
+    public async Task<Result<bool, string>> LoadSettingsAsync()
     {
         try
         {
@@ -86,7 +87,10 @@ public class SettingsViewModel : INotifyPropertyChanged
             response.EnsureSuccessStatusCode();
 
             var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
-            if (settings == null) return;
+            if (settings == null)
+            {
+                return Result<bool, string>.Failure("配置为空，无法加载设置。");
+            }
 
             // 外观设置
             if (settings.TryGetValue("Appearance", out var appearance))
@@ -109,14 +113,16 @@ public class SettingsViewModel : INotifyPropertyChanged
             {
                 StartWithWindows = bool.Parse(system["StartWithWindows"]);
             }
+
+            return Result<bool, string>.Success(true);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"加载配置失败: {ex.Message}");
+            return Result<bool, string>.Failure(ex.Message);
         }
     }
 
-    public async Task<bool> SaveSettingsAsync()
+    public async Task<Result<bool, string>> SaveSettingsAsync()
     {
         IsSaving = true;
         try
@@ -143,12 +149,11 @@ public class SettingsViewModel : INotifyPropertyChanged
             var response = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/settings", settings);
             response.EnsureSuccessStatusCode();
 
-            return true;
+            return Result<bool, string>.Success(true);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"保存配置失败: {ex.Message}");
-            return false;
+            return Result<bool, string>.Failure(ex.Message);
         }
         finally
         {

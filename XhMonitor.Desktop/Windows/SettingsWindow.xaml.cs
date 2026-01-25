@@ -15,13 +15,24 @@ public partial class SettingsWindow : Window
         _viewModel = viewModel;
         DataContext = _viewModel;
 
-        Loaded += async (s, e) => await _viewModel.LoadSettingsAsync();
+        Loaded += async (s, e) =>
+        {
+            var result = await _viewModel.LoadSettingsAsync();
+            if (result.IsFailure)
+            {
+                System.Windows.MessageBox.Show(
+                    $"加载设置失败：{result.Error}",
+                    "错误",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        };
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        var success = await _viewModel.SaveSettingsAsync();
-        if (success)
+        var result = await _viewModel.SaveSettingsAsync();
+        if (result.IsSuccess)
         {
             System.Windows.MessageBox.Show("配置已保存", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
             DialogResult = true;
@@ -29,7 +40,11 @@ public partial class SettingsWindow : Window
         }
         else
         {
-            System.Windows.MessageBox.Show("保存失败,请检查后端服务是否运行", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(
+                $"保存失败：{result.Error}\n请检查后端服务是否运行。",
+                "错误",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 

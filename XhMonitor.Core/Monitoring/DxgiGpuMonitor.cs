@@ -16,7 +16,7 @@ namespace XhMonitor.Core.Monitoring
     public class DxgiGpuMonitor : IDisposable
     {
         private IntPtr _factory;  // DXGI 工厂接口指针
-        private readonly List<GpuAdapter> _adapters = new();  // GPU 适配器列表
+        private readonly List<GpuAdapter> _adapters = [];  // GPU 适配器列表
         private bool _disposed;  // 资源释放标志
         private readonly ILogger<DxgiGpuMonitor>? _logger;  // 日志记录器
 
@@ -196,7 +196,7 @@ namespace XhMonitor.Core.Monitoring
         /// </summary>
         public List<GpuMemoryInfo> GetMemoryUsage()
         {
-            var results = new List<GpuMemoryInfo>();
+            List<GpuMemoryInfo> results = [];
 
             foreach (var adapter in _adapters)
             {
@@ -646,8 +646,8 @@ namespace XhMonitor.Core.Monitoring
             public bool Success { get; }  // 是否成功
         }
 
-        private readonly Dictionary<string, GpuNodeUsage> _nodeUsageCache = new();  // 节点使用率缓存
-        private readonly Dictionary<string, double> _adapterUsageEma = new();  // 适配器 EMA 平滑缓存
+        private readonly Dictionary<string, GpuNodeUsage> _nodeUsageCache = [];  // 节点使用率缓存
+        private readonly Dictionary<string, double> _adapterUsageEma = [];  // 适配器 EMA 平滑缓存
         private readonly object _usageLock = new object();  // 使用率锁
         private readonly GpuNodeRunningTimeSource _runningTimeSource;
 
@@ -744,7 +744,7 @@ namespace XhMonitor.Core.Monitoring
         /// <param name="skipBasicRenderDriver">是否跳过基本渲染驱动</param>
         public IReadOnlyList<AdapterVramInfo> GetAdapterSegment0VramBytes(bool skipBasicRenderDriver)
         {
-            var results = new List<AdapterVramInfo>();
+            List<AdapterVramInfo> results = [];
             if (_adapters.Count == 0)
                 return results;
 

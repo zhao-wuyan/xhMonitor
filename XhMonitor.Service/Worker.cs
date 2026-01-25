@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
+using XhMonitor.Service.Configuration;
 
 namespace XhMonitor.Service;
 
@@ -33,7 +35,7 @@ public class Worker : BackgroundService
         IHubContext<MetricsHub, IMetricsClient> hubContext,
         ISystemMetricProvider systemMetricProvider,
         IProcessMetadataStore processMetadataStore,
-        IConfiguration config)
+        IOptions<MonitorSettings> monitorOptions)
     {
         _logger = logger;
         _monitor = monitor;
@@ -41,8 +43,9 @@ public class Worker : BackgroundService
         _hubContext = hubContext;
         _systemMetricProvider = systemMetricProvider;
         _processMetadataStore = processMetadataStore;
-        _processIntervalSeconds = Math.Max(1, config.GetValue("Monitor:IntervalSeconds", 5));
-        _systemIntervalSeconds = Math.Max(1, config.GetValue("Monitor:SystemUsageIntervalSeconds", 1));
+        ArgumentNullException.ThrowIfNull(monitorOptions);
+        _processIntervalSeconds = monitorOptions.Value.IntervalSeconds;
+        _systemIntervalSeconds = monitorOptions.Value.SystemUsageIntervalSeconds;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

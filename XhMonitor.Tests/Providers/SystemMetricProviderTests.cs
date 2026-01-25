@@ -16,12 +16,8 @@ public class SystemMetricProviderTests : IDisposable
     public SystemMetricProviderTests()
     {
         _provider = new SystemMetricProvider(
-            cpuProvider: null,
-            gpuProvider: null,
-            memoryProvider: null,
-            vramProvider: null,
-            logger: null,
-            initializeDxgi: false);
+            Array.Empty<IMetricProvider>(),
+            logger: null);
     }
 
     [Fact]
@@ -147,12 +143,8 @@ public class SystemMetricProviderTests : IDisposable
             vramMetrics: new VramMetrics { Used = 100, Total = 512 });
 
         using var provider = new SystemMetricProvider(
-            cpuProvider: null,
-            gpuProvider: null,
-            memoryProvider: null,
-            vramProvider: vramProvider.Object,
-            logger: null,
-            initializeDxgi: false);
+            new[] { vramProvider.Object },
+            logger: null);
 
         var result = await provider.GetHardwareLimitsAsync();
 
@@ -179,12 +171,8 @@ public class SystemMetricProviderTests : IDisposable
             vramMetrics: new VramMetrics { Used = 128, Total = 1024 });
 
         using var provider = new SystemMetricProvider(
-            cpuProvider: cpuProvider.Object,
-            gpuProvider: gpuProvider.Object,
-            memoryProvider: null,
-            vramProvider: vramProvider.Object,
-            logger: null,
-            initializeDxgi: false);
+            new[] { cpuProvider.Object, gpuProvider.Object, vramProvider.Object },
+            logger: null);
 
         var limits = await provider.GetHardwareLimitsAsync();
         var usage = await provider.GetSystemUsageAsync();

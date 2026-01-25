@@ -45,6 +45,11 @@ public interface IMetricProvider : IDisposable
 | `GpuMetricProvider` | `gpu` | GPU 使用率 (%) |
 | `VramMetricProvider` | `vram` | 显存使用量 (MB) |
 
+### 编码规范
+
+- 对有依赖注入参数的 Provider，优先使用 C# 12 primary constructor 减少样板代码。
+- 无构造参数时保持默认构造即可。
+
 ## 使用场景
 
 ### 添加自定义指标

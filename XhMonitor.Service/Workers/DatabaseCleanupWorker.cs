@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using XhMonitor.Service.Data;
+using XhMonitor.Service.Configuration;
 
 namespace XhMonitor.Service.Workers;
 
@@ -7,22 +9,23 @@ public sealed class DatabaseCleanupWorker : BackgroundService
 {
     private readonly IDbContextFactory<MonitorDbContext> _contextFactory;
     private readonly ILogger<DatabaseCleanupWorker> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly IOptions<DatabaseSettings> _databaseOptions;
 
     public DatabaseCleanupWorker(
         IDbContextFactory<MonitorDbContext> contextFactory,
         ILogger<DatabaseCleanupWorker> logger,
-        IConfiguration configuration)
+        IOptions<DatabaseSettings> databaseOptions)
     {
         _contextFactory = contextFactory;
         _logger = logger;
-        _configuration = configuration;
+        _databaseOptions = databaseOptions;
+        ArgumentNullException.ThrowIfNull(databaseOptions);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var intervalHours = _configuration.GetValue("Database:CleanupIntervalHours", 24);
-        var retentionDays = _configuration.GetValue("Database:RetentionDays", 30);
+        var intervalHours = _databaseOptions.Value.CleanupIntervalHours;
+        var retentionDays = _databaseOptions.Value.RetentionDays;
 
         _logger.LogInformation("数据库清理服务已启动，清理间隔 {IntervalHours} 小时，保留 {RetentionDays} 天数据",
             intervalHours, retentionDays);

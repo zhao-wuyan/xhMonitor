@@ -1,62 +1,74 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Models;
-using XhMonitor.Core.Monitoring;
 
 namespace XhMonitor.Core.Providers;
 
 /// <summary>
 /// 系统级指标提供者 - 统一管理系统总量指标采集
 /// </summary>
-public class SystemMetricProvider : ISystemMetricProvider, IDisposable
+public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDisposable
 {
-    private readonly IMetricProvider? _cpuProvider;
-    private readonly IMetricProvider? _gpuProvider;
-    private readonly IMetricProvider? _memoryProvider;
-    private readonly IMetricProvider? _vramProvider;
+    private readonly Dictionary<string, IMetricProvider> _providers;
     private readonly ILogger<SystemMetricProvider>? _logger;
-
-    // DXGI GPU 监控（替代性能计数器迭代）
-    private readonly DxgiGpuMonitor _dxgiMonitor = new();
-    private bool _dxgiAvailable;
     private bool _disposed;
 
-    public SystemMetricProvider(
-        IMetricProvider? cpuProvider,
-        IMetricProvider? gpuProvider,
-        IMetricProvider? memoryProvider,
-        IMetricProvider? vramProvider,
-        ILogger<SystemMetricProvider>? logger = null,
-        bool initializeDxgi = true)
+    public SystemMetricProvider(IEnumerable<IMetricProvider> providers, ILogger<SystemMetricProvider>? logger = null)
     {
-        _cpuProvider = cpuProvider;
-        _gpuProvider = gpuProvider;
-        _memoryProvider = memoryProvider;
-        _vramProvider = vramProvider;
         _logger = logger;
+        _providers = BuildProviderMap(providers, logger);
+    }
 
-        if (initializeDxgi)
+    private static Dictionary<string, IMetricProvider> BuildProviderMap(
+        IEnumerable<IMetricProvider> providers,
+        ILogger<SystemMetricProvider>? logger)
+    {
+        var map = new Dictionary<string, IMetricProvider>(StringComparer.OrdinalIgnoreCase);
+        if (providers == null)
         {
-            // 初始化 DXGI 监控
-            _dxgiAvailable = _dxgiMonitor.Initialize();
-            if (!_dxgiAvailable)
+            return map;
+        }
+
+        foreach (var provider in providers)
+        {
+            if (provider == null)
             {
-                _logger?.LogWarning("DXGI GPU monitoring not available, VRAM metrics will be unavailable");
+                continue;
             }
-            else
+
+            if (string.IsNullOrWhiteSpace(provider.MetricId))
             {
-                var adapters = _dxgiMonitor.GetAdapters();
-                _logger?.LogInformation("DXGI initialized with {Count} GPU adapter(s)", adapters.Count);
+                logger?.LogWarning("SystemMetricProvider: provider MetricId is empty: {ProviderType}", provider.GetType().FullName);
+                continue;
+            }
+
+            if (!map.TryAdd(provider.MetricId, provider))
+            {
+                logger?.LogWarning("SystemMetricProvider: duplicate MetricId ignored: {MetricId}", provider.MetricId);
             }
         }
-        else
+
+        return map;
+    }
+
+    private IMetricProvider? GetProvider(string metricId)
+    {
+        if (string.IsNullOrWhiteSpace(metricId))
         {
-            _dxgiAvailable = false;
-            _logger?.LogInformation("DXGI GPU monitor initialization skipped");
+            return null;
         }
+
+        _providers.TryGetValue(metricId, out var provider);
+        return provider;
+    }
+
+    private bool HasProvider(string metricId)
+    {
+        return GetProvider(metricId) != null;
     }
 
     /// <summary>
@@ -64,19 +76,25 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
     /// </summary>
     public async Task WarmupAsync()
     {
-        var tasks = new List<Task>();
+        List<Task> tasks = [];
 
-        if (_cpuProvider is CpuMetricProvider cpuProvider)
+        foreach (var provider in _providers.Values)
         {
-            tasks.Add(cpuProvider.WarmupAsync());
+            switch (provider)
+            {
+                case CpuMetricProvider cpuMetricProvider:
+                    tasks.Add(cpuMetricProvider.WarmupAsync());
+                    break;
+                case GpuMetricProvider gpuMetricProvider:
+                    tasks.Add(gpuMetricProvider.WarmupAsync());
+                    break;
+            }
         }
 
-        if (_gpuProvider is GpuMetricProvider gpuProvider)
+        if (tasks.Count > 0)
         {
-            tasks.Add(gpuProvider.WarmupAsync());
+            await Task.WhenAll(tasks);
         }
-
-        await Task.WhenAll(tasks);
     }
 
     /// <summary>
@@ -101,20 +119,21 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
     /// </summary>
     private async Task<double> GetMaxVramAsync()
     {
-        if (_vramProvider == null)
+        var vramProvider = GetProvider("vram");
+        if (vramProvider == null)
         {
             return 0.0;
         }
 
         // Try GetVramMetricsAsync first (works for any provider that implements it)
-        var vramMetrics = await _vramProvider.GetVramMetricsAsync();
+        var vramMetrics = await vramProvider.GetVramMetricsAsync();
         if (vramMetrics != null && vramMetrics.IsValid)
         {
             return vramMetrics.Total;
         }
 
         // Fallback to the provider's total (legacy providers return max capacity here)
-        return await _vramProvider.GetSystemTotalAsync();
+        return await vramProvider.GetSystemTotalAsync();
     }
 
     /// <summary>
@@ -122,8 +141,8 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
     /// </summary>
     public async Task<SystemUsage> GetSystemUsageAsync()
     {
-        var cpuTask = _cpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
-        var gpuTask = _gpuProvider?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var cpuTask = GetProvider("cpu")?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
+        var gpuTask = GetProvider("gpu")?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
         var vramTask = GetVramUsageAsync();
 
         var totalMemory = GetMemoryUsage();
@@ -163,72 +182,21 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
 
     private async Task<double> GetVramUsageAsync()
     {
-        if (!OperatingSystem.IsWindows())
+        var vramProvider = GetProvider("vram");
+        if (vramProvider == null)
         {
             return 0.0;
         }
 
-        // Try GetVramMetricsAsync first (works for any provider that implements it)
-        if (_vramProvider != null)
+        var vramMetrics = await vramProvider.GetVramMetricsAsync();
+        if (vramMetrics != null && vramMetrics.IsValid)
         {
-            var vramMetrics = await _vramProvider.GetVramMetricsAsync();
-            if (vramMetrics != null && vramMetrics.IsValid)
-            {
-                _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Used={Used} MB, Total={Total} MB",
-                    vramMetrics.Used, vramMetrics.Total);
-                return vramMetrics.Used;
-            }
+            _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Used={Used} MB, Total={Total} MB",
+                vramMetrics.Used, vramMetrics.Total);
+            return vramMetrics.Used;
         }
 
-        // 回退到 DXGI 或性能计数器
-        _logger?.LogInformation("[SystemMetricProvider] GetVramUsageAsync: Falling back to DXGI/PerformanceCounter");
-        return await Task.Run(() =>
-        {
-            try
-            {
-                if (_dxgiAvailable)
-                {
-                    var usedBytes = _dxgiMonitor.GetTotalVramUsageBytes();
-                    _logger?.LogDebug("GetVramUsageAsync: dxgiAvailable={DxgiAvailable}, usedBytes={UsedBytes}", _dxgiAvailable, usedBytes);
-                    if (usedBytes >= 0)
-                    {
-                        return usedBytes / 1024.0 / 1024.0;
-                    }
-                }
-                else
-                {
-                    _logger?.LogInformation("GetVramUsageAsync: dxgiAvailable=false");
-                }
-
-                // 使用性能计数器获取所有 GPU 适配器的内存使用总和
-                var category = new System.Diagnostics.PerformanceCounterCategory("GPU Adapter Memory");
-                var instanceNames = category.GetInstanceNames();
-
-                double totalUsage = 0;
-                foreach (var instanceName in instanceNames)
-                {
-                    try
-                    {
-                        using var counter = new System.Diagnostics.PerformanceCounter("GPU Adapter Memory", "Dedicated Usage", instanceName, true);
-                        var value = counter.NextValue();
-                        totalUsage += value;
-                    }
-                    catch
-                    {
-                        // 跳过无法读取的实例
-                        continue;
-                    }
-                }
-
-                // 转换为 MB
-                return totalUsage / 1024.0 / 1024.0;
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to query GPU memory usage via performance counter");
-                return 0.0;
-            }
-        });
+        return await vramProvider.GetSystemTotalAsync();
     }
 
     #region Windows API
@@ -268,13 +236,20 @@ public class SystemMetricProvider : ISystemMetricProvider, IDisposable
 
     #endregion
 
-    public void Dispose()
+    public ValueTask DisposeAsync()
     {
         if (_disposed)
-            return;
+        {
+            return ValueTask.CompletedTask;
+        }
 
-        _dxgiMonitor?.Dispose();
         _disposed = true;
+        return ValueTask.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        DisposeAsync().GetAwaiter().GetResult();
     }
 }
 

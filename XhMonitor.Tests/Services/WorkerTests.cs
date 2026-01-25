@@ -1,14 +1,15 @@
 using System.Reflection;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
 using XhMonitor.Service;
 using XhMonitor.Service.Core;
 using XhMonitor.Service.Hubs;
+using XhMonitor.Service.Configuration;
 
 namespace XhMonitor.Tests.Services;
 
@@ -93,13 +94,11 @@ public class WorkerTests
 
     private static Worker CreateWorker(IHubContext<MetricsHub, IMetricsClient> hubContext, ISystemMetricProvider systemMetricProvider)
     {
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Monitor:IntervalSeconds"] = "1",
-                ["Monitor:SystemUsageIntervalSeconds"] = "1"
-            })
-            .Build();
+        var monitorOptions = Options.Create(new MonitorSettings
+        {
+            IntervalSeconds = 1,
+            SystemUsageIntervalSeconds = 1
+        });
 
         return new Worker(
             logger: Mock.Of<ILogger<Worker>>(),
@@ -108,7 +107,7 @@ public class WorkerTests
             hubContext: hubContext,
             systemMetricProvider: systemMetricProvider,
             processMetadataStore: Mock.Of<IProcessMetadataStore>(),
-            config: config);
+            monitorOptions: monitorOptions);
     }
 
     private static async Task InvokePrivateAsync(Worker worker, string methodName, DateTime timestamp, CancellationToken ct)

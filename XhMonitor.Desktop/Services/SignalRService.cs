@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using XhMonitor.Desktop.Models;
 
@@ -7,6 +8,7 @@ namespace XhMonitor.Desktop.Services;
 public class SignalRService : IAsyncDisposable
 {
     private HubConnection? _connection;
+    private readonly ILogger<SignalRService>? _logger;
     private readonly string _hubUrl;
     private const string DefaultHubUrl = "http://localhost:35179/hubs/metrics";
 
@@ -19,13 +21,15 @@ public class SignalRService : IAsyncDisposable
 
     public bool IsConnected => _connection?.State == HubConnectionState.Connected;
 
-    public SignalRService()
+    public SignalRService(ILogger<SignalRService>? logger = null)
     {
+        _logger = logger;
         _hubUrl = DefaultHubUrl;
     }
 
-    public SignalRService(string hubUrl)
+    public SignalRService(string hubUrl, ILogger<SignalRService>? logger = null)
     {
+        _logger = logger;
         _hubUrl = hubUrl;
     }
 
@@ -53,6 +57,7 @@ public class SignalRService : IAsyncDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize hardware limits: {ex.Message}");
+                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "HardwareLimits");
             }
         });
 
@@ -66,6 +71,7 @@ public class SignalRService : IAsyncDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize system usage: {ex.Message}");
+                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "SystemUsage");
             }
         });
 
@@ -79,6 +85,7 @@ public class SignalRService : IAsyncDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize process data: {ex.Message}");
+                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "ProcessMetrics");
             }
         });
 
@@ -92,6 +99,7 @@ public class SignalRService : IAsyncDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize process metadata: {ex.Message}");
+                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "ProcessMetadata");
             }
         });
 
@@ -105,6 +113,7 @@ public class SignalRService : IAsyncDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize metrics: {ex.Message}");
+                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "metrics.latest");
             }
         });
 
@@ -132,20 +141,25 @@ public class SignalRService : IAsyncDisposable
 
     public async Task DisconnectAsync()
     {
-        if (_connection != null)
+        var connection = _connection;
+        if (connection == null)
         {
-            try
-            {
-                await _connection.StopAsync().ConfigureAwait(false);
-            }
-            catch
-            {
-                // Ignore stop errors
-            }
-
-            await _connection.DisposeAsync().ConfigureAwait(false);
-            _connection = null;
+            return;
         }
+
+        try
+        {
+            await connection.StopAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to stop SignalR connection gracefully. Connection: {ConnectionId}",
+                connection.ConnectionId ?? "unknown");
+            // Ignore stop errors to ensure cleanup continues
+        }
+
+        await connection.DisposeAsync().ConfigureAwait(false);
+        _connection = null;
     }
 
     public async ValueTask DisposeAsync()

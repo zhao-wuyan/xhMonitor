@@ -17,6 +17,7 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
 {
     private readonly Mock<ILogger<MetricProviderRegistry>> _mockRegistryLogger;
     private readonly Mock<ILoggerFactory> _mockLoggerFactory;
+    private readonly Mock<ILogger<LibreHardwareMonitorProviderFactory>> _mockFactoryLogger;
     private LibreHardwareManager? _hardwareManager;
     private MetricProviderRegistry? _registry;
 
@@ -24,10 +25,16 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
     {
         _mockRegistryLogger = new Mock<ILogger<MetricProviderRegistry>>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
+        _mockFactoryLogger = new Mock<ILogger<LibreHardwareMonitorProviderFactory>>();
 
         // 配置 LoggerFactory 返回 Mock Logger
         _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
+    }
+
+    private BuiltInMetricProviderFactory CreateBuiltInFactory()
+    {
+        return new BuiltInMetricProviderFactory(_mockLoggerFactory.Object);
     }
 
     [Fact]
@@ -40,10 +47,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
         // Act
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         var cpuProvider = _registry.GetProvider("cpu");
         var memoryProvider = _registry.GetProvider("memory");
@@ -81,13 +90,19 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
     [Fact]
     public void Integration_WithoutAdminPrivileges_ShouldFallbackToPerformanceCounterProviders()
     {
-        // Arrange - 不提供 LibreHardwareManager，模拟无管理员权限场景
+        // Arrange - 模拟无管理员权限场景（Initialize 失败）
+        var mockHardwareManager = new Mock<ILibreHardwareManager>();
+        mockHardwareManager.Setup(x => x.Initialize()).Returns(false);
+        mockHardwareManager.Setup(x => x.IsAvailable).Returns(false);
+
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            hardwareManager: null,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                mockHardwareManager.Object,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         // Act
         var cpuProvider = _registry.GetProvider("cpu");
@@ -108,8 +123,8 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
             "无 LibreHardwareManager 时应使用传统 Memory 提供者");
         gpuProvider!.GetType().Name.Should().Be("GpuMetricProvider",
             "无 LibreHardwareManager 时应使用传统 GPU 提供者");
-        vramProvider!.GetType().Name.Should().Be("VramMetricProvider",
-            "无 LibreHardwareManager 时应使用传统 VRAM 提供者");
+        vramProvider!.GetType().Name.Should().Be("DxgiVramProvider",
+            "无 LibreHardwareManager 时应使用 DXGI/PerformanceCounter VRAM 提供者");
     }
 
     [Fact]
@@ -122,10 +137,8 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
         // Act - 配置禁用 LibreHardwareMonitor
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: false);
+            CreateBuiltInFactory());
 
         var cpuProvider = _registry.GetProvider("cpu");
         var memoryProvider = _registry.GetProvider("memory");
@@ -158,10 +171,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
         // Act
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         var cpuProvider = _registry.GetProvider("cpu") as LibreHardwareMonitorCpuProvider;
         var memoryProvider = _registry.GetProvider("memory") as LibreHardwareMonitorMemoryProvider;
@@ -186,10 +201,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
 
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         var cpuProvider = _registry.GetProvider("cpu");
         var memoryProvider = _registry.GetProvider("memory");
@@ -232,10 +249,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
 
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         var cpuProvider = _registry.GetProvider("cpu");
         var memoryProvider = _registry.GetProvider("memory");
@@ -262,10 +281,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
 
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         var cpuProvider = _registry.GetProvider("cpu");
         var memoryProvider = _registry.GetProvider("memory");
@@ -303,10 +324,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
 
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         var cpuProvider = _registry.GetProvider("cpu");
         var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
@@ -345,10 +368,12 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
 
         _registry = new MetricProviderRegistry(
             _mockRegistryLogger.Object,
-            _mockLoggerFactory.Object,
             "plugins",
-            _hardwareManager,
-            preferLibreHardwareMonitor: true);
+            new LibreHardwareMonitorProviderFactory(
+                _hardwareManager,
+                _mockLoggerFactory.Object,
+                _mockFactoryLogger.Object,
+                CreateBuiltInFactory()));
 
         // Act
         Action disposeAction = () => _registry.Dispose();
