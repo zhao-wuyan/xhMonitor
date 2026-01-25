@@ -9,7 +9,7 @@ namespace XhMonitor.Core.Services;
 /// LibreHardwareMonitor Computer 实例管理器（单例模式）
 /// LibreHardwareMonitor Computer instance manager (singleton pattern)
 /// </summary>
-public class LibreHardwareManager : ILibreHardwareManager
+public class LibreHardwareManager : ILibreHardwareManager, IAsyncDisposable
 {
     private readonly ILogger<LibreHardwareManager>? _logger;
     private readonly Lazy<Computer?> _computer;
@@ -247,10 +247,12 @@ public class LibreHardwareManager : ILibreHardwareManager
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (_disposed)
+        {
             return;
+        }
 
         try
         {
@@ -260,17 +262,30 @@ public class LibreHardwareManager : ILibreHardwareManager
                 _logger?.LogInformation("[LibreHardwareManager] Computer instance closed");
             }
 
-            _updateLock.Dispose();
+            if (_updateLock is IAsyncDisposable asyncDisposable)
+            {
+                await asyncDisposable.DisposeAsync();
+            }
+            else
+            {
+                _updateLock.Dispose();
+            }
+
             _snapshot = [];
             _snapshotAt = DateTime.MinValue;
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "[LibreHardwareManager] Error during Dispose()");
+            _logger?.LogError(ex, "[LibreHardwareManager] Error during DisposeAsync()");
         }
         finally
         {
             _disposed = true;
         }
+    }
+
+    public void Dispose()
+    {
+        DisposeAsync().GetAwaiter().GetResult();
     }
 }

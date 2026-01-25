@@ -128,6 +128,7 @@ builder.Services.AddSingleton<IProcessMetricRepository, MetricRepository>();
 builder.Services.AddSingleton<IProcessNameResolver, ProcessNameResolver>();
 
 // 注册 LibreHardwareManager 为单例（在 MetricProviderRegistry 之前）
+// Host 会在应用关闭时自动调用 IAsyncDisposable.DisposeAsync。
 builder.Services.AddSingleton<ILibreHardwareManager>(sp =>
 {
     var logger = sp.GetRequiredService<ILogger<LibreHardwareManager>>();

@@ -8,7 +8,7 @@ namespace XhMonitor.Core.Interfaces;
 /// LibreHardwareMonitor Computer 实例管理接口
 /// Manages LibreHardwareMonitor Computer instance lifecycle
 /// </summary>
-public interface ILibreHardwareManager : IDisposable
+public interface ILibreHardwareManager : IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// 初始化 Computer 实例并打开硬件监控

@@ -5,7 +5,7 @@ namespace XhMonitor.Core.Interfaces;
 /// <summary>
 /// 系统指标提供者接口（用于系统总量/使用率采集）
 /// </summary>
-public interface ISystemMetricProvider
+public interface ISystemMetricProvider : IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// 预热所有性能计数器

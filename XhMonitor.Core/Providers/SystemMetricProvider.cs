@@ -17,7 +17,7 @@ public class SystemMetricProvider(
     IMetricProvider? memoryProvider,
     IMetricProvider? vramProvider,
     ILogger<SystemMetricProvider>? logger = null,
-    bool initializeDxgi = true) : ISystemMetricProvider, IDisposable
+    bool initializeDxgi = true) : ISystemMetricProvider, IAsyncDisposable, IDisposable
 {
     // DXGI GPU 监控（替代性能计数器迭代）
     private readonly DxgiGpuMonitor _dxgiMonitor = new();
@@ -253,13 +253,21 @@ public class SystemMetricProvider(
 
     #endregion
 
-    public void Dispose()
+    public ValueTask DisposeAsync()
     {
         if (_disposed)
-            return;
+        {
+            return ValueTask.CompletedTask;
+        }
 
         _dxgiMonitor?.Dispose();
         _disposed = true;
+        return ValueTask.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        DisposeAsync().GetAwaiter().GetResult();
     }
 }
 
