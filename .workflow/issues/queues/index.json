@@ -3,17 +3,10 @@
   "queues": [
     {
       "id": "QUE-20260124074500",
-      "status": "pending",
-      "issue_ids": [
-        "ISS-1769239097521-4",
-        "ISS-1769239097521-8",
-        "ISS-1769239097521-10",
-        "ISS-1769239097521-14",
-        "ISS-1769239097521-17",
-        "ISS-1769239097521-21"
-      ],
+      "status": "completed",
+      "issue_ids": [],
       "total_solutions": 15,
-      "completed_solutions": 9,
+      "completed_solutions": 15,
       "created_at": "2026-01-24T07:45:00.000Z"
     }
   ]
