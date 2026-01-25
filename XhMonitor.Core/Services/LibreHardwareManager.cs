@@ -15,7 +15,7 @@ public class LibreHardwareManager : ILibreHardwareManager
     private readonly Lazy<Computer?> _computer;
     private readonly SemaphoreSlim _updateLock = new(1, 1);
     private readonly TimeSpan _snapshotLifetime;
-    private IReadOnlyList<SensorReading> _snapshot = Array.Empty<SensorReading>();
+    private IReadOnlyList<SensorReading> _snapshot = [];
     private DateTime _snapshotAt = DateTime.MinValue;
     private bool _disposed;
 
@@ -101,7 +101,7 @@ public class LibreHardwareManager : ILibreHardwareManager
                 hardware.Update();
             }
 
-            var readings = new List<SensorReading>();
+            List<SensorReading> readings = [];
             foreach (var hardware in _computer.Value.Hardware)
             {
                 AddSensorReadings(hardware, readings);
@@ -150,7 +150,7 @@ public class LibreHardwareManager : ILibreHardwareManager
 
     public List<float> GetAllSensorValues(HardwareType hardwareType, SensorType sensorType)
     {
-        var results = new List<float>();
+        List<float> results = [];
 
         if (!IsAvailable || _computer.Value == null)
         {
@@ -179,7 +179,7 @@ public class LibreHardwareManager : ILibreHardwareManager
 
     public IReadOnlyList<SensorReading> GetSensorValues(IReadOnlyCollection<HardwareType> hardwareTypes, SensorType sensorType)
     {
-        var results = new List<SensorReading>();
+        List<SensorReading> results = [];
 
         if (!IsAvailable || _computer.Value == null || hardwareTypes == null || hardwareTypes.Count == 0)
         {
@@ -188,7 +188,7 @@ public class LibreHardwareManager : ILibreHardwareManager
 
         try
         {
-            var typeSet = new HashSet<HardwareType>(hardwareTypes);
+            HashSet<HardwareType> typeSet = [.. hardwareTypes];
             EnsureSnapshotFresh();
             foreach (var sensor in _snapshot)
             {
@@ -261,7 +261,7 @@ public class LibreHardwareManager : ILibreHardwareManager
             }
 
             _updateLock.Dispose();
-            _snapshot = Array.Empty<SensorReading>();
+            _snapshot = [];
             _snapshotAt = DateTime.MinValue;
         }
         catch (Exception ex)

@@ -49,7 +49,7 @@ public class SystemMetricProvider(
     /// </summary>
     public async Task WarmupAsync()
     {
-        var tasks = new List<Task>();
+        List<Task> tasks = [];
 
         if (cpuProvider is CpuMetricProvider cpuMetricProvider)
         {
