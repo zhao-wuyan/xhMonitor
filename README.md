@@ -991,6 +991,15 @@ public class CustomMetricProvider : IMetricProvider
 }
 ```
 
+**编码规范**：对有依赖注入参数的 Provider，优先使用 C# 12 primary constructor，例如：
+
+```csharp
+public class CustomMetricProvider(ILogger<CustomMetricProvider>? logger = null) : IMetricProvider
+{
+    // ...
+}
+```
+
 #### 前端国际化
 
 在 `xhmonitor-web/src/i18n.ts` 中添加翻译：

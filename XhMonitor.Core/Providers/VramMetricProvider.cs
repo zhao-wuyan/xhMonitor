@@ -8,17 +8,10 @@ using XhMonitor.Core.Models;
 
 namespace XhMonitor.Core.Providers;
 
-public class VramMetricProvider : IMetricProvider
+public class VramMetricProvider(ILogger<VramMetricProvider>? logger = null) : IMetricProvider
 {
-    private readonly ILogger<VramMetricProvider>? _logger;
+    private readonly ILogger<VramMetricProvider>? _logger = logger;
     private double _cachedMaxVram;
-
-    public VramMetricProvider() { }
-
-    public VramMetricProvider(ILogger<VramMetricProvider> logger)
-    {
-        _logger = logger;
-    }
 
     public string MetricId => "vram";
     public string DisplayName => "VRAM Usage";
