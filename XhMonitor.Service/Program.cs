@@ -138,6 +138,29 @@ builder.Services.AddSingleton<ILibreHardwareManager>(sp =>
     return new LibreHardwareManager(logger, TimeSpan.FromSeconds(systemIntervalSeconds));
 });
 
+builder.Services.AddSingleton<BuiltInMetricProviderFactory>();
+builder.Services.AddSingleton<IMetricProviderFactory>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var preferLibreHardwareMonitor = config.GetValue<bool>("MetricProviders:PreferLibreHardwareMonitor", true);
+
+    if (!preferLibreHardwareMonitor)
+    {
+        var logger = sp.GetRequiredService<ILogger<MetricProviderRegistry>>();
+        logger.LogInformation("配置禁用 LibreHardwareMonitor，使用传统 PerformanceCounter 提供者");
+        return sp.GetRequiredService<BuiltInMetricProviderFactory>();
+    }
+
+    var hardwareManager = sp.GetRequiredService<ILibreHardwareManager>();
+    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+    var factoryLogger = sp.GetRequiredService<ILogger<LibreHardwareMonitorProviderFactory>>();
+    return new LibreHardwareMonitorProviderFactory(
+        hardwareManager,
+        loggerFactory,
+        factoryLogger,
+        sp.GetRequiredService<BuiltInMetricProviderFactory>());
+});
+
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<AggregationWorker>();
 builder.Services.AddHostedService<DatabaseCleanupWorker>();
@@ -145,7 +168,6 @@ builder.Services.AddHostedService<DatabaseCleanupWorker>();
 builder.Services.AddSingleton(sp =>
 {
     var logger = sp.GetRequiredService<ILogger<MetricProviderRegistry>>();
-    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
     var config = sp.GetRequiredService<IConfiguration>();
     var env = sp.GetRequiredService<IHostEnvironment>();
 
@@ -154,12 +176,9 @@ builder.Services.AddSingleton(sp =>
     {
         pluginDirectory = Path.Combine(env.ContentRootPath, "plugins");
     }
+    var providerFactory = sp.GetRequiredService<IMetricProviderFactory>();
 
-    // 获取 LibreHardwareManager 和配置
-    var hardwareManager = sp.GetRequiredService<ILibreHardwareManager>();
-    var preferLibreHardwareMonitor = config.GetValue<bool>("MetricProviders:PreferLibreHardwareMonitor", true);
-
-    return new MetricProviderRegistry(logger, loggerFactory, pluginDirectory, hardwareManager, preferLibreHardwareMonitor);
+    return new MetricProviderRegistry(logger, pluginDirectory, providerFactory);
 });
 
 builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>

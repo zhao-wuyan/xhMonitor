@@ -19,7 +19,7 @@ public class GpuMetricProvider(
     private readonly ILogger<GpuMetricProvider>? _logger = logger;
     private readonly DxgiGpuMonitor _dxgiMonitor = new(loggerFactory?.CreateLogger<DxgiGpuMonitor>());
     private bool? _isSupported;
-    private readonly bool _dxgiInitialized = InitializeDxgi(initializeDxgi, logger, _dxgiMonitor);
+    private bool? _dxgiInitialized;
     private int _cycleCount = 0;
     private const int CleanupIntervalCycles = 10; // 每 10 次调用清理一次
     private const int TtlSeconds = 60; // 60 秒未访问则清理
@@ -69,6 +69,17 @@ public class GpuMetricProvider(
         return false;
     }
 
+    private bool IsDxgiInitialized()
+    {
+        if (_dxgiInitialized.HasValue)
+        {
+            return _dxgiInitialized.Value;
+        }
+
+        _dxgiInitialized = InitializeDxgi(initializeDxgi, _logger, _dxgiMonitor);
+        return _dxgiInitialized.Value;
+    }
+
     public string MetricId => "gpu";
     public string DisplayName => "GPU Usage";
     public string Unit => "%";
@@ -92,7 +103,7 @@ public class GpuMetricProvider(
                     return perfUsage;
 
                 // Fallback 到 D3DKMT
-                if (_dxgiInitialized)
+                if (IsDxgiInitialized())
                 {
                     try
                     {
@@ -107,7 +118,7 @@ public class GpuMetricProvider(
             else
             {
                 // 模式 2: 优先使用 D3DKMT (NVIDIA/Intel GPU 推荐)
-                if (_dxgiInitialized)
+                if (IsDxgiInitialized())
                 {
                     try
                     {
