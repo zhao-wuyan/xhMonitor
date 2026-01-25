@@ -89,9 +89,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _isConnected = value; OnPropertyChanged(); }
     }
 
-    public FloatingWindowViewModel()
+    public FloatingWindowViewModel(IServiceDiscovery? serviceDiscovery = null)
     {
-        _signalRService = new SignalRService();
+        serviceDiscovery ??= new ServiceDiscovery();
+        _signalRService = new SignalRService(serviceDiscovery.SignalRUrl);
         _signalRService.MetricsReceived += OnMetricsReceived;
         _signalRService.HardwareLimitsReceived += OnHardwareLimitsReceived;
         _signalRService.SystemUsageReceived += OnSystemUsageReceived;

@@ -73,7 +73,8 @@
       "mcp__MetaMCP__zread__search_doc",
       "mcp__MetaMCP__zread__read_file",
       "Bash(ccw task-output:*)",
-      "mcp__idea-mcp__list_directory_tree"
+      "mcp__idea-mcp__list_directory_tree",
+      "Bash(python3:*)"
     ]
   },
   "model": "sonnet[1m]",

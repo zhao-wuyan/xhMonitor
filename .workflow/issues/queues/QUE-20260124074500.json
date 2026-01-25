@@ -4,125 +4,6 @@
   "created_at": "2026-01-24T07:45:00.000Z",
   "items": [
     {
-      "id": "S-1",
-      "issue_id": "ISS-1769239097521-2",
-      "solution_id": "SOL-ISS-1769239097521-2-b3k8",
-      "status": "pending",
-      "priority": 0.76,
-      "execution_group": "P1",
-      "dependencies": [],
-      "conflicts": []
-    },
-    {
-      "id": "S-2",
-      "issue_id": "ISS-1769239097521-13",
-      "solution_id": "SOL-ISS-1769239097521-13-p3x8",
-      "status": "pending",
-      "priority": 0.74,
-      "execution_group": "P1",
-      "dependencies": [],
-      "conflicts": []
-    },
-    {
-      "id": "S-3",
-      "issue_id": "ISS-1769239097521-24",
-      "solution_id": "SOL-ISS-1769239097521-24-c5d6",
-      "status": "pending",
-      "priority": 0.75,
-      "execution_group": "P1",
-      "dependencies": [],
-      "conflicts": []
-    },
-    {
-      "id": "S-4",
-      "issue_id": "ISS-1769239097521-11",
-      "solution_id": "SOL-ISS-1769239097521-11-a7x9",
-      "status": "pending",
-      "priority": 0.53,
-      "execution_group": "P1",
-      "dependencies": [],
-      "conflicts": []
-    },
-    {
-      "id": "S-5",
-      "issue_id": "ISS-1769239097521-3",
-      "solution_id": "SOL-ISS-1769239097521-3-n9w4",
-      "status": "pending",
-      "priority": 1.0,
-      "execution_group": "S1",
-      "dependencies": ["S-1", "S-2"],
-      "conflicts": [
-        {
-          "with": "S-1",
-          "type": "dependency",
-          "severity": "high",
-          "files": ["XhMonitor.Desktop.csproj"],
-          "rationale": "Generic Host requires IOptions pattern (S-1) for configuration"
-        },
-        {
-          "with": "S-2",
-          "type": "file",
-          "severity": "medium",
-          "files": ["App.xaml.cs"],
-          "rationale": "Both modify App.xaml.cs, Generic Host refactors entire file"
-        }
-      ]
-    },
-    {
-      "id": "S-6",
-      "issue_id": "ISS-1769239097521-5",
-      "solution_id": "SOL-ISS-1769239097521-5-k7m2",
-      "status": "pending",
-      "priority": 0.72,
-      "execution_group": "S2",
-      "dependencies": ["S-5"],
-      "conflicts": [
-        {
-          "with": "S-5",
-          "type": "file",
-          "severity": "high",
-          "files": ["App.xaml.cs"],
-          "rationale": "S-5 refactors entire App.xaml.cs, S-6 modifies OnExit/OnSessionEnding"
-        }
-      ]
-    },
-    {
-      "id": "S-7",
-      "issue_id": "ISS-1769239097521-23",
-      "solution_id": "SOL-ISS-1769239097521-23-b2k4",
-      "status": "pending",
-      "priority": 0.54,
-      "execution_group": "S3",
-      "dependencies": ["S-6"],
-      "conflicts": [
-        {
-          "with": "S-6",
-          "type": "file",
-          "severity": "medium",
-          "files": ["App.xaml.cs"],
-          "rationale": "Both modify App.xaml.cs, S-7 adds IProcessManager DI"
-        }
-      ]
-    },
-    {
-      "id": "S-8",
-      "issue_id": "ISS-1769239097521-15",
-      "solution_id": "SOL-ISS-1769239097521-15-a7x9",
-      "status": "pending",
-      "priority": 0.75,
-      "execution_group": "S4",
-      "dependencies": ["S-7"],
-      "conflicts": [
-        {
-          "with": "S-7",
-          "type": "file",
-          "severity": "medium",
-          "files": ["App.xaml.cs", "BackendServerService.cs", "WebServerService.cs"],
-          "rationale": "Centralizes port configuration across multiple services"
-        }
-      ]
-    },
-    {
       "id": "S-9",
       "issue_id": "ISS-1769239097521-4",
       "solution_id": "SOL-ISS-1769239097521-4-a3n8",
@@ -139,32 +20,19 @@
       "status": "pending",
       "priority": 0.53,
       "execution_group": "S5",
-      "dependencies": ["S-9"],
+      "dependencies": [
+        "S-9"
+      ],
       "conflicts": [
         {
           "with": "S-9",
           "type": "file",
           "severity": "low",
-          "files": ["SystemMetricProvider.cs", "LibreHardwareManager.cs"],
+          "files": [
+            "SystemMetricProvider.cs",
+            "LibreHardwareManager.cs"
+          ],
           "rationale": "S-9 adds primary constructors, S-10 updates collection syntax"
-        }
-      ]
-    },
-    {
-      "id": "S-11",
-      "issue_id": "ISS-1769239097521-9",
-      "solution_id": "SOL-ISS-1769239097521-9-b2k4",
-      "status": "pending",
-      "priority": 0.77,
-      "execution_group": "S6",
-      "dependencies": ["S-10"],
-      "conflicts": [
-        {
-          "with": "S-10",
-          "type": "api",
-          "severity": "high",
-          "files": ["LibreHardwareManager.cs", "ILibreHardwareManager.cs"],
-          "rationale": "S-11 converts methods to async, breaking API change"
         }
       ]
     },
@@ -175,16 +43,8 @@
       "status": "pending",
       "priority": 0.75,
       "execution_group": "S7",
-      "dependencies": ["S-11"],
-      "conflicts": [
-        {
-          "with": "S-11",
-          "type": "api",
-          "severity": "high",
-          "files": ["LibreHardwareManager.cs", "ILibreHardwareManager.cs", "SystemMetricProvider.cs", "ISystemMetricProvider.cs"],
-          "rationale": "S-12 adds IAsyncDisposable, requires async methods from S-11"
-        }
-      ]
+      "dependencies": [],
+      "conflicts": []
     },
     {
       "id": "S-13",
@@ -193,13 +53,17 @@
       "status": "pending",
       "priority": 0.74,
       "execution_group": "S8",
-      "dependencies": ["S-12"],
+      "dependencies": [
+        "S-12"
+      ],
       "conflicts": [
         {
           "with": "S-12",
           "type": "file",
           "severity": "medium",
-          "files": ["SystemMetricProvider.cs"],
+          "files": [
+            "SystemMetricProvider.cs"
+          ],
           "rationale": "S-13 extracts DXGI/PerformanceCounter providers from SystemMetricProvider"
         }
       ]
@@ -211,13 +75,18 @@
       "status": "pending",
       "priority": 1.0,
       "execution_group": "S9",
-      "dependencies": ["S-13"],
+      "dependencies": [
+        "S-13"
+      ],
       "conflicts": [
         {
           "with": "S-13",
           "type": "file",
           "severity": "high",
-          "files": ["SystemMetricProvider.cs", "Program.cs"],
+          "files": [
+            "SystemMetricProvider.cs",
+            "Program.cs"
+          ],
           "rationale": "S-14 converts provider fields to Dictionary, requires S-13 provider extraction"
         }
       ]
@@ -229,13 +98,18 @@
       "status": "pending",
       "priority": 0.76,
       "execution_group": "S10",
-      "dependencies": ["S-14"],
+      "dependencies": [
+        "S-14"
+      ],
       "conflicts": [
         {
           "with": "S-14",
           "type": "architecture",
           "severity": "high",
-          "files": ["MetricProviderRegistry.cs", "Program.cs"],
+          "files": [
+            "MetricProviderRegistry.cs",
+            "Program.cs"
+          ],
           "rationale": "S-15 adds factory pattern, requires S-14 collection-based providers"
         }
       ]
@@ -243,81 +117,57 @@
   ],
   "execution_groups": [
     {
-      "id": "P1",
-      "type": "parallel",
-      "items": ["S-1", "S-2", "S-3", "S-4"],
-      "solution_count": 4
-    },
-    {
-      "id": "S1",
-      "type": "sequential",
-      "items": ["S-5"],
-      "solution_count": 1
-    },
-    {
-      "id": "S2",
-      "type": "sequential",
-      "items": ["S-6"],
-      "solution_count": 1
-    },
-    {
-      "id": "S3",
-      "type": "sequential",
-      "items": ["S-7"],
-      "solution_count": 1
-    },
-    {
-      "id": "S4",
-      "type": "sequential",
-      "items": ["S-8"],
-      "solution_count": 1
-    },
-    {
       "id": "P2",
       "type": "parallel",
-      "items": ["S-9"],
+      "items": [
+        "S-9"
+      ],
       "solution_count": 1
     },
     {
       "id": "S5",
       "type": "sequential",
-      "items": ["S-10"],
-      "solution_count": 1
-    },
-    {
-      "id": "S6",
-      "type": "sequential",
-      "items": ["S-11"],
+      "items": [
+        "S-10"
+      ],
       "solution_count": 1
     },
     {
       "id": "S7",
       "type": "sequential",
-      "items": ["S-12"],
+      "items": [
+        "S-12"
+      ],
       "solution_count": 1
     },
     {
       "id": "S8",
       "type": "sequential",
-      "items": ["S-13"],
+      "items": [
+        "S-13"
+      ],
       "solution_count": 1
     },
     {
       "id": "S9",
       "type": "sequential",
-      "items": ["S-14"],
+      "items": [
+        "S-14"
+      ],
       "solution_count": 1
     },
     {
       "id": "S10",
       "type": "sequential",
-      "items": ["S-15"],
+      "items": [
+        "S-15"
+      ],
       "solution_count": 1
     }
   ],
   "metadata": {
-    "total_solutions": 15,
-    "total_tasks": 67,
-    "total_conflicts": 11
+    "total_solutions": 6,
+    "total_tasks": 6,
+    "total_conflicts": 4
   }
 }

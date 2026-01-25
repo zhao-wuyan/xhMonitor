@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using XhMonitor.Core.Configuration;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -19,16 +18,17 @@ public sealed class WebServerService : IWebServerService
 
     public WebServerService(IServiceDiscovery serviceDiscovery)
     {
-        _webPort = ConfigurationDefaults.System.WebPort;
+        _webPort = serviceDiscovery.WebPort;
     }
 
     public bool IsRunning => _webServerTask != null && !_webServerTask.IsCompleted;
 
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync().ConfigureAwait(false);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (IsPortInUse(_webPort))
             {
                 Debug.WriteLine($"Web frontend is already running on port {_webPort}");
@@ -53,7 +53,7 @@ public sealed class WebServerService : IWebServerService
             {
                 try
                 {
-                     var builder = WebApplication.CreateBuilder();
+                    var builder = WebApplication.CreateBuilder();
                     builder.WebHost.UseKestrel(options => { options.ListenLocalhost(_webPort); });
                     builder.WebHost.UseUrls($"http://localhost:{_webPort}");
 
@@ -80,8 +80,12 @@ public sealed class WebServerService : IWebServerService
                 }
             }, _webServerCts.Token);
 
-            await Task.Delay(1000).ConfigureAwait(false);
+            await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
             Debug.WriteLine($"Web frontend is ready at http://localhost:{_webPort}");
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("Web frontend startup canceled.");
         }
         catch (Exception ex)
         {
@@ -93,12 +97,12 @@ public sealed class WebServerService : IWebServerService
         }
     }
 
-    public async Task StopAsync()
+    public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync().ConfigureAwait(false);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await Task.Run(StopWebServer).ConfigureAwait(false);
+            await Task.Run(StopWebServer, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

@@ -3,9 +3,11 @@ using System.Reflection;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Settings.Configuration;
+using XhMonitor.Core.Common;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
 using XhMonitor.Core.Services;
@@ -72,6 +74,17 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(tempConfig, serilogOptions)
     .CreateLogger();
 
+Result<string, string> ValidateConnectionString(IConfiguration configuration)
+{
+    var connectionString = configuration.GetConnectionString("DatabaseConnection");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return Result<string, string>.Failure("Connection string 'DatabaseConnection' not found.");
+    }
+
+    return Result<string, string>.Success(connectionString);
+}
+
 try
 {
     Log.Information("正在启动 XhMonitor 服务...");
@@ -88,11 +101,20 @@ try
     // 使用 Serilog 作为日志提供者
     builder.Host.UseSerilog();
 
-var connectionString = builder.Configuration.GetConnectionString("DatabaseConnection");
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
-}
+    builder.Services.Configure<MonitorSettings>(builder.Configuration.GetSection("Monitor"));
+    builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database"));
+    builder.Services.AddOptions<MonitorSettings>().ValidateDataAnnotations().ValidateOnStart();
+    builder.Services.AddOptions<DatabaseSettings>().ValidateDataAnnotations().ValidateOnStart();
+
+    var connectionResult = ValidateConnectionString(builder.Configuration);
+    if (connectionResult.IsFailure)
+    {
+        Log.Fatal("配置错误: {Error}", connectionResult.Error);
+        Environment.Exit(1);
+        return;
+    }
+
+    var connectionString = connectionResult.Value;
 
 builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
 {
@@ -109,8 +131,9 @@ builder.Services.AddSingleton<IProcessNameResolver, ProcessNameResolver>();
 builder.Services.AddSingleton<ILibreHardwareManager>(sp =>
 {
     var logger = sp.GetRequiredService<ILogger<LibreHardwareManager>>();
-    var config = sp.GetRequiredService<IConfiguration>();
-    var systemIntervalSeconds = Math.Max(1, config.GetValue("Monitor:SystemUsageIntervalSeconds", 1));
+    var monitorOptions = sp.GetRequiredService<IOptions<MonitorSettings>>();
+    // 保留防御性保护，避免外部依赖收到无效间隔导致异常。
+    var systemIntervalSeconds = Math.Max(1, monitorOptions.Value.SystemUsageIntervalSeconds);
     return new LibreHardwareManager(logger, TimeSpan.FromSeconds(systemIntervalSeconds));
 });
 
