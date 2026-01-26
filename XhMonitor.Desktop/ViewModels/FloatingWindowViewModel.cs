@@ -68,6 +68,20 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _totalVram = value; OnPropertyChanged(); }
     }
 
+    private double _uploadSpeed;
+    public double UploadSpeed
+    {
+        get => _uploadSpeed;
+        set { _uploadSpeed = value; OnPropertyChanged(); }
+    }
+
+    private double _downloadSpeed;
+    public double DownloadSpeed
+    {
+        get => _downloadSpeed;
+        set { _downloadSpeed = value; OnPropertyChanged(); }
+    }
+
     private double _maxMemory;
     public double MaxMemory
     {
@@ -180,6 +194,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             TotalGpu = data.TotalGpu;
             TotalMemory = data.TotalMemory;
             TotalVram = data.TotalVram;
+            UploadSpeed = data.UploadSpeed;
+            DownloadSpeed = data.DownloadSpeed;
             if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
             if (data.MaxVram > 0) MaxVram = data.MaxVram;
         });

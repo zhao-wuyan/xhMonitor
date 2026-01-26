@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using LibreHardwareMonitor.Hardware;
 using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
@@ -15,12 +16,17 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
 {
     private readonly Dictionary<string, IMetricProvider> _providers;
     private readonly ILogger<SystemMetricProvider>? _logger;
+    private readonly ILibreHardwareManager? _hardwareManager;
     private bool _disposed;
 
-    public SystemMetricProvider(IEnumerable<IMetricProvider> providers, ILogger<SystemMetricProvider>? logger = null)
+    public SystemMetricProvider(
+        IEnumerable<IMetricProvider> providers,
+        ILogger<SystemMetricProvider>? logger = null,
+        ILibreHardwareManager? hardwareManager = null)
     {
         _logger = logger;
         _providers = BuildProviderMap(providers, logger);
+        _hardwareManager = hardwareManager;
     }
 
     private static Dictionary<string, IMetricProvider> BuildProviderMap(
@@ -151,6 +157,7 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         var totalCpu = await cpuTask;
         var totalGpu = await gpuTask;
         var totalVram = await vramTask;
+        var (uploadSpeed, downloadSpeed) = GetNetworkSpeed();
 
         return new SystemUsage
         {
@@ -158,6 +165,8 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             TotalGpu = totalGpu,
             TotalMemory = totalMemory,
             TotalVram = totalVram,
+            UploadSpeed = uploadSpeed,
+            DownloadSpeed = downloadSpeed,
             Timestamp = DateTime.UtcNow
         };
     }
@@ -197,6 +206,96 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         }
 
         return await vramProvider.GetSystemTotalAsync();
+    }
+
+    private static readonly string[] UploadSensorNamePatterns =
+    [
+        "upload",
+        "send",
+        "sent",
+        "tx"
+    ];
+
+    private static readonly string[] DownloadSensorNamePatterns =
+    [
+        "download",
+        "receive",
+        "received",
+        "rx"
+    ];
+
+    private (double UploadSpeed, double DownloadSpeed) GetNetworkSpeed()
+    {
+        if (_hardwareManager == null || !_hardwareManager.IsAvailable)
+        {
+            return (0.0, 0.0);
+        }
+
+        try
+        {
+            var sensors = _hardwareManager.GetSensorValues(
+                new[] { HardwareType.Network },
+                SensorType.Throughput);
+
+            if (sensors.Count == 0)
+            {
+                return (0.0, 0.0);
+            }
+
+            double uploadBytesPerSecond = 0.0;
+            double downloadBytesPerSecond = 0.0;
+
+            foreach (var sensor in sensors)
+            {
+                if (sensor.Value <= 0)
+                {
+                    continue;
+                }
+
+                if (ContainsAny(sensor.Name, UploadSensorNamePatterns))
+                {
+                    uploadBytesPerSecond += sensor.Value;
+                }
+                else if (ContainsAny(sensor.Name, DownloadSensorNamePatterns))
+                {
+                    downloadBytesPerSecond += sensor.Value;
+                }
+            }
+
+            return (
+                ConvertThroughputToMbps(uploadBytesPerSecond),
+                ConvertThroughputToMbps(downloadBytesPerSecond));
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "[SystemMetricProvider] Failed to read network throughput via LibreHardwareMonitor");
+            return (0.0, 0.0);
+        }
+    }
+
+    private static bool ContainsAny(string name, string[] patterns)
+    {
+        foreach (var pattern in patterns)
+        {
+            if (name.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static double ConvertThroughputToMbps(double bytesPerSecond)
+    {
+        if (bytesPerSecond <= 0)
+        {
+            return 0.0;
+        }
+
+        // LibreHardwareMonitor Throughput 原始单位为 Bytes/s（B/s）。
+        // 系统侧对外保持 MB/s 语义（与 IMetricsClient 契约一致），不在此处做过早 Round，避免小网速丢失精度。
+        return bytesPerSecond / (1024.0 * 1024.0);
     }
 
     #region Windows API
@@ -271,5 +370,7 @@ public class SystemUsage
     public double TotalGpu { get; set; }
     public double TotalMemory { get; set; }
     public double TotalVram { get; set; }
+    public double UploadSpeed { get; set; }
+    public double DownloadSpeed { get; set; }
     public DateTime Timestamp { get; set; }
 }

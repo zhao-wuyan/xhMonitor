@@ -67,6 +67,12 @@ public class SystemUsageDto
     [JsonPropertyName("totalVram")]
     public double TotalVram { get; set; }
 
+    [JsonPropertyName("uploadSpeed")]
+    public double UploadSpeed { get; set; }
+
+    [JsonPropertyName("downloadSpeed")]
+    public double DownloadSpeed { get; set; }
+
     [JsonPropertyName("maxMemory")]
     public double MaxMemory { get; set; }
 

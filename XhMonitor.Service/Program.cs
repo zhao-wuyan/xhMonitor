@@ -185,7 +185,8 @@ builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
 {
     var registry = sp.GetRequiredService<MetricProviderRegistry>();
     var logger = sp.GetRequiredService<ILogger<SystemMetricProvider>>();
-    return new SystemMetricProvider(registry.GetAllProviders(), logger);
+    var hardwareManager = sp.GetRequiredService<ILibreHardwareManager>();
+    return new SystemMetricProvider(registry.GetAllProviders(), logger, hardwareManager);
 });
 
 builder.Services.AddSingleton<ProcessScanner>();

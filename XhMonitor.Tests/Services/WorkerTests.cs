@@ -68,6 +68,8 @@ public class WorkerTests
                 TotalGpu = 20.2,
                 TotalMemory = 300.34,
                 TotalVram = 400.45,
+                UploadSpeed = 12.34,
+                DownloadSpeed = 56.78,
                 Timestamp = DateTime.UtcNow
             });
 
@@ -76,6 +78,8 @@ public class WorkerTests
         var usageTimestamp = new DateTime(2026, 1, 20, 0, 0, 1, DateTimeKind.Utc);
         var expectedTotalMemory = Math.Round(300.34, 1);
         var expectedTotalVram = Math.Round(400.45, 1);
+        var expectedUploadSpeed = 12.34;
+        var expectedDownloadSpeed = 56.78;
         var expectedMaxMemory = Math.Round(4096.04, 1);
         var expectedMaxVram = Math.Round(8192.09, 1);
 
@@ -88,6 +92,8 @@ public class WorkerTests
             GetAnonymousDouble(o, "TotalGpu") == 20.2 &&
             GetAnonymousDouble(o, "TotalMemory") == expectedTotalMemory &&
             GetAnonymousDouble(o, "TotalVram") == expectedTotalVram &&
+            GetAnonymousDouble(o, "UploadSpeed") == expectedUploadSpeed &&
+            GetAnonymousDouble(o, "DownloadSpeed") == expectedDownloadSpeed &&
             GetAnonymousDouble(o, "MaxMemory") == expectedMaxMemory &&
             GetAnonymousDouble(o, "MaxVram") == expectedMaxVram)), Times.Once);
     }

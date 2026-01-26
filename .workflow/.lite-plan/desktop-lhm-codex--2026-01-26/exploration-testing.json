@@ -1,0 +1,31 @@
+{
+  "patterns": [
+    "SystemMetricProviderTests 通过 Mock<ILibreHardwareManager> 构造 Network Throughput 传感器读数，验证 upload/download 计算结果。",
+    "WorkerTests 通过反射调用私有 SendSystemUsageAsync，断言 SignalR payload（包含 UploadSpeed/DownloadSpeed）。"
+  ],
+  "angle": "testing",
+  "relevant_files": [
+    "XhMonitor.Tests/Providers/SystemMetricProviderTests.cs",
+    "XhMonitor.Tests/Services/WorkerTests.cs"
+  ],
+  "clarification_needs": [],
+  "integration_points": [
+    "若调整网速的单位/精度（例如从 B/s 转 MB/s、或移除 Round），需同步更新 SystemMetricProviderTests 与 WorkerTests 的断言。"
+  ],
+  "project_structure": [
+    "XhMonitor.Tests：覆盖 SystemMetricProvider 的系统使用率与网络吞吐采集逻辑",
+    "XhMonitor.Tests：覆盖 Worker 推送系统使用率（但当前未断言 UploadSpeed/DownloadSpeed 字段）"
+  ],
+  "_metadata": {
+    "exploration_index": 3,
+    "exploration_angle": "testing",
+    "timestamp": "2026-01-26T13:58:23.9461239+00:00"
+  },
+  "dependencies": [
+    "xUnit + FluentAssertions",
+    "Moq"
+  ],
+  "constraints": [
+    "桌面端 UI 展示通常不做单元测试；保持 DTO/SignalR 字段契约一致更关键。"
+  ]
+}

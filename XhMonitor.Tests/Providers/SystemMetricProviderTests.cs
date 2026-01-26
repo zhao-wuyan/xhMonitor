@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using FluentAssertions;
+using LibreHardwareMonitor.Hardware;
 using Moq;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
@@ -180,9 +182,35 @@ public class SystemMetricProviderTests : IDisposable
         usage.TotalCpu.Should().Be(12.3);
         usage.TotalGpu.Should().Be(45.6);
         usage.TotalVram.Should().Be(128);
+        usage.UploadSpeed.Should().Be(0.0);
+        usage.DownloadSpeed.Should().Be(0.0);
 
         usage.TotalMemory.Should().BeGreaterThanOrEqualTo(0.0);
         usage.TotalMemory.Should().BeLessThanOrEqualTo(limits.MaxMemory + 1.0);
+    }
+
+    [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_IncludesNetworkThroughput_WhenHardwareManagerAvailable()
+    {
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager.Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), SensorType.Throughput))
+            .Returns(new List<SensorReading>
+            {
+                // LibreHardwareMonitor Throughput 原始单位为 Bytes/s（B/s）
+                new(HardwareType.Network, SensorType.Throughput, "Download Speed", 2 * 1024 * 1024f),
+                new(HardwareType.Network, SensorType.Throughput, "Upload Speed", 1024 * 1024f)
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object);
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.DownloadSpeed.Should().Be(2.0);
+        usage.UploadSpeed.Should().Be(1.0);
     }
 
     private static Mock<IMetricProvider> CreateMetricProvider(string metricId, double systemTotal, VramMetrics? vramMetrics = null)
