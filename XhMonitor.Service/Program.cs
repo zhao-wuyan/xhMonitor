@@ -8,6 +8,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Settings.Configuration;
 using XhMonitor.Core.Common;
+using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
 using XhMonitor.Core.Services;
@@ -181,12 +182,49 @@ builder.Services.AddSingleton(sp =>
     return new MetricProviderRegistry(logger, pluginDirectory, providerFactory);
 });
 
+builder.Services.AddSingleton<IGpuVendorDetector>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<WmiGpuVendorDetector>>();
+    return new WmiGpuVendorDetector(logger);
+});
+
+builder.Services.AddSingleton<IRyzenAdjCli>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var env = sp.GetRequiredService<IHostEnvironment>();
+    var logger = sp.GetRequiredService<ILogger<RyzenAdjCli>>();
+    return new RyzenAdjCli(config["Power:RyzenAdjPath"], env.ContentRootPath, logger);
+});
+
+builder.Services.AddSingleton<IPowerProvider>(sp =>
+{
+    var vendor = sp.GetRequiredService<IGpuVendorDetector>().DetectVendor();
+    if (vendor != GpuVendor.Amd)
+    {
+        return new NullPowerProvider();
+    }
+
+    var cli = sp.GetRequiredService<IRyzenAdjCli>();
+    if (!cli.IsAvailable)
+    {
+        return new NullPowerProvider();
+    }
+
+    var config = sp.GetRequiredService<IConfiguration>();
+    var pollSeconds = config.GetValue<int>("Power:PollingIntervalSeconds", 3);
+    var pollingInterval = pollSeconds <= 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(pollSeconds);
+
+    var logger = sp.GetRequiredService<ILogger<RyzenAdjPowerProvider>>();
+    return new RyzenAdjPowerProvider(cli, pollingInterval, logger);
+});
+
 builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
 {
     var registry = sp.GetRequiredService<MetricProviderRegistry>();
     var logger = sp.GetRequiredService<ILogger<SystemMetricProvider>>();
     var hardwareManager = sp.GetRequiredService<ILibreHardwareManager>();
-    return new SystemMetricProvider(registry.GetAllProviders(), logger, hardwareManager);
+    var powerProvider = sp.GetRequiredService<IPowerProvider>();
+    return new SystemMetricProvider(registry.GetAllProviders(), logger, hardwareManager, powerProvider);
 });
 
 builder.Services.AddSingleton<ProcessScanner>();

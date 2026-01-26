@@ -21,6 +21,7 @@
         <conv:MemoryPercentageColorConverter x:Key="MemoryColorConverter"/>
         <conv:MiddleEllipsisConverter x:Key="MiddleEllipsisConverter"/>
         <conv:NetworkSpeedConverter x:Key="NetworkSpeedConverter"/>
+        <conv:PowerValueConverter x:Key="PowerValueConverter"/>
 
         <!-- Palette -->
         <SolidColorBrush x:Key="ColorGreen" Color="#4ade80"/>
@@ -294,6 +295,8 @@
                     <ColumnDefinition Width="Auto"/> <!-- GPU -->
                     <ColumnDefinition Width="Auto"/> <!-- Div -->
                     <ColumnDefinition Width="Auto"/> <!-- VRAM -->
+                    <ColumnDefinition Width="Auto"/> <!-- Div -->
+                    <ColumnDefinition Width="Auto"/> <!-- POWER -->
                     <ColumnDefinition Width="Auto"/> <!-- Status -->
                 </Grid.ColumnDefinitions>
 
@@ -375,8 +378,41 @@
                     </ProgressBar>
                 </StackPanel>
 
+                <Rectangle Grid.Column="9" Width="1" Height="16" Fill="{StaticResource ColorBorder}" Margin="6,0"
+                           Visibility="{Binding IsPowerVisible, Converter={StaticResource BoolToVisibility}}"/>
+
+                <!-- POWER -->
+                <StackPanel Grid.Column="10" Width="70" Margin="2,0" Tag="power"
+                            MouseEnter="Metric_MouseEnter"
+                            Cursor="Hand"
+                            Visibility="{Binding IsPowerVisible, Converter={StaticResource BoolToVisibility}}">
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="POWER" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                        <TextBlock Text="{Binding TotalPower, Converter={StaticResource PowerValueConverter}}"
+                                   FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ProgressBar Grid.Column="0" Style="{StaticResource ThinProgressBar}" Value="{Binding TotalPower, Mode=OneWay}" Maximum="{Binding MaxPower}" Margin="0,0,2,0">
+                            <ProgressBar.Foreground>
+                                <MultiBinding Converter="{StaticResource MemoryColorConverter}">
+                                    <Binding Path="TotalPower"/>
+                                    <Binding Path="MaxPower"/>
+                                </MultiBinding>
+                            </ProgressBar.Foreground>
+                        </ProgressBar>
+                        <TextBlock Grid.Column="1" Text="{Binding MaxPower, Converter={StaticResource PowerValueConverter}}"
+                                   FontSize="9" Foreground="{StaticResource ColorTextSub}" FontFamily="Consolas"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+
                 <!-- Connection Status Indicator (仅断开时显示) -->
-                <Border Grid.Column="9" Width="8" Height="8" CornerRadius="4" Margin="12,-4,-4,0"
+                <Border Grid.Column="11" Width="8" Height="8" CornerRadius="4" Margin="12,-4,-4,0"
                         VerticalAlignment="Top" HorizontalAlignment="Right"
                         Background="{StaticResource ColorRed}">
                     <Border.Style>
@@ -429,7 +465,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="45"/>
                             <ColumnDefinition Width="40"/>
-                            <ColumnDefinition Width="72"/>
+                            <ColumnDefinition Width="75"/>
                             <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="80"/>
                         </Grid.ColumnDefinitions>

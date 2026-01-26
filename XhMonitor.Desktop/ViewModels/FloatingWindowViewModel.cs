@@ -68,6 +68,34 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _totalVram = value; OnPropertyChanged(); }
     }
 
+    private double _totalPower;
+    public double TotalPower
+    {
+        get => _totalPower;
+        set { _totalPower = value; OnPropertyChanged(); }
+    }
+
+    private double _maxPower;
+    public double MaxPower
+    {
+        get => _maxPower;
+        set { _maxPower = value; OnPropertyChanged(); }
+    }
+
+    private int? _powerSchemeIndex;
+    public int? PowerSchemeIndex
+    {
+        get => _powerSchemeIndex;
+        set { _powerSchemeIndex = value; OnPropertyChanged(); }
+    }
+
+    private bool _isPowerVisible;
+    public bool IsPowerVisible
+    {
+        get => _isPowerVisible;
+        set { _isPowerVisible = value; OnPropertyChanged(); }
+    }
+
     private double _uploadSpeed;
     public double UploadSpeed
     {
@@ -194,6 +222,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             TotalGpu = data.TotalGpu;
             TotalMemory = data.TotalMemory;
             TotalVram = data.TotalVram;
+            IsPowerVisible = data.PowerAvailable;
+            TotalPower = data.TotalPower;
+            MaxPower = data.MaxPower;
+            PowerSchemeIndex = data.PowerSchemeIndex;
             UploadSpeed = data.UploadSpeed;
             DownloadSpeed = data.DownloadSpeed;
             if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
@@ -273,6 +305,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 TotalVram = data.SystemStats.TotalVram;
                 MaxMemory = data.SystemStats.MaxMemory;
                 MaxVram = data.SystemStats.MaxVram;
+                TotalPower = data.SystemStats.TotalPower;
+                MaxPower = data.SystemStats.MaxPower;
             }
             else
             {

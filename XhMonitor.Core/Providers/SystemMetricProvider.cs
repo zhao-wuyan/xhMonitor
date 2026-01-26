@@ -17,16 +17,19 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     private readonly Dictionary<string, IMetricProvider> _providers;
     private readonly ILogger<SystemMetricProvider>? _logger;
     private readonly ILibreHardwareManager? _hardwareManager;
+    private readonly IPowerProvider? _powerProvider;
     private bool _disposed;
 
     public SystemMetricProvider(
         IEnumerable<IMetricProvider> providers,
         ILogger<SystemMetricProvider>? logger = null,
-        ILibreHardwareManager? hardwareManager = null)
+        ILibreHardwareManager? hardwareManager = null,
+        IPowerProvider? powerProvider = null)
     {
         _logger = logger;
         _providers = BuildProviderMap(providers, logger);
         _hardwareManager = hardwareManager;
+        _powerProvider = powerProvider;
     }
 
     private static Dictionary<string, IMetricProvider> BuildProviderMap(
@@ -150,13 +153,17 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         var cpuTask = GetProvider("cpu")?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
         var gpuTask = GetProvider("gpu")?.GetSystemTotalAsync() ?? Task.FromResult(0.0);
         var vramTask = GetVramUsageAsync();
+        var powerTask = _powerProvider != null && _powerProvider.IsSupported()
+            ? _powerProvider.GetStatusAsync()
+            : Task.FromResult<PowerStatus?>(null);
 
         var totalMemory = GetMemoryUsage();
 
-        await Task.WhenAll(cpuTask, gpuTask, vramTask);
+        await Task.WhenAll(cpuTask, gpuTask, vramTask, powerTask);
         var totalCpu = await cpuTask;
         var totalGpu = await gpuTask;
         var totalVram = await vramTask;
+        var powerStatus = await powerTask;
         var (uploadSpeed, downloadSpeed) = GetNetworkSpeed();
 
         return new SystemUsage
@@ -167,6 +174,10 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             TotalVram = totalVram,
             UploadSpeed = uploadSpeed,
             DownloadSpeed = downloadSpeed,
+            PowerAvailable = powerStatus != null,
+            TotalPower = powerStatus?.CurrentWatts ?? 0.0,
+            MaxPower = powerStatus?.LimitWatts ?? 0.0,
+            PowerSchemeIndex = powerStatus?.SchemeIndex,
             Timestamp = DateTime.UtcNow
         };
     }
@@ -372,5 +383,9 @@ public class SystemUsage
     public double TotalVram { get; set; }
     public double UploadSpeed { get; set; }
     public double DownloadSpeed { get; set; }
+    public bool PowerAvailable { get; set; }
+    public double TotalPower { get; set; }
+    public double MaxPower { get; set; }
+    public int? PowerSchemeIndex { get; set; }
     public DateTime Timestamp { get; set; }
 }

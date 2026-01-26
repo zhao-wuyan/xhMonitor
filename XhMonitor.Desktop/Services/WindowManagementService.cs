@@ -9,16 +9,19 @@ public sealed class WindowManagementService : IWindowManagementService
     private readonly ITrayIconService _trayIconService;
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
+    private readonly IPowerControlService _powerControlService;
     private FloatingWindow? _floatingWindow;
 
     public WindowManagementService(
         ITrayIconService trayIconService,
         IServiceDiscovery serviceDiscovery,
-        IProcessManager processManager)
+        IProcessManager processManager,
+        IPowerControlService powerControlService)
     {
         _trayIconService = trayIconService;
         _serviceDiscovery = serviceDiscovery;
         _processManager = processManager;
+        _powerControlService = powerControlService;
     }
 
     public void InitializeMainWindow()
@@ -133,9 +136,36 @@ public sealed class WindowManagementService : IWindowManagementService
         System.Windows.Application.Current.Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
     }
 
-    private void OnMetricActionRequested(object? sender, MetricActionEventArgs e)
+    private async void OnMetricActionRequested(object? sender, MetricActionEventArgs e)
     {
         Debug.WriteLine($"[Plugin Extension Point] Metric Action: {e.MetricId} -> {e.Action}");
+
+        if (!string.Equals(e.MetricId, "power", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!e.Action.StartsWith("longPress_", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var window = _floatingWindow;
+        if (window == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _powerControlService.SwitchToNextSchemeAsync().ConfigureAwait(false);
+            var schemeText = result.Scheme?.ToDisplayString() ?? $"#{result.NewSchemeIndex}";
+            window.Dispatcher.Invoke(() => window.ShowToast($"功耗切换：{schemeText}"));
+        }
+        catch (Exception ex)
+        {
+            window.Dispatcher.Invoke(() => window.ShowToast($"功耗切换失败：{ex.Message}"));
+        }
     }
 
     private void OnProcessActionRequested(object? sender, ProcessActionEventArgs e)

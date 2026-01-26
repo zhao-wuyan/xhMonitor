@@ -33,4 +33,14 @@
   <ItemGroup>
     <ProjectReference Include="..\XhMonitor.Core\XhMonitor.Core.csproj" />
   </ItemGroup>
+
+  <!-- RyzenAdj (exe 方案) 随发布包输出到 Service/tools/RyzenAdj，方便用户替换升级 -->
+  <ItemGroup>
+    <Content Include="..\tools\RyzenAdj\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <TargetPath>tools\RyzenAdj\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
 </Project>

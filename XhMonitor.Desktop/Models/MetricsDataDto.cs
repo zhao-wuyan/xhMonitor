@@ -36,6 +36,12 @@ public class SystemStatsDto
 
     [JsonPropertyName("maxVram")]
     public double MaxVram { get; set; }
+
+    [JsonPropertyName("totalPower")]
+    public double TotalPower { get; set; }
+
+    [JsonPropertyName("maxPower")]
+    public double MaxPower { get; set; }
 }
 
 public class HardwareLimitsDto
@@ -78,6 +84,18 @@ public class SystemUsageDto
 
     [JsonPropertyName("maxVram")]
     public double MaxVram { get; set; }
+
+    [JsonPropertyName("totalPower")]
+    public double TotalPower { get; set; }
+
+    [JsonPropertyName("maxPower")]
+    public double MaxPower { get; set; }
+
+    [JsonPropertyName("powerAvailable")]
+    public bool PowerAvailable { get; set; }
+
+    [JsonPropertyName("powerSchemeIndex")]
+    public int? PowerSchemeIndex { get; set; }
 }
 
 public class ProcessDataDto

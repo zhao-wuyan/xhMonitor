@@ -35,6 +35,7 @@ public partial class App : WpfApplication
                 services.AddSingleton<IWebServerService, WebServerService>();
                 services.AddSingleton<ITrayIconService, TrayIconService>();
                 services.AddSingleton<IProcessManager, ProcessManager>();
+                services.AddSingleton<IPowerControlService, PowerControlService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
                 services.AddHostedService<ApplicationHostedService>();
 

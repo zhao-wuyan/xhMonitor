@@ -284,7 +284,9 @@ XhMonitor-v$Version/
 │  ├─ XhMonitor.Service.exe
 │  ├─ appsettings.json   # 配置文件
 │  ├─ logs/              # 日志目录（自动创建）
-│  └─ xhmonitor.db       # 数据库文件（自动创建）
+│  ├─ xhmonitor.db       # 数据库文件（自动创建）
+│  └─ tools/             # 可选：第三方工具（如 RyzenAdj）
+│     └─ RyzenAdj/       # 功耗监测/切换（可直接替换升级）
 ├─ Desktop/              # 桌面应用
 │  └─ XhMonitor.Desktop.exe
 ├─ 启动服务.bat
