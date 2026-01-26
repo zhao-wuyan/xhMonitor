@@ -16,6 +16,16 @@ export interface MetricsData {
   processes: ProcessInfo[];
 }
 
+export interface SystemUsage {
+  timestamp: string;
+  totalCpu: number;
+  totalGpu: number;
+  totalMemory: number;
+  totalVram: number;
+  maxMemory: number;
+  maxVram: number;
+}
+
 export interface ProcessMetaInfo {
   processId: number;
   processName: string;

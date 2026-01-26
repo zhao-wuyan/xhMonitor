@@ -1,4 +1,4 @@
-import type { ProcessInfo } from './types';
+import type { ProcessInfo, SystemUsage } from './types';
 
 export const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
@@ -21,7 +21,10 @@ export const formatTimestamp = (timestamp: string): string => {
   });
 };
 
-export const calculateSystemSummary = (processes: ProcessInfo[]): Record<string, number> & { processCount: number } => {
+export const calculateSystemSummary = (
+  processes: ProcessInfo[],
+  systemUsage?: SystemUsage | null
+): Record<string, number> & { processCount: number } => {
   const summary: Record<string, number> = {};
 
   processes.forEach((p) => {
@@ -32,6 +35,13 @@ export const calculateSystemSummary = (processes: ProcessInfo[]): Record<string,
       summary[metricId] += metricValue;
     });
   });
+
+  if (systemUsage) {
+    if (Number.isFinite(systemUsage.totalCpu)) summary.cpu = systemUsage.totalCpu;
+    if (Number.isFinite(systemUsage.totalGpu)) summary.gpu = systemUsage.totalGpu;
+    if (Number.isFinite(systemUsage.totalMemory)) summary.memory = systemUsage.totalMemory;
+    if (Number.isFinite(systemUsage.totalVram)) summary.vram = systemUsage.totalVram;
+  }
 
   return {
     ...summary,

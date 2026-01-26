@@ -5,14 +5,14 @@ import { calculateSystemSummary } from '../../utils';
 import { t } from '../../i18n';
 
 export const TaskbarWidget = () => {
-  const { metricsData, isConnected } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected } = useMetricsHub();
   const { config } = useMetricConfig();
 
   // 计算系统总占用
   const summary = useMemo(() => {
     if (!metricsData) return null;
-    return calculateSystemSummary(metricsData.processes);
-  }, [metricsData]);
+    return calculateSystemSummary(metricsData.processes, systemUsage);
+  }, [metricsData, systemUsage]);
 
   // 格式化指标值（精简版）
   const formatCompact = (value: number, unit: string): string => {
