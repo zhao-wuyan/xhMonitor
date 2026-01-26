@@ -1,0 +1,48 @@
+{
+  "iteration": 3,
+  "timestamp": "2026-01-25T23:58:00+08:00",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "status": "confirmed",
+      "verdict_reason": "Web 端未订阅 ReceiveSystemUsage，系统摘要只能基于进程累加",
+      "evidence": {
+        "browserWarning": "No client method with the name 'receivesystemusage' found"
+      }
+    },
+    {
+      "id": "H2",
+      "status": "confirmed",
+      "verdict_reason": "服务端已推送系统级使用率，Web 端未使用",
+      "evidence": {
+        "serverEvent": "Worker.SendSystemUsageAsync -> ReceiveSystemUsage"
+      }
+    },
+    {
+      "id": "H3",
+      "status": "rejected",
+      "verdict_reason": "LHM Provider 覆盖了 DisplayName，包含方案文本",
+      "evidence": {
+        "memoryDisplayName": "内存使用率 (LibreHardwareMonitor)"
+      }
+    },
+    {
+      "id": "H4",
+      "status": "confirmed",
+      "verdict_reason": "memory/vram 元数据单位为 %，但系统级总量返回 MB，导致显示成异常百分比",
+      "evidence": {
+        "memoryUnit": "%",
+        "vramUnit": "%",
+        "systemUsageMemory": "MB",
+        "systemUsageVram": "MB"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "wrong_assumption": "Provider DisplayName 固定为英文且不含方案",
+      "corrected_to": "LibreHardwareMonitorMemoryProvider DisplayName 含方案文本",
+      "reason": "Provider 实现覆盖标准名称"
+    }
+  ]
+}

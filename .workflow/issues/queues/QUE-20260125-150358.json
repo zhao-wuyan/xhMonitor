@@ -1,0 +1,59 @@
+{
+  "id": "QUE-20260125-150358",
+  "status": "completed",
+  "issue_ids": [
+    "ISS-20260125-001"
+  ],
+  "solutions": [
+    {
+      "item_id": "S-1",
+      "issue_id": "ISS-20260125-001",
+      "solution_id": "SOL-ISS-20260125-001-y6d1",
+      "status": "completed",
+      "execution_order": 1,
+      "execution_group": "P1",
+      "depends_on": [],
+      "semantic_priority": 0.55,
+      "files_touched": [
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs"
+      ],
+      "task_count": 1,
+      "started_at": "2026-01-25T15:16:51.571Z",
+      "completed_at": "2026-01-25T15:21:47.067Z",
+      "result": {
+        "summary": "添加 LocationChanged 处理器，拖动窗口时强制更新 DetailsPopup 位置；dotnet build 通过（有警告）。",
+        "files_modified": [
+          "XhMonitor.Desktop/FloatingWindow.xaml.cs"
+        ],
+        "tests_passed": true,
+        "commit": {
+          "tasks": [
+            "T1"
+          ],
+          "type": "fix",
+          "hash": "c61d6d005bf4ed3d08363bc17e0249dbb2ccaeb6"
+        }
+      }
+    }
+  ],
+  "conflicts": [],
+  "execution_groups": [
+    {
+      "id": "P1",
+      "type": "parallel",
+      "solutions": [
+        "S-1"
+      ],
+      "solution_count": 1
+    }
+  ],
+  "_metadata": {
+    "version": "2.0",
+    "total_tasks": 1,
+    "pending_count": 0,
+    "executing_count": 0,
+    "completed_count": 1,
+    "failed_count": 0,
+    "updated_at": "2026-01-25T15:21:47.072Z"
+  }
+}

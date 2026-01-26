@@ -10,15 +10,16 @@ import { t } from './i18n';
 import type { ChartDataPoint } from './types';
 
 function App() {
-  const { metricsData, isConnected, error } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
   const { config, loading: configLoading } = useMetricConfig();
   const [metricHistory, setMetricHistory] = useState<Record<string, ChartDataPoint[]>>({});
 
   useEffect(() => {
     if (!metricsData || !config) return;
 
-    const summary = calculateSystemSummary(metricsData.processes);
-    const timestamp = formatTimestamp(metricsData.timestamp);
+    const summary = calculateSystemSummary(metricsData.processes, systemUsage);
+    const baseTimestamp = systemUsage?.timestamp ?? metricsData.timestamp;
+    const timestamp = formatTimestamp(baseTimestamp);
 
     setMetricHistory((prev) => {
       const newHistory = { ...prev };
@@ -31,7 +32,7 @@ function App() {
 
       return newHistory;
     });
-  }, [metricsData, config]);
+  }, [metricsData, config, systemUsage]);
 
   if (configLoading) {
     return (
@@ -55,7 +56,7 @@ function App() {
   }
 
   const summary = metricsData
-    ? calculateSystemSummary(metricsData.processes)
+    ? calculateSystemSummary(metricsData.processes, systemUsage)
     : ({ processCount: 0 } as Record<string, number> & { processCount: number });
 
   const primaryMetrics = config.metadata.slice(0, 2);

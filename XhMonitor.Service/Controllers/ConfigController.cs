@@ -128,15 +128,47 @@ public class ConfigController : ControllerBase
             ["vram"] = "HardDrive"
         };
 
-        var metrics = providers.Select(p => new MetricMetadata
+        var metrics = providers.Select(p =>
         {
-            MetricId = p.MetricId,
-            DisplayName = p.DisplayName,
-            Unit = p.Unit,
-            Type = p.Type.ToString(),
-            Category = p.Type.ToString(),
-            Color = metricColorMap.GetValueOrDefault(p.MetricId.ToLower()),
-            Icon = metricIconMap.GetValueOrDefault(p.MetricId.ToLower())
+            var metricId = p.MetricId;
+            var displayName = p.DisplayName;
+            var unit = p.Unit;
+            var type = p.Type.ToString();
+            var category = p.Type.ToString();
+
+            if (string.Equals(metricId, "cpu", StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = "CPU Usage";
+            }
+            else if (string.Equals(metricId, "gpu", StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = "GPU Usage";
+            }
+            else if (string.Equals(metricId, "memory", StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = "Memory Usage";
+                unit = "MB";
+                type = "Size";
+                category = "Size";
+            }
+            else if (string.Equals(metricId, "vram", StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = "VRAM Usage";
+                unit = "MB";
+                type = "Size";
+                category = "Size";
+            }
+
+            return new MetricMetadata
+            {
+                MetricId = metricId,
+                DisplayName = displayName,
+                Unit = unit,
+                Type = type,
+                Category = category,
+                Color = metricColorMap.GetValueOrDefault(metricId.ToLower()),
+                Icon = metricIconMap.GetValueOrDefault(metricId.ToLower())
+            };
         }).ToList();
 
         return Ok(metrics);

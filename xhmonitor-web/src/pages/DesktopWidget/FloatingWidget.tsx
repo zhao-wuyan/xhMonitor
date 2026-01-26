@@ -10,7 +10,7 @@ import type { ProcessInfo } from '../../types';
 type WidgetState = 'collapsed' | 'expanded' | 'locked' | 'clickthrough';
 
 export const FloatingWidget = () => {
-  const { metricsData, isConnected } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected } = useMetricsHub();
   const { config } = useMetricConfig();
   const { isMetricClickEnabled, getMetricAction } = useWidgetConfig();
   const [state, setState] = useState<WidgetState>('collapsed');
@@ -19,8 +19,8 @@ export const FloatingWidget = () => {
   // 计算系统总占用
   const summary = useMemo(() => {
     if (!metricsData) return null;
-    return calculateSystemSummary(metricsData.processes);
-  }, [metricsData]);
+    return calculateSystemSummary(metricsData.processes, systemUsage);
+  }, [metricsData, systemUsage]);
 
   // 获取前5个进程（按 CPU 占用排序）
   const top5Processes = useMemo(() => {

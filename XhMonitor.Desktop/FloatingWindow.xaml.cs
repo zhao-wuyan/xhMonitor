@@ -81,6 +81,8 @@ public partial class FloatingWindow : Window
 
         // 监听窗口尺寸变化
         SizeChanged += OnWindowSizeChanged;
+        // 监听窗口位置变化
+        LocationChanged += OnLocationChanged;
     }
 
     private CustomPopupPlacement[] OnCustomPopupPlacement(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
@@ -174,6 +176,20 @@ public partial class FloatingWindow : Window
     private void OnWindowSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         UpdatePinnedStackPlacement(_lastPopupAbove);
+    }
+
+    private void OnLocationChanged(object? sender, EventArgs e)
+    {
+        if (!DetailsPopup.IsOpen) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            System.Diagnostics.Debug.WriteLine("[Popup] Location Changed - Updating popup position");
+
+            var offset = DetailsPopup.HorizontalOffset;
+            DetailsPopup.HorizontalOffset = offset + 0.01;
+            DetailsPopup.HorizontalOffset = offset;
+        }, DispatcherPriority.Loaded);
     }
 
     public void AllowClose()

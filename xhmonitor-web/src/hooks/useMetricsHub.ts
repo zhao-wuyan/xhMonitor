@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import * as signalR from '@microsoft/signalr';
-import type { MetricsData, ProcessMetaData, ProcessInfo } from '../types';
+import type { MetricsData, ProcessMetaData, ProcessInfo, SystemUsage } from '../types';
 
 const HUB_URL = 'http://localhost:35179/hubs/metrics';
 
 export const useMetricsHub = () => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
+  const [systemUsage, setSystemUsage] = useState<SystemUsage | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const metaMapRef = useRef<Map<number, ProcessMetaData['processes'][number]>>(new Map());
@@ -77,6 +78,19 @@ export const useMetricsHub = () => {
       });
     });
 
+    connection.on('ReceiveSystemUsage', (data: Record<string, unknown>) => {
+      const usage: SystemUsage = {
+        timestamp: (data.timestamp ?? data.Timestamp ?? new Date().toISOString()) as string,
+        totalCpu: Number(data.totalCpu ?? data.TotalCpu ?? 0),
+        totalGpu: Number(data.totalGpu ?? data.TotalGpu ?? 0),
+        totalMemory: Number(data.totalMemory ?? data.TotalMemory ?? 0),
+        totalVram: Number(data.totalVram ?? data.TotalVram ?? 0),
+        maxMemory: Number(data.maxMemory ?? data.MaxMemory ?? 0),
+        maxVram: Number(data.maxVram ?? data.MaxVram ?? 0)
+      };
+      setSystemUsage(usage);
+    });
+
     connection.onreconnecting(() => {
       setIsConnected(false);
       setError('Reconnecting...');
@@ -104,6 +118,7 @@ export const useMetricsHub = () => {
 
   return {
     metricsData,
+    systemUsage,
     isConnected,
     error,
     disconnect,
