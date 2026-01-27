@@ -1,3 +1,4 @@
+using System.Security.Principal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XhMonitor.Core.Entities;
@@ -298,5 +299,35 @@ public class ConfigController : ControllerBase
         _logger.LogInformation("批量更新 {Count} 个配置项", updatedCount);
 
         return Ok(new { Message = $"成功更新 {updatedCount} 个配置项", UpdatedCount = updatedCount });
+    }
+
+    /// <summary>
+    /// 获取 Service 当前的管理员权限状态
+    /// </summary>
+    [HttpGet("admin-status")]
+    [ProducesResponseType(typeof(object), 200)]
+    public IActionResult GetAdminStatus()
+    {
+        try
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            var isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
+
+            return Ok(new
+            {
+                IsAdmin = isAdmin,
+                Message = isAdmin ? "Service 正在以管理员权限运行" : "Service 未以管理员权限运行"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "检查管理员权限状态失败");
+            return Ok(new
+            {
+                IsAdmin = false,
+                Message = $"无法检测管理员权限状态: {ex.Message}"
+            });
+        }
     }
 }

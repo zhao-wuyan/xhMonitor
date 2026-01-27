@@ -38,6 +38,10 @@ public class SettingsViewModel : INotifyPropertyChanged
     // 系统设置
     private bool _startWithWindows = ConfigurationDefaults.System.StartWithWindows;
 
+    // Service 状态
+    private bool _serviceIsAdmin = false;
+    private string _serviceAdminMessage = string.Empty;
+
     private bool _isSaving = false;
 
     /// <param name="httpClient">HttpClient instance from IHttpClientFactory</param>
@@ -130,6 +134,24 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _startWithWindows, value);
     }
 
+    /// <summary>
+    /// Service 当前是否以管理员权限运行
+    /// </summary>
+    public bool ServiceIsAdmin
+    {
+        get => _serviceIsAdmin;
+        set => SetProperty(ref _serviceIsAdmin, value);
+    }
+
+    /// <summary>
+    /// Service 管理员状态消息
+    /// </summary>
+    public string ServiceAdminMessage
+    {
+        get => _serviceAdminMessage;
+        set => SetProperty(ref _serviceAdminMessage, value);
+    }
+
     public bool IsSaving
     {
         get => _isSaving;
@@ -185,6 +207,9 @@ public class SettingsViewModel : INotifyPropertyChanged
             {
                 StartWithWindows = bool.Parse(system[ConfigurationDefaults.Keys.System.StartWithWindows]);
             }
+
+            // 加载 Service 管理员状态
+            await LoadAdminStatusAsync();
 
             return Result<bool, string>.Success(true);
         }
@@ -242,6 +267,37 @@ public class SettingsViewModel : INotifyPropertyChanged
         {
             IsSaving = false;
         }
+    }
+
+    /// <summary>
+    /// 加载 Service 管理员权限状态
+    /// </summary>
+    public async Task LoadAdminStatusAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/admin-status");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AdminStatusResponse>();
+                if (result != null)
+                {
+                    ServiceIsAdmin = result.IsAdmin;
+                    ServiceAdminMessage = result.Message ?? string.Empty;
+                }
+            }
+        }
+        catch
+        {
+            ServiceIsAdmin = false;
+            ServiceAdminMessage = "无法连接到 Service";
+        }
+    }
+
+    private class AdminStatusResponse
+    {
+        public bool IsAdmin { get; set; }
+        public string? Message { get; set; }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

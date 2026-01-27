@@ -631,6 +631,61 @@
                                                   IsChecked="{Binding AdminMode}"
                                                   VerticalAlignment="Center"/>
                                     </Grid>
+
+                                    <!-- Service 管理员状态指示器 -->
+                                    <Border Margin="40,12,0,0"
+                                            Padding="10,6"
+                                            CornerRadius="4"
+                                            HorizontalAlignment="Left">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#2D2D30"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ServiceIsAdmin}" Value="True">
+                                                        <Setter Property="Background" Value="#1E3A1E"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding ServiceIsAdmin}" Value="False">
+                                                        <Setter Property="Background" Value="#3A2A1E"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="#888888"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ServiceIsAdmin}" Value="True">
+                                                                <Setter Property="Fill" Value="#4CAF50"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding ServiceIsAdmin}" Value="False">
+                                                                <Setter Property="Fill" Value="#FF9800"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock FontSize="12" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                                        <Setter Property="Text" Value="Service 状态未知"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ServiceIsAdmin}" Value="True">
+                                                                <Setter Property="Text" Value="Service 已获得管理员权限"/>
+                                                                <Setter Property="Foreground" Value="#81C784"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding ServiceIsAdmin}" Value="False">
+                                                                <Setter Property="Text" Value="Service 未以管理员权限运行"/>
+                                                                <Setter Property="Foreground" Value="#FFB74D"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
