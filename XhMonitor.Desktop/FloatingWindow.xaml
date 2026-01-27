@@ -183,7 +183,7 @@
 
         <!-- Pinned Card Template -->
         <DataTemplate x:Key="PinnedCardTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="460" Height="28"
+            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="470" Height="28"
                     BorderBrush="{StaticResource ColorBorder}" BorderThickness="1">
                 <Grid>
                     <!-- Left Accent Border -->
