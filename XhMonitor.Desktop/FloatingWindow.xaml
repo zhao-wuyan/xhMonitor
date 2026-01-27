@@ -304,7 +304,11 @@
                 <StackPanel Grid.Column="0" Width="50" Margin="1,0" HorizontalAlignment="Right" Tag="net"
                             MouseEnter="Metric_MouseEnter"
                             Cursor="Hand"
+                            RenderTransformOrigin="0.5,0.5"
                             Visibility="{Binding IsNetworkVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    </StackPanel.RenderTransform>
                     <TextBlock Text="{Binding UploadSpeed, Converter={StaticResource NetworkSpeedConverter}, ConverterParameter=↑}"
                                FontSize="11" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas"
                                HorizontalAlignment="Right"/>
@@ -320,7 +324,11 @@
                 <StackPanel Grid.Column="2" Width="46" Margin="2,0" Tag="cpu"
                             MouseEnter="Metric_MouseEnter"
                             Cursor="Hand"
+                            RenderTransformOrigin="0.5,0.5"
                             Visibility="{Binding IsCpuVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    </StackPanel.RenderTransform>
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="CPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalCpu, StringFormat={}{0:F0}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -335,7 +343,11 @@
                 <StackPanel Grid.Column="4" Width="73" Margin="2,0" Tag="ram"
                             MouseEnter="Metric_MouseEnter"
                             Cursor="Hand"
+                            RenderTransformOrigin="0.5,0.5"
                             Visibility="{Binding IsMemoryVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    </StackPanel.RenderTransform>
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="RAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalMemory, Converter={StaticResource MemoryConverter}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -357,7 +369,11 @@
                 <StackPanel Grid.Column="6" Width="46" Margin="2,0" Tag="gpu"
                             MouseEnter="Metric_MouseEnter"
                             Cursor="Hand"
+                            RenderTransformOrigin="0.5,0.5"
                             Visibility="{Binding IsGpuVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    </StackPanel.RenderTransform>
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="GPU" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalGpu, StringFormat={}{0:F0}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -372,7 +388,11 @@
                 <StackPanel Grid.Column="8" Width="76" Margin="2,0" Tag="vram"
                             MouseEnter="Metric_MouseEnter"
                             Cursor="Hand"
+                            RenderTransformOrigin="0.5,0.5"
                             Visibility="{Binding IsVramVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    </StackPanel.RenderTransform>
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="VRAM" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalVram, Converter={StaticResource MemoryConverter}}" FontSize="12" Foreground="{StaticResource ColorTextMain}" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -394,7 +414,11 @@
                 <StackPanel Grid.Column="10" Width="64" Margin="2,0" Tag="power"
                             MouseEnter="Metric_MouseEnter"
                             Cursor="Hand"
+                            RenderTransformOrigin="0.5,0.5"
                             Visibility="{Binding IsPowerVisible, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1"/>
+                    </StackPanel.RenderTransform>
                     <Grid Margin="0,0,0,3">
                         <TextBlock Text="POWER" FontSize="10" Foreground="{StaticResource ColorTextSub}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
                         <TextBlock Text="{Binding TotalPower, Converter={StaticResource PowerValueConverter}}"
