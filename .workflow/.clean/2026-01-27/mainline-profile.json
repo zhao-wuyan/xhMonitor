@@ -1,0 +1,28 @@
+{
+  "coreModules": [
+    "XhMonitor.Core/Providers",
+    "XhMonitor.Desktop/Services",
+    "XhMonitor.Desktop/ViewModels",
+    "XhMonitor.Service/Core",
+    "XhMonitor.Desktop/Windows"
+  ],
+  "activeFiles": [
+    "XhMonitor.Service/Program.cs",
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "XhMonitor.Desktop/FloatingWindow.xaml",
+    "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+    "XhMonitor.Desktop/App.xaml.cs"
+  ],
+  "activeBranches": [
+    "dev-setting",
+    "master",
+    "issue-dev2"
+  ],
+  "staleThreshold": {
+    "sessions": 7,
+    "branches": 30,
+    "documents": 14
+  },
+  "timestamp": "2026-01-27T17:20:00.000Z"
+}

@@ -106,6 +106,8 @@ public sealed class DeviceVerifier : IDeviceVerifier
     {
         _logger?.LogInformation("[DeviceVerifier] Initializing device verification...");
 
+        const string defaultErrMsg = "当前设备不支持此功能";
+        
         // 尝试获取设备信息
         DeviceInfo? deviceInfo = null;
         try
@@ -119,23 +121,27 @@ public sealed class DeviceVerifier : IDeviceVerifier
             }
             else
             {
-                _disabledReason = $"设备验证服务返回错误: {(int)response.StatusCode}";
+                // _disabledReason = $"设备验证服务返回错误: {(int)response.StatusCode}";
+                _disabledReason = defaultErrMsg;
                 _logger?.LogWarning("[DeviceVerifier] Device info API returned {StatusCode}", response.StatusCode);
             }
         }
         catch (HttpRequestException ex)
         {
-            _disabledReason = "无法连接设备验证服务";
+            // _disabledReason = "无法连接设备验证服务";
+            _disabledReason = defaultErrMsg;
             _logger?.LogWarning(ex, "[DeviceVerifier] Failed to connect to device info API");
         }
         catch (TaskCanceledException)
         {
-            _disabledReason = "设备验证服务连接超时";
+            // _disabledReason = "设备验证服务连接超时";
+            _disabledReason = defaultErrMsg;
             _logger?.LogWarning("[DeviceVerifier] Device info API request timed out");
         }
         catch (Exception ex)
         {
-            _disabledReason = $"设备验证失败: {ex.Message}";
+            // _disabledReason = $"设备验证失败: {ex.Message}";
+            _disabledReason = defaultErrMsg;
             _logger?.LogError(ex, "[DeviceVerifier] Unexpected error during device verification");
         }
 
@@ -162,7 +168,8 @@ public sealed class DeviceVerifier : IDeviceVerifier
         }
 
         // 没有匹配的设备
-        _disabledReason = $"设备未授权 (platform={deviceInfo.Platform}, mac_authorized={deviceInfo.IsMacAuthorized})";
+        // _disabledReason = $"设备未授权 (platform={deviceInfo.Platform}, mac_authorized={deviceInfo.IsMacAuthorized})";
+        _disabledReason = defaultErrMsg;
         _logger?.LogWarning(
             "[DeviceVerifier] No matching device found for platform={Platform}, mac_authorized={MacAuthorized}",
             deviceInfo.Platform, deviceInfo.IsMacAuthorized);
