@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **进程排序优化** (2026-01-27)
+  - 优化进程列表排序逻辑
+- **单实例模式与设备验证** (2026-01-27)
+  - 启动脚本只启动 Desktop 应用
+  - 添加设备验证功能，非星核设备无法切换功耗模式
+- **点击动画** (2026-01-27)
+  - 悬浮窗指标点击添加视觉反馈动画
+- **管理员状态指示器** (2026-01-27)
+  - 显示当前是否以管理员权限运行
+- **设置页改版** (2026-01-27)
+  - 新增监控开关
+  - 新增开机自启选项
+  - 新增管理员模式选项
+- **功耗监控** (2026-01-26)
+  - 集成 RyzenAdj 功耗监控
+  - 添加 RyzenAdj 打包逻辑
+- **网络监控** (2026-01-26)
+  - 添加网络速度监控
+  - 悬浮窗显示网络/内存使用情况
+  - Health 探测自动解析后端端口
 - **LibreHardwareMonitor 混合架构集成** (2026-01-19)
   - 新增 `ILibreHardwareManager` 接口和 `LibreHardwareManager` 实现类
   - 新增 `LibreHardwareMonitorCpuProvider` - 系统级 CPU 指标使用 LibreHardwareMonitor
@@ -29,9 +49,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 系统级指标（`GetSystemTotalAsync()`）使用 LibreHardwareMonitor（需管理员权限）
   - 进程级指标（`CollectAsync(processId)`）保持 PerformanceCounter 实现（无需管理员权限）
   - 提供者注册逻辑更新，支持动态选择 LibreHardwareMonitor 或 PerformanceCounter 提供者
+- **Pinned 卡片宽度优化** (2026-01-27)
+  - 调整悬浮窗置顶卡片宽度
+- **设置优化** (2026-01-27)
+  - 优化设置页面交互体验
 - **依赖更新**：
   - 添加 `LibreHardwareMonitorLib` 0.9.4 依赖
   - XhMonitor.Core 项目启用 `AllowUnsafeBlocks`（LibreHardwareMonitor 要求）
+
+### Fixed
+- **处理警告** (2026-01-27)
+  - 修复编译警告
+- **悬浮窗置顶卡片宽度** (2026-01-26)
+  - 调整悬浮窗置顶卡片宽度显示问题
+- **启动脚本** (2026-01-26)
+  - 修复启动脚本问题
+- **Web 端显存和内存占用** (2026-01-26)
+  - 修复 Web 端显存和内存占用显示问题
+- **进程卡片随悬浮窗移动** (2026-01-25)
+  - 修复进程详情卡片未随悬浮窗拖动而移动的问题
 
 ### Technical Details
 - **架构优势**：

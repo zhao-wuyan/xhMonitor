@@ -1131,7 +1131,13 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 ### 进行中
 
-- 🚧 **阶段6**: Electron桌面端
+- 🚧 **阶段6**: WPF 桌面端
+  - ✅ 悬浮窗基础功能
+  - ✅ 进程监控与固定
+  - ✅ 功耗监控 (RyzenAdj)
+  - ✅ 网络监控
+  - ✅ 设置页面
+  - ⏳ 进程详情查看
 
 ### 待开发
 
@@ -1173,6 +1179,23 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - Issue追踪：<repository-url>/issues
 
 ## 更新日志
+
+### v0.6.0 (2026-01-27)
+- ✨ 新增进程排序优化
+- ✨ 新增单实例模式与设备验证
+- ✨ 新增点击动画视觉反馈
+- ✨ 新增管理员状态指示器
+- ✨ 设置页改版（监控开关、开机自启、管理员模式）
+- ✨ 新增功耗监控（RyzenAdj 集成）
+- ✨ 新增网络监控
+- 🐛 修复悬浮窗置顶卡片宽度问题
+- 🐛 修复 Web 端显存和内存占用显示问题
+- 🐛 修复进程卡片随悬浮窗移动问题
+
+### v0.5.1 (2026-01-19)
+- ✨ 新增 LibreHardwareMonitor 混合架构集成
+- ✨ 系统级指标精度提升
+- ✨ 自动回退机制（无管理员权限时）
 
 ### v0.5.0 (2025-12-21)
 - ✨ 完成Web前端开发（React 19 + TypeScript）
