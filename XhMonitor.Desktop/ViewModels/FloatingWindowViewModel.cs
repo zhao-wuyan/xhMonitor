@@ -277,8 +277,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
             var orderedAll = data.Processes
                 .Select(p => _processIndex[p.ProcessId])
-                .OrderBy(p => p.ProcessName)
-                .ThenByDescending(p => p.Vram)
+                .OrderByDescending(p => p.Memory + p.Vram)
                 .ToList();
 
             var orderedTop = orderedAll.Take(5).ToList();
@@ -381,8 +380,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
             var orderedAll = data.Processes
                 .Select(p => _processIndex[p.ProcessId])
-                .OrderBy(p => p.ProcessName)
-                .ThenByDescending(p => p.Vram)
+                .OrderByDescending(p => p.Memory + p.Vram)
                 .ToList();
 
             var orderedTop = orderedAll.Take(5).ToList();
