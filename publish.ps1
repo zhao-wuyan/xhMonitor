@@ -34,8 +34,9 @@ if ($Help) {
     Write-Host "  -SkipService         跳过后端服务发布" -ForegroundColor White
     Write-Host "  -NoZip               不创建 ZIP 压缩包" -ForegroundColor White
     Write-Host ""
-    Write-Host "  -Lite                轻量级模式 (不包含 .NET 运行时)" -ForegroundColor White
+    Write-Host "  -Lite                轻量级模式 (不包含 .NET 运行时和原生依赖)" -ForegroundColor White
     Write-Host "                       需要目标系统预装 .NET 8 Runtime" -ForegroundColor Gray
+    Write-Host "                       体积约 1-2MB，但需要系统环境支持" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  -Debug               Debug 模式 (保留符号文件和控制台窗口)" -ForegroundColor White
     Write-Host "                       用于调试和开发" -ForegroundColor Gray
@@ -55,14 +56,30 @@ if ($Help) {
     Write-Host "  .\publish.ps1 -Debug -SkipDesktop" -ForegroundColor White
     Write-Host "    Debug 模式发布，仅发布后端服务" -ForegroundColor Gray
     Write-Host ""
+    Write-Host "  .\publish.ps1 -Lite -Version `"1.0.0`"" -ForegroundColor White
+    Write-Host "    发布 v1.0.0 轻量级版本 (推荐写法)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "注意事项:" -ForegroundColor Red
+    Write-Host "  ⚠ 使用 -Lite 时，建议显式指定 -Version 参数！" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  错误用法:" -ForegroundColor Red
+    Write-Host "    .\publish.ps1 -Lite" -ForegroundColor White
+    Write-Host "    → PowerShell 可能将 -Lite 误解析为 -Version 的值" -ForegroundColor Gray
+    Write-Host "    → 导致输出目录变成 XhMonitor-v-Lite，且仍为完整版" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  正确用法:" -ForegroundColor Green
+    Write-Host "    .\publish.ps1 -Lite -Version `"0.1.0`"" -ForegroundColor White
+    Write-Host "    .\publish.ps1 -Version `"0.1.0`" -Lite" -ForegroundColor White
+    Write-Host "    .\publish.ps1 -Lite:`$true" -ForegroundColor White
+    Write-Host ""
     Write-Host "发布模式:" -ForegroundColor Yellow
     Write-Host "  完整版 (默认)        包含 .NET 8 运行时，单文件发布" -ForegroundColor White
     Write-Host "                       优点: 无需安装依赖，开箱即用" -ForegroundColor Gray
     Write-Host "                       缺点: 文件体积较大 (~100MB)" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  轻量级 (-Lite)       不包含运行时，需要系统预装 .NET 8" -ForegroundColor White
-    Write-Host "                       优点: 文件体积小 (~10MB)" -ForegroundColor Gray
-    Write-Host "                       缺点: 需要预装 .NET 8 Runtime" -ForegroundColor Gray
+    Write-Host "  轻量级 (-Lite)       不包含运行时和原生依赖，需要系统预装 .NET 8" -ForegroundColor White
+    Write-Host "                       优点: 文件体积极小 (~1-2MB)" -ForegroundColor Gray
+    Write-Host "                       缺点: 需要预装 .NET 8 Runtime + 系统原生库支持" -ForegroundColor Gray
     Write-Host ""
     Write-Host "输出目录:" -ForegroundColor Yellow
     Write-Host "  release\XhMonitor-v<版本号>\" -ForegroundColor White
@@ -159,9 +176,7 @@ if (-not $SkipService) {
     )
 
     if ($Lite) {
-        # 轻量级模式：不包含运行时，但需要指定 RID 以复制原生依赖
-        $publishArgs += "-r"
-        $publishArgs += "win-x64"
+        # 轻量级模式：不包含运行时和原生依赖（真正的 framework-dependent）
         $publishArgs += "--self-contained"
         $publishArgs += "false"
     } else {
@@ -202,9 +217,7 @@ if (-not $SkipDesktop) {
     )
 
     if ($Lite) {
-        # 轻量级模式：不包含运行时，但需要指定 RID 以复制原生依赖
-        $publishArgs += "-r"
-        $publishArgs += "win-x64"
+        # 轻量级模式：不包含运行时和原生依赖（真正的 framework-dependent）
         $publishArgs += "--self-contained"
         $publishArgs += "false"
     } else {
@@ -263,7 +276,7 @@ Copy-Item (Join-Path $RootDir "scripts\停止服务.bat") (Join-Path $OutputDir 
 
 # 创建 README
 $systemRequirement = if ($Lite) {
-    "- Windows 10/11 x64`n- 需要预先安装 .NET 8 Runtime`n- 下载地址: https://dotnet.microsoft.com/download/dotnet/8.0"
+    "- Windows 10/11 x64`n- 需要预先安装 .NET 8 Runtime (Desktop Runtime 或 ASP.NET Core Runtime)`n- 下载地址: https://dotnet.microsoft.com/download/dotnet/8.0`n- 注意: 轻量级模式不包含原生依赖库，需要系统支持"
 } else {
     "- Windows 10/11 x64`n- 无需安装 .NET Runtime（已包含）"
 }
