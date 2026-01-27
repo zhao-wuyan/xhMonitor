@@ -15,6 +15,11 @@ public partial class App : WpfApplication
     private IHost? _host;
     private IWindowManagementService? _windowManagementService;
 
+    /// <summary>
+    /// 获取应用程序的服务提供者，用于在非 DI 上下文中获取服务。
+    /// </summary>
+    public IServiceProvider? Services => _host?.Services;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -37,6 +42,8 @@ public partial class App : WpfApplication
                 services.AddSingleton<IProcessManager, ProcessManager>();
                 services.AddSingleton<IPowerControlService, PowerControlService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
+                services.AddSingleton<IStartupManager, StartupManager>();
+                services.AddSingleton<IAdminModeManager, AdminModeManager>();
                 services.AddHostedService<ApplicationHostedService>();
 
                 services.AddHttpClient();

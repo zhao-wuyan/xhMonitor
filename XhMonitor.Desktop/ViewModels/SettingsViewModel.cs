@@ -33,6 +33,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     private bool _monitorPower = ConfigurationDefaults.Monitoring.MonitorPower;
     private bool _monitorNetwork = ConfigurationDefaults.Monitoring.MonitorNetwork;
     private bool _adminMode = ConfigurationDefaults.Monitoring.AdminMode;
+    private bool _originalAdminMode = ConfigurationDefaults.Monitoring.AdminMode;
 
     // 系统设置
     private bool _startWithWindows = ConfigurationDefaults.System.StartWithWindows;
@@ -118,6 +119,11 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _adminMode, value);
     }
 
+    /// <summary>
+    /// 获取加载时的原始 AdminMode 值，用于检测变更。
+    /// </summary>
+    public bool OriginalAdminMode => _originalAdminMode;
+
     public bool StartWithWindows
     {
         get => _startWithWindows;
@@ -146,37 +152,38 @@ public class SettingsViewModel : INotifyPropertyChanged
             }
 
             // 外观设置
-            if (settings.TryGetValue("Appearance", out var appearance))
+            if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.Appearance, out var appearance))
             {
-                ThemeColor = JsonSerializer.Deserialize<string>(appearance["ThemeColor"]) ?? ConfigurationDefaults.Appearance.ThemeColor;
-                Opacity = int.Parse(appearance["Opacity"]);
+                ThemeColor = JsonSerializer.Deserialize<string>(appearance[ConfigurationDefaults.Keys.Appearance.ThemeColor]) ?? ConfigurationDefaults.Appearance.ThemeColor;
+                Opacity = int.Parse(appearance[ConfigurationDefaults.Keys.Appearance.Opacity]);
             }
 
             // 数据采集设置
-            if (settings.TryGetValue("DataCollection", out var dataCollection))
+            if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.DataCollection, out var dataCollection))
             {
-                var keywords = JsonSerializer.Deserialize<string[]>(dataCollection["ProcessKeywords"]) ?? Array.Empty<string>();
+                var keywords = JsonSerializer.Deserialize<string[]>(dataCollection[ConfigurationDefaults.Keys.DataCollection.ProcessKeywords]) ?? Array.Empty<string>();
                 ProcessKeywords = string.Join("\n", keywords);
-                TopProcessCount = int.Parse(dataCollection["TopProcessCount"]);
-                DataRetentionDays = int.Parse(dataCollection["DataRetentionDays"]);
+                TopProcessCount = int.Parse(dataCollection[ConfigurationDefaults.Keys.DataCollection.TopProcessCount]);
+                DataRetentionDays = int.Parse(dataCollection[ConfigurationDefaults.Keys.DataCollection.DataRetentionDays]);
             }
 
             // 监控设置
-            if (settings.TryGetValue("Monitoring", out var monitoring))
+            if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.Monitoring, out var monitoring))
             {
-                MonitorCpu = bool.Parse(monitoring["MonitorCpu"]);
-                MonitorMemory = bool.Parse(monitoring["MonitorMemory"]);
-                MonitorGpu = bool.Parse(monitoring["MonitorGpu"]);
-                MonitorVram = bool.Parse(monitoring["MonitorVram"]);
-                MonitorPower = bool.Parse(monitoring["MonitorPower"]);
-                MonitorNetwork = bool.Parse(monitoring["MonitorNetwork"]);
-                AdminMode = bool.Parse(monitoring["AdminMode"]);
+                MonitorCpu = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorCpu]);
+                MonitorMemory = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorMemory]);
+                MonitorGpu = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorGpu]);
+                MonitorVram = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorVram]);
+                MonitorPower = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorPower]);
+                MonitorNetwork = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorNetwork]);
+                AdminMode = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.AdminMode]);
+                _originalAdminMode = AdminMode; // 保存原始值用于变更检测
             }
 
             // 系统设置
-            if (settings.TryGetValue("System", out var system))
+            if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.System, out var system))
             {
-                StartWithWindows = bool.Parse(system["StartWithWindows"]);
+                StartWithWindows = bool.Parse(system[ConfigurationDefaults.Keys.System.StartWithWindows]);
             }
 
             return Result<bool, string>.Success(true);
@@ -194,31 +201,31 @@ public class SettingsViewModel : INotifyPropertyChanged
         {
             var settings = new Dictionary<string, Dictionary<string, string>>
             {
-                ["Appearance"] = new()
+                [ConfigurationDefaults.Keys.Categories.Appearance] = new()
                 {
-                    ["ThemeColor"] = JsonSerializer.Serialize(ThemeColor),
-                    ["Opacity"] = Opacity.ToString()
+                    [ConfigurationDefaults.Keys.Appearance.ThemeColor] = JsonSerializer.Serialize(ThemeColor),
+                    [ConfigurationDefaults.Keys.Appearance.Opacity] = Opacity.ToString()
                 },
-                ["DataCollection"] = new()
+                [ConfigurationDefaults.Keys.Categories.DataCollection] = new()
                 {
-                    ["ProcessKeywords"] = JsonSerializer.Serialize(
+                    [ConfigurationDefaults.Keys.DataCollection.ProcessKeywords] = JsonSerializer.Serialize(
                         ProcessKeywords.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)),
-                    ["TopProcessCount"] = TopProcessCount.ToString(),
-                    ["DataRetentionDays"] = DataRetentionDays.ToString()
+                    [ConfigurationDefaults.Keys.DataCollection.TopProcessCount] = TopProcessCount.ToString(),
+                    [ConfigurationDefaults.Keys.DataCollection.DataRetentionDays] = DataRetentionDays.ToString()
                 },
-                ["Monitoring"] = new()
+                [ConfigurationDefaults.Keys.Categories.Monitoring] = new()
                 {
-                    ["MonitorCpu"] = MonitorCpu.ToString().ToLower(),
-                    ["MonitorMemory"] = MonitorMemory.ToString().ToLower(),
-                    ["MonitorGpu"] = MonitorGpu.ToString().ToLower(),
-                    ["MonitorVram"] = MonitorVram.ToString().ToLower(),
-                    ["MonitorPower"] = MonitorPower.ToString().ToLower(),
-                    ["MonitorNetwork"] = MonitorNetwork.ToString().ToLower(),
-                    ["AdminMode"] = AdminMode.ToString().ToLower()
+                    [ConfigurationDefaults.Keys.Monitoring.MonitorCpu] = MonitorCpu.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.MonitorMemory] = MonitorMemory.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.MonitorGpu] = MonitorGpu.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.MonitorVram] = MonitorVram.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.MonitorPower] = MonitorPower.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.MonitorNetwork] = MonitorNetwork.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.AdminMode] = AdminMode.ToString().ToLower()
                 },
-                ["System"] = new()
+                [ConfigurationDefaults.Keys.Categories.System] = new()
                 {
-                    ["StartWithWindows"] = StartWithWindows.ToString().ToLower()
+                    [ConfigurationDefaults.Keys.System.StartWithWindows] = StartWithWindows.ToString().ToLower()
                 }
             };
 

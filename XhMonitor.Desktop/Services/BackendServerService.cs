@@ -11,13 +11,15 @@ public sealed class BackendServerService : IBackendServerService
 {
     private readonly int _backendPort;
     private readonly IConfiguration _configuration;
+    private readonly IAdminModeManager _adminModeManager;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Process? _serverProcess;
 
-    public BackendServerService(IServiceDiscovery serviceDiscovery, IConfiguration configuration)
+    public BackendServerService(IServiceDiscovery serviceDiscovery, IConfiguration configuration, IAdminModeManager adminModeManager)
     {
         _backendPort = serviceDiscovery.ApiPort;
         _configuration = configuration;
+        _adminModeManager = adminModeManager;
     }
 
     public bool IsRunning => _serverProcess != null && !_serverProcess.HasExited;
@@ -46,8 +48,8 @@ public sealed class BackendServerService : IBackendServerService
 
             if (File.Exists(publishedPath))
             {
-                Debug.WriteLine("Detected published version - waiting for Service to start");
-                await WaitForPublishedServiceAsync(cancellationToken).ConfigureAwait(false);
+                Debug.WriteLine("Detected published version - starting Service");
+                await StartPublishedServiceAsync(publishedPath, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -157,27 +159,104 @@ public sealed class BackendServerService : IBackendServerService
         _gate.Dispose();
     }
 
-    private async Task WaitForPublishedServiceAsync(CancellationToken cancellationToken)
+    public async Task RestartAsync(CancellationToken cancellationToken = default)
     {
-        var maxWaitTime = TimeSpan.FromSeconds(15);
-        var startTime = DateTime.Now;
+        await StopAsync(cancellationToken).ConfigureAwait(false);
+        await Task.Delay(500, cancellationToken).ConfigureAwait(false); // 等待端口释放
+        await StartAsync(cancellationToken).ConfigureAwait(false);
+    }
 
-        while (DateTime.Now - startTime < maxWaitTime)
+    private async Task StartPublishedServiceAsync(string servicePath, CancellationToken cancellationToken)
+    {
+        // 如果服务已在运行，直接返回
+        if (IsPortInUse(_backendPort))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (IsPortInUse(_backendPort))
-            {
-                Debug.WriteLine("Backend server is now running");
-                return;
-            }
-
-            await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+            Debug.WriteLine("Backend server is already running");
+            return;
         }
 
-        await ShowMessageAsync(
-            "后端服务未运行。\n请先运行根目录的 \"启动服务.bat\" 启动完整应用。",
-            "服务未启动",
-            MessageBoxImage.Warning).ConfigureAwait(false);
+        var serviceDir = Path.GetDirectoryName(servicePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+        var needsAdmin = _adminModeManager.IsAdminModeEnabled();
+
+        Debug.WriteLine($"Starting Service with admin mode: {needsAdmin}");
+
+        _serverProcess?.Dispose();
+        _serverProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = servicePath,
+                WorkingDirectory = serviceDir,
+                UseShellExecute = needsAdmin, // 管理员模式需要 UseShellExecute=true
+                Verb = needsAdmin ? "runas" : string.Empty,
+                CreateNoWindow = !needsAdmin, // 管理员模式下无法隐藏窗口
+                RedirectStandardOutput = !needsAdmin,
+                RedirectStandardError = !needsAdmin
+            }
+        };
+
+        if (!needsAdmin)
+        {
+            _serverProcess.StartInfo.StandardOutputEncoding = System.Text.Encoding.UTF8;
+            _serverProcess.StartInfo.StandardErrorEncoding = System.Text.Encoding.UTF8;
+
+            _serverProcess.OutputDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    Debug.WriteLine($"[Service] {args.Data}");
+                }
+            };
+
+            _serverProcess.ErrorDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    Debug.WriteLine($"[Service Error] {args.Data}");
+                }
+            };
+        }
+
+        try
+        {
+            _serverProcess.Start();
+
+            if (!needsAdmin)
+            {
+                _serverProcess.BeginOutputReadLine();
+                _serverProcess.BeginErrorReadLine();
+            }
+
+            Debug.WriteLine($"Service started with PID: {_serverProcess.Id}");
+
+            // 等待服务就绪
+            var isReady = await WaitForServerReadyAsync(timeoutSeconds: 15, cancellationToken).ConfigureAwait(false);
+            if (isReady)
+            {
+                Debug.WriteLine("Service is ready!");
+            }
+            else
+            {
+                Debug.WriteLine("Service startup timeout (but process may still be starting)");
+            }
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            // 用户取消了 UAC 提示
+            Debug.WriteLine("User cancelled UAC prompt");
+            await ShowMessageAsync(
+                "需要管理员权限才能启动服务。\n请在 UAC 提示中点击「是」。",
+                "权限不足",
+                MessageBoxImage.Warning).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to start Service: {ex.Message}");
+            await ShowMessageAsync(
+                $"启动服务失败：{ex.Message}",
+                "启动失败",
+                MessageBoxImage.Error).ConfigureAwait(false);
+        }
     }
 
     private async Task<bool> WaitForServerReadyAsync(int timeoutSeconds, CancellationToken cancellationToken)

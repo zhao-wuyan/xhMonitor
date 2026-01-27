@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.IO;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -12,6 +13,7 @@ using System.Windows.Threading;
 using System.Collections.Specialized;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop;
@@ -198,6 +200,14 @@ public partial class FloatingWindow : Window
         _allowClose = true;
     }
 
+    /// <summary>
+    /// 主动重连 SignalR（用于 Service 重启后刷新连接）
+    /// </summary>
+    public async Task ReconnectSignalRAsync()
+    {
+        await _viewModel.ReconnectAsync();
+    }
+
     public void SetClickThrough(bool enabled)
     {
         IsClickThroughEnabled = enabled;
@@ -245,7 +255,14 @@ public partial class FloatingWindow : Window
             var serviceDiscovery = new Services.ServiceDiscovery();
             var apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
 
-            using var httpClient = new System.Net.Http.HttpClient();
+            // 从 DI 容器获取 HttpClient，避免频繁实例化
+            var httpClient = ((App)System.Windows.Application.Current).Services?.GetService<HttpClient>();
+            if (httpClient == null)
+            {
+                System.Diagnostics.Debug.WriteLine("HttpClient not available from DI container");
+                return;
+            }
+
             var response = await httpClient.GetAsync($"{apiBaseUrl}/settings");
 
             if (response.IsSuccessStatusCode)

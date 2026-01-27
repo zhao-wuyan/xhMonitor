@@ -123,4 +123,53 @@ public static class ConfigurationDefaults
          /// </summary>
         public const int WebPort = 35180;
     }
+
+    /// <summary>
+    /// 配置键名常量，用于类型安全的字典键访问。
+    /// 避免魔法字符串，支持编译时检查和 IDE 重构。
+    /// </summary>
+    public static class Keys
+    {
+        /// <summary>外观设置键名。</summary>
+        public static class Appearance
+        {
+            public const string ThemeColor = "ThemeColor";
+            public const string Opacity = "Opacity";
+        }
+
+        /// <summary>数据采集设置键名。</summary>
+        public static class DataCollection
+        {
+            public const string ProcessKeywords = "ProcessKeywords";
+            public const string TopProcessCount = "TopProcessCount";
+            public const string DataRetentionDays = "DataRetentionDays";
+        }
+
+        /// <summary>监控开关设置键名。</summary>
+        public static class Monitoring
+        {
+            public const string MonitorCpu = "MonitorCpu";
+            public const string MonitorMemory = "MonitorMemory";
+            public const string MonitorGpu = "MonitorGpu";
+            public const string MonitorVram = "MonitorVram";
+            public const string MonitorPower = "MonitorPower";
+            public const string MonitorNetwork = "MonitorNetwork";
+            public const string AdminMode = "AdminMode";
+        }
+
+        /// <summary>系统设置键名。</summary>
+        public static class System
+        {
+            public const string StartWithWindows = "StartWithWindows";
+        }
+
+        /// <summary>分类名称常量。</summary>
+        public static class Categories
+        {
+            public const string Appearance = "Appearance";
+            public const string DataCollection = "DataCollection";
+            public const string Monitoring = "Monitoring";
+            public const string System = "System";
+        }
+    }
 }

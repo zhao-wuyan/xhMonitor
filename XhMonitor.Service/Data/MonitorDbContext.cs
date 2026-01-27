@@ -73,36 +73,37 @@ public sealed class MonitorDbContext : DbContext
 
         var seedTimestamp = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // ApplicationSettings 种子数据
+        // ApplicationSettings 种子数据 (ID 由 SeedDataIds 类管理)
         modelBuilder.Entity<ApplicationSettings>().HasData(
             // 外观设置 (2项)
-            new ApplicationSettings { Id = 1, Category = "Appearance", Key = "ThemeColor", Value = JsonSerializer.Serialize(ConfigurationDefaults.Appearance.ThemeColor), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 2, Category = "Appearance", Key = "Opacity", Value = ConfigurationDefaults.Appearance.Opacity.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.ThemeColor, Category = "Appearance", Key = "ThemeColor", Value = JsonSerializer.Serialize(ConfigurationDefaults.Appearance.ThemeColor), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.Opacity, Category = "Appearance", Key = "Opacity", Value = ConfigurationDefaults.Appearance.Opacity.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
 
             // 数据采集设置 (3项) - 仅保留可在运行时由用户配置的设置项。
             // 采集间隔由 appsettings.json 管理（Monitor:IntervalSeconds / Monitor:SystemUsageIntervalSeconds）。
-            new ApplicationSettings { Id = 3, Category = "DataCollection", Key = "ProcessKeywords", Value = JsonSerializer.Serialize(ConfigurationDefaults.DataCollection.ProcessKeywords), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 6, Category = "DataCollection", Key = "TopProcessCount", Value = ConfigurationDefaults.DataCollection.TopProcessCount.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 7, Category = "DataCollection", Key = "DataRetentionDays", Value = ConfigurationDefaults.DataCollection.DataRetentionDays.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.ProcessKeywords, Category = "DataCollection", Key = "ProcessKeywords", Value = JsonSerializer.Serialize(ConfigurationDefaults.DataCollection.ProcessKeywords), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.TopProcessCount, Category = "DataCollection", Key = "TopProcessCount", Value = ConfigurationDefaults.DataCollection.TopProcessCount.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.DataRetentionDays, Category = "DataCollection", Key = "DataRetentionDays", Value = ConfigurationDefaults.DataCollection.DataRetentionDays.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
 
             // 监控开关设置 (7项)
-            new ApplicationSettings { Id = 9, Category = "Monitoring", Key = "MonitorCpu", Value = ConfigurationDefaults.Monitoring.MonitorCpu.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 10, Category = "Monitoring", Key = "MonitorMemory", Value = ConfigurationDefaults.Monitoring.MonitorMemory.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 11, Category = "Monitoring", Key = "MonitorGpu", Value = ConfigurationDefaults.Monitoring.MonitorGpu.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 12, Category = "Monitoring", Key = "MonitorVram", Value = ConfigurationDefaults.Monitoring.MonitorVram.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 13, Category = "Monitoring", Key = "MonitorPower", Value = ConfigurationDefaults.Monitoring.MonitorPower.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 14, Category = "Monitoring", Key = "MonitorNetwork", Value = ConfigurationDefaults.Monitoring.MonitorNetwork.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
-            new ApplicationSettings { Id = 15, Category = "Monitoring", Key = "AdminMode", Value = ConfigurationDefaults.Monitoring.AdminMode.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.MonitorCpu, Category = "Monitoring", Key = "MonitorCpu", Value = ConfigurationDefaults.Monitoring.MonitorCpu.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.MonitorMemory, Category = "Monitoring", Key = "MonitorMemory", Value = ConfigurationDefaults.Monitoring.MonitorMemory.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.MonitorGpu, Category = "Monitoring", Key = "MonitorGpu", Value = ConfigurationDefaults.Monitoring.MonitorGpu.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.MonitorVram, Category = "Monitoring", Key = "MonitorVram", Value = ConfigurationDefaults.Monitoring.MonitorVram.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.MonitorPower, Category = "Monitoring", Key = "MonitorPower", Value = ConfigurationDefaults.Monitoring.MonitorPower.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.MonitorNetwork, Category = "Monitoring", Key = "MonitorNetwork", Value = ConfigurationDefaults.Monitoring.MonitorNetwork.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.AdminMode, Category = "Monitoring", Key = "AdminMode", Value = ConfigurationDefaults.Monitoring.AdminMode.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
 
             // 系统设置 (1项) - 仅保留可在运行时由用户配置的设置项。
             // 端口等基础设施配置由 appsettings.json 管理（例如 Server:Port）。
-            new ApplicationSettings { Id = 8, Category = "System", Key = "StartWithWindows", Value = ConfigurationDefaults.System.StartWithWindows.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp }
+            new ApplicationSettings { Id = SeedDataIds.ApplicationSettings.StartWithWindows, Category = "System", Key = "StartWithWindows", Value = ConfigurationDefaults.System.StartWithWindows.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp }
         );
 
+        // AlertConfiguration 种子数据 (ID 由 SeedDataIds 类管理)
         modelBuilder.Entity<AlertConfiguration>().HasData(
             new AlertConfiguration
             {
-                Id = 1,
+                Id = SeedDataIds.AlertConfiguration.Cpu,
                 MetricId = "cpu",
                 Threshold = 90.0,
                 IsEnabled = true,
@@ -111,7 +112,7 @@ public sealed class MonitorDbContext : DbContext
             },
             new AlertConfiguration
             {
-                Id = 2,
+                Id = SeedDataIds.AlertConfiguration.Memory,
                 MetricId = "memory",
                 Threshold = 90.0,
                 IsEnabled = true,
@@ -120,7 +121,7 @@ public sealed class MonitorDbContext : DbContext
             },
             new AlertConfiguration
             {
-                Id = 3,
+                Id = SeedDataIds.AlertConfiguration.Gpu,
                 MetricId = "gpu",
                 Threshold = 90.0,
                 IsEnabled = true,
@@ -129,7 +130,7 @@ public sealed class MonitorDbContext : DbContext
             },
             new AlertConfiguration
             {
-                Id = 4,
+                Id = SeedDataIds.AlertConfiguration.Vram,
                 MetricId = "vram",
                 Threshold = 90.0,
                 IsEnabled = true,

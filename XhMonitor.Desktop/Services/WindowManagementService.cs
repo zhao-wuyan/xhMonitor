@@ -126,7 +126,10 @@ public sealed class WindowManagementService : IWindowManagementService
             }
 
             var viewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
-            var settingsWindow = new Windows.SettingsWindow(viewModel)
+            var startupManager = _serviceProvider.GetRequiredService<IStartupManager>();
+            var adminModeManager = _serviceProvider.GetRequiredService<IAdminModeManager>();
+            var backendServerService = _serviceProvider.GetRequiredService<IBackendServerService>();
+            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService)
             {
                 Owner = _floatingWindow
             };
@@ -159,6 +162,7 @@ public sealed class WindowManagementService : IWindowManagementService
 
     private void ExitApplication()
     {
+        _floatingWindow?.AllowClose();
         System.Windows.Application.Current.Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
     }
 

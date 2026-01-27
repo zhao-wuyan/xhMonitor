@@ -38,12 +38,40 @@
       "insight": "配置项分层管理：基础设施配置（端口）放在 appsettings.json，用户偏好配置（监控开关、外观）存储在数据库 ApplicationSettings 表",
       "category": "architecture",
       "context": "设计配置管理系统"
+    },
+    {
+      "date": "2026-01-27",
+      "session_id": "dev-setting",
+      "insight": "静态工具类（如 StartupManager、AdminModeManager）应重构为接口+实例类并通过 DI 注入，便于测试和解耦",
+      "category": "architecture",
+      "context": "ISS-20260127-006 修复：静态类重构为 DI 注入"
+    },
+    {
+      "date": "2026-01-27",
+      "session_id": "dev-setting",
+      "insight": "硬编码的魔法值（如种子数据 ID、配置键名）应提取为常量类（SeedDataIds、ConfigurationDefaults.Keys），提高类型安全和可维护性",
+      "category": "architecture",
+      "context": "ISS-20260127-003/005 修复：消除硬编码"
+    },
+    {
+      "date": "2026-01-27",
+      "session_id": "dev-setting",
+      "insight": "HttpClient 应通过 DI 容器获取而非频繁 new 实例，避免端口耗尽和资源泄漏",
+      "category": "performance",
+      "context": "ISS-20260127-001 修复：FloatingWindow HttpClient 复用"
+    },
+    {
+      "date": "2026-01-27",
+      "session_id": "dev-setting",
+      "insight": "ViewModel 中需要比较原始值与当前值时，应在加载时缓存原始值（如 OriginalAdminMode），避免重复 API 调用",
+      "category": "performance",
+      "context": "ISS-20260127-002 修复：消除冗余 API 请求"
     }
   ],
   "_metadata": {
     "created_at": "2026-01-24T00:00:00.000Z",
     "version": "1.0.0",
-    "updated_at": "2026-01-27T00:00:00.000Z",
-    "last_solidified_by": "dev-setting"
+    "updated_at": "2026-01-27T03:30:00.000Z",
+    "last_solidified_by": "dev-setting-issue-fix"
   }
 }

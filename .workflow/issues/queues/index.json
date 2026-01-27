@@ -1,5 +1,5 @@
 {
-  "active_queue_id": "QUE-20260124074500",
+  "active_queue_id": "QUE-20260127-030000",
   "queues": [
     {
       "id": "QUE-20260124074500",
@@ -19,6 +19,22 @@
       "completed_at": "2026-01-25T15:21:47.072Z",
       "total_solutions": 1,
       "completed_solutions": 1
+    },
+    {
+      "id": "QUE-20260127-030000",
+      "status": "completed",
+      "issue_ids": [
+        "ISS-20260127-004",
+        "ISS-20260127-001",
+        "ISS-20260127-003",
+        "ISS-20260127-005",
+        "ISS-20260127-002",
+        "ISS-20260127-006"
+      ],
+      "created_at": "20260127-030000",
+      "completed_at": "2026-01-27T03:18:58.950Z",
+      "total_solutions": 6,
+      "completed_solutions": 6
     }
   ]
 }

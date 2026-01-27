@@ -7,7 +7,7 @@ namespace XhMonitor.Desktop.Services;
 /// <summary>
 /// 管理 Windows 开机自启动功能
 /// </summary>
-public static class StartupManager
+public class StartupManager : IStartupManager
 {
     private const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string AppName = "XhMonitor";
@@ -17,7 +17,7 @@ public static class StartupManager
     /// </summary>
     /// <param name="enable">是否启用</param>
     /// <returns>操作是否成功</returns>
-    public static bool SetStartup(bool enable)
+    public bool SetStartup(bool enable)
     {
         try
         {
@@ -59,7 +59,7 @@ public static class StartupManager
     /// 检查是否已设置开机自启动
     /// </summary>
     /// <returns>是否已启用</returns>
-    public static bool IsStartupEnabled()
+    public bool IsStartupEnabled()
     {
         try
         {

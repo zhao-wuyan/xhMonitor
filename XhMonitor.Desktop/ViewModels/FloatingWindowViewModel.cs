@@ -326,6 +326,22 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         System.Diagnostics.Debug.WriteLine("Failed to connect to SignalR after all retry attempts");
     }
 
+    /// <summary>
+    /// 主动重连 SignalR（用于 Service 重启后刷新连接）
+    /// </summary>
+    public async Task ReconnectAsync()
+    {
+        try
+        {
+            await _signalRService.ReconnectAsync();
+            System.Diagnostics.Debug.WriteLine("Successfully reconnected to SignalR");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to reconnect to SignalR: {ex.Message}");
+        }
+    }
+
     private void OnMetricsReceived(MetricsDataDto data)
     {
         if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
