@@ -85,6 +85,15 @@ public sealed class MonitorDbContext : DbContext
             new ApplicationSettings { Id = 6, Category = "DataCollection", Key = "TopProcessCount", Value = ConfigurationDefaults.DataCollection.TopProcessCount.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
             new ApplicationSettings { Id = 7, Category = "DataCollection", Key = "DataRetentionDays", Value = ConfigurationDefaults.DataCollection.DataRetentionDays.ToString(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
 
+            // 监控开关设置 (7项)
+            new ApplicationSettings { Id = 9, Category = "Monitoring", Key = "MonitorCpu", Value = ConfigurationDefaults.Monitoring.MonitorCpu.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 10, Category = "Monitoring", Key = "MonitorMemory", Value = ConfigurationDefaults.Monitoring.MonitorMemory.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 11, Category = "Monitoring", Key = "MonitorGpu", Value = ConfigurationDefaults.Monitoring.MonitorGpu.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 12, Category = "Monitoring", Key = "MonitorVram", Value = ConfigurationDefaults.Monitoring.MonitorVram.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 13, Category = "Monitoring", Key = "MonitorPower", Value = ConfigurationDefaults.Monitoring.MonitorPower.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 14, Category = "Monitoring", Key = "MonitorNetwork", Value = ConfigurationDefaults.Monitoring.MonitorNetwork.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+            new ApplicationSettings { Id = 15, Category = "Monitoring", Key = "AdminMode", Value = ConfigurationDefaults.Monitoring.AdminMode.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp },
+
             // 系统设置 (1项) - 仅保留可在运行时由用户配置的设置项。
             // 端口等基础设施配置由 appsettings.json 管理（例如 Server:Port）。
             new ApplicationSettings { Id = 8, Category = "System", Key = "StartWithWindows", Value = ConfigurationDefaults.System.StartWithWindows.ToString().ToLowerInvariant(), CreatedAt = seedTimestamp, UpdatedAt = seedTimestamp }

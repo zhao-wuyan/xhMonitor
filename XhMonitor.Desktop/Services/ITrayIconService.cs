@@ -6,6 +6,7 @@ public interface ITrayIconService : IDisposable
         FloatingWindow floatingWindow,
         Action toggleFloatingWindow,
         Action openWebInterface,
+        Action openSettingsWindow,
         Action openAboutWindow,
         Action exitApplication);
 

@@ -10,6 +10,7 @@ public sealed class TrayIconService : ITrayIconService
     private FloatingWindow? _floatingWindow;
     private Action? _toggleFloatingWindow;
     private Action? _openWebInterface;
+    private Action? _openSettingsWindow;
     private Action? _openAboutWindow;
     private Action? _exitApplication;
 
@@ -17,12 +18,14 @@ public sealed class TrayIconService : ITrayIconService
         FloatingWindow floatingWindow,
         Action toggleFloatingWindow,
         Action openWebInterface,
+        Action openSettingsWindow,
         Action openAboutWindow,
         Action exitApplication)
     {
         _floatingWindow = floatingWindow;
         _toggleFloatingWindow = toggleFloatingWindow;
         _openWebInterface = openWebInterface;
+        _openSettingsWindow = openSettingsWindow;
         _openAboutWindow = openAboutWindow;
         _exitApplication = exitApplication;
 
@@ -71,6 +74,7 @@ public sealed class TrayIconService : ITrayIconService
         _floatingWindow = null;
         _toggleFloatingWindow = null;
         _openWebInterface = null;
+        _openSettingsWindow = null;
         _openAboutWindow = null;
         _exitApplication = null;
     }
@@ -102,10 +106,8 @@ public sealed class TrayIconService : ITrayIconService
             }
         };
 
-        // TODO: 设置功能暂时隐藏 - 等待其他功能完善后继续开发
-        // 保留代码以便后续恢复
-        // var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
-        // settingsItem.Click += (_, _) => OpenSettingsWindow();
+        var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
+        settingsItem.Click += (_, _) => _openSettingsWindow?.Invoke();
 
         var aboutItem = new WinForms.ToolStripMenuItem("关于");
         aboutItem.Click += (_, _) => _openAboutWindow?.Invoke();
@@ -117,8 +119,8 @@ public sealed class TrayIconService : ITrayIconService
         menu.Items.Add(openWebItem);
         menu.Items.Add(clickThroughItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
-        // menu.Items.Add(settingsItem); // 暂时隐藏设置菜单项
-        // menu.Items.Add(new WinForms.ToolStripSeparator());
+        menu.Items.Add(settingsItem);
+        menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(aboutItem);
         menu.Items.Add(new WinForms.ToolStripSeparator());
         menu.Items.Add(exitItem);

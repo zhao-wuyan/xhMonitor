@@ -96,6 +96,41 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _isPowerVisible = value; OnPropertyChanged(); }
     }
 
+    private bool _isCpuVisible = true;
+    public bool IsCpuVisible
+    {
+        get => _isCpuVisible;
+        set { _isCpuVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isMemoryVisible = true;
+    public bool IsMemoryVisible
+    {
+        get => _isMemoryVisible;
+        set { _isMemoryVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isGpuVisible = true;
+    public bool IsGpuVisible
+    {
+        get => _isGpuVisible;
+        set { _isGpuVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isVramVisible = true;
+    public bool IsVramVisible
+    {
+        get => _isVramVisible;
+        set { _isVramVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isNetworkVisible = true;
+    public bool IsNetworkVisible
+    {
+        get => _isNetworkVisible;
+        set { _isNetworkVisible = value; OnPropertyChanged(); }
+    }
+
     private double _uploadSpeed;
     public double UploadSpeed
     {

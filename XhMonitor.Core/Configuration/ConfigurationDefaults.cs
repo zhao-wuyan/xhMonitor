@@ -60,6 +60,47 @@ public static class ConfigurationDefaults
     }
 
     /// <summary>
+    /// 监控开关设置默认值。
+    /// </summary>
+    public static class Monitoring
+    {
+        /// <summary>
+        /// 是否启用 CPU 监控默认值。
+        /// </summary>
+        public const bool MonitorCpu = true;
+
+        /// <summary>
+        /// 是否启用内存监控默认值。
+        /// </summary>
+        public const bool MonitorMemory = true;
+
+        /// <summary>
+        /// 是否启用 GPU 监控默认值。
+        /// </summary>
+        public const bool MonitorGpu = true;
+
+        /// <summary>
+        /// 是否启用显存监控默认值。
+        /// </summary>
+        public const bool MonitorVram = true;
+
+        /// <summary>
+        /// 是否启用功耗监控默认值。
+        /// </summary>
+        public const bool MonitorPower = true;
+
+        /// <summary>
+        /// 是否启用网络监控默认值。
+        /// </summary>
+        public const bool MonitorNetwork = true;
+
+        /// <summary>
+        /// 是否启用管理员模式默认值。
+        /// </summary>
+        public const bool AdminMode = false;
+    }
+
+    /// <summary>
     /// 系统设置默认值。
     /// </summary>
     public static class System

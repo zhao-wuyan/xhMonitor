@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.IO;
+using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
@@ -223,6 +224,7 @@ public partial class FloatingWindow : Window
         try
         {
             await _viewModel.InitializeAsync();
+            await LoadMonitoringSettingsAsync();
         }
         catch (Exception ex)
         {
@@ -233,6 +235,43 @@ public partial class FloatingWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
             );
+        }
+    }
+
+    private async Task LoadMonitoringSettingsAsync()
+    {
+        try
+        {
+            var serviceDiscovery = new Services.ServiceDiscovery();
+            var apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
+
+            using var httpClient = new System.Net.Http.HttpClient();
+            var response = await httpClient.GetAsync($"{apiBaseUrl}/settings");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
+                if (settings?.TryGetValue("Monitoring", out var monitoring) == true)
+                {
+                    if (monitoring.TryGetValue("MonitorCpu", out var cpu))
+                        _viewModel.IsCpuVisible = bool.Parse(cpu);
+                    if (monitoring.TryGetValue("MonitorMemory", out var memory))
+                        _viewModel.IsMemoryVisible = bool.Parse(memory);
+                    if (monitoring.TryGetValue("MonitorGpu", out var gpu))
+                        _viewModel.IsGpuVisible = bool.Parse(gpu);
+                    if (monitoring.TryGetValue("MonitorVram", out var vram))
+                        _viewModel.IsVramVisible = bool.Parse(vram);
+                    if (monitoring.TryGetValue("MonitorPower", out var power))
+                        _viewModel.IsPowerVisible = bool.Parse(power) && _viewModel.IsPowerVisible; // 保留原有的硬件检测逻辑
+                    if (monitoring.TryGetValue("MonitorNetwork", out var network))
+                        _viewModel.IsNetworkVisible = bool.Parse(network);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load monitoring settings: {ex.Message}");
+            // 加载失败时使用默认值（全部显示）
         }
     }
 

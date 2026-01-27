@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop;
+using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -10,18 +12,21 @@ public sealed class WindowManagementService : IWindowManagementService
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
     private readonly IPowerControlService _powerControlService;
+    private readonly IServiceProvider _serviceProvider;
     private FloatingWindow? _floatingWindow;
 
     public WindowManagementService(
         ITrayIconService trayIconService,
         IServiceDiscovery serviceDiscovery,
         IProcessManager processManager,
-        IPowerControlService powerControlService)
+        IPowerControlService powerControlService,
+        IServiceProvider serviceProvider)
     {
         _trayIconService = trayIconService;
         _serviceDiscovery = serviceDiscovery;
         _processManager = processManager;
         _powerControlService = powerControlService;
+        _serviceProvider = serviceProvider;
     }
 
     public void InitializeMainWindow()
@@ -40,6 +45,7 @@ public sealed class WindowManagementService : IWindowManagementService
             _floatingWindow,
             ToggleMainWindow,
             OpenWebInterface,
+            OpenSettingsWindow,
             OpenAboutWindow,
             ExitApplication);
     }
@@ -105,6 +111,26 @@ public sealed class WindowManagementService : IWindowManagementService
                 Owner = _floatingWindow
             };
             aboutWindow.ShowDialog();
+        });
+    }
+
+    private void OpenSettingsWindow()
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            var existingWindow = System.Windows.Application.Current.Windows.OfType<Windows.SettingsWindow>().FirstOrDefault();
+            if (existingWindow != null)
+            {
+                existingWindow.Activate();
+                return;
+            }
+
+            var viewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
+            var settingsWindow = new Windows.SettingsWindow(viewModel)
+            {
+                Owner = _floatingWindow
+            };
+            settingsWindow.ShowDialog();
         });
     }
 
