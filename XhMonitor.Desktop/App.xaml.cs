@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,9 @@ namespace XhMonitor.Desktop;
 
 public partial class App : WpfApplication
 {
+    private const string MutexName = "XhMonitor_Desktop_SingleInstance";
+    private static Mutex? _mutex;
+
     private IHost? _host;
     private IWindowManagementService? _windowManagementService;
 
@@ -22,6 +26,15 @@ public partial class App : WpfApplication
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 单实例检查
+        _mutex = new Mutex(true, MutexName, out bool createdNew);
+        if (!createdNew)
+        {
+            System.Windows.MessageBox.Show("XhMonitor Desktop 已在运行中。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
 
         SessionEnding += OnSessionEnding;
@@ -77,6 +90,14 @@ public partial class App : WpfApplication
                 _host.Dispose();
                 _host = null;
             }
+        }
+
+        // 释放 Mutex
+        if (_mutex != null)
+        {
+            _mutex.ReleaseMutex();
+            _mutex.Dispose();
+            _mutex = null;
         }
 
         base.OnExit(e);

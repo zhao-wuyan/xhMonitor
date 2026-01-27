@@ -6,13 +6,14 @@ namespace XhMonitor.Core.Providers;
 
 public sealed class RyzenAdjPowerProvider : IPowerProvider
 {
-    private static readonly PowerScheme[] Schemes =
+    private static readonly PowerScheme[] DefaultSchemes =
     [
         new PowerScheme(55, 100, 55),
         new PowerScheme(85, 120, 85),
         new PowerScheme(120, 140, 120)
     ];
 
+    private readonly PowerScheme[] _schemes;
     private readonly IRyzenAdjCli _ryzenAdj;
     private readonly TimeSpan _pollingInterval;
     private readonly ILogger<RyzenAdjPowerProvider>? _logger;
@@ -25,14 +26,24 @@ public sealed class RyzenAdjPowerProvider : IPowerProvider
     private bool _disabled;
 
     public RyzenAdjPowerProvider(IRyzenAdjCli ryzenAdj, ILogger<RyzenAdjPowerProvider>? logger = null)
-        : this(ryzenAdj, TimeSpan.FromSeconds(3), logger)
+        : this(ryzenAdj, TimeSpan.FromSeconds(3), null, logger)
     {
     }
 
     public RyzenAdjPowerProvider(IRyzenAdjCli ryzenAdj, TimeSpan pollingInterval, ILogger<RyzenAdjPowerProvider>? logger = null)
+        : this(ryzenAdj, pollingInterval, null, logger)
+    {
+    }
+
+    public RyzenAdjPowerProvider(
+        IRyzenAdjCli ryzenAdj,
+        TimeSpan pollingInterval,
+        PowerScheme[]? schemes,
+        ILogger<RyzenAdjPowerProvider>? logger = null)
     {
         _ryzenAdj = ryzenAdj ?? throw new ArgumentNullException(nameof(ryzenAdj));
         _pollingInterval = pollingInterval < TimeSpan.Zero ? TimeSpan.Zero : pollingInterval;
+        _schemes = schemes is { Length: > 0 } ? schemes : DefaultSchemes;
         _logger = logger;
     }
 
@@ -124,8 +135,8 @@ public sealed class RyzenAdjPowerProvider : IPowerProvider
             var snapshot = await _ryzenAdj.GetSnapshotAsync(ct).ConfigureAwait(false);
             var currentLimits = SnapshotToLimits(snapshot);
             currentIndex = MatchSchemeIndex(currentLimits);
-            nextIndex = currentIndex.HasValue ? (currentIndex.Value + 1) % Schemes.Length : 0;
-            next = Schemes[nextIndex];
+            nextIndex = currentIndex.HasValue ? (currentIndex.Value + 1) % _schemes.Length : 0;
+            next = _schemes[nextIndex];
 
             await _ryzenAdj.ApplyLimitsAsync(next, ct).ConfigureAwait(false);
 
@@ -232,11 +243,11 @@ public sealed class RyzenAdjPowerProvider : IPowerProvider
         return value > 1000 ? value / 1000.0 : value;
     }
 
-    private static int? MatchSchemeIndex(PowerScheme limits)
+    private int? MatchSchemeIndex(PowerScheme limits)
     {
-        for (var i = 0; i < Schemes.Length; i++)
+        for (var i = 0; i < _schemes.Length; i++)
         {
-            var scheme = Schemes[i];
+            var scheme = _schemes[i];
             if (IsClose(limits.StapmWatts, scheme.StapmWatts) &&
                 IsClose(limits.FastWatts, scheme.FastWatts) &&
                 IsClose(limits.SlowWatts, scheme.SlowWatts))

@@ -1,0 +1,100 @@
+{
+  "project_structure": "Multi-project .NET 8 solution with layered architecture: XhMonitor.Core (models, interfaces, providers), XhMonitor.Service (ASP.NET Core backend with SignalR, EF Core), XhMonitor.Desktop (WPF client with MVVM). Power control flows from Desktop -> Service API -> RyzenAdjPowerProvider. Configuration uses appsettings.json for infrastructure and database ApplicationSettings for user preferences.",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Desktop/Services/PowerControlService.cs",
+      "relevance": 0.95,
+      "rationale": "Primary power control service - needs device verification before SwitchToNextSchemeAsync call"
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/IPowerControlService.cs",
+      "relevance": 0.9,
+      "rationale": "Interface for power control - may need new verification method signature"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/RyzenAdjPowerProvider.cs",
+      "relevance": 0.85,
+      "rationale": "Backend power provider with hardcoded PowerScheme array - schemes are device-specific for AMD Ryzen"
+    },
+    {
+      "path": "XhMonitor.Core/Models/PowerScheme.cs",
+      "relevance": 0.8,
+      "rationale": "Power scheme record model - current structure supports StapmWatts/FastWatts/SlowWatts"
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/ServiceDiscovery.cs",
+      "relevance": 0.75,
+      "rationale": "HTTP client pattern for external API calls - reference for device_info API call pattern"
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "relevance": 0.7,
+      "rationale": "HTTP client usage pattern with IHttpClientFactory, JSON deserialization patterns"
+    },
+    {
+      "path": "XhMonitor.Core/Configuration/ConfigurationDefaults.cs",
+      "relevance": 0.65,
+      "rationale": "Configuration pattern - may need device verification config section"
+    },
+    {
+      "path": "XhMonitor.Service/appsettings.json",
+      "relevance": 0.6,
+      "rationale": "Configuration file pattern - Power section exists, may need device mapping config"
+    },
+    {
+      "path": "XhMonitor.Service/Configuration/ConfigurationValidator.cs",
+      "relevance": 0.55,
+      "rationale": "Validation pattern for configuration - reference for device verification validation"
+    },
+    {
+      "path": "XhMonitor.Desktop/App.xaml.cs",
+      "relevance": 0.5,
+      "rationale": "DI registration pattern - IHttpClientFactory already registered"
+    }
+  ],
+  "patterns": "1. HTTP Client Pattern: Uses IHttpClientFactory with DI injection (App.xaml.cs:62-63), HttpClient injected into services/viewmodels. 2. JSON Serialization: System.Text.Json with PropertyNameCaseInsensitive=true option (PowerControlService.cs:31, ServiceDiscovery.cs:42-44). 3. Model Pattern: Sealed records for immutable data (PowerScheme, PowerSchemeSwitchResult), sealed classes for DTOs (PowerSchemeSwitchResponse). 4. Service Interface Pattern: I{Name}Service interfaces in Services folder, implementations follow same naming. 5. Configuration Pattern: Static ConfigurationDefaults class with nested classes for categories, Keys subclass for string constants. 6. Validation Pattern: ConfigurationValidator with ValidateAppSettings/ValidateDatabaseSettings methods, error collection pattern. 7. API URL Pattern: Uses IServiceDiscovery.ApiBaseUrl + endpoint path (e.g., /api/v1/power/scheme/next). 8. Error Handling: TryExtractMessage pattern for JSON error responses, InvalidOperationException for failures.",
+  "dependencies": "External: System.Net.Http (HttpClient), System.Text.Json (serialization), Microsoft.Extensions.Http (IHttpClientFactory), Microsoft.Extensions.DependencyInjection. Internal: XhMonitor.Core.Models (PowerScheme, PowerSchemeSwitchResult), XhMonitor.Desktop.Services (IServiceDiscovery, IPowerControlService). New dependency needed: HTTP call to 127.0.0.1:5050/device_info external API.",
+  "integration_points": "1. PowerControlService.SwitchToNextSchemeAsync - Entry point for power switching, needs pre-verification. 2. IServiceDiscovery - Provides API base URL pattern, but device_info is on different port (5050). 3. App.xaml.cs DI container - HttpClient already available via IHttpClientFactory. 4. RyzenAdjPowerProvider.Schemes array - Hardcoded schemes need device-specific mapping. 5. appsettings.json Power section - Can add device verification config here.",
+  "constraints": "1. Device verification API is external (127.0.0.1:5050), not part of XhMonitor service. 2. Verification conditions: platform=amd_395 AND is_mac_authorized=true for 'LingLongXingHe' device. 3. Power schemes are currently hardcoded in RyzenAdjPowerProvider - need mapping structure. 4. Must maintain backward compatibility - existing power switching should work for verified devices. 5. HttpClient timeout considerations for external API calls. 6. Error handling needed for device_info API unavailability.",
+  "clarification_needs": [
+    {
+      "question": "Where should the device verification logic be implemented?",
+      "context": "Device verification can be added at Desktop client level (PowerControlService) or Service backend level (RyzenAdjPowerProvider). Client-side is simpler but backend provides centralized control.",
+      "options": [
+        "Desktop client (PowerControlService) - verify before API call",
+        "Service backend (new endpoint or middleware) - centralized verification",
+        "Both layers - client for UX feedback, backend for security"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should device-to-scheme mapping be configured?",
+      "context": "Current PowerScheme array is hardcoded. Need to map device names to verification conditions and power parameters.",
+      "options": [
+        "appsettings.json configuration section with device mappings",
+        "Database ApplicationSettings table for runtime configurability",
+        "Hardcoded in code with device-specific provider classes"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "What should happen when device verification fails?",
+      "context": "User may attempt power switching on unsupported device. Need clear error handling strategy.",
+      "options": [
+        "Throw exception with descriptive message",
+        "Return failure result with reason (non-throwing)",
+        "Silently disable power switching feature"
+      ],
+      "recommended": 1
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-27T12:00:00.000Z",
+    "task_description": "Power switching requires device model verification. Current switching parameters need to be bound to 'LingLongXingHe' device. Verification: call 127.0.0.1:5050/device_info, conditions: platform=amd_395 AND is_mac_authorized=true. Mapping structure: device name -> verification method -> verification conditions -> switching parameters",
+    "source": "cli-explore-agent",
+    "exploration_angle": "patterns",
+    "exploration_index": 3,
+    "total_explorations": 3,
+    "duration_seconds": 45
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "project_structure": "Layered Architecture with 3 main modules: XhMonitor.Core (interfaces, models, providers), XhMonitor.Service (ASP.NET Core backend with REST API, DI registration), XhMonitor.Desktop (WPF client with MVVM). Power switching flow: Desktop.WindowManagementService -> Desktop.PowerControlService (HTTP) -> Service.PowerController -> Core.IPowerProvider (RyzenAdjPowerProvider/NullPowerProvider). Current device validation uses IGpuVendorDetector to check GpuVendor.Amd before enabling RyzenAdjPowerProvider.",
+
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Core/Interfaces/IPowerProvider.cs",
+      "relevance": 0.95,
+      "rationale": "Core interface defining power provider contract - IsSupported(), GetStatusAsync(), SwitchToNextSchemeAsync(). Device verification should extend IsSupported() logic."
+    },
+    {
+      "path": "XhMonitor.Core/Providers/RyzenAdjPowerProvider.cs",
+      "relevance": 0.95,
+      "rationale": "Main power provider implementation with hardcoded PowerScheme array (55/85/120W). Device verification and scheme binding should be integrated here."
+    },
+    {
+      "path": "XhMonitor.Service/Program.cs",
+      "relevance": 0.90,
+      "rationale": "DI registration for IPowerProvider - currently uses IGpuVendorDetector to select RyzenAdjPowerProvider vs NullPowerProvider. Device verification logic should be added to factory."
+    },
+    {
+      "path": "XhMonitor.Service/Controllers/PowerController.cs",
+      "relevance": 0.85,
+      "rationale": "REST API endpoint POST /api/v1/power/scheme/next - calls IPowerProvider.SwitchToNextSchemeAsync(). May need to return device verification status."
+    },
+    {
+      "path": "XhMonitor.Core/Interfaces/IGpuVendorDetector.cs",
+      "relevance": 0.80,
+      "rationale": "Existing device detection pattern - returns GpuVendor enum. New device verification interface should follow similar pattern."
+    },
+    {
+      "path": "XhMonitor.Core/Models/PowerScheme.cs",
+      "relevance": 0.75,
+      "rationale": "PowerScheme record (StapmWatts, FastWatts, SlowWatts). Device-specific schemes should be mapped from device name."
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/WindowManagementService.cs",
+      "relevance": 0.70,
+      "rationale": "UI trigger point for power switching via OnMetricActionRequested() - longPress_power action. May need to show device verification status."
+    },
+    {
+      "path": "XhMonitor.Core/Providers/NullPowerProvider.cs",
+      "relevance": 0.65,
+      "rationale": "Fallback provider when device not supported - returns IsSupported()=false. Used when device verification fails."
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/PowerControlService.cs",
+      "relevance": 0.60,
+      "rationale": "HTTP client calling backend API. May need to handle device verification error responses."
+    },
+    {
+      "path": "XhMonitor.Core/Interfaces/IRyzenAdjCli.cs",
+      "relevance": 0.55,
+      "rationale": "RyzenAdj CLI wrapper interface. Device verification is separate from RyzenAdj availability."
+    }
+  ],
+
+  "patterns": "Provider Pattern: IPowerProvider interface with RyzenAdjPowerProvider/NullPowerProvider implementations. Factory Pattern: DI registration in Program.cs uses factory lambda to select provider based on IGpuVendorDetector. Existing device detection: IGpuVendorDetector.DetectVendor() returns GpuVendor enum (Amd/Nvidia/Intel/Unknown). HTTP API Pattern: External device_info endpoint at 127.0.0.1:5050/device_info returns JSON with platform and is_mac_authorized fields. Scheme Configuration: PowerScheme[] hardcoded in RyzenAdjPowerProvider - should be externalized for device-specific binding.",
+
+  "dependencies": "Internal: XhMonitor.Core.Interfaces (IPowerProvider, IGpuVendorDetector, IRyzenAdjCli), XhMonitor.Core.Models (PowerScheme, PowerStatus, PowerSchemeSwitchResult), XhMonitor.Core.Enums (GpuVendor). External: System.Net.Http (for device_info API call), System.Text.Json (for JSON parsing). New dependency: HTTP client to call 127.0.0.1:5050/device_info endpoint for device verification.",
+
+  "integration_points": "1. IPowerProvider.IsSupported() - Add device verification check before returning true. 2. Program.cs DI factory - Add device verification service and inject into provider selection logic. 3. RyzenAdjPowerProvider constructor - Accept device-specific PowerScheme[] based on verified device name. 4. PowerController API - May return 403 Forbidden when device not authorized. 5. New interface IDeviceVerifier with VerifyDeviceAsync() method returning DeviceVerificationResult (platform, is_mac_authorized, device_name).",
+
+  "constraints": "1. Device verification endpoint: 127.0.0.1:5050/device_info (external service, must handle connection failures gracefully). 2. Verification conditions: platform = 'amd_395' AND is_mac_authorized = true for device name. 3. Scheme binding: Device name maps to specific PowerScheme[] array. 4. Backward compatibility: Must not break existing AMD GPU detection logic. 5. Caching: Device verification result should be cached to avoid repeated API calls. 6. Error handling: Fallback to NullPowerProvider when verification fails or endpoint unavailable.",
+
+  "clarification_needs": [
+    {
+      "question": "Where should device verification be performed - at startup (DI registration) or on each power switch request?",
+      "context": "Current IGpuVendorDetector runs once at DI registration. Device verification via HTTP could fail transiently. Need to decide caching strategy.",
+      "options": [
+        "Startup only - verify once during DI registration, cache result permanently",
+        "Lazy initialization - verify on first power operation, cache result",
+        "Per-request - verify on each SwitchToNextSchemeAsync call (no caching)",
+        "Hybrid - startup verification with periodic refresh"
+      ],
+      "recommended": 1
+    },
+    {
+      "question": "How should device-specific PowerScheme arrays be configured?",
+      "context": "Current schemes are hardcoded in RyzenAdjPowerProvider. Task requires mapping: device_name -> verification -> schemes. Need configuration strategy.",
+      "options": [
+        "Hardcoded mapping in code (Dictionary<string, PowerScheme[]>)",
+        "Configuration file (appsettings.json with device-scheme mappings)",
+        "Database table for device-scheme relationships",
+        "External API returns schemes along with device verification"
+      ],
+      "recommended": 1
+    },
+    {
+      "question": "What should happen when device verification fails or endpoint is unavailable?",
+      "context": "External endpoint 127.0.0.1:5050/device_info may be down. Need graceful degradation strategy.",
+      "options": [
+        "Disable power switching entirely (use NullPowerProvider)",
+        "Fall back to current behavior (AMD GPU detection only)",
+        "Retry with exponential backoff, then disable",
+        "Allow power switching but log warning about unverified device"
+      ],
+      "recommended": 0
+    }
+  ],
+
+  "_metadata": {
+    "timestamp": "2026-01-27T12:00:00.000Z",
+    "task_description": "Device model verification for power switching. Current switch parameters need to be bound to device. Verification: call 127.0.0.1:5050/device_info, conditions: platform = amd_395 AND is_mac_authorized = true. Mapping: device_name -> verification -> conditions -> switch_parameters",
+    "source": "cli-explore-agent",
+    "exploration_angle": "architecture",
+    "exploration_index": 1,
+    "total_explorations": 3,
+    "duration_seconds": 45
+  }
+}

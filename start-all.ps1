@@ -2,16 +2,12 @@
 
 Write-Host "正在启动 XhMonitor..." -ForegroundColor Green
 
-# 启动后端服务
-Write-Host "启动后端服务..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\XhMonitor.Service'; dotnet run"
-
-# 等待 2 秒让服务启动
-Start-Sleep -Seconds 2
-
-# 启动桌面悬浮窗
-Write-Host "启动桌面悬浮窗..." -ForegroundColor Yellow
+# 启动桌面悬浮窗（会自动拉起后端服务）
+Write-Host "启动桌面悬浮窗（将自动拉起后端服务）..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\XhMonitor.Desktop'; dotnet run"
+
+# 等待 3 秒让服务启动
+Start-Sleep -Seconds 3
 
 # 启动 Web 界面
 Write-Host "启动 Web 界面..." -ForegroundColor Yellow
@@ -27,4 +23,6 @@ Write-Host "  - 后端服务:   http://localhost:35179" -ForegroundColor Cyan
 Write-Host "  - Web 界面:   http://localhost:35180" -ForegroundColor Cyan
 Write-Host "  - SignalR Hub: http://localhost:35179/hubs/metrics" -ForegroundColor Cyan
 Write-Host "  - 桌面悬浮窗: 已显示在屏幕上" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "注意: Desktop 会自动启动 Service，无需手动启动" -ForegroundColor DarkGray
 Write-Host ""

@@ -8,10 +8,12 @@ namespace XhMonitor.Service.Controllers;
 public sealed class PowerController : ControllerBase
 {
     private readonly IPowerProvider _powerProvider;
+    private readonly IDeviceVerifier _deviceVerifier;
 
-    public PowerController(IPowerProvider powerProvider)
+    public PowerController(IPowerProvider powerProvider, IDeviceVerifier deviceVerifier)
     {
         _powerProvider = powerProvider ?? throw new ArgumentNullException(nameof(powerProvider));
+        _deviceVerifier = deviceVerifier ?? throw new ArgumentNullException(nameof(deviceVerifier));
     }
 
     [HttpGet("status")]
@@ -45,6 +47,13 @@ public sealed class PowerController : ControllerBase
     [HttpPost("scheme/next")]
     public async Task<IActionResult> SwitchToNextScheme(CancellationToken ct)
     {
+        // 设备验证检查（异步确保初始化完成）
+        if (!await _deviceVerifier.IsPowerSwitchEnabledAsync(ct).ConfigureAwait(false))
+        {
+            var reason = _deviceVerifier.GetDisabledReason() ?? "设备未授权";
+            return StatusCode(403, new { Message = reason });
+        }
+
         if (!_powerProvider.IsSupported())
         {
             return NotFound(new { Message = "Power provider not supported" });

@@ -1,0 +1,255 @@
+{
+  "summary": "为功耗切换功能添加设备验证机制，通过调用外部 device_info API 验证设备型号，仅允许【玲珑星核】设备（platform=amd_395 且 is_mac_authorized=true）执行功耗切换。采用可扩展的设备-方案映射结构，支持未来添加更多设备。",
+  "approach": "在 Service 后端层实现设备验证，启动时调用 device_info API 并缓存结果。使用 appsettings.json 配置设备映射（设备名 → 验证条件 → 功耗方案）。验证失败时禁用功耗切换功能，但不影响功耗状态查看。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "创建设备验证模型和接口",
+      "scope": "XhMonitor.Core/",
+      "action": "Create",
+      "description": "定义设备验证相关的模型（DeviceInfo、DeviceVerificationResult）和接口（IDeviceVerifier），建立可扩展的设备-方案映射结构。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Models/DeviceInfo.cs",
+          "target": "new file",
+          "change": "创建 DeviceInfo record，包含 platform、is_mac_authorized 等字段"
+        },
+        {
+          "file": "XhMonitor.Core/Models/DeviceSchemeMapping.cs",
+          "target": "new file",
+          "change": "创建设备-方案映射模型：DeviceName → VerificationConditions → PowerScheme[]"
+        },
+        {
+          "file": "XhMonitor.Core/Interfaces/IDeviceVerifier.cs",
+          "target": "new file",
+          "change": "定义 IDeviceVerifier 接口：VerifyAsync()、GetVerifiedDeviceName()、GetSchemesForDevice()"
+        }
+      ],
+      "implementation": [
+        "创建 DeviceInfo record：Platform (string)、IsMacAuthorized (bool)、DeviceVerified (bool)、NovaId (string)",
+        "创建 DeviceVerificationCondition record：Platform (string)、RequireMacAuthorized (bool)",
+        "创建 DeviceSchemeMapping record：DeviceName (string)、Conditions (DeviceVerificationCondition)、Schemes (PowerScheme[])",
+        "创建 IDeviceVerifier 接口：Task<DeviceInfo?> GetDeviceInfoAsync()、string? GetVerifiedDeviceName()、PowerScheme[]? GetSchemesForDevice(string deviceName)"
+      ],
+      "reference": {
+        "pattern": "IGpuVendorDetector 接口模式",
+        "files": ["XhMonitor.Core/Interfaces/IGpuVendorDetector.cs", "XhMonitor.Core/Models/PowerScheme.cs"]
+      },
+      "acceptance": [
+        "DeviceInfo 模型能正确反序列化 device_info API 响应",
+        "DeviceSchemeMapping 支持多设备配置",
+        "IDeviceVerifier 接口定义完整"
+      ],
+      "cli_execution_id": "T1-device-models"
+    },
+    {
+      "id": "T2",
+      "title": "实现设备验证服务",
+      "scope": "XhMonitor.Core/Services/",
+      "action": "Implement",
+      "description": "实现 DeviceVerifier 服务，调用 device_info API 获取设备信息，根据配置的映射规则验证设备并返回对应的功耗方案。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Services/DeviceVerifier.cs",
+          "target": "new file",
+          "change": "实现 IDeviceVerifier，包含 HTTP 调用、验证逻辑、结果缓存"
+        }
+      ],
+      "implementation": [
+        "注入 HttpClient 和 IOptions<DeviceVerificationOptions>",
+        "实现 GetDeviceInfoAsync()：调用 http://127.0.0.1:5050/device_info，解析 JSON 响应",
+        "实现设备匹配逻辑：遍历配置的 DeviceSchemeMapping，检查 platform 和 is_mac_authorized 条件",
+        "实现启动时缓存：首次调用后缓存 DeviceInfo 和匹配的 DeviceName",
+        "实现 GetSchemesForDevice()：根据设备名返回对应的 PowerScheme[]"
+      ],
+      "reference": {
+        "pattern": "WmiGpuVendorDetector 服务模式",
+        "files": ["XhMonitor.Core/Services/WmiGpuVendorDetector.cs", "XhMonitor.Desktop/Services/ServiceDiscovery.cs"]
+      },
+      "acceptance": [
+        "能成功调用 device_info API 并解析响应",
+        "正确匹配【玲珑星核】设备（platform=amd_395 且 is_mac_authorized=true）",
+        "API 不可用时返回 null，不抛异常",
+        "结果正确缓存，后续调用不重复请求 API"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "T2-device-verifier"
+    },
+    {
+      "id": "T3",
+      "title": "添加设备验证配置",
+      "scope": "XhMonitor.Service/",
+      "action": "Configure",
+      "description": "在 appsettings.json 中添加设备验证配置节，定义【玲珑星核】设备的验证条件和功耗方案映射。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Service/appsettings.json",
+          "target": "Power section",
+          "change": "添加 DeviceVerification 配置节：Endpoint、Devices 数组"
+        },
+        {
+          "file": "XhMonitor.Core/Configuration/DeviceVerificationOptions.cs",
+          "target": "new file",
+          "change": "创建配置绑定类 DeviceVerificationOptions"
+        }
+      ],
+      "implementation": [
+        "在 appsettings.json Power 节添加 DeviceVerification 配置",
+        "配置 Endpoint: http://127.0.0.1:5050/device_info",
+        "配置 Devices 数组，添加【玲珑星核】：{ Name: \"LingLongXingHe\", Platform: \"amd_395\", RequireMacAuthorized: true, Schemes: [{55,100,55}, {85,120,85}, {120,140,120}] }",
+        "创建 DeviceVerificationOptions 类用于 IOptions<T> 绑定"
+      ],
+      "reference": {
+        "pattern": "IOptions<T> 配置绑定模式",
+        "files": ["XhMonitor.Service/appsettings.json", "XhMonitor.Core/Configuration/ConfigurationDefaults.cs"]
+      },
+      "acceptance": [
+        "配置结构支持多设备扩展",
+        "DeviceVerificationOptions 能正确绑定配置",
+        "【玲珑星核】设备配置完整（验证条件 + 3 档功耗方案）"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "T3-device-config"
+    },
+    {
+      "id": "T4",
+      "title": "集成设备验证到功耗切换流程",
+      "scope": "XhMonitor.Service/",
+      "action": "Update",
+      "description": "在 Service 启动时初始化设备验证，修改 RyzenAdjPowerProvider 使用验证后的设备方案，在 PowerController 中添加验证检查。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Service/Program.cs",
+          "target": "DI registration:208-228",
+          "change": "注册 IDeviceVerifier 服务，修改 IPowerProvider 工厂逻辑"
+        },
+        {
+          "file": "XhMonitor.Core/Providers/RyzenAdjPowerProvider.cs",
+          "target": "Schemes array:9-14",
+          "change": "修改构造函数接受 PowerScheme[] 参数，移除硬编码方案"
+        },
+        {
+          "file": "XhMonitor.Service/Controllers/PowerController.cs",
+          "target": "SwitchToNextScheme:45-71",
+          "change": "添加设备验证检查，未验证时返回 403 Forbidden"
+        }
+      ],
+      "implementation": [
+        "在 Program.cs 注册 HttpClient 和 IDeviceVerifier 服务",
+        "修改 IPowerProvider 工厂：先调用 IDeviceVerifier 验证，验证通过则使用设备方案创建 RyzenAdjPowerProvider",
+        "修改 RyzenAdjPowerProvider 构造函数：接受 PowerScheme[] schemes 参数",
+        "在 PowerController.SwitchToNextScheme 添加验证检查：验证失败返回 403 + 错误信息",
+        "保持 GetStatus 不受验证影响（仅切换需要验证）"
+      ],
+      "reference": {
+        "pattern": "现有 IPowerProvider DI 工厂模式",
+        "files": ["XhMonitor.Service/Program.cs", "XhMonitor.Service/Controllers/PowerController.cs"]
+      },
+      "acceptance": [
+        "Service 启动时自动执行设备验证",
+        "验证通过的设备使用配置的功耗方案",
+        "验证失败时功耗切换返回 403，功耗查看正常",
+        "device_info API 不可用时禁用功耗切换"
+      ],
+      "depends_on": ["T2", "T3"],
+      "cli_execution_id": "T4-integration"
+    }
+  ],
+  "design_decisions": [
+    {
+      "decision": "设备验证在 Service 后端执行",
+      "rationale": "集中控制验证逻辑，便于维护和安全管理",
+      "tradeoff": "Desktop 客户端无法提前知道验证状态",
+      "alternatives": ["Desktop 客户端验证", "双层验证"]
+    },
+    {
+      "decision": "启动时验证并缓存结果",
+      "rationale": "设备信息在运行期间不会改变，避免重复 API 调用",
+      "tradeoff": "运行时授权变更需要重启服务",
+      "alternatives": ["每次请求验证", "带 TTL 缓存"]
+    },
+    {
+      "decision": "验证失败时禁用功耗切换",
+      "rationale": "安全优先，防止未授权设备使用功耗切换功能",
+      "tradeoff": "API 不可用时功能完全不可用",
+      "alternatives": ["允许默认方案", "可配置策略"]
+    },
+    {
+      "decision": "使用 appsettings.json 配置设备映射",
+      "rationale": "符合现有配置模式，易于扩展新设备",
+      "tradeoff": "添加新设备需要修改配置文件",
+      "alternatives": ["代码硬编码", "数据库配置"]
+    }
+  ],
+  "data_flow": {
+    "diagram": "Service启动 → DeviceVerifier.GetDeviceInfoAsync() → device_info API → 匹配设备配置 → 缓存结果 → PowerController.SwitchToNextScheme() → 检查验证状态 → RyzenAdjPowerProvider.SwitchToNextSchemeAsync()",
+    "stages": [
+      {
+        "stage": "设备信息获取",
+        "input": "HTTP GET 127.0.0.1:5050/device_info",
+        "output": "DeviceInfo { platform, is_mac_authorized, ... }",
+        "component": "DeviceVerifier",
+        "transformations": ["JSON 反序列化"]
+      },
+      {
+        "stage": "设备匹配",
+        "input": "DeviceInfo + DeviceSchemeMapping[]",
+        "output": "匹配的 DeviceName + PowerScheme[]",
+        "component": "DeviceVerifier",
+        "transformations": ["条件匹配", "方案绑定"]
+      },
+      {
+        "stage": "功耗切换验证",
+        "input": "切换请求 + 缓存的验证结果",
+        "output": "允许/拒绝",
+        "component": "PowerController",
+        "transformations": ["验证状态检查"]
+      }
+    ],
+    "dependencies": ["外部 device_info API (127.0.0.1:5050)"]
+  },
+  "flow_control": {
+    "execution_order": [
+      {
+        "phase": "parallel-1",
+        "tasks": ["T1"],
+        "type": "parallel"
+      },
+      {
+        "phase": "parallel-2",
+        "tasks": ["T2", "T3"],
+        "type": "parallel"
+      },
+      {
+        "phase": "sequential-1",
+        "tasks": ["T4"],
+        "type": "sequential"
+      }
+    ],
+    "exit_conditions": {
+      "success": "所有任务完成，设备验证功能正常工作",
+      "failure": "任何任务失败或验证逻辑不正确"
+    }
+  },
+  "focus_paths": [
+    "XhMonitor.Core/Models/DeviceInfo.cs",
+    "XhMonitor.Core/Models/DeviceSchemeMapping.cs",
+    "XhMonitor.Core/Interfaces/IDeviceVerifier.cs",
+    "XhMonitor.Core/Services/DeviceVerifier.cs",
+    "XhMonitor.Core/Configuration/DeviceVerificationOptions.cs",
+    "XhMonitor.Core/Providers/RyzenAdjPowerProvider.cs",
+    "XhMonitor.Service/appsettings.json",
+    "XhMonitor.Service/Program.cs",
+    "XhMonitor.Service/Controllers/PowerController.cs"
+  ],
+  "estimated_time": "2-3 hours",
+  "recommended_execution": "Agent",
+  "complexity": "Medium",
+  "_metadata": {
+    "timestamp": "2026-01-27T12:30:00.000Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "exploration_angles": ["architecture", "integration-points", "patterns"],
+    "duration_seconds": 120
+  }
+}
