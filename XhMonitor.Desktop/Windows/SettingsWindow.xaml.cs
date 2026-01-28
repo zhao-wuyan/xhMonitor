@@ -42,8 +42,18 @@ public partial class SettingsWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        // 应用开机自启动设置
-        if (_viewModel.StartWithWindows != _startupManager.IsStartupEnabled())
+        // 检查管理员模式变更
+        var adminModeChanged = _viewModel.AdminMode != _viewModel.OriginalAdminMode;
+        var startupChanged = _viewModel.StartWithWindows != _startupManager.IsStartupEnabled();
+
+        // 先更新本地管理员模式缓存，确保后续 SetStartup 能读取到正确的运行级别
+        if (adminModeChanged)
+        {
+            _adminModeManager.SetAdminModeEnabled(_viewModel.AdminMode);
+        }
+
+        // 应用开机自启动设置（此时管理员模式缓存已更新，会创建正确权限级别的计划任务）
+        if (startupChanged)
         {
             if (!_startupManager.SetStartup(_viewModel.StartWithWindows))
             {
@@ -54,21 +64,15 @@ public partial class SettingsWindow : Window
                     MessageBoxImage.Warning);
             }
         }
-
-        // 检查管理员模式变更
-        var adminModeChanged = _viewModel.AdminMode != _viewModel.OriginalAdminMode;
+        // 如果只是管理员模式变更（开机自启动未变），需要更新计划任务的运行级别
+        else if (adminModeChanged && _startupManager.IsStartupEnabled())
+        {
+            _startupManager.UpdateRunLevel();
+        }
 
         var result = await _viewModel.SaveSettingsAsync();
         if (result.IsSuccess)
         {
-            // 更新本地管理员模式缓存
-            _adminModeManager.SetAdminModeEnabled(_viewModel.AdminMode);
-
-            // 如果管理员模式变更且开机自启动已启用，更新计划任务的运行级别
-            if (adminModeChanged && _startupManager.IsStartupEnabled())
-            {
-                _startupManager.UpdateRunLevel();
-            }
 
             // 立即应用透明度到悬浮窗
             if (Owner is FloatingWindow floatingWindow)
