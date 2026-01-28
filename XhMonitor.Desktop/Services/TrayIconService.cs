@@ -1,5 +1,9 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
+using XhMonitor.Core.Configuration;
 using WinForms = System.Windows.Forms;
 
 namespace XhMonitor.Desktop.Services;
@@ -15,11 +19,19 @@ public sealed class TrayIconService : ITrayIconService
     private Action? _exitApplication;
     private readonly IAdminModeManager _adminModeManager;
     private readonly IBackendServerService _backendServerService;
+    private readonly HttpClient _httpClient;
+    private readonly string _apiBaseUrl;
 
-    public TrayIconService(IAdminModeManager adminModeManager, IBackendServerService backendServerService)
+    public TrayIconService(
+        IAdminModeManager adminModeManager,
+        IBackendServerService backendServerService,
+        IHttpClientFactory httpClientFactory,
+        IServiceDiscovery serviceDiscovery)
     {
         _adminModeManager = adminModeManager;
         _backendServerService = backendServerService;
+        _httpClient = httpClientFactory.CreateClient();
+        _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
 
     public void Initialize(
@@ -155,6 +167,9 @@ public sealed class TrayIconService : ITrayIconService
             // 更新本地管理员模式缓存
             _adminModeManager.SetAdminModeEnabled(enabled);
 
+            // 同步更新后端数据库配置
+            await SyncAdminModeToBackendAsync(enabled);
+
             // 提示用户需要重启服务
             var result = System.Windows.MessageBox.Show(
                 "管理员模式已变更。需要重启后台服务才能生效。\n\n是否立即重启服务？",
@@ -198,6 +213,48 @@ public sealed class TrayIconService : ITrayIconService
                 "错误",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// 同步管理员模式状态到后端数据库
+    /// </summary>
+    private async System.Threading.Tasks.Task SyncAdminModeToBackendAsync(bool enabled)
+    {
+        try
+        {
+            // 先获取当前所有配置
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/settings");
+            if (!response.IsSuccessStatusCode)
+            {
+                Debug.WriteLine($"Failed to get current settings: {response.StatusCode}");
+                return;
+            }
+
+            var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
+            if (settings == null)
+            {
+                Debug.WriteLine("Settings is null");
+                return;
+            }
+
+            // 更新 AdminMode 配置
+            if (!settings.ContainsKey(ConfigurationDefaults.Keys.Categories.Monitoring))
+            {
+                settings[ConfigurationDefaults.Keys.Categories.Monitoring] = new Dictionary<string, string>();
+            }
+            settings[ConfigurationDefaults.Keys.Categories.Monitoring][ConfigurationDefaults.Keys.Monitoring.AdminMode] = enabled.ToString().ToLower();
+
+            // 保存配置
+            var saveResponse = await _httpClient.PutAsJsonAsync($"{_apiBaseUrl}/settings", settings);
+            if (!saveResponse.IsSuccessStatusCode)
+            {
+                Debug.WriteLine($"Failed to save settings: {saveResponse.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to sync admin mode to backend: {ex.Message}");
         }
     }
 }
