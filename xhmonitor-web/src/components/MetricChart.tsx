@@ -26,6 +26,11 @@ export const MetricChart = ({ data, metricId, title, unit, color }: MetricChartP
     const chart = chartInstance.current;
 
     const option: echarts.EChartsOption = {
+      // 禁用入场动画，只保留数据更新动画，避免每次更新都从左到右重绘
+      animation: true,
+      animationDuration: 0,  // 入场动画瞬间完成
+      animationDurationUpdate: 300,  // 数据更新动画 300ms
+      animationEasingUpdate: 'cubicOut',
       title: {
         text: t(title),
         textStyle: {

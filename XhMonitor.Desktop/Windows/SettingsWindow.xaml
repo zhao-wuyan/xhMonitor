@@ -186,7 +186,7 @@
             <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Padding" Value="15,12"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -405,16 +405,7 @@
 
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
-                                    <TextBlock Text="主题颜色" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                                    <ComboBox Height="35"
-                                              Margin="0,0,0,20"
-                                              SelectedValue="{Binding ThemeColor, Mode=TwoWay}"
-                                              SelectedValuePath="Tag">
-                                        <ComboBoxItem Content="深色 (Dark)" Tag="Dark"/>
-                                        <ComboBoxItem Content="浅色 (Light)" Tag="Light"/>
-                                    </ComboBox>
-
-                                    <TextBlock Text="窗口透明度" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                                    <TextBlock Text="悬浮窗透明度" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
                                     <Grid Margin="0,0,0,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -718,9 +709,9 @@
 
             <!-- 底部操作栏 -->
             <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-                <Button Content="恢复默认" Margin="0,0,10,0" Background="Transparent" Foreground="{StaticResource TextSecondary}" Click="RestoreDefaults_Click"/>
-                <Button Content="取 消" Width="100" Margin="0,0,10,0" Click="Cancel_Click"/>
-                <Button Content="保 存" Width="100" Background="{StaticResource AccentBlue}" Click="Save_Click"/>
+                <Button Content="恢复默认" Height="36" Margin="0,0,10,0" Background="Transparent" Foreground="{StaticResource TextSecondary}" Click="RestoreDefaults_Click"/>
+                <Button Content="关 闭" Width="100" Height="36" Margin="0,0,10,0" Click="Cancel_Click"/>
+                <Button x:Name="SaveButton" Content="保 存" Width="100" Height="36" Background="{StaticResource AccentBlue}" Click="Save_Click"/>
             </StackPanel>
         </Grid>
     </Grid>

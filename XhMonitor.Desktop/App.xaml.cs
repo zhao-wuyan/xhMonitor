@@ -55,8 +55,8 @@ public partial class App : WpfApplication
                 services.AddSingleton<IProcessManager, ProcessManager>();
                 services.AddSingleton<IPowerControlService, PowerControlService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
-                services.AddSingleton<IStartupManager, StartupManager>();
                 services.AddSingleton<IAdminModeManager, AdminModeManager>();
+                services.AddSingleton<IStartupManager, StartupManager>();
                 services.AddHostedService<ApplicationHostedService>();
 
                 services.AddHttpClient();

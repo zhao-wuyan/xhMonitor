@@ -19,17 +19,20 @@ public sealed class TrayIconService : ITrayIconService
     private Action? _exitApplication;
     private readonly IAdminModeManager _adminModeManager;
     private readonly IBackendServerService _backendServerService;
+    private readonly IStartupManager _startupManager;
     private readonly HttpClient _httpClient;
     private readonly string _apiBaseUrl;
 
     public TrayIconService(
         IAdminModeManager adminModeManager,
         IBackendServerService backendServerService,
+        IStartupManager startupManager,
         IHttpClientFactory httpClientFactory,
         IServiceDiscovery serviceDiscovery)
     {
         _adminModeManager = adminModeManager;
         _backendServerService = backendServerService;
+        _startupManager = startupManager;
         _httpClient = httpClientFactory.CreateClient();
         _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
@@ -166,6 +169,12 @@ public sealed class TrayIconService : ITrayIconService
         {
             // 更新本地管理员模式缓存
             _adminModeManager.SetAdminModeEnabled(enabled);
+
+            // 如果开机自启动已启用，更新计划任务的运行级别
+            if (_startupManager.IsStartupEnabled())
+            {
+                _startupManager.UpdateRunLevel();
+            }
 
             // 同步更新后端数据库配置
             await SyncAdminModeToBackendAsync(enabled);

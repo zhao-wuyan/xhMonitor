@@ -105,20 +105,22 @@ public class LibreHardwareMonitorGpuProvider : IMetricProvider
                     }
                 }
 
-                if (maxEngine != null && maxEngine.Value > 0)
-                {
-                    _logger?.LogInformation(
-                        "[LibreHardwareMonitorGpuProvider] Max GPU engine load: {Load}% (Name={Name}, Type={Type})",
-                        maxEngine.Value, maxEngine.Name, maxEngine.HardwareType);
-                    return Math.Round(maxEngine.Value, 1);
-                }
-
+                // 优先使用 GPU Core 值（LibreHardwareMonitor 的核心负载指标）
                 if (maxCore != null && maxCore.Value > 0)
                 {
                     _logger?.LogInformation(
-                        "[LibreHardwareMonitorGpuProvider] Fallback GPU core load: {Load}% (Name={Name}, Type={Type})",
+                        "[LibreHardwareMonitorGpuProvider] GPU core load: {Load}% (Name={Name}, Type={Type})",
                         maxCore.Value, maxCore.Name, maxCore.HardwareType);
                     return Math.Round(maxCore.Value, 1);
+                }
+
+                // Fallback: 使用 D3D 引擎负载
+                if (maxEngine != null && maxEngine.Value > 0)
+                {
+                    _logger?.LogInformation(
+                        "[LibreHardwareMonitorGpuProvider] Fallback GPU engine load: {Load}% (Name={Name}, Type={Type})",
+                        maxEngine.Value, maxEngine.Name, maxEngine.HardwareType);
+                    return Math.Round(maxEngine.Value, 1);
                 }
 
                 if (maxAny != null && maxAny.Value > 0)
