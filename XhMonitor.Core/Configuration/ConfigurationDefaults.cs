@@ -20,7 +20,7 @@ public static class ConfigurationDefaults
          /// 窗口透明度默认值。范围: 0-100。
          /// 该设置为用户偏好，存储在数据库 ApplicationSettings (Appearance.Opacity)，可在运行时修改。
          /// </summary>
-        public const int Opacity = 60;
+        public const int Opacity = 90;
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public static class ConfigurationDefaults
          /// 进程关键词默认列表。用于筛选需要关注的进程。
          /// 该设置为用户偏好，存储在数据库 ApplicationSettings (DataCollection.ProcessKeywords)，可在运行时修改。
          /// </summary>
-        public static readonly string[] ProcessKeywords = new[] { "python", "llama" };
+        public static readonly string[] ProcessKeywords = new[] { "python", "llama-server" };
 
         /// <summary>
          /// 系统指标采集间隔(毫秒)。建议大于 0。

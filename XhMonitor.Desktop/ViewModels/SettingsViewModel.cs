@@ -128,6 +128,14 @@ public class SettingsViewModel : INotifyPropertyChanged
     /// </summary>
     public bool OriginalAdminMode => _originalAdminMode;
 
+    /// <summary>
+    /// 更新原始 AdminMode 值（保存成功后调用）。
+    /// </summary>
+    public void UpdateOriginalAdminMode()
+    {
+        _originalAdminMode = AdminMode;
+    }
+
     public bool StartWithWindows
     {
         get => _startWithWindows;

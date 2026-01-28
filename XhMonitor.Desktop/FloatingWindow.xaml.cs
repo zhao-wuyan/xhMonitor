@@ -272,6 +272,19 @@ public partial class FloatingWindow : Window
             if (response.IsSuccessStatusCode)
             {
                 var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
+
+                // 加载外观设置（透明度）
+                if (settings?.TryGetValue("Appearance", out var appearance) == true)
+                {
+                    if (appearance.TryGetValue("Opacity", out var opacityStr) && int.TryParse(opacityStr, out var opacity))
+                    {
+                        // 将 20-100 的百分比值转换为 0.2-1.0 的 Opacity 值
+                        this.Opacity = Math.Clamp(opacity / 100.0, 0.2, 1.0);
+                        System.Diagnostics.Debug.WriteLine($"Applied window opacity: {this.Opacity}");
+                    }
+                }
+
+                // 加载监控设置
                 if (settings?.TryGetValue("Monitoring", out var monitoring) == true)
                 {
                     if (monitoring.TryGetValue("MonitorCpu", out var cpu))

@@ -64,6 +64,12 @@ public partial class SettingsWindow : Window
             // 更新本地管理员模式缓存
             _adminModeManager.SetAdminModeEnabled(_viewModel.AdminMode);
 
+            // 立即应用透明度到悬浮窗
+            if (Owner is FloatingWindow floatingWindow)
+            {
+                floatingWindow.Opacity = Math.Clamp(_viewModel.Opacity / 100.0, 0.2, 1.0);
+            }
+
             // 如果管理员模式变更，只重启 Service（Desktop 无需管理员权限）
             if (adminModeChanged)
             {
@@ -80,9 +86,9 @@ public partial class SettingsWindow : Window
                         await _backendServerService.RestartAsync();
 
                         // Service 重启后，主动重连 SignalR 以刷新 Power 等指标状态
-                        if (Owner is FloatingWindow floatingWindow)
+                        if (Owner is FloatingWindow fw)
                         {
-                            await floatingWindow.ReconnectSignalRAsync();
+                            await fw.ReconnectSignalRAsync();
                         }
 
                         System.Windows.MessageBox.Show(
@@ -103,11 +109,12 @@ public partial class SettingsWindow : Window
             }
             else
             {
-                System.Windows.MessageBox.Show("配置已保存", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                // 普通保存成功，显示临时提示
+                await ShowSaveSuccessHintAsync();
             }
 
-            DialogResult = true;
-            Close();
+            // 更新原始值，避免重复提示
+            _viewModel.UpdateOriginalAdminMode();
         }
         else
         {
@@ -117,6 +124,21 @@ public partial class SettingsWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// 显示保存成功的临时提示（按钮文字变化）
+    /// </summary>
+    private async Task ShowSaveSuccessHintAsync()
+    {
+        var originalContent = SaveButton.Content;
+        SaveButton.Content = "已保存 ✓";
+        SaveButton.IsEnabled = false;
+
+        await Task.Delay(1500);
+
+        SaveButton.Content = originalContent;
+        SaveButton.IsEnabled = true;
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -136,7 +158,6 @@ public partial class SettingsWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             // 恢复默认值
-            _viewModel.ThemeColor = ConfigurationDefaults.Appearance.ThemeColor;
             _viewModel.Opacity = ConfigurationDefaults.Appearance.Opacity;
             _viewModel.ProcessKeywords = string.Join("\n", ConfigurationDefaults.DataCollection.ProcessKeywords);
             _viewModel.TopProcessCount = ConfigurationDefaults.DataCollection.TopProcessCount;

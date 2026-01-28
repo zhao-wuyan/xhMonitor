@@ -16,17 +16,20 @@ public class ConfigController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<ConfigController> _logger;
     private readonly MetricProviderRegistry _providerRegistry;
+    private readonly ProcessScanner _processScanner;
 
     public ConfigController(
         IDbContextFactory<MonitorDbContext> contextFactory,
         IConfiguration configuration,
         ILogger<ConfigController> logger,
-        MetricProviderRegistry providerRegistry)
+        MetricProviderRegistry providerRegistry,
+        ProcessScanner processScanner)
     {
         _contextFactory = contextFactory;
         _configuration = configuration;
         _logger = logger;
         _providerRegistry = providerRegistry;
+        _processScanner = processScanner;
     }
 
     [HttpGet]
@@ -273,6 +276,7 @@ public class ConfigController : ControllerBase
 
         var updatedCount = 0;
         var timestamp = DateTime.UtcNow;
+        var processKeywordsUpdated = false;
 
         foreach (var categoryGroup in settings)
         {
@@ -290,6 +294,12 @@ public class ConfigController : ControllerBase
                     setting.Value = value;
                     setting.UpdatedAt = timestamp;
                     updatedCount++;
+
+                    // 检测是否更新了进程关键字
+                    if (category == "DataCollection" && key == "ProcessKeywords")
+                    {
+                        processKeywordsUpdated = true;
+                    }
                 }
             }
         }
@@ -297,6 +307,13 @@ public class ConfigController : ControllerBase
         await context.SaveChangesAsync();
 
         _logger.LogInformation("批量更新 {Count} 个配置项", updatedCount);
+
+        // 如果进程关键字被更新,触发 ProcessScanner 重新加载
+        if (processKeywordsUpdated)
+        {
+            _logger.LogInformation("检测到进程关键字更新,触发 ProcessScanner 重新加载");
+            await _processScanner.ReloadKeywordsAsync();
+        }
 
         return Ok(new { Message = $"成功更新 {updatedCount} 个配置项", UpdatedCount = updatedCount });
     }
