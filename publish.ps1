@@ -177,6 +177,8 @@ if (-not $SkipService) {
 
     if ($Lite) {
         # 轻量级模式：不包含运行时和原生依赖（真正的 framework-dependent）
+        $publishArgs += "-r"
+        $publishArgs += "win-x64"
         $publishArgs += "--self-contained"
         $publishArgs += "false"
     } else {
@@ -218,6 +220,8 @@ if (-not $SkipDesktop) {
 
     if ($Lite) {
         # 轻量级模式：不包含运行时和原生依赖（真正的 framework-dependent）
+        $publishArgs += "-r"
+        $publishArgs += "win-x64"
         $publishArgs += "--self-contained"
         $publishArgs += "false"
     } else {
@@ -267,6 +271,13 @@ if (-not $SkipService) {
             Copy-Item $sourceMigrations $destMigrations -Recurse -Force
             Write-Host "✓ 已复制 Migrations 目录" -ForegroundColor Green
         }
+    }
+
+    # 删除开发环境配置文件（不应该出现在生产发布包中）
+    $devConfig = Join-Path $ServiceDir "appsettings.Development.json"
+    if (Test-Path $devConfig) {
+        Remove-Item $devConfig -Force
+        Write-Host "✓ 已删除 appsettings.Development.json" -ForegroundColor Green
     }
 }
   
