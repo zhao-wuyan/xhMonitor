@@ -64,6 +64,12 @@ public partial class SettingsWindow : Window
             // 更新本地管理员模式缓存
             _adminModeManager.SetAdminModeEnabled(_viewModel.AdminMode);
 
+            // 如果管理员模式变更且开机自启动已启用，更新计划任务的运行级别
+            if (adminModeChanged && _startupManager.IsStartupEnabled())
+            {
+                _startupManager.UpdateRunLevel();
+            }
+
             // 立即应用透明度到悬浮窗
             if (Owner is FloatingWindow floatingWindow)
             {

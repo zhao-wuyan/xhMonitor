@@ -17,4 +17,10 @@ public interface IStartupManager
     /// </summary>
     /// <returns>是否已启用</returns>
     bool IsStartupEnabled();
+
+    /// <summary>
+    /// 更新计划任务的运行级别（当管理员模式变更时调用）。
+    /// </summary>
+    /// <returns>操作是否成功</returns>
+    bool UpdateRunLevel();
 }
