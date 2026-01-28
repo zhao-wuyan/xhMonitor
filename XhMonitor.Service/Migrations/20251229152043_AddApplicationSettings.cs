@@ -36,7 +36,7 @@ namespace XhMonitor.Service.Migrations
                 values: new object[,]
                 {
                     { 1, "Appearance", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "ThemeColor", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "\"Dark\"" },
-                    { 2, "Appearance", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Opacity", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "60" },
+                    { 2, "Appearance", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Opacity", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "90" },
                     { 3, "DataCollection", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "ProcessKeywords", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "[\"python\",\"llama\"]" },
                     { 4, "DataCollection", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "SystemInterval", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "1000" },
                     { 5, "DataCollection", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "ProcessInterval", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "5000" },

@@ -43,6 +43,14 @@
     <ProjectReference Include="..\XhMonitor.Core\XhMonitor.Core.csproj" />
   </ItemGroup>
 
+  <!-- wwwroot 作为 Content 包含，自动随 build/publish 复制 -->
+  <ItemGroup>
+    <Content Include="wwwroot\**\*" Condition="Exists('$(ProjectDir)wwwroot')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
   <!-- Build web assets before Desktop compilation -->
   <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild">
     <!-- Install npm dependencies if node_modules doesn't exist -->
@@ -51,11 +59,11 @@
     <!-- Build web assets -->
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" />
 
-    <!-- Copy dist folder to output directory as wwwroot -->
+    <!-- Copy dist folder to project directory as wwwroot (MSBuild will auto-copy to output/publish) -->
     <ItemGroup>
       <WebAssets Include="$(ProjectDir)..\xhmonitor-web\dist\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(WebAssets)" DestinationFiles="@(WebAssets->'$(OutputPath)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(WebAssets)" DestinationFiles="@(WebAssets->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 
 </Project>

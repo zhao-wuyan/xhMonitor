@@ -64,6 +64,9 @@ Thumbs.db
 *.swp
 *.swo
 
+## Generated web assets (built from xhmonitor-web/dist)
+XhMonitor.Desktop/wwwroot/
+
 ## MCP Configuration (contains API tokens)
 .mcp.json
 
