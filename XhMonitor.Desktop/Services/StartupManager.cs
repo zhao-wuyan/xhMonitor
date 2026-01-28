@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Microsoft.Win32;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -32,7 +33,13 @@ public class StartupManager : IStartupManager
             }
             else
             {
-                return DeleteScheduledTask();
+                // 删除计划任务
+                var result = DeleteScheduledTask();
+
+                // 同时清理旧版本可能遗留的注册表项（兼容性处理）
+                CleanupLegacyRegistryEntry();
+
+                return result;
             }
         }
         catch (Exception ex)
@@ -110,6 +117,13 @@ public class StartupManager : IStartupManager
         // ExitCode -1 = 用户取消 UAC 或启动失败
         if (result.ExitCode == 0 || result.ExitCode == 1)
         {
+            // 验证任务是否真的被删除（防止 UAC 提升后退出码不准确）
+            if (IsStartupEnabled())
+            {
+                Debug.WriteLine("Task deletion reported success but task still exists");
+                return false;
+            }
+
             Debug.WriteLine("Startup disabled or task does not exist");
             return true;
         }
@@ -117,6 +131,30 @@ public class StartupManager : IStartupManager
         {
             Debug.WriteLine($"Failed to delete scheduled task, exit code: {result.ExitCode}");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 清理旧版本遗留的注册表项（兼容性处理）
+    /// </summary>
+    private static void CleanupLegacyRegistryEntry()
+    {
+        const string registryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        const string appName = "XhMonitor";
+
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(registryKeyPath, writable: true);
+            if (key?.GetValue(appName) != null)
+            {
+                key.DeleteValue(appName, throwOnMissingValue: false);
+                Debug.WriteLine("Legacy registry entry cleaned up");
+            }
+        }
+        catch (Exception ex)
+        {
+            // 注册表清理失败不影响主流程
+            Debug.WriteLine($"Failed to cleanup legacy registry entry: {ex.Message}");
         }
     }
 
@@ -137,8 +175,9 @@ public class StartupManager : IStartupManager
             CreateNoWindow = !requireAdmin,
             RedirectStandardOutput = !requireAdmin,
             RedirectStandardError = !requireAdmin,
-            StandardOutputEncoding = !requireAdmin ? Encoding.GetEncoding("GBK") : null,
-            StandardErrorEncoding = !requireAdmin ? Encoding.GetEncoding("GBK") : null
+            // .NET 8 默认不支持 GBK，使用 null 让系统自动选择编码
+            StandardOutputEncoding = null,
+            StandardErrorEncoding = null
         };
 
         try
