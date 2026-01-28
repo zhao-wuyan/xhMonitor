@@ -1,0 +1,219 @@
+{
+  "id": "QUE-20260127-030000",
+  "status": "completed",
+  "created_at": "2026-01-27T03:00:00.000Z",
+  "solutions": [
+    {
+      "item_id": "S-1",
+      "issue_id": "ISS-20260127-004",
+      "solution_id": "SOL-ISS-20260127-004-v3n8",
+      "status": "completed",
+      "execution_order": 1,
+      "execution_group": "P1",
+      "depends_on": [],
+      "semantic_priority": 0.9,
+      "files_touched": [],
+      "task_count": 1,
+      "completed_at": "2026-01-27T03:05:23.271Z",
+      "result": {
+        "summary": "BoolToVisibility 资源已在 FloatingWindow.xaml:18 正确定义，无需修改",
+        "files_modified": [],
+        "tasks_completed": 1,
+        "status": "verified_no_change"
+      }
+    },
+    {
+      "item_id": "S-2",
+      "issue_id": "ISS-20260127-001",
+      "solution_id": "SOL-ISS-20260127-001-h7k2",
+      "status": "completed",
+      "execution_order": 2,
+      "execution_group": "P1",
+      "depends_on": [],
+      "semantic_priority": 0.75,
+      "files_touched": [
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs"
+      ],
+      "task_count": 1,
+      "completed_at": "2026-01-27T03:09:11.122Z",
+      "result": {
+        "summary": "FloatingWindow 使用 DI 容器获取 HttpClient",
+        "files_modified": [
+          "FloatingWindow.xaml.cs",
+          "App.xaml.cs"
+        ],
+        "tasks_completed": 1
+      }
+    },
+    {
+      "item_id": "S-3",
+      "issue_id": "ISS-20260127-003",
+      "solution_id": "SOL-ISS-20260127-003-k8m2",
+      "status": "completed",
+      "execution_order": 3,
+      "execution_group": "P1",
+      "depends_on": [],
+      "semantic_priority": 0.75,
+      "files_touched": [
+        "XhMonitor.Service/Data/SeedDataIds.cs",
+        "XhMonitor.Service/Data/MonitorDbContext.cs"
+      ],
+      "task_count": 2,
+      "completed_at": "2026-01-27T03:09:11.983Z",
+      "result": {
+        "summary": "创建 SeedDataIds 常量类并重构 MonitorDbContext",
+        "files_modified": [
+          "SeedDataIds.cs",
+          "MonitorDbContext.cs"
+        ],
+        "tasks_completed": 2
+      }
+    },
+    {
+      "item_id": "S-4",
+      "issue_id": "ISS-20260127-005",
+      "solution_id": "SOL-ISS-20260127-005-p3v7",
+      "status": "completed",
+      "execution_order": 4,
+      "execution_group": "S1",
+      "depends_on": [],
+      "semantic_priority": 0.55,
+      "files_touched": [
+        "XhMonitor.Core/Configuration/ConfigurationDefaults.cs",
+        "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs"
+      ],
+      "task_count": 2,
+      "completed_at": "2026-01-27T03:09:12.856Z",
+      "result": {
+        "summary": "添加 Keys 常量类并重构 SettingsViewModel",
+        "files_modified": [
+          "ConfigurationDefaults.cs",
+          "SettingsViewModel.cs"
+        ],
+        "tasks_completed": 2
+      }
+    },
+    {
+      "item_id": "S-5",
+      "issue_id": "ISS-20260127-002",
+      "solution_id": "SOL-ISS-20260127-002-m4p9",
+      "status": "completed",
+      "execution_order": 5,
+      "execution_group": "S1",
+      "depends_on": [
+        "S-4"
+      ],
+      "semantic_priority": 0.5,
+      "files_touched": [
+        "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs"
+      ],
+      "task_count": 2,
+      "completed_at": "2026-01-27T03:12:16.197Z",
+      "result": {
+        "summary": "移除 Save_Click 中的冗余 API 请求，使用 OriginalAdminMode 缓存值",
+        "files_modified": [
+          "SettingsViewModel.cs",
+          "SettingsWindow.xaml.cs"
+        ],
+        "tasks_completed": 2
+      }
+    },
+    {
+      "item_id": "S-6",
+      "issue_id": "ISS-20260127-006",
+      "solution_id": "SOL-ISS-20260127-006-r9n4",
+      "status": "completed",
+      "execution_order": 6,
+      "execution_group": "S1",
+      "depends_on": [
+        "S-5"
+      ],
+      "semantic_priority": 0.8,
+      "files_touched": [
+        "XhMonitor.Desktop/Services/IStartupManager.cs",
+        "XhMonitor.Desktop/Services/IAdminModeManager.cs",
+        "XhMonitor.Desktop/Services/StartupManager.cs",
+        "XhMonitor.Desktop/Services/AdminModeManager.cs",
+        "XhMonitor.Desktop/App.xaml.cs",
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs"
+      ],
+      "task_count": 6,
+      "completed_at": "2026-01-27T03:18:58.946Z",
+      "result": {
+        "summary": "将 StartupManager 和 AdminModeManager 从静态类重构为 DI 注入",
+        "files_modified": [
+          "IStartupManager.cs",
+          "IAdminModeManager.cs",
+          "StartupManager.cs",
+          "AdminModeManager.cs",
+          "App.xaml.cs",
+          "SettingsWindow.xaml.cs",
+          "WindowManagementService.cs"
+        ],
+        "tasks_completed": 6
+      }
+    }
+  ],
+  "conflicts": [
+    {
+      "type": "file_conflict",
+      "file": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "solutions": [
+        "S-4",
+        "S-5"
+      ],
+      "resolution": "sequential",
+      "resolution_order": [
+        "S-4",
+        "S-5"
+      ],
+      "rationale": "S-4 adds Keys constants (foundation), S-5 adds OriginalAdminMode tracking (depends on stable ViewModel)"
+    },
+    {
+      "type": "file_conflict",
+      "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+      "solutions": [
+        "S-5",
+        "S-6"
+      ],
+      "resolution": "sequential",
+      "resolution_order": [
+        "S-5",
+        "S-6"
+      ],
+      "rationale": "S-5 removes API call (smaller change), S-6 refactors to DI (larger refactor with 6 tasks)"
+    }
+  ],
+  "execution_groups": [
+    {
+      "id": "P1",
+      "type": "parallel",
+      "solutions": [
+        "S-1",
+        "S-2",
+        "S-3"
+      ],
+      "solution_count": 3
+    },
+    {
+      "id": "S1",
+      "type": "sequential",
+      "solutions": [
+        "S-4",
+        "S-5",
+        "S-6"
+      ],
+      "solution_count": 3
+    }
+  ],
+  "_metadata": {
+    "version": "2.0",
+    "total_tasks": 6,
+    "pending_count": 0,
+    "executing_count": 0,
+    "completed_count": 6,
+    "failed_count": 0,
+    "updated_at": "2026-01-27T03:18:58.949Z"
+  }
+}

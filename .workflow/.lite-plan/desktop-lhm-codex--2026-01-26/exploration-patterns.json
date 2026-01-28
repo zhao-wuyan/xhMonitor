@@ -1,0 +1,58 @@
+{
+  "patterns": [
+    "系统级指标通过 SystemMetricProvider.GetSystemUsageAsync() 汇总为 SystemUsage（包含 UploadSpeed/DownloadSpeed）。",
+    "网速来源：ILibreHardwareManager.GetSensorValues(HardwareType.Network, SensorType.Throughput)，通过传感器 Name pattern 归类 upload/download。",
+    "LibreHardwareMonitor 的 Throughput 传感器原始值为 Bytes/s（B/s）；转换为 MB/s 需要除以 1024^2。",
+    "Service 侧 Worker.SendSystemUsageAsync() 组装匿名对象并通过 ReceiveSystemUsage 推送；为保证 KB/s 展示精度，应避免过早 Round。",
+    "Desktop 侧 DTO 使用 JsonPropertyName 显式绑定字段（uploadSpeed / downloadSpeed），UI 侧建议用 Converter 做 KB/s/MB/s 自适应显示。"
+  ],
+  "angle": "patterns",
+  "relevant_files": [
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "XhMonitor.Core/Interfaces/ILibreHardwareManager.cs",
+    "XhMonitor.Service/Worker.cs",
+    "XhMonitor.Desktop/Models/MetricsDataDto.cs",
+    "XhMonitor.Desktop/Services/SignalRService.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+    "XhMonitor.Desktop/FloatingWindow.xaml",
+    "XhMonitor.Tests/Providers/SystemMetricProviderTests.cs"
+  ],
+  "clarification_needs": [
+    {
+      "question": "你期望的 “上传/下载” 符号具体是什么？",
+      "recommended": 0,
+      "options": [
+        "↑ / ↓（字符）",
+        "▲ / ▼（字符）",
+        "使用图标资源（例如 FontAwesome/PNG）"
+      ],
+      "context": "当前实现使用 ↑ 表示上传、↓ 表示下载（FloatingWindow.xaml 中 StringFormat）。如果你希望使用其他符号或图标，需要确认。"
+    }
+  ],
+  "integration_points": [
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs：GetNetworkSpeed() → SystemUsage.UploadSpeed/DownloadSpeed",
+    "XhMonitor.Service/Worker.cs：ReceiveSystemUsage payload",
+    "XhMonitor.Desktop/Services/SignalRService.cs：ReceiveSystemUsage 反序列化",
+    "XhMonitor.Desktop/FloatingWindow.xaml：NET 区展示"
+  ],
+  "project_structure": [
+    "XhMonitor.Core：系统级指标采集与模型（SystemMetricProvider / SystemUsage）",
+    "XhMonitor.Service：后台采集循环 + SignalR 推送（Worker / MetricsHub）",
+    "XhMonitor.Desktop：WPF 悬浮窗 + ViewModel 绑定（FloatingWindow / FloatingWindowViewModel）",
+    "XhMonitor.Tests：SystemMetricProvider 单元测试"
+  ],
+  "_metadata": {
+    "exploration_index": 1,
+    "exploration_angle": "patterns",
+    "timestamp": "2026-01-26T13:58:00.0803660+00:00"
+  },
+  "dependencies": [
+    "LibreHardwareMonitorLib（XhMonitor.Core）",
+    "Microsoft.AspNetCore.SignalR（XhMonitor.Service）",
+    "Microsoft.AspNetCore.SignalR.Client（XhMonitor.Desktop）"
+  ],
+  "constraints": [
+    "LibreHardwareMonitor 的 Network Throughput 传感器命名可能因语言/驱动不同，需依赖 pattern 匹配（upload/tx/send vs download/rx/receive）。",
+    "Throughput 原始单位为 B/s；系统侧对外保持 UploadSpeed/DownloadSpeed 为 MB/s（与 IMetricsClient 注释一致），桌面端按阈值换算并显示 KB/s 或 MB/s。"
+  ]
+}

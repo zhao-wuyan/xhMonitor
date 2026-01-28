@@ -309,7 +309,7 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
     }
 
     [Fact]
-    public void Integration_MultiThreadedAccess_ShouldBeThreadSafe()
+    public async Task Integration_MultiThreadedAccess_ShouldBeThreadSafe()
     {
         // Arrange
         var hardwareLogger = new Mock<ILogger<LibreHardwareManager>>();
@@ -352,7 +352,7 @@ public class LibreHardwareMonitorIntegrationTests : IDisposable
             }
         })).ToArray();
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - 验证线程安全
         exceptions.Should().BeEmpty("多线程访问不应抛出异常");

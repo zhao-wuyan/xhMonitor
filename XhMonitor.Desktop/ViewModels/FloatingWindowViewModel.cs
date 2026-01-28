@@ -68,6 +68,83 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _totalVram = value; OnPropertyChanged(); }
     }
 
+    private double _totalPower;
+    public double TotalPower
+    {
+        get => _totalPower;
+        set { _totalPower = value; OnPropertyChanged(); }
+    }
+
+    private double _maxPower;
+    public double MaxPower
+    {
+        get => _maxPower;
+        set { _maxPower = value; OnPropertyChanged(); }
+    }
+
+    private int? _powerSchemeIndex;
+    public int? PowerSchemeIndex
+    {
+        get => _powerSchemeIndex;
+        set { _powerSchemeIndex = value; OnPropertyChanged(); }
+    }
+
+    private bool _isPowerVisible;
+    public bool IsPowerVisible
+    {
+        get => _isPowerVisible;
+        set { _isPowerVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isCpuVisible = true;
+    public bool IsCpuVisible
+    {
+        get => _isCpuVisible;
+        set { _isCpuVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isMemoryVisible = true;
+    public bool IsMemoryVisible
+    {
+        get => _isMemoryVisible;
+        set { _isMemoryVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isGpuVisible = true;
+    public bool IsGpuVisible
+    {
+        get => _isGpuVisible;
+        set { _isGpuVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isVramVisible = true;
+    public bool IsVramVisible
+    {
+        get => _isVramVisible;
+        set { _isVramVisible = value; OnPropertyChanged(); }
+    }
+
+    private bool _isNetworkVisible = true;
+    public bool IsNetworkVisible
+    {
+        get => _isNetworkVisible;
+        set { _isNetworkVisible = value; OnPropertyChanged(); }
+    }
+
+    private double _uploadSpeed;
+    public double UploadSpeed
+    {
+        get => _uploadSpeed;
+        set { _uploadSpeed = value; OnPropertyChanged(); }
+    }
+
+    private double _downloadSpeed;
+    public double DownloadSpeed
+    {
+        get => _downloadSpeed;
+        set { _downloadSpeed = value; OnPropertyChanged(); }
+    }
+
     private double _maxMemory;
     public double MaxMemory
     {
@@ -180,6 +257,12 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             TotalGpu = data.TotalGpu;
             TotalMemory = data.TotalMemory;
             TotalVram = data.TotalVram;
+            IsPowerVisible = data.PowerAvailable;
+            TotalPower = data.TotalPower;
+            MaxPower = data.MaxPower;
+            PowerSchemeIndex = data.PowerSchemeIndex;
+            UploadSpeed = data.UploadSpeed;
+            DownloadSpeed = data.DownloadSpeed;
             if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
             if (data.MaxVram > 0) MaxVram = data.MaxVram;
         });
@@ -194,8 +277,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
             var orderedAll = data.Processes
                 .Select(p => _processIndex[p.ProcessId])
-                .OrderBy(p => p.ProcessName)
-                .ThenByDescending(p => p.Vram)
+                .OrderByDescending(p => p.Memory + p.Vram)
                 .ToList();
 
             var orderedTop = orderedAll.Take(5).ToList();
@@ -243,6 +325,22 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         System.Diagnostics.Debug.WriteLine("Failed to connect to SignalR after all retry attempts");
     }
 
+    /// <summary>
+    /// 主动重连 SignalR（用于 Service 重启后刷新连接）
+    /// </summary>
+    public async Task ReconnectAsync()
+    {
+        try
+        {
+            await _signalRService.ReconnectAsync();
+            System.Diagnostics.Debug.WriteLine("Successfully reconnected to SignalR");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to reconnect to SignalR: {ex.Message}");
+        }
+    }
+
     private void OnMetricsReceived(MetricsDataDto data)
     {
         if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
@@ -257,6 +355,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 TotalVram = data.SystemStats.TotalVram;
                 MaxMemory = data.SystemStats.MaxMemory;
                 MaxVram = data.SystemStats.MaxVram;
+                TotalPower = data.SystemStats.TotalPower;
+                MaxPower = data.SystemStats.MaxPower;
             }
             else
             {
@@ -280,8 +380,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
             var orderedAll = data.Processes
                 .Select(p => _processIndex[p.ProcessId])
-                .OrderBy(p => p.ProcessName)
-                .ThenByDescending(p => p.Vram)
+                .OrderByDescending(p => p.Memory + p.Vram)
                 .ToList();
 
             var orderedTop = orderedAll.Take(5).ToList();

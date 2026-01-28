@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,11 +13,28 @@ namespace XhMonitor.Desktop;
 
 public partial class App : WpfApplication
 {
+    private const string MutexName = "XhMonitor_Desktop_SingleInstance";
+    private static Mutex? _mutex;
+
     private IHost? _host;
     private IWindowManagementService? _windowManagementService;
 
+    /// <summary>
+    /// 获取应用程序的服务提供者，用于在非 DI 上下文中获取服务。
+    /// </summary>
+    public IServiceProvider? Services => _host?.Services;
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 单实例检查
+        _mutex = new Mutex(true, MutexName, out bool createdNew);
+        if (!createdNew)
+        {
+            System.Windows.MessageBox.Show("XhMonitor Desktop 已在运行中。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
 
         SessionEnding += OnSessionEnding;
@@ -35,7 +53,10 @@ public partial class App : WpfApplication
                 services.AddSingleton<IWebServerService, WebServerService>();
                 services.AddSingleton<ITrayIconService, TrayIconService>();
                 services.AddSingleton<IProcessManager, ProcessManager>();
+                services.AddSingleton<IPowerControlService, PowerControlService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
+                services.AddSingleton<IStartupManager, StartupManager>();
+                services.AddSingleton<IAdminModeManager, AdminModeManager>();
                 services.AddHostedService<ApplicationHostedService>();
 
                 services.AddHttpClient();
@@ -69,6 +90,14 @@ public partial class App : WpfApplication
                 _host.Dispose();
                 _host = null;
             }
+        }
+
+        // 释放 Mutex
+        if (_mutex != null)
+        {
+            _mutex.ReleaseMutex();
+            _mutex.Dispose();
+            _mutex = null;
         }
 
         base.OnExit(e);

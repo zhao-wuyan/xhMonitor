@@ -1,0 +1,159 @@
+{
+  "generated_at": "2026-01-27T17:20:00.000Z",
+  "mainline_summary": {
+    "core_modules": [
+      "XhMonitor.Core/Providers",
+      "XhMonitor.Desktop/Services",
+      "XhMonitor.Desktop/ViewModels",
+      "XhMonitor.Service/Core",
+      "XhMonitor.Desktop/Windows"
+    ],
+    "active_branches": ["dev-setting", "master", "issue-dev2"],
+    "health_score": 0.85
+  },
+  "discoveries": {
+    "stale_sessions": [
+      {
+        "path": ".workflow/.lite-plan/analyze-memory-usage-2026-01-16",
+        "type": "lite-plan",
+        "age_days": 7,
+        "reason": "超过 7 天未修改，计划可能未执行",
+        "size_kb": 79,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-plan/integrate-librehardwaremonitor-2026-01-18",
+        "type": "lite-plan",
+        "age_days": 7,
+        "reason": "超过 7 天未修改，功能已集成完成",
+        "size_kb": 79,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-plan/process-hover-kill-2026-01-15",
+        "type": "lite-plan",
+        "age_days": 7,
+        "reason": "超过 7 天未修改",
+        "size_kb": 79,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-plan/process-name-display-enhancement-2026-01-13",
+        "type": "lite-plan",
+        "age_days": 7,
+        "reason": "超过 7 天未修改",
+        "size_kb": 79,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-fix/gpu-monitoring-inaccurate-2026-01-12",
+        "type": "lite-fix",
+        "age_days": 7,
+        "reason": "超过 7 天未修改，问题可能已解决或废弃",
+        "size_kb": 12,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-fix/process-friendly-name-display-2026-01-14",
+        "type": "lite-fix",
+        "age_days": 12,
+        "reason": "超过 7 天未修改",
+        "size_kb": 12,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-fix/scrollbar-width-2px-not-working-2026-01-15",
+        "type": "lite-fix",
+        "age_days": 12,
+        "reason": "超过 7 天未修改",
+        "size_kb": 12,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-fix/service-startup-crash-2026-01-15",
+        "type": "lite-fix",
+        "age_days": 12,
+        "reason": "超过 7 天未修改，问题可能已解决",
+        "size_kb": 12,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-fix/settings-menu-ui-issues-2026-01-01",
+        "type": "lite-fix",
+        "age_days": 7,
+        "reason": "超过 7 天未修改，UI 问题可能已修复",
+        "size_kb": 12,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.lite-fix/settings-popup-style-fix-2026-01-01",
+        "type": "lite-fix",
+        "age_days": 7,
+        "reason": "超过 7 天未修改",
+        "size_kb": 12,
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.debug/DBG-web-desktop-2026-01-25",
+        "type": "debug",
+        "age_days": 1,
+        "reason": "调试会话超过 1 天",
+        "size_kb": 12,
+        "risk": "low"
+      }
+    ],
+    "drifted_documents": [
+      {
+        "path": ".workflow/.scratchpad/analyze-20260105221006",
+        "type": "scratchpad",
+        "broken_references": 0,
+        "total_references": 0,
+        "drift_percentage": 100,
+        "reason": "临时分析目录，已过期",
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.scratchpad/displayname-implementation-summary.md",
+        "type": "scratchpad",
+        "broken_references": 0,
+        "total_references": 0,
+        "drift_percentage": 100,
+        "reason": "临时文档，功能已完成",
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.scratchpad/T6-completion-summary.md",
+        "type": "scratchpad",
+        "broken_references": 0,
+        "total_references": 0,
+        "drift_percentage": 100,
+        "reason": "临时文档，任务已完成",
+        "risk": "low"
+      },
+      {
+        "path": ".workflow/.scratchpad/T6-migration-verification.md",
+        "type": "scratchpad",
+        "broken_references": 0,
+        "total_references": 0,
+        "drift_percentage": 100,
+        "reason": "临时文档，迁移已验证",
+        "risk": "low"
+      }
+    ],
+    "dead_code": []
+  },
+  "summary": {
+    "total_items": 15,
+    "total_size_mb": 0.9,
+    "by_category": {
+      "stale_sessions": 11,
+      "drifted_documents": 4,
+      "dead_code": 0
+    },
+    "by_risk": {
+      "low": 15,
+      "medium": 0,
+      "high": 0
+    }
+  }
+}

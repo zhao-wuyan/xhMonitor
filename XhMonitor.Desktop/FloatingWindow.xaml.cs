@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
@@ -11,6 +13,7 @@ using System.Windows.Threading;
 using System.Collections.Specialized;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop;
@@ -32,6 +35,10 @@ public partial class FloatingWindow : Window
     private DispatcherTimer? _longPressTimer;
     private string? _longPressingMetric;
     private bool _longPressTriggered; // 标记长按是否已触发
+    private FrameworkElement? _longPressingElement; // 存储正在长按的元素
+
+    // 动画相关
+    private readonly Dictionary<string, System.Windows.Media.Animation.Storyboard> _activeAnimations = new();
 
     // 拖动相关
     private bool _isDragging;
@@ -197,6 +204,14 @@ public partial class FloatingWindow : Window
         _allowClose = true;
     }
 
+    /// <summary>
+    /// 主动重连 SignalR（用于 Service 重启后刷新连接）
+    /// </summary>
+    public async Task ReconnectSignalRAsync()
+    {
+        await _viewModel.ReconnectAsync();
+    }
+
     public void SetClickThrough(bool enabled)
     {
         IsClickThroughEnabled = enabled;
@@ -223,6 +238,7 @@ public partial class FloatingWindow : Window
         try
         {
             await _viewModel.InitializeAsync();
+            await LoadMonitoringSettingsAsync();
         }
         catch (Exception ex)
         {
@@ -233,6 +249,50 @@ public partial class FloatingWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
             );
+        }
+    }
+
+    private async Task LoadMonitoringSettingsAsync()
+    {
+        try
+        {
+            var serviceDiscovery = new Services.ServiceDiscovery();
+            var apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
+
+            // 从 DI 容器获取 HttpClient，避免频繁实例化
+            var httpClient = ((App)System.Windows.Application.Current).Services?.GetService<HttpClient>();
+            if (httpClient == null)
+            {
+                System.Diagnostics.Debug.WriteLine("HttpClient not available from DI container");
+                return;
+            }
+
+            var response = await httpClient.GetAsync($"{apiBaseUrl}/settings");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
+                if (settings?.TryGetValue("Monitoring", out var monitoring) == true)
+                {
+                    if (monitoring.TryGetValue("MonitorCpu", out var cpu))
+                        _viewModel.IsCpuVisible = bool.Parse(cpu);
+                    if (monitoring.TryGetValue("MonitorMemory", out var memory))
+                        _viewModel.IsMemoryVisible = bool.Parse(memory);
+                    if (monitoring.TryGetValue("MonitorGpu", out var gpu))
+                        _viewModel.IsGpuVisible = bool.Parse(gpu);
+                    if (monitoring.TryGetValue("MonitorVram", out var vram))
+                        _viewModel.IsVramVisible = bool.Parse(vram);
+                    if (monitoring.TryGetValue("MonitorPower", out var power))
+                        _viewModel.IsPowerVisible = bool.Parse(power) && _viewModel.IsPowerVisible; // 保留原有的硬件检测逻辑
+                    if (monitoring.TryGetValue("MonitorNetwork", out var network))
+                        _viewModel.IsNetworkVisible = bool.Parse(network);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load monitoring settings: {ex.Message}");
+            // 加载失败时使用默认值（全部显示）
         }
     }
 
@@ -355,7 +415,20 @@ public partial class FloatingWindow : Window
         // 停止长按计时器(如果还在运行)
         StopLongPressTimer();
 
-        // 执行点击锁定逻辑
+        // 检查是否点击在指标上 - 如果是,播放点击动画
+        if (e.OriginalSource is DependencyObject depObj)
+        {
+            var metric = FindParentWithTag(depObj);
+            if (metric != null && metric.Tag is string metricId)
+            {
+                // 点击在指标上 - 播放点击反馈动画
+                AnimateClickFeedback(metric);
+                System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [指标] 点击反馈 - 指标ID={metricId}");
+                // 不要 return，继续执行锁定逻辑
+            }
+        }
+
+        // 执行点击锁定逻辑（无论点击指标还是空白区域）
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 短按,调用 OnBarClick,当前状态: {_viewModel.CurrentPanelState}");
         _viewModel.OnBarClick();
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] OnBarClick 执行后,新状态: {_viewModel.CurrentPanelState}");
@@ -392,6 +465,14 @@ public partial class FloatingWindow : Window
 
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [长按] 开始 - 指标ID={metricId}");
 
+        // 查找指标元素
+        var metricElement = FindMetricElement(metricId);
+        if (metricElement != null)
+        {
+            _longPressingElement = metricElement;
+            AnimateLongPressStart(metricElement, metricId);
+        }
+
         _longPressTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(2)
@@ -422,8 +503,135 @@ public partial class FloatingWindow : Window
             _longPressTimer.Stop();
             _longPressTimer = null;
         }
+
+        // 取消长按动画
+        if (_longPressingMetric != null)
+        {
+            AnimateLongPressCancel(_longPressingMetric);
+        }
+
         _longPressingMetric = null;
+        _longPressingElement = null;
         // 不在这里重置 _longPressTriggered,让 MouseUp 事件处理后再重置
+    }
+
+    // 查找指标元素
+    private FrameworkElement? FindMetricElement(string metricId)
+    {
+        // 遍历 MonitorBar 的子元素查找对应 Tag 的 StackPanel
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(MonitorBar); i++)
+        {
+            var child = VisualTreeHelper.GetChild(MonitorBar, i);
+            if (child is Grid grid)
+            {
+                for (int j = 0; j < VisualTreeHelper.GetChildrenCount(grid); j++)
+                {
+                    var gridChild = VisualTreeHelper.GetChild(grid, j);
+                    if (gridChild is FrameworkElement element && element.Tag is string tag && tag == metricId)
+                    {
+                        return element;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    // 长按开始动画 - 缩小到 90%
+    private void AnimateLongPressStart(FrameworkElement target, string metricId)
+    {
+        if (target.RenderTransform is not ScaleTransform) return;
+
+        var scaleX = new System.Windows.Media.Animation.DoubleAnimation
+        {
+            From = 1.0,
+            To = 0.90,
+            Duration = TimeSpan.FromSeconds(2),
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+        };
+
+        var scaleY = new System.Windows.Media.Animation.DoubleAnimation
+        {
+            From = 1.0,
+            To = 0.90,
+            Duration = TimeSpan.FromSeconds(2),
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+        };
+
+        var storyboard = new System.Windows.Media.Animation.Storyboard();
+        System.Windows.Media.Animation.Storyboard.SetTarget(scaleX, target);
+        System.Windows.Media.Animation.Storyboard.SetTargetProperty(scaleX, new PropertyPath("(UIElement.RenderTransform).(ScaleTransform.ScaleX)"));
+        System.Windows.Media.Animation.Storyboard.SetTarget(scaleY, target);
+        System.Windows.Media.Animation.Storyboard.SetTargetProperty(scaleY, new PropertyPath("(UIElement.RenderTransform).(ScaleTransform.ScaleY)"));
+
+        storyboard.Children.Add(scaleX);
+        storyboard.Children.Add(scaleY);
+
+        storyboard.Begin();
+        _activeAnimations[metricId] = storyboard;
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [动画] 长按动画开始 - 指标ID={metricId}");
+    }
+
+    // 长按取消动画 - 恢复到 100%
+    private void AnimateLongPressCancel(string metricId)
+    {
+        if (_activeAnimations.TryGetValue(metricId, out var storyboard))
+        {
+            storyboard.Stop();
+            _activeAnimations.Remove(metricId);
+        }
+
+        // 查找元素并重置缩放
+        var element = FindMetricElement(metricId);
+        if (element?.RenderTransform is ScaleTransform scaleTransform)
+        {
+            var scaleX = new System.Windows.Media.Animation.DoubleAnimation
+            {
+                To = 1.0,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+            };
+
+            var scaleY = new System.Windows.Media.Animation.DoubleAnimation
+            {
+                To = 1.0,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+            };
+
+            scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, scaleX);
+            scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, scaleY);
+
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [动画] 长按取消动画 - 指标ID={metricId}");
+        }
+    }
+
+    // 点击反馈动画 - 快速弹跳
+    private void AnimateClickFeedback(FrameworkElement target)
+    {
+        if (target.RenderTransform is not ScaleTransform) return;
+
+        var storyboard = new System.Windows.Media.Animation.Storyboard();
+
+        var scaleX = new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames();
+        scaleX.KeyFrames.Add(new System.Windows.Media.Animation.SplineDoubleKeyFrame(0.92, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(50))));
+        scaleX.KeyFrames.Add(new System.Windows.Media.Animation.SplineDoubleKeyFrame(1.0, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(150))));
+
+        var scaleY = new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames();
+        scaleY.KeyFrames.Add(new System.Windows.Media.Animation.SplineDoubleKeyFrame(0.92, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(50))));
+        scaleY.KeyFrames.Add(new System.Windows.Media.Animation.SplineDoubleKeyFrame(1.0, System.Windows.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(150))));
+
+        System.Windows.Media.Animation.Storyboard.SetTarget(scaleX, target);
+        System.Windows.Media.Animation.Storyboard.SetTargetProperty(scaleX, new PropertyPath("(UIElement.RenderTransform).(ScaleTransform.ScaleX)"));
+        System.Windows.Media.Animation.Storyboard.SetTarget(scaleY, target);
+        System.Windows.Media.Animation.Storyboard.SetTargetProperty(scaleY, new PropertyPath("(UIElement.RenderTransform).(ScaleTransform.ScaleY)"));
+
+        storyboard.Children.Add(scaleX);
+        storyboard.Children.Add(scaleY);
+        storyboard.Begin();
+
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [动画] 点击反馈动画");
     }
 
     private void PinIndicator_Click(object sender, MouseButtonEventArgs e)

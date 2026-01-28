@@ -1,0 +1,27 @@
+{
+  "session_id": "power-device-verification-2026-01-27",
+  "task_description": "功耗切换需要验证设备型号，当前的切换参数需要绑定【玲珑星核】设备。验证方式：调用 127.0.0.1:5050/device_info，验证条件：platform = amd_395 且 is_mac_authorized = true。映射结构：设备名 → 验证方式 → 验证条件 → 切换参数",
+  "timestamp": "2026-01-27T12:00:00.000Z",
+  "complexity": "Medium",
+  "exploration_count": 3,
+  "explorations": [
+    {
+      "angle": "architecture",
+      "file": "exploration-architecture.json",
+      "path": ".workflow/.lite-plan/power-device-verification-2026-01-27/exploration-architecture.json",
+      "index": 1
+    },
+    {
+      "angle": "integration-points",
+      "file": "exploration-integration-points.json",
+      "path": ".workflow/.lite-plan/power-device-verification-2026-01-27/exploration-integration-points.json",
+      "index": 2
+    },
+    {
+      "angle": "patterns",
+      "file": "exploration-patterns.json",
+      "path": ".workflow/.lite-plan/power-device-verification-2026-01-27/exploration-patterns.json",
+      "index": 3
+    }
+  ]
+}

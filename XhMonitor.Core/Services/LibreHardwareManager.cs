@@ -96,13 +96,19 @@ public class LibreHardwareManager : ILibreHardwareManager, IAsyncDisposable
                 return;
             }
 
-            foreach (var hardware in _computer.Value.Hardware)
+            var computer = _computer.Value;
+            if (computer == null)
+            {
+                return;
+            }
+
+            foreach (var hardware in computer.Hardware)
             {
                 hardware.Update();
             }
 
             List<SensorReading> readings = [];
-            foreach (var hardware in _computer.Value.Hardware)
+            foreach (var hardware in computer.Hardware)
             {
                 AddSensorReadings(hardware, readings);
                 foreach (var subHardware in hardware.SubHardware)

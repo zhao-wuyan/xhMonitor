@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop;
+using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop.Services;
 
@@ -9,16 +11,22 @@ public sealed class WindowManagementService : IWindowManagementService
     private readonly ITrayIconService _trayIconService;
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
+    private readonly IPowerControlService _powerControlService;
+    private readonly IServiceProvider _serviceProvider;
     private FloatingWindow? _floatingWindow;
 
     public WindowManagementService(
         ITrayIconService trayIconService,
         IServiceDiscovery serviceDiscovery,
-        IProcessManager processManager)
+        IProcessManager processManager,
+        IPowerControlService powerControlService,
+        IServiceProvider serviceProvider)
     {
         _trayIconService = trayIconService;
         _serviceDiscovery = serviceDiscovery;
         _processManager = processManager;
+        _powerControlService = powerControlService;
+        _serviceProvider = serviceProvider;
     }
 
     public void InitializeMainWindow()
@@ -37,6 +45,7 @@ public sealed class WindowManagementService : IWindowManagementService
             _floatingWindow,
             ToggleMainWindow,
             OpenWebInterface,
+            OpenSettingsWindow,
             OpenAboutWindow,
             ExitApplication);
     }
@@ -105,6 +114,29 @@ public sealed class WindowManagementService : IWindowManagementService
         });
     }
 
+    private void OpenSettingsWindow()
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            var existingWindow = System.Windows.Application.Current.Windows.OfType<Windows.SettingsWindow>().FirstOrDefault();
+            if (existingWindow != null)
+            {
+                existingWindow.Activate();
+                return;
+            }
+
+            var viewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
+            var startupManager = _serviceProvider.GetRequiredService<IStartupManager>();
+            var adminModeManager = _serviceProvider.GetRequiredService<IAdminModeManager>();
+            var backendServerService = _serviceProvider.GetRequiredService<IBackendServerService>();
+            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService)
+            {
+                Owner = _floatingWindow
+            };
+            settingsWindow.ShowDialog();
+        });
+    }
+
     private void OpenWebInterface()
     {
         try
@@ -130,12 +162,40 @@ public sealed class WindowManagementService : IWindowManagementService
 
     private void ExitApplication()
     {
+        _floatingWindow?.AllowClose();
         System.Windows.Application.Current.Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
     }
 
-    private void OnMetricActionRequested(object? sender, MetricActionEventArgs e)
+    private async void OnMetricActionRequested(object? sender, MetricActionEventArgs e)
     {
         Debug.WriteLine($"[Plugin Extension Point] Metric Action: {e.MetricId} -> {e.Action}");
+
+        if (!string.Equals(e.MetricId, "power", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!e.Action.StartsWith("longPress_", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var window = _floatingWindow;
+        if (window == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _powerControlService.SwitchToNextSchemeAsync().ConfigureAwait(false);
+            var schemeText = result.Scheme?.ToDisplayString() ?? $"#{result.NewSchemeIndex}";
+            window.Dispatcher.Invoke(() => window.ShowToast($"功耗切换：{schemeText}"));
+        }
+        catch (Exception ex)
+        {
+            window.Dispatcher.Invoke(() => window.ShowToast($"功耗切换失败：{ex.Message}"));
+        }
     }
 
     private void OnProcessActionRequested(object? sender, ProcessActionEventArgs e)

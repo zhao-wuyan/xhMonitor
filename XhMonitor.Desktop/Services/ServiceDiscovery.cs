@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text.Json;
 using XhMonitor.Core.Configuration;
@@ -12,6 +13,8 @@ public sealed class ServiceDiscovery : IServiceDiscovery
     private const string ConfigFileName = "service-endpoints.json";
     private const string DefaultApiBaseUrl = "http://localhost:35179";
     private const string DefaultSignalRUrl = "http://localhost:35179/hubs/metrics";
+    private const string HealthCheckPath = "/api/v1/config/health";
+    private static readonly TimeSpan ServiceProbeTimeout = TimeSpan.FromMilliseconds(300);
 
     public string ApiBaseUrl { get; }
     public string SignalRUrl { get; }
@@ -66,7 +69,7 @@ public sealed class ServiceDiscovery : IServiceDiscovery
 
         var apiUri = new Uri(apiBaseUrl);
         var signalRUri = new Uri(signalRUrl);
-        var backendPort = GetAvailablePort(apiUri.Port);
+        var backendPort = ResolveBackendPort(apiUri);
 
         ApiPort = backendPort;
         SignalRPort = backendPort;
@@ -104,6 +107,82 @@ public sealed class ServiceDiscovery : IServiceDiscovery
             Port = port
         };
         return builder.Uri.ToString();
+    }
+
+    private static int ResolveBackendPort(Uri apiUri)
+    {
+        try
+        {
+            using var httpClient = new HttpClient { Timeout = ServiceProbeTimeout };
+
+            var preferredPort = apiUri.Port;
+            for (var port = preferredPort; port <= preferredPort + 10; port++)
+            {
+                // 如果端口空闲，则不会有服务在监听；跳过可减少探测请求。
+                if (port != preferredPort && IsPortAvailable(port))
+                {
+                    continue;
+                }
+
+                if (IsXhMonitorService(httpClient, apiUri, port))
+                {
+                    if (port != preferredPort)
+                    {
+                        Debug.WriteLine($"Detected XhMonitor service on port {port} (preferred {preferredPort} was not XhMonitor).");
+                    }
+                    return port;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to resolve backend port via health probe: {ex.Message}. Falling back to configured port.");
+        }
+
+        return apiUri.Port;
+    }
+
+    private static bool IsXhMonitorService(HttpClient httpClient, Uri apiUri, int port)
+    {
+        try
+        {
+            var healthUri = new UriBuilder(apiUri)
+            {
+                Port = port,
+                Path = HealthCheckPath,
+                Query = string.Empty,
+                Fragment = string.Empty
+            }.Uri;
+
+            var response = httpClient.GetAsync(healthUri).GetAwaiter().GetResult();
+
+            // 200（Healthy）或 503（Unhealthy）都可以视为 “这是 XhMonitor 服务”。
+            if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.ServiceUnavailable)
+            {
+                return false;
+            }
+
+            var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return false;
+            }
+
+            using var document = JsonDocument.Parse(body);
+            if (!document.RootElement.TryGetProperty("status", out var statusProperty) ||
+                statusProperty.ValueKind != JsonValueKind.String)
+            {
+                return false;
+            }
+
+            var status = statusProperty.GetString();
+            return string.Equals(status, "Healthy", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(status, "Unhealthy", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static int GetAvailablePort(int preferredPort, HashSet<int>? reservedPorts = null)

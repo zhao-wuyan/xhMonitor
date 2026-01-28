@@ -139,6 +139,15 @@ public class SignalRService : IAsyncDisposable
         ConnectionStateChanged?.Invoke(true);
     }
 
+    /// <summary>
+    /// 主动重连 SignalR（断开后重新连接）
+    /// </summary>
+    public async Task ReconnectAsync()
+    {
+        await DisconnectAsync().ConfigureAwait(false);
+        await ConnectAsync().ConfigureAwait(false);
+    }
+
     public async Task DisconnectAsync()
     {
         var connection = _connection;

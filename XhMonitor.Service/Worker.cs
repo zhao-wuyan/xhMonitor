@@ -232,8 +232,16 @@ public class Worker : BackgroundService
     {
         var usage = await _systemMetricProvider.GetSystemUsageAsync();
 
-        _logger.LogInformation("System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB",
-            usage.TotalCpu, usage.TotalGpu, usage.TotalMemory, usage.TotalVram);
+        _logger.LogInformation(
+            "System usage: CPU={Cpu}%, GPU={Gpu}%, Memory={Mem}MB, VRAM={Vram}MB, Power={Power}/{PowerMax}W, Upload={Upload}MB/s, Download={Download}MB/s",
+            usage.TotalCpu,
+            usage.TotalGpu,
+            usage.TotalMemory,
+            usage.TotalVram,
+            usage.TotalPower,
+            usage.MaxPower,
+            usage.UploadSpeed,
+            usage.DownloadSpeed);
 
         await _hubContext.Clients.All.ReceiveSystemUsage(new
         {
@@ -242,8 +250,14 @@ public class Worker : BackgroundService
             TotalGpu = usage.TotalGpu,
             TotalMemory = Math.Round(usage.TotalMemory, 1),
             TotalVram = Math.Round(usage.TotalVram, 1),
+            UploadSpeed = Math.Max(0.0, usage.UploadSpeed),
+            DownloadSpeed = Math.Max(0.0, usage.DownloadSpeed),
             MaxMemory = Math.Round(_cachedMaxMemory, 1),
-            MaxVram = Math.Round(_cachedMaxVram, 1)
+            MaxVram = Math.Round(_cachedMaxVram, 1),
+            PowerAvailable = usage.PowerAvailable,
+            TotalPower = Math.Round(usage.TotalPower, 1),
+            MaxPower = Math.Round(usage.MaxPower, 1),
+            PowerSchemeIndex = usage.PowerSchemeIndex
         });
     }
 

@@ -1,0 +1,47 @@
+{
+  "patterns": [
+    "系统级指标通过 ReceiveSystemUsage 单消息推送（包含 CPU/GPU/内存/VRAM/网速/上限）。",
+    "桌面端仅需在 ViewModel 添加属性并在 XAML 绑定即可完成展示。"
+  ],
+  "angle": "integration-points",
+  "relevant_files": [
+    "XhMonitor.Service/Worker.cs",
+    "XhMonitor.Service/Hubs/MetricsHub.cs",
+    "XhMonitor.Desktop/Services/SignalRService.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+    "XhMonitor.Desktop/FloatingWindow.xaml"
+  ],
+  "clarification_needs": [
+    {
+      "question": "你要把网速显示在“哪个桌面界面”里？",
+      "recommended": 0,
+      "options": [
+        "只在悬浮窗 MonitorBar 显示（现状）",
+        "悬浮窗 + MainWindow 都显示",
+        "其他位置（请说明）"
+      ],
+      "context": "当前 FloatingWindow.xaml 已有 NET（↑/↓）展示并绑定 UploadSpeed/DownloadSpeed。如果你指的是 MainWindow 或其他窗口，需要明确目标。"
+    }
+  ],
+  "integration_points": [
+    "若需新增/调整字段：保持 Service payload 字段名与 Desktop DTO JsonPropertyName 一致（camelCase）。",
+    "若需新增展示位置：FloatingWindow.xaml MonitorBar 或 MainWindow.xaml（需你确认）。"
+  ],
+  "project_structure": [
+    "服务端：XhMonitor.Service 通过 SignalR Hub 推送系统使用率（1 秒间隔默认）",
+    "客户端：XhMonitor.Desktop 订阅 ReceiveSystemUsage 并更新悬浮窗 ViewModel",
+    "UI：FloatingWindow.xaml 顶部 MonitorBar 展示 CPU/RAM/GPU/VRAM/NET"
+  ],
+  "_metadata": {
+    "exploration_index": 2,
+    "exploration_angle": "integration-points",
+    "timestamp": "2026-01-26T13:08:14.3587337Z"
+  },
+  "dependencies": [
+    "SignalR：HubContext -> Clients.All.ReceiveSystemUsage",
+    "System.Text.Json：JsonSerializer.Deserialize<SystemUsageDto>"
+  ],
+  "constraints": [
+    "当前代码库中网速字段与 UI 展示已贯通；若你仍“看不到”，可能是运行配置/管理员权限/传感器命名导致值为 0。"
+  ]
+}

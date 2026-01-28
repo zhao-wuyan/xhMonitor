@@ -243,8 +243,8 @@ public class GpuEngineUsageTests
             if (nodeCount == 0)
                 continue;
 
-            Dictionary<uint, Dictionary<string, double>> perfByNode = null;
-            string perfKey = null;
+            Dictionary<uint, Dictionary<string, double>>? perfByNode = null;
+            string? perfKey = null;
             if (perfNodes.TryGetValue(keyHighLow, out var perfByNodeHighLow))
             {
                 perfByNode = perfByNodeHighLow;
@@ -359,7 +359,7 @@ public class GpuEngineUsageTests
         }
     }
 
-    private static string GetNodeEngineLabel(Dictionary<uint, Dictionary<string, double>> perfByNode, uint nodeId)
+    private static string GetNodeEngineLabel(Dictionary<uint, Dictionary<string, double>>? perfByNode, uint nodeId)
     {
         if (perfByNode == null || !perfByNode.TryGetValue(nodeId, out var entry) || entry.Count == 0)
             return "[Unknown]";

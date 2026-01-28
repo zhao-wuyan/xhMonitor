@@ -1,0 +1,123 @@
+{
+  "summary": "在桌面悬浮窗 MonitorBar 增加并优化网速展示：NET 放在 CPU 左侧，上传/下载上下布局（上：↑ 上传，下：↓ 下载），不显示进度条，并确保 KB/s 与 MB/s 自动切换且显示紧凑。系统侧修正 LibreHardwareMonitor Throughput 原始单位（B/s）到对外约定（MB/s）的换算，并避免过早取整造成小网速丢失。",
+  "approach": "保持现有架构（MetricProviderRegistry/providers 负责可插件化的系统/进程指标，SystemMetricProvider 负责系统级汇总；网络吞吐通过已注入的 ILibreHardwareManager 读取）。对网速仅做单位换算与精度策略修正，最终显示格式在桌面端通过 Converter 完成。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Fix 系统网速单位与精度",
+      "scope": "SystemUsage 网速链路（XhMonitor.Core + XhMonitor.Service + XhMonitor.Tests）",
+      "action": "Fix",
+      "description": "修正 LHM Throughput 原始值单位为 B/s 的事实，统一对外输出 UploadSpeed/DownloadSpeed 为 MB/s（double）。调整精度策略，避免在 Core/Service 侧过早 Round，保证桌面端可正确显示 KB/s 与 MB/s。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+          "target": "GetNetworkSpeed/ConvertThroughputToMbps",
+          "change": "按 B/s 读取并用 1024^2 换算为 MB/s；移除/降低过早 Round 以保留小网速精度。"
+        },
+        {
+          "file": "XhMonitor.Service/Worker.cs",
+          "target": "SendSystemUsageAsync",
+          "change": "网速仅做非负保护，不再 Math.Round(..., 1)。"
+        },
+        {
+          "file": "XhMonitor.Tests/Providers/SystemMetricProviderTests.cs",
+          "target": "GetSystemUsageAsync_IncludesNetworkThroughput_WhenHardwareManagerAvailable",
+          "change": "按 B/s 构造 Upload/Download Speed 传感器值并更新断言（与 MB/s 输出一致）。"
+        },
+        {
+          "file": "XhMonitor.Tests/Services/WorkerTests.cs",
+          "target": "DoneWhen_SendSystemUsageAsync_PushesSystemUsageIncludingCachedLimits",
+          "change": "更新 UploadSpeed/DownloadSpeed 的断言以匹配新的精度策略。"
+        }
+      ],
+      "implementation": [
+        "确认 LHM Throughput 原始单位为 Bytes/s（B/s），系统对外保持 MB/s 语义（与 IMetricsClient 注释一致）。",
+        "在 SystemMetricProvider.GetNetworkSpeed() 中聚合 Upload/Download 传感器值，并用 1024^2 转换为 MB/s（double）。",
+        "移除/下沉对网速的 Round（避免小网速变 0），将最终显示取整交给桌面端。",
+        "在 Worker.SendSystemUsageAsync() 中仅保留 Math.Max(0.0, value) 保护，不再对网速 Round。",
+        "更新相关单元测试断言，运行 dotnet test xhMonitor.sln。"
+      ],
+      "acceptance": [
+        "SystemUsage.UploadSpeed/DownloadSpeed 对外语义为 MB/s（double），小于 1 MB/s 的场景仍保留有效精度供前端换算显示。",
+        "dotnet test xhMonitor.sln 全部通过。"
+      ]
+    },
+    {
+      "id": "T2",
+      "title": "Update 悬浮窗 NET 紧凑上下布局",
+      "scope": "XhMonitor.Desktop（FloatingWindow MonitorBar）",
+      "action": "Update",
+      "description": "将 NET 区移到 CPU 左侧，并把上传/下载改为上下两行紧凑展示（上：↑ 上传，下：↓ 下载），移除 NET 进度条。新增 Converter 做 KB/s 与 MB/s 自适应显示。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Converters/NetworkSpeedConverter.cs",
+          "target": "IValueConverter.Convert",
+          "change": "输入 MB/s（double），输出紧凑字符串：< 1.0 显示 KB/s（整数），>= 1.0 显示 MB/s（1 位小数）。"
+        },
+        {
+          "file": "XhMonitor.Desktop/FloatingWindow.xaml",
+          "target": "Window.Resources",
+          "change": "注册 NetworkSpeedConverter 并应用到 NET 展示 Binding。"
+        },
+        {
+          "file": "XhMonitor.Desktop/FloatingWindow.xaml",
+          "target": "MonitorBar Grid.ColumnDefinitions/NET StackPanel",
+          "change": "调整列顺序把 NET 放到 CPU 左侧；NET 区改上下两行；删除原 NET 的 3px 进度条；缩小 NET 宽度。"
+        }
+      ],
+      "implementation": [
+        "新增 NetworkSpeedConverter：double（MB/s）→ string；阈值 1.0MB/s 以内显示 KB/s，以上显示 MB/s。",
+        "在 FloatingWindow.xaml 的 Resources 注册 Converter。",
+        "调整 MonitorBar 列顺序：NET、分隔线、CPU、分隔线、RAM、分隔线、GPU、分隔线、VRAM、Status。",
+        "NET 区用上下布局（例如 StackPanel/ Grid）：上行 “↑ {Upload}”，下行 “↓ {Download}”，并移除原进度条 Border。",
+        "将 NET 宽度调小并保证文本对齐与可读性。"
+      ],
+      "acceptance": [
+        "悬浮窗 MonitorBar 中 NET 位于 CPU 左侧，上传在上、下载在下，显示 ↑/↓，且无进度条。",
+        "网速会在 KB/s 与 MB/s 之间正确切换，显示紧凑。"
+      ],
+      "depends_on": [
+        "T1"
+      ]
+    }
+  ],
+  "estimated_time": "60-90 minutes",
+  "recommended_execution": "Codex",
+  "complexity": "Medium",
+  "focus_paths": [
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "XhMonitor.Service/Worker.cs",
+    "XhMonitor.Tests/Providers/SystemMetricProviderTests.cs",
+    "XhMonitor.Tests/Services/WorkerTests.cs",
+    "XhMonitor.Desktop/FloatingWindow.xaml",
+    "XhMonitor.Desktop/Converters/NetworkSpeedConverter.cs"
+  ],
+  "design_decisions": [
+    {
+      "decision": "网络吞吐通过 ILibreHardwareManager 读取而非 IMetricProvider",
+      "rationale": "网络吞吐属于系统级指标且不依赖 processId；现有 SystemMetricProvider 构造函数已显式支持注入 ILibreHardwareManager，符合当前混合架构设计。",
+      "tradeoff": "网络吞吐不走插件化 providers 管线，需要在 SystemMetricProvider 内维护传感器名 pattern 与单位换算逻辑。",
+      "alternatives": [
+        "新增 NetMetricProvider 并扩展 IMetricProvider 接口以支持系统级无进程指标（成本较高且影响面大）"
+      ]
+    },
+    {
+      "decision": "系统对外保持 UploadSpeed/DownloadSpeed 为 MB/s（double），显示单位在桌面端切换",
+      "rationale": "保持 SignalR 契约稳定（IMetricsClient 已注明 MB/s），同时允许桌面端按阈值显示更友好的 KB/s/MB/s。",
+      "tradeoff": "桌面端需要新增 Converter 来负责最终显示格式。",
+      "alternatives": [
+        "服务端动态切换单位并额外传 unit 字段（会增加协议复杂度且与现有契约不一致）"
+      ]
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-26T14:03:56.9810111+00:00",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "exploration_angles": [
+      "patterns",
+      "integration-points",
+      "testing"
+    ]
+  }
+}

@@ -8,6 +8,8 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Settings.Configuration;
 using XhMonitor.Core.Common;
+using XhMonitor.Core.Configuration;
+using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Providers;
 using XhMonitor.Core.Services;
@@ -18,6 +20,15 @@ using XhMonitor.Service.Data.Repositories;
 using XhMonitor.Service.Configuration;
 using XhMonitor.Service.Workers;
 using XhMonitor.Service.Hubs;
+
+// 单实例检查
+const string MutexName = "XhMonitor_Service_SingleInstance";
+using var mutex = new Mutex(true, MutexName, out bool createdNew);
+if (!createdNew)
+{
+    Console.WriteLine("XhMonitor Service 已在运行中。");
+    return;
+}
 
 // 设置控制台编码为 UTF-8，确保中文日志正常显示（仅在有控制台时）
 try
@@ -181,11 +192,67 @@ builder.Services.AddSingleton(sp =>
     return new MetricProviderRegistry(logger, pluginDirectory, providerFactory);
 });
 
+builder.Services.AddSingleton<IGpuVendorDetector>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<WmiGpuVendorDetector>>();
+    return new WmiGpuVendorDetector(logger);
+});
+
+builder.Services.AddSingleton<IRyzenAdjCli>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var env = sp.GetRequiredService<IHostEnvironment>();
+    var logger = sp.GetRequiredService<ILogger<RyzenAdjCli>>();
+    return new RyzenAdjCli(config["Power:RyzenAdjPath"], env.ContentRootPath, logger);
+});
+
+// 设备验证服务
+builder.Services.Configure<DeviceVerificationOptions>(
+    builder.Configuration.GetSection("Power:DeviceVerification"));
+builder.Services.AddHttpClient<IDeviceVerifier, DeviceVerifier>();
+builder.Services.AddSingleton<IDeviceVerifier>(sp =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient(nameof(DeviceVerifier));
+    var options = sp.GetRequiredService<IOptions<DeviceVerificationOptions>>();
+    var logger = sp.GetRequiredService<ILogger<DeviceVerifier>>();
+    return new DeviceVerifier(httpClient, options, logger);
+});
+
+builder.Services.AddSingleton<IPowerProvider>(sp =>
+{
+    var vendor = sp.GetRequiredService<IGpuVendorDetector>().DetectVendor();
+    if (vendor != GpuVendor.Amd)
+    {
+        return new NullPowerProvider();
+    }
+
+    var cli = sp.GetRequiredService<IRyzenAdjCli>();
+    if (!cli.IsAvailable)
+    {
+        return new NullPowerProvider();
+    }
+
+    var config = sp.GetRequiredService<IConfiguration>();
+    var pollSeconds = config.GetValue<int>("Power:PollingIntervalSeconds", 3);
+    var pollingInterval = pollSeconds <= 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(pollSeconds);
+
+    // 获取设备验证服务，使用验证后的设备方案
+    var deviceVerifier = sp.GetRequiredService<IDeviceVerifier>();
+    var deviceName = deviceVerifier.GetVerifiedDeviceName();
+    var schemes = deviceName != null ? deviceVerifier.GetSchemesForDevice(deviceName) : null;
+
+    var logger = sp.GetRequiredService<ILogger<RyzenAdjPowerProvider>>();
+    return new RyzenAdjPowerProvider(cli, pollingInterval, schemes, logger);
+});
+
 builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>
 {
     var registry = sp.GetRequiredService<MetricProviderRegistry>();
     var logger = sp.GetRequiredService<ILogger<SystemMetricProvider>>();
-    return new SystemMetricProvider(registry.GetAllProviders(), logger);
+    var hardwareManager = sp.GetRequiredService<ILibreHardwareManager>();
+    var powerProvider = sp.GetRequiredService<IPowerProvider>();
+    return new SystemMetricProvider(registry.GetAllProviders(), logger, hardwareManager, powerProvider);
 });
 
 builder.Services.AddSingleton<ProcessScanner>();
@@ -214,6 +281,30 @@ builder.WebHost.ConfigureKestrel((context, options) =>
 });
 
 var app = builder.Build();
+
+// 初始化设备验证服务（在服务解析前完成 HTTP 验证）
+using (var scope = app.Services.CreateScope())
+{
+    var deviceVerifier = scope.ServiceProvider.GetRequiredService<IDeviceVerifier>();
+    try
+    {
+        Log.Information("正在初始化设备验证服务...");
+        await deviceVerifier.GetDeviceInfoAsync().ConfigureAwait(false);
+        var deviceName = deviceVerifier.GetVerifiedDeviceName();
+        if (deviceName != null)
+        {
+            Log.Information("设备验证成功: {DeviceName}", deviceName);
+        }
+        else
+        {
+            Log.Warning("设备验证未通过: {Reason}", deviceVerifier.GetDisabledReason());
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "设备验证服务初始化失败，功耗切换功能将被禁用");
+    }
+}
 
 // 自动应用数据库迁移
  using (var scope = app.Services.CreateScope())

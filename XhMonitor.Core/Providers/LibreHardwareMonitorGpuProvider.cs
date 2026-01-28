@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Models;
-using XhMonitor.Core.Models;
 
 namespace XhMonitor.Core.Providers;
 

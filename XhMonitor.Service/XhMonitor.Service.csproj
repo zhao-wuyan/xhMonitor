@@ -7,6 +7,7 @@
     <UserSecretsId>dotnet-XhMonitor.Service-12aa785d-3c46-4be3-9f47-7fba78625a38</UserSecretsId>
     <Version>0.1.0</Version>
     <ServerGarbageCollection>false</ServerGarbageCollection>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <!-- Release 模式不显示控制台窗口 -->
@@ -32,5 +33,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\XhMonitor.Core\XhMonitor.Core.csproj" />
+  </ItemGroup>
+
+  <!-- RyzenAdj (exe 方案) 随发布包输出到 Service/tools/RyzenAdj，方便用户替换升级 -->
+  <ItemGroup>
+    <Content Include="..\tools\RyzenAdj\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <TargetPath>tools\RyzenAdj\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
   </ItemGroup>
 </Project>

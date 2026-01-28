@@ -1,0 +1,71 @@
+{
+  "summary": "在 Service 端添加管理员权限检测 API，并在设置页显示 Service 当前的管理员权限状态，帮助用户确认权限设置是否生效。",
+  "root_cause": "Desktop 端设置管理员模式后，用户无法确认 Service 是否真的以管理员权限运行。需要添加 Service 端权限检测并在 UI 显示。",
+  "strategy": "immediate_patch",
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "在 ConfigController 添加管理员状态 API",
+      "scope": "XhMonitor.Service/Controllers",
+      "action": "Add",
+      "description": "在 ConfigController 添加 GET /api/v1/config/admin-status 端点，返回 Service 当前是否以管理员权限运行",
+      "modification_points": [
+        "XhMonitor.Service/Controllers/ConfigController.cs"
+      ],
+      "implementation": [
+        "添加 GetAdminStatus 方法",
+        "使用 WindowsIdentity 和 WindowsPrincipal 检测管理员权限",
+        "返回 { isAdmin: bool, message: string }"
+      ],
+      "acceptance": "API 返回正确的管理员状态",
+      "depends_on": [],
+      "complexity": "Low"
+    },
+    {
+      "id": "task-2",
+      "title": "在 SettingsViewModel 添加 Service 管理员状态属性",
+      "scope": "XhMonitor.Desktop/ViewModels",
+      "action": "Update",
+      "description": "在 SettingsViewModel 添加 ServiceIsAdmin 属性和加载方法",
+      "modification_points": [
+        "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs"
+      ],
+      "implementation": [
+        "添加 ServiceIsAdmin 属性",
+        "在 LoadSettingsAsync 中调用 admin-status API",
+        "处理 API 调用失败的情况"
+      ],
+      "acceptance": "ViewModel 正确获取并暴露 Service 管理员状态",
+      "depends_on": ["task-1"],
+      "complexity": "Low"
+    },
+    {
+      "id": "task-3",
+      "title": "在设置页 UI 显示 Service 管理员状态",
+      "scope": "XhMonitor.Desktop/Windows",
+      "action": "Update",
+      "description": "在设置页的管理员模式开关旁边显示 Service 当前的管理员权限状态",
+      "modification_points": [
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml"
+      ],
+      "implementation": [
+        "在 AdminMode 开关下方添加状态显示",
+        "使用绿色/红色指示器显示状态",
+        "显示提示文字说明当前状态"
+      ],
+      "acceptance": "设置页正确显示 Service 管理员状态",
+      "depends_on": ["task-2"],
+      "complexity": "Low"
+    }
+  ],
+  "estimated_time": "15-20 minutes",
+  "recommended_execution": "Agent",
+  "severity": "Medium",
+  "risk_level": "Low",
+  "_metadata": {
+    "timestamp": "2026-01-27T11:55:00.000Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "complexity": "Low"
+  }
+}

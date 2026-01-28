@@ -69,3 +69,7 @@ Thumbs.db
 
 xhmonitor.db
 .ace-tool/
+.workflow
+.gemini-clipboard
+.ccw
+.claude/

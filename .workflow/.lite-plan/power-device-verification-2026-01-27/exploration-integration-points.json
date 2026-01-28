@@ -1,0 +1,100 @@
+{
+  "project_structure": "Multi-project .NET 8 solution with layered architecture: XhMonitor.Core (domain models, interfaces, providers), XhMonitor.Service (ASP.NET Core backend with REST API and SignalR), XhMonitor.Desktop (WPF client with DI-based services). Power management flows from Desktop -> Service API -> Core Provider -> RyzenAdj CLI.",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Service/Controllers/PowerController.cs",
+      "relevance": 0.95,
+      "rationale": "Primary integration point - REST API endpoint for power scheme switching. Device verification should be added here before calling IPowerProvider.SwitchToNextSchemeAsync()"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/RyzenAdjPowerProvider.cs",
+      "relevance": 0.9,
+      "rationale": "Core power provider implementation with hardcoded PowerScheme[] array. Device-specific schemes should be configurable based on device verification result"
+    },
+    {
+      "path": "XhMonitor.Service/Program.cs",
+      "relevance": 0.85,
+      "rationale": "DI registration for IPowerProvider. Device verification service and HttpClient for external API calls should be registered here"
+    },
+    {
+      "path": "XhMonitor.Core/Interfaces/IPowerProvider.cs",
+      "relevance": 0.8,
+      "rationale": "Interface definition - may need extension for device-aware power switching or verification status"
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/PowerControlService.cs",
+      "relevance": 0.75,
+      "rationale": "Desktop client HTTP wrapper for power API. Shows existing HttpClient usage pattern for API calls"
+    },
+    {
+      "path": "XhMonitor.Service/appsettings.json",
+      "relevance": 0.7,
+      "rationale": "Configuration file with Power section. Device verification endpoint and device-specific scheme mappings should be added here"
+    },
+    {
+      "path": "XhMonitor.Core/Services/WmiGpuVendorDetector.cs",
+      "relevance": 0.65,
+      "rationale": "Reference pattern for hardware detection service. Device verification service can follow similar singleton pattern"
+    },
+    {
+      "path": "XhMonitor.Core/Interfaces/IGpuVendorDetector.cs",
+      "relevance": 0.6,
+      "rationale": "Reference interface pattern for hardware detection. IDeviceVerifier interface can follow similar design"
+    },
+    {
+      "path": "XhMonitor.Core/Models/PowerScheme.cs",
+      "relevance": 0.55,
+      "rationale": "Power scheme model - may need extension for device-specific scheme configurations"
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/WindowManagementService.cs",
+      "relevance": 0.5,
+      "rationale": "Power switching trigger point via longPress action. May need UI feedback for device verification status"
+    }
+  ],
+  "patterns": "1. DI-based service registration in Program.cs with factory pattern for conditional provider selection (see IPowerProvider registration lines 208-228). 2. HttpClient injection via IHttpClientFactory (Desktop App.xaml.cs:62-63). 3. Configuration binding via IOptions<T> pattern (MonitorSettings, DatabaseSettings). 4. Interface-based abstraction for hardware detection (IGpuVendorDetector -> WmiGpuVendorDetector). 5. Null object pattern for unsupported scenarios (NullPowerProvider). 6. Async/await with CancellationToken throughout API layer.",
+  "dependencies": "Internal: XhMonitor.Core.Interfaces.IPowerProvider, XhMonitor.Core.Models.PowerScheme, XhMonitor.Core.Enums.GpuVendor. External: System.Net.Http (HttpClient for device_info API call), System.Text.Json (JSON deserialization), Microsoft.Extensions.Options (configuration binding), Microsoft.Extensions.Logging (ILogger<T>). External API: 127.0.0.1:5050/device_info endpoint for device verification.",
+  "integration_points": "1. **PowerController.SwitchToNextScheme** (line 45-71): Primary integration point - add device verification check BEFORE calling _powerProvider.SwitchToNextSchemeAsync(). Return 403 Forbidden if verification fails. 2. **Program.cs IPowerProvider registration** (line 208-228): Inject IDeviceVerifier service, pass to RyzenAdjPowerProvider or create DeviceAwarePowerProvider wrapper. 3. **appsettings.json Power section** (line 119-125): Add DeviceVerification config with endpoint URL, device mappings (device_name -> platform + is_mac_authorized -> PowerScheme[]). 4. **RyzenAdjPowerProvider.Schemes** (line 9-14): Currently hardcoded - should be injected via constructor based on verified device type. 5. **External API integration**: Call GET http://127.0.0.1:5050/device_info, parse JSON response for 'platform' and 'is_mac_authorized' fields, validate against device config.",
+  "constraints": "1. Device verification API is external (127.0.0.1:5050) - must handle connection failures gracefully with timeout. 2. Verification condition is specific: platform='amd_395' AND is_mac_authorized=true for 'LingLongXingHe' device. 3. Power schemes are device-specific - different devices may have different wattage limits. 4. Backward compatibility: existing behavior should work if device verification is disabled or fails. 5. Service runs with admin privileges (required for RyzenAdj) - HTTP calls should not require elevation. 6. No existing device_info or platform detection code in codebase - new implementation required.",
+  "clarification_needs": [
+    {
+      "question": "Where should device verification be performed - at API controller level or within IPowerProvider implementation?",
+      "context": "Controller-level verification provides early rejection with proper HTTP status codes (403). Provider-level verification keeps business logic encapsulated but requires interface changes.",
+      "options": [
+        "Controller level - add verification in PowerController before calling provider",
+        "Provider level - create DeviceAwarePowerProvider wrapper that verifies before delegating",
+        "Both levels - controller for HTTP response, provider for scheme selection"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should device verification failures be handled?",
+      "context": "The external device_info API at 127.0.0.1:5050 may be unavailable. Need to decide fail-open vs fail-closed behavior.",
+      "options": [
+        "Fail-closed: Block power switching if verification cannot be performed",
+        "Fail-open: Allow power switching with default schemes if verification fails",
+        "Configurable: Add setting to choose fail-open or fail-closed behavior"
+      ],
+      "recommended": 2
+    },
+    {
+      "question": "Should device verification result be cached?",
+      "context": "Device info (platform, is_mac_authorized) is unlikely to change during runtime. Caching reduces API calls but may miss authorization changes.",
+      "options": [
+        "Cache indefinitely at startup",
+        "Cache with TTL (e.g., 5 minutes)",
+        "No caching - verify on each power switch request"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-27T12:00:00.000Z",
+    "task_description": "功耗切换需要验证设备型号，当前的切换参数需要绑定【玲珑星核】设备。验证方式：调用 127.0.0.1:5050/device_info，验证条件：platform = amd_395 且 is_mac_authorized = true。映射结构：设备名 → 验证方式 → 验证条件 → 切换参数",
+    "source": "cli-explore-agent",
+    "exploration_angle": "integration-points",
+    "exploration_index": 2,
+    "total_explorations": 3,
+    "duration_seconds": 45
+  }
+}

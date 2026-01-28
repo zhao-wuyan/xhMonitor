@@ -158,7 +158,7 @@ public class LibreHardwareManagerTests : IDisposable
     }
 
     [Fact]
-    public void GetSensorValue_ShouldBeThreadSafe()
+    public async Task GetSensorValue_ShouldBeThreadSafe()
     {
         // Arrange
         _manager = new LibreHardwareManager(_mockLogger.Object);
@@ -197,7 +197,7 @@ public class LibreHardwareManagerTests : IDisposable
             }));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         exceptions.Should().BeEmpty("不应有任何线程安全异常");

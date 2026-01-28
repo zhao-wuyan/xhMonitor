@@ -29,6 +29,8 @@ public interface IMetricsClient
     /// <item><description><c>TotalGpu</c>: GPU 使用率（%）</description></item>
     /// <item><description><c>TotalMemory</c>: 内存使用量（MB）</description></item>
     /// <item><description><c>TotalVram</c>: 显存使用量（MB）</description></item>
+    /// <item><description><c>UploadSpeed</c>: 上传速度（MB/s）</description></item>
+    /// <item><description><c>DownloadSpeed</c>: 下载速度（MB/s）</description></item>
     /// <item><description><c>MaxMemory</c>: 最大内存（MB）</description></item>
     /// <item><description><c>MaxVram</c>: 最大显存（MB）</description></item>
     /// </list>
