@@ -38,6 +38,7 @@ public sealed class WindowManagementService : IWindowManagementService
 
         _floatingWindow = new FloatingWindow();
         _floatingWindow.MetricActionRequested += OnMetricActionRequested;
+        _floatingWindow.MetricLongPressStarted += OnMetricLongPressStarted;
         _floatingWindow.ProcessActionRequested += OnProcessActionRequested;
         _floatingWindow.Show();
 
@@ -164,6 +165,28 @@ public sealed class WindowManagementService : IWindowManagementService
     {
         _floatingWindow?.AllowClose();
         System.Windows.Application.Current.Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
+    }
+
+    private async void OnMetricLongPressStarted(object? sender, MetricActionEventArgs e)
+    {
+        Debug.WriteLine($"[Plugin Extension Point] Metric Long Press Started: {e.MetricId}");
+
+        if (!string.Equals(e.MetricId, "power", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        // 长按开始时触发设备验证预热（若已验证通过则跳过）
+        try
+        {
+            await _powerControlService.WarmupDeviceVerificationAsync().ConfigureAwait(false);
+            Debug.WriteLine("[Plugin Extension Point] Device verification warmup completed");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Plugin Extension Point] Device verification warmup failed: {ex.Message}");
+            // 忽略错误，不影响后续流程
+        }
     }
 
     private async void OnMetricActionRequested(object? sender, MetricActionEventArgs e)

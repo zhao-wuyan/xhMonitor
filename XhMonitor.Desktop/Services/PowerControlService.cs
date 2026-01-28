@@ -38,6 +38,21 @@ public sealed class PowerControlService : IPowerControlService
         return dto;
     }
 
+    public async Task WarmupDeviceVerificationAsync(CancellationToken ct = default)
+    {
+        var url = $"{_serviceDiscovery.ApiBaseUrl}/api/v1/power/warmup";
+
+        try
+        {
+            using var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false);
+            // 忽略响应结果，仅触发验证
+        }
+        catch
+        {
+            // 忽略错误，warmup 失败不影响后续流程
+        }
+    }
+
     private static string? TryExtractMessage(string json)
     {
         if (string.IsNullOrWhiteSpace(json))

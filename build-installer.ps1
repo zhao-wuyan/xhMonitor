@@ -131,9 +131,9 @@ if (-not $SkipPublish) {
     }
 
     if ($Lite) {
-        & $publishScript -Version $Version -NoZip -Lite
+        & $publishScript -Version $Version -Lite
     } else {
-        & $publishScript -Version $Version -NoZip
+        & $publishScript -Version $Version
     }
 
     if ($LASTEXITCODE -ne 0) {

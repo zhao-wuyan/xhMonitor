@@ -44,6 +44,21 @@ public sealed class PowerController : ControllerBase
         });
     }
 
+    [HttpGet("warmup")]
+    public async Task<IActionResult> WarmupDeviceVerification(CancellationToken ct)
+    {
+        // 触发设备验证重试（若已验证通过则跳过）
+        await _deviceVerifier.RetryVerificationAsync(ct).ConfigureAwait(false);
+
+        var isEnabled = _deviceVerifier.IsPowerSwitchEnabled();
+        return Ok(new
+        {
+            Enabled = isEnabled,
+            DeviceName = _deviceVerifier.GetVerifiedDeviceName(),
+            Reason = _deviceVerifier.GetDisabledReason()
+        });
+    }
+
     [HttpPost("scheme/next")]
     public async Task<IActionResult> SwitchToNextScheme(CancellationToken ct)
     {

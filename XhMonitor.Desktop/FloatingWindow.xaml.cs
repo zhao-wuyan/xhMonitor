@@ -59,6 +59,11 @@ public partial class FloatingWindow : Window
     public event EventHandler<MetricActionEventArgs>? MetricActionRequested;
 
     /// <summary>
+    /// 指标长按开始事件 - 用于在长按倒计时期间触发预热操作
+    /// </summary>
+    public event EventHandler<MetricActionEventArgs>? MetricLongPressStarted;
+
+    /// <summary>
     /// 进程操作事件 - 预留扩展点，用于处理进程相关的用户交互操作
     /// 当用户在悬浮窗点击进程时触发，传递 ProcessId、ProcessName、Action 给订阅者
     /// 当前由 WindowManagementService 处理
@@ -477,6 +482,13 @@ public partial class FloatingWindow : Window
         _longPressTriggered = false; // 重置标志
 
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [长按] 开始 - 指标ID={metricId}");
+
+        // 触发长按开始事件（用于预热设备验证）
+        MetricLongPressStarted?.Invoke(this, new MetricActionEventArgs
+        {
+            MetricId = metricId,
+            Action = $"longPressStarted_{metricId}"
+        });
 
         // 查找指标元素
         var metricElement = FindMetricElement(metricId);

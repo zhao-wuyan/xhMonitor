@@ -36,4 +36,9 @@ public interface IDeviceVerifier
     /// 获取功耗切换禁用的原因（如果禁用）
     /// </summary>
     string? GetDisabledReason();
+
+    /// <summary>
+    /// 强制重新验证设备（用于延迟验证场景）
+    /// </summary>
+    Task RetryVerificationAsync(CancellationToken ct = default);
 }

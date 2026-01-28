@@ -2,28 +2,13 @@
 
 ## 概述
 
-提供两个发布脚本用于生成绿色免安装版本：
-- `publish.bat` - Windows批处理脚本（简单易用）
-- `publish.ps1` - PowerShell脚本（功能更强大）
+提供发布脚本用于生成绿色免安装版本和安装包：
+- `publish.ps1` - PowerShell脚本
+- `build-installer.ps1` - 构建安装包
 
 ## 使用方法
 
-### 方法一：批处理脚本（推荐新手）
-
-```cmd
-# 使用默认版本号 1.0.0
-publish.bat
-
-# 指定版本号
-publish.bat 2.0.0
-```
-
-**特点：**
-- 双击即可运行
-- 自动发布 Service 和 Desktop
-- 发布完成后询问是否压缩为 ZIP
-
-### 方法二：PowerShell脚本（推荐高级用户）
+### 方法一：PowerShell脚本
 
 ```powershell
 # 基本用法（默认版本 1.0.0，包含.NET运行时）
@@ -54,6 +39,13 @@ publish.bat 2.0.0
 - 自动计算发布包大小
 - 支持选择性发布
 - **支持轻量级模式（-Lite）**
+
+
+### 方法二：build-installer脚本（构建安装包）
+
+```shell
+.\build-installer.ps1 -Lite -Version "版本号"
+```
 
 ## 发布产物
 

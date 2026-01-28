@@ -78,6 +78,28 @@ public sealed class DeviceVerifier : IDeviceVerifier
         return _disabledReason;
     }
 
+    public async Task RetryVerificationAsync(CancellationToken ct = default)
+    {
+        // 若已验证通过，无需重新验证
+        if (!string.IsNullOrEmpty(_verifiedDeviceName))
+        {
+            return;
+        }
+
+        await _initLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            // 强制重新初始化
+            _initialized = false;
+            await InitializeAsync(ct).ConfigureAwait(false);
+            _initialized = true;
+        }
+        finally
+        {
+            _initLock.Release();
+        }
+    }
+
     private async Task EnsureInitializedAsync(CancellationToken ct)
     {
         if (_initialized)
