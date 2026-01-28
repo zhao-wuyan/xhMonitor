@@ -59,36 +59,8 @@ public class ProcessScanner
     {
         try
         {
-            await using var context = await _contextFactory.CreateDbContextAsync();
-
-            var setting = await context.ApplicationSettings
-                .FirstOrDefaultAsync(s => s.Category == "DataCollection" && s.Key == "ProcessKeywords");
-
-            if (setting != null)
-            {
-                var dbKeywords = JsonSerializer.Deserialize<string[]>(setting.Value) ?? Array.Empty<string>();
-                var dbInclude = dbKeywords.Where(k => !k.StartsWith("!")).Select(k => k.ToLowerInvariant()).ToList();
-                var dbExclude = dbKeywords.Where(k => k.StartsWith("!")).Select(k => k[1..].ToLowerInvariant()).ToList();
-
-                lock (_keywordsLock)
-                {
-                    // 融合逻辑（数据库优先）：
-                    // 1. 最终包含 = (配置文件包含 + 数据库包含) - 数据库排除
-                    // 2. 最终排除 = (配置文件排除 + 数据库排除) - 数据库包含
-                    // 例如：配置文件有 python，用户配置 !python → 最终排除 python
-                    var mergedInclude = _configIncludeKeywords.Union(dbInclude).Distinct().ToList();
-                    var mergedExclude = _configExcludeKeywords.Union(dbExclude).Distinct().ToList();
-
-                    _includeKeywords = mergedInclude.Except(dbExclude).ToList();
-                    _excludeKeywords = mergedExclude.Except(dbInclude).ToList();
-                }
-
-                _logger.LogInformation("进程关键字已重新加载: 配置文件 {ConfigInclude}+{ConfigExclude}, 数据库 {DbInclude}+{DbExclude}, 融合后 {TotalInclude}+{TotalExclude}",
-                    _configIncludeKeywords.Count, _configExcludeKeywords.Count,
-                    dbInclude.Count, dbExclude.Count,
-                    _includeKeywords.Count, _excludeKeywords.Count);
-            }
-            else
+            var loaded = await LoadAndMergeKeywordsFromDatabaseAsync();
+            if (!loaded)
             {
                 _logger.LogWarning("数据库中未找到 ProcessKeywords 配置,保持当前关键字不变");
             }
@@ -106,40 +78,53 @@ public class ProcessScanner
     {
         try
         {
-            await using var context = await _contextFactory.CreateDbContextAsync();
-
-            var setting = await context.ApplicationSettings
-                .FirstOrDefaultAsync(s => s.Category == "DataCollection" && s.Key == "ProcessKeywords");
-
-                    if (setting != null)
-            {
-                var dbKeywords = JsonSerializer.Deserialize<string[]>(setting.Value) ?? Array.Empty<string>();
-                var dbInclude = dbKeywords.Where(k => !k.StartsWith("!")).Select(k => k.ToLowerInvariant()).ToList();
-                var dbExclude = dbKeywords.Where(k => k.StartsWith("!")).Select(k => k[1..].ToLowerInvariant()).ToList();
-
-                lock (_keywordsLock)
-                {
-                    // 融合逻辑（数据库优先）：
-                    // 1. 最终包含 = (配置文件包含 + 数据库包含) - 数据库排除
-                    // 2. 最终排除 = (配置文件排除 + 数据库排除) - 数据库包含
-                    // 例如：配置文件有 python，用户配置 !python → 最终排除 python
-                    var mergedInclude = _configIncludeKeywords.Union(dbInclude).Distinct().ToList();
-                    var mergedExclude = _configExcludeKeywords.Union(dbExclude).Distinct().ToList();
-
-                    _includeKeywords = mergedInclude.Except(dbExclude).ToList();
-                    _excludeKeywords = mergedExclude.Except(dbInclude).ToList();
-                }
-
-                _logger.LogInformation("已从数据库加载并融合进程关键字: 配置文件 {ConfigInclude}+{ConfigExclude}, 数据库 {DbInclude}+{DbExclude}, 融合后 {TotalInclude}+{TotalExclude}",
-                    _configIncludeKeywords.Count, _configExcludeKeywords.Count,
-                    dbInclude.Count, dbExclude.Count,
-                    _includeKeywords.Count, _excludeKeywords.Count);
-            }
+            await LoadAndMergeKeywordsFromDatabaseAsync();
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "从数据库加载进程关键字失败,使用 appsettings.json 中的默认值");
         }
+    }
+
+    /// <summary>
+    /// 从数据库加载关键字并与配置文件融合的核心逻辑
+    /// </summary>
+    /// <returns>是否成功加载并融合了数据库中的关键字</returns>
+    private async Task<bool> LoadAndMergeKeywordsFromDatabaseAsync()
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync();
+
+        var setting = await context.ApplicationSettings
+            .FirstOrDefaultAsync(s => s.Category == "DataCollection" && s.Key == "ProcessKeywords");
+
+        if (setting == null)
+        {
+            return false;
+        }
+
+        var dbKeywords = JsonSerializer.Deserialize<string[]>(setting.Value) ?? Array.Empty<string>();
+        var dbInclude = dbKeywords.Where(k => !k.StartsWith("!")).Select(k => k.ToLowerInvariant()).ToList();
+        var dbExclude = dbKeywords.Where(k => k.StartsWith("!")).Select(k => k[1..].ToLowerInvariant()).ToList();
+
+        lock (_keywordsLock)
+        {
+            // 融合逻辑（数据库优先）：
+            // 1. 最终包含 = (配置文件包含 + 数据库包含) - 数据库排除
+            // 2. 最终排除 = (配置文件排除 + 数据库排除) - 数据库包含
+            // 例如：配置文件有 python，用户配置 !python → 最终排除 python
+            var mergedInclude = _configIncludeKeywords.Union(dbInclude).Distinct().ToList();
+            var mergedExclude = _configExcludeKeywords.Union(dbExclude).Distinct().ToList();
+
+            _includeKeywords = mergedInclude.Except(dbExclude).ToList();
+            _excludeKeywords = mergedExclude.Except(dbInclude).ToList();
+        }
+
+        _logger.LogInformation("进程关键字已加载并融合: 配置文件 {ConfigInclude}+{ConfigExclude}, 数据库 {DbInclude}+{DbExclude}, 融合后 {TotalInclude}+{TotalExclude}",
+            _configIncludeKeywords.Count, _configExcludeKeywords.Count,
+            dbInclude.Count, dbExclude.Count,
+            _includeKeywords.Count, _excludeKeywords.Count);
+
+        return true;
     }
 
     public List<ProcessInfo> ScanProcesses()

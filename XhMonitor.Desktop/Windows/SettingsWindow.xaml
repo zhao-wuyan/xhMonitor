@@ -710,7 +710,7 @@
             <!-- 底部操作栏 -->
             <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
                 <Button Content="恢复默认" Height="36" Margin="0,0,10,0" Background="Transparent" Foreground="{StaticResource TextSecondary}" Click="RestoreDefaults_Click"/>
-                <Button Content="取 消" Width="100" Height="36" Margin="0,0,10,0" Click="Cancel_Click"/>
+                <Button Content="关 闭" Width="100" Height="36" Margin="0,0,10,0" Click="Cancel_Click"/>
                 <Button x:Name="SaveButton" Content="保 存" Width="100" Height="36" Background="{StaticResource AccentBlue}" Click="Save_Click"/>
             </StackPanel>
         </Grid>
