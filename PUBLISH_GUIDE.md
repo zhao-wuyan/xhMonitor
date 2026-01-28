@@ -183,6 +183,48 @@ A: 可以，修改 `-r win-x64` 参数为：
 .\publish.ps1 -Version "1.0.1"
 ```
 
+## 安装程序构建
+
+除了绿色版，还可以构建带安装向导的安装程序（使用 Inno Setup）。
+
+### 前置条件
+
+安装 Inno Setup 6.x：https://jrsoftware.org/isdl.php
+
+### 构建安装程序
+
+```powershell
+# 完整构建（发布 + 编译安装程序）
+.\build-installer.ps1
+
+# 指定版本号
+.\build-installer.ps1 -Version "1.0.0"
+
+# 跳过发布步骤（需要已有发布文件）
+.\build-installer.ps1 -SkipPublish
+
+# 查看帮助
+.\build-installer.ps1 -Help
+```
+
+### 安装程序功能
+
+- **软件名称**：星核监视器 (XhMonitor)
+- **创建开始菜单快捷方式**
+- **创建桌面快捷方式**（可选）
+- **开机自启动**（可选）
+- **完整卸载支持**（自动停止服务、清理数据库和日志）
+- **中英文界面支持**
+
+### 输出文件
+
+```
+release/
+├─ XhMonitor-v1.0.0/           # 绿色版目录
+├─ XhMonitor-v1.0.0.zip        # 绿色版压缩包
+└─ XhMonitor-v1.0.0-Setup.exe  # 安装程序
+```
+
 ## 自动化发布
 
 可以集成到 CI/CD 流程：
@@ -191,8 +233,11 @@ A: 可以，修改 `-r win-x64` 参数为：
 # GitHub Actions 示例
 - name: Publish Release
   run: .\publish.ps1 -Version "${{ github.ref_name }}"
+
+- name: Build Installer
+  run: .\build-installer.ps1 -Version "${{ github.ref_name }}" -SkipPublish
 ```
 
 ---
 
-**最后更新**: 2025-12-29
+**最后更新**: 2026-01-28
