@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using LibreHardwareMonitor.Hardware;
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,28 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     private readonly ILogger<SystemMetricProvider>? _logger;
     private readonly ILibreHardwareManager? _hardwareManager;
     private readonly IPowerProvider? _powerProvider;
+    private static readonly string[] VirtualAdapterKeywords =
+    [
+        "vEthernet",
+        "Hyper-V",
+        "VirtualBox",
+        "VMware",
+        "TAP-",
+        "VPN",
+        "Radmin",
+        "Loopback",
+        "Pseudo",
+        "WireGuard",
+        "OpenVPN",
+        "Tun",
+        "Fortinet",
+        "Cisco AnyConnect",
+        "TeamViewer",
+        "AnyDesk",
+        "Kernel"
+    ];
+    private readonly HashSet<string> _verifiedPhysicalAdapters = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SemaphoreSlim _verificationLock = new(1, 1);
     private bool _disposed;
 
     public SystemMetricProvider(
@@ -30,6 +53,23 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         _providers = BuildProviderMap(providers, logger);
         _hardwareManager = hardwareManager;
         _powerProvider = powerProvider;
+        StartPhysicalAdapterVerification();
+    }
+
+    private void StartPhysicalAdapterVerification()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                await VerifyPhysicalAdaptersAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "[SystemMetricProvider] Failed to verify physical adapters");
+            }
+        });
     }
 
     private static Dictionary<string, IMetricProvider> BuildProviderMap(
@@ -235,6 +275,109 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         "rx"
     ];
 
+    private static bool IsVirtualAdapter(string? hardwareName)
+    {
+        if (string.IsNullOrWhiteSpace(hardwareName))
+        {
+            return false;
+        }
+
+        foreach (var keyword in VirtualAdapterKeywords)
+        {
+            if (hardwareName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task VerifyPhysicalAdaptersAsync()
+    {
+        try
+        {
+            List<string> adapterNames = [];
+            foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (adapter.NetworkInterfaceType != NetworkInterfaceType.Ethernet &&
+                    adapter.NetworkInterfaceType != NetworkInterfaceType.Wireless80211)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(adapter.Name))
+                {
+                    continue;
+                }
+
+                adapterNames.Add(adapter.Name);
+            }
+
+            List<string> verifiedAdapters = [];
+            await _verificationLock.WaitAsync();
+            try
+            {
+                _verifiedPhysicalAdapters.Clear();
+                foreach (var name in adapterNames)
+                {
+                    _verifiedPhysicalAdapters.Add(name);
+                }
+
+                verifiedAdapters.AddRange(_verifiedPhysicalAdapters);
+            }
+            finally
+            {
+                _verificationLock.Release();
+            }
+
+            if (verifiedAdapters.Count > 0)
+            {
+                _logger?.LogInformation("[SystemMetricProvider] Verified physical adapters: {Adapters}",
+                    string.Join(", ", verifiedAdapters));
+            }
+            else
+            {
+                _logger?.LogDebug("[SystemMetricProvider] No physical adapters detected for verification");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "[SystemMetricProvider] Failed to verify physical adapters");
+        }
+    }
+
+    private bool HasVerifiedPhysicalAdapters()
+    {
+        _verificationLock.Wait();
+        try
+        {
+            return _verifiedPhysicalAdapters.Count > 0;
+        }
+        finally
+        {
+            _verificationLock.Release();
+        }
+    }
+
+    private bool IsPhysicalAdapterVerified(string? hardwareName)
+    {
+        if (string.IsNullOrWhiteSpace(hardwareName))
+        {
+            return false;
+        }
+
+        _verificationLock.Wait();
+        try
+        {
+            return _verifiedPhysicalAdapters.Contains(hardwareName);
+        }
+        finally
+        {
+            _verificationLock.Release();
+        }
+    }
+
     private (double UploadSpeed, double DownloadSpeed) GetNetworkSpeed()
     {
         if (_hardwareManager == null || !_hardwareManager.IsAvailable)
@@ -255,9 +398,24 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
 
             double uploadBytesPerSecond = 0.0;
             double downloadBytesPerSecond = 0.0;
+            var hasVerifiedAdapters = HasVerifiedPhysicalAdapters();
 
             foreach (var sensor in sensors)
             {
+                if (IsVirtualAdapter(sensor.HardwareName))
+                {
+                    _logger?.LogDebug("[SystemMetricProvider] Skip virtual adapter: {HardwareName}, Sensor={SensorName}",
+                        sensor.HardwareName, sensor.Name);
+                    continue;
+                }
+
+                if (hasVerifiedAdapters && !IsPhysicalAdapterVerified(sensor.HardwareName))
+                {
+                    _logger?.LogDebug("[SystemMetricProvider] Skip unverified adapter: {HardwareName}, Sensor={SensorName}",
+                        sensor.HardwareName, sensor.Name);
+                    continue;
+                }
+
                 if (sensor.Value <= 0)
                 {
                     continue;

@@ -218,7 +218,7 @@ public class LibreHardwareManager : ILibreHardwareManager, IAsyncDisposable
         {
             if (sensor.Value.HasValue)
             {
-                results.Add(new SensorReading(hardware.HardwareType, sensor.SensorType, sensor.Name, sensor.Value.Value));
+                results.Add(new SensorReading(hardware.HardwareType, hardware.Name, sensor.SensorType, sensor.Name, sensor.Value.Value));
             }
         }
     }
