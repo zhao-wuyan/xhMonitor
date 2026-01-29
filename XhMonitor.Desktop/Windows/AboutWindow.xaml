@@ -54,7 +54,7 @@
                 <TextBlock Text="诏无言" Foreground="White" Margin="5,0,0,0"/>
             </StackPanel>
 
-            <TextBlock Text="版本：0.1.0" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,5,0,20"/>
+            <TextBlock x:Name="VersionTextBlock" Text="版本：加载中..." Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,5,0,20"/>
 
             <Button Content="确 定" Width="100" Click="CloseButton_Click" Background="{StaticResource AccentBlue}" Margin="0,10,0,0"/>
         </StackPanel>

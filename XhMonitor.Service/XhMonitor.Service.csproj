@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-XhMonitor.Service-12aa785d-3c46-4be3-9f47-7fba78625a38</UserSecretsId>
-    <Version>0.1.0</Version>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>

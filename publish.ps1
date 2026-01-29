@@ -3,7 +3,7 @@
 # 使用 -Help 或 -h 查看详细帮助信息
 
 param(
-    [string]$Version = "0.1.0",
+    [string]$Version,
     [switch]$SkipDesktop,
     [switch]$SkipService,
     [switch]$NoZip,
@@ -15,6 +15,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+
+# 从 Directory.Build.props 读取默认版本号
+if (-not $Version) {
+    $buildPropsPath = Join-Path $PSScriptRoot "Directory.Build.props"
+    if (Test-Path $buildPropsPath) {
+        [xml]$buildProps = Get-Content $buildPropsPath
+        $Version = $buildProps.Project.PropertyGroup.Version
+        Write-Host "从 Directory.Build.props 读取版本号: $Version" -ForegroundColor Cyan
+    } else {
+        $Version = "0.1.0"
+        Write-Host "警告: 未找到 Directory.Build.props，使用默认版本号: $Version" -ForegroundColor Yellow
+    }
+}
 
 # 显示帮助信息
 if ($Help) {
@@ -139,6 +152,15 @@ try {
         }
     }
 
+    # 同步 package.json 版本号（使用正则替换保持原格式）
+    $packageJsonPath = Join-Path $webProjectPath "package.json"
+    if (Test-Path $packageJsonPath) {
+        $content = Get-Content $packageJsonPath -Raw
+        $content = $content -replace '"version":\s*"[^"]*"', "`"version`": `"$Version`""
+        [System.IO.File]::WriteAllText($packageJsonPath, $content)
+        Write-Host "已同步前端版本号: $Version" -ForegroundColor Green
+    }
+
     # 构建 Web 资源
     Write-Host "构建 Web 资源..." -ForegroundColor Yellow
     & npm run build
@@ -190,6 +212,7 @@ if (-not $SkipService) {
         $publishArgs += "-p:PublishSingleFile=true"
         $publishArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
         $publishArgs += "-p:PublishTrimmed=false"
+        $publishArgs += "-p:Version=$Version"
     }
 
     & dotnet @publishArgs
@@ -233,6 +256,7 @@ if (-not $SkipDesktop) {
         $publishArgs += "-p:PublishSingleFile=true"
         $publishArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
         $publishArgs += "-p:PublishTrimmed=false"
+        $publishArgs += "-p:Version=$Version"
     }
 
     & dotnet @publishArgs

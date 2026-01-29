@@ -2,7 +2,7 @@
 # 用法: .\build-installer.ps1 [-Version "0.2.1"] [-SkipPublish] [-Help]
 
 param(
-    [string]$Version = "0.0.0",  # 版本号参数（字符串类型）
+    [string]$Version,  # 版本号参数（字符串类型）
     [switch]$SkipPublish,        # 跳过发布步骤，直接编译安装程序
     [switch]$Lite,               # 使用精简发布模式
     [Alias("h")]
@@ -10,6 +10,19 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# 从 Directory.Build.props 读取默认版本号
+if (-not $Version) {
+    $buildPropsPath = Join-Path $PSScriptRoot "Directory.Build.props"
+    if (Test-Path $buildPropsPath) {
+        [xml]$buildProps = Get-Content $buildPropsPath
+        $Version = $buildProps.Project.PropertyGroup.Version
+        Write-Host "从 Directory.Build.props 读取版本号: $Version" -ForegroundColor Cyan
+    } else {
+        $Version = "0.1.0"
+        Write-Host "警告: 未找到 Directory.Build.props，使用默认版本号: $Version" -ForegroundColor Yellow
+    }
+}
 
 # 显示帮助信息
 if ($Help) {
