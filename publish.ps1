@@ -311,7 +311,25 @@ Copy-Item (Join-Path $RootDir "scripts\停止服务.bat") (Join-Path $OutputDir 
 
 # 创建 README
 $systemRequirement = if ($Lite) {
-    "- Windows 10/11 x64`n- 需要预先安装 .NET 8 Runtime (Desktop Runtime 或 ASP.NET Core Runtime)`n- 下载地址: https://dotnet.microsoft.com/download/dotnet/8.0`n- 注意: 轻量级模式不包含原生依赖库，需要系统支持"
+    @"
+- Windows 10/11 x64
+- 需要预先安装 .NET 8 Desktop Runtime
+
+【重要】安装步骤：
+1. 访问官方下载页：https://dotnet.microsoft.com/download/dotnet/8.0
+2. 找到 ".NET Desktop Runtime 8.0.x" 部分
+3. 下载 Windows x64 版本（约 55 MB）
+4. 安装后重启电脑
+
+【注意】
+- 不要下载 .NET Runtime（基础版），必须下载 Desktop Runtime！
+- 不要下载 .NET SDK（开发工具包），只需要 Runtime！
+- 如果已经安装了基础版 Runtime，仍需安装 Desktop Runtime
+
+【验证安装】
+打开命令提示符，运行：dotnet --list-runtimes
+应该看到：Microsoft.WindowsDesktop.App 8.0.x
+"@
 } else {
     "- Windows 10/11 x64`n- 无需安装 .NET Runtime（已包含）"
 }
