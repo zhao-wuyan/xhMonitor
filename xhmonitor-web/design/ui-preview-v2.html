@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XhMonitor v2 - 移动端适配版</title>
+    <style>
+        /* --- 核心变量 --- */
+        :root {
+            --bg-color: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-bg: rgba(30, 41, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.05);
+            
+            /* 语义色 - 修复了 v1 中的颜色对应关系 */
+            --color-cpu: #3b82f6;   /* Blue */
+            --color-ram: #8b5cf6;   /* Violet */
+            --color-gpu: #10b981;   /* Green */
+            --color-vram: #f59e0b;  /* Amber */
+            --color-net: #0ea5e9;   /* Sky Blue */
+            --color-pwr: #f43f5e;   /* Rose */
+            
+            --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --card-height: 140px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 80px; /* 移动端底部导航预留 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        /* --- 玻璃拟态组件 --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- 布局容器 --- */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* --- 顶部导航 (移动端优先设计) --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 5px;
+            gap: 20px;
+            position: relative; /* For absolute centering of disk info */
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
+            z-index: 20; /* Ensure clickable/visible */
+        }
+        
+        .version-tag {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-left: 4px;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        /* --- 磁盘信息 (头部中间) --- */
+        .disk-info-container {
+            display: none; /* Mobile hidden by default */
+            gap: 15px;
+            
+            /* Absolute centering */
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        @media (min-width: 768px) {
+            .disk-info-container { display: flex; }
+        }
+
+        .disk-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.03);
+            padding: 3px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+            height: 38px; /* Compact 2-row height */
+            min-width: 200px;
+            max-width: 240px;
+        }
+        
+        .disk-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            opacity: 0.95;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+        
+        .disk-details-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            line-height: 1.2;
+        }
+        
+        .disk-bar-container {
+            display: flex;
+            align-items: center;
+            width: 40px; /* Shorter bar */
+            flex-shrink: 0;
+        }
+        
+        .disk-bar-bg {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .disk-bar-fill {
+            height: 100%;
+            background: var(--color-cpu);
+            border-radius: 2px;
+        }
+        
+        .disk-info-text {
+            color: var(--text-secondary);
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            opacity: 0.8;
+            white-space: nowrap;
+        }
+        
+        .disk-speed-group {
+            display: flex;
+            gap: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding-left: 8px;
+            margin-left: auto; /* Push to right */
+        }
+        
+        .speed-val { font-weight: 600; }
+        .speed-r { color: #60a5fa; }
+        .speed-w { color: #f472b6; }
+
+        .logo-box {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--color-cpu), var(--color-ram));
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-gpu);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            white-space: nowrap;
+            z-index: 20;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: currentColor;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        /* --- 资源卡片 (Grid 布局) --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Changed to 3 columns */
+            gap: 16px;
+        }
+
+        /* 响应式断点 */
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .app-container { padding: 16px; gap: 16px; }
+            .stats-grid { grid-template-columns: 1fr; } /* 手机单列 */
+        }
+
+        /* --- 新版卡片设计 (左指标右曲线) --- */
+        .stat-card {
+            height: var(--card-height);
+            padding: 0;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+
+        /* 左侧：数值区域 - 绝对定位叠在曲线上方 */
+        .card-info-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 150px; /* Increased slightly */
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            text-align: left;
+            z-index: 10;
+            background: transparent;
+        }
+
+        /* 右侧：图表区域 - 占满整个卡片 */
+        .card-chart-area {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .mini-chart-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 峰值/谷值动态标签 - 跟随曲线点位 */
+        .chart-peak-marker {
+            position: absolute;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 5px;
+            border-radius: 3px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 10;
+            transform: translate(-50%, -100%);
+            margin-top: -6px;
+            transition: left 0.3s ease, top 0.3s ease, opacity 0.3s ease;
+        }
+        .chart-peak-marker.min {
+            transform: translate(-50%, 0);
+            margin-top: 6px;
+        }
+        .chart-peak-marker.hidden {
+            opacity: 0;
+        }
+
+        .card-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+        
+        .label-temp {
+            font-weight: 400;
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.1;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+        
+        .card-value.small-text {
+            font-size: 1.4rem; /* For longer network strings */
+        }
+
+        .card-sub {
+            font-size: 0.75rem;
+            margin-top: 6px;
+            opacity: 0.8;
+            font-family: monospace;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+
+        /* 装饰性背景光晕 */
+        .card-glow {
+            position: absolute;
+            left: -20px;
+            top: -20px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        /* --- 底部内容区 (进程) --- */
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr; /* Full width now */
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* --- 进程列表 --- */
+        .process-panel {
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 600px; /* 稍微加宽以容纳更多信息 */
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
+            cursor: pointer; /* 可点击 */
+            user-select: none;
+            transition: color 0.2s;
+        }
+        
+        th:hover {
+            color: var(--text-primary);
+        }
+        
+        th.active-sort {
+            color: var(--color-cpu);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .proc-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .proc-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-width: 200px; /* 限制宽度以触发截断 */
+        }
+
+        .proc-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .proc-cmd {
+            font-size: 0.75rem; /* Increased from 0.7rem */
+            color: var(--text-secondary);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; /* Better monospace stack */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.85; /* Increased opacity */
+            font-weight: 400; /* Ensure it's not too thin */
+        }
+        
+        .proc-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .pid-cell {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem; /* Slightly larger */
+        }
+
+        /* --- 搜索框 --- */
+        .search-box {
+            margin-left: auto;
+            position: relative;
+        }
+        
+        .search-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 6px 12px 6px 32px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem; /* Increased size */
+            width: 180px;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--color-cpu);
+            outline: none;
+            width: 220px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.9rem; /* Increased size */
+            pointer-events: none;
+        }
+
+        /* --- 指标条 --- */
+        .metric-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 80px;
+        }
+        
+        .metric-val {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem; /* Increased from 0.85rem */
+            font-weight: 600; /* Added weight */
+            letter-spacing: 0.5px;
+        }
+        
+        .progress-bg {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* --- 移动端底部导航 --- */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: none; /* 默认隐藏 */
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav { display: flex; }
+        }
+
+        .nav-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .nav-icon.active { color: var(--color-cpu); }
+        .nav-icon svg { width: 20px; height: 20px; fill: currentColor; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <div class="logo-box">XM</div>
+            XhMonitor <span class="version-tag">v0.2.4</span>
+        </div>
+        
+        <!-- Disk Usage (Center) -->
+        <div class="disk-info-container" id="disk-container">
+            <!-- JS Rendered: Example 
+            <div class="disk-item">
+                <span class="disk-label">C:</span>
+                <div class="disk-bar-bg"><div class="disk-bar-fill" style="width: 45%"></div></div>
+                <span class="disk-text">45%</span>
+            </div>
+            -->
+        </div>
+
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Online</span>
+        </div>
+    </header>
+
+    <!-- 资源卡片组 -->
+    <section class="stats-grid">
+        <!-- CPU Card -->
+        <div class="stat-card glass-panel" style="--accent: var(--color-cpu)">
+            <div class="card-glow" style="background: var(--accent)"></div>
+            <div class="card-info-area">
+                <div class="card-label">
+                    <span style="color:var(--accent)">●</span> CPU <span class="label-temp" id="val-temp-cpu-title">· --°C</span>
+                </div>
+                <div class="card-value" id="val-cpu">0%</div>
+                <div class="card-sub">i9-13900K</div>
+            </div>
+            <div class="card-chart-area" id="chart-area-cpu">
+                <canvas id="chart-cpu" class="mini-chart-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- RAM Card -->
+        <div class="stat-card glass-panel" style="--accent: var(--color-ram)">
+            <div class="card-glow" style="background: var(--accent)"></div>
+            <div class="card-info-area">
+                <div class="card-label">
+                    <span style="color:var(--accent)">●</span> RAM
+                </div>
+                <div class="card-value" id="val-ram">0 GB</div>
+                <div class="card-sub">/ 32 GB</div>
+            </div>
+            <div class="card-chart-area" id="chart-area-ram">
+                <canvas id="chart-ram" class="mini-chart-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- GPU Card -->
+        <div class="stat-card glass-panel" style="--accent: var(--color-gpu)">
+            <div class="card-glow" style="background: var(--accent)"></div>
+            <div class="card-info-area">
+                <div class="card-label">
+                    <span style="color:var(--accent)">●</span> GPU <span class="label-temp" id="val-temp-gpu-title">· --°C</span>
+                </div>
+                <div class="card-value" id="val-gpu">0%</div>
+                <div class="card-sub">RTX 4090</div>
+            </div>
+            <div class="card-chart-area" id="chart-area-gpu">
+                <canvas id="chart-gpu" class="mini-chart-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- VRAM Card -->
+        <div class="stat-card glass-panel" style="--accent: var(--color-vram)">
+            <div class="card-glow" style="background: var(--accent)"></div>
+            <div class="card-info-area">
+                <div class="card-label">
+                    <span style="color:var(--accent)">●</span> VRAM
+                </div>
+                <div class="card-value" id="val-vram">0 GB</div>
+                <div class="card-sub">/ 24 GB</div>
+            </div>
+            <div class="card-chart-area" id="chart-area-vram">
+                <canvas id="chart-vram" class="mini-chart-canvas"></canvas>
+            </div>
+        </div>
+        
+        <!-- Network Card -->
+        <div class="stat-card glass-panel" style="--accent: var(--color-net)">
+            <div class="card-glow" style="background: var(--accent)"></div>
+            <div class="card-info-area">
+                <div class="card-label">
+                    <span style="color:var(--accent)">●</span> NET
+                </div>
+                <div class="card-value small-text" id="val-net">0 KB/s</div>
+                <div class="card-sub">
+                    <span id="val-net-up">↑ 0</span> <span style="margin:0 4px; opacity:0.3">|</span> <span id="val-net-down">↓ 0</span>
+                </div>
+            </div>
+            <div class="card-chart-area" id="chart-area-net">
+                <canvas id="chart-net" class="mini-chart-canvas"></canvas>
+            </div>
+        </div>
+        
+        <!-- Power Card -->
+        <div class="stat-card glass-panel" style="--accent: var(--color-pwr)">
+            <div class="card-glow" style="background: var(--accent)"></div>
+            <div class="card-info-area">
+                <div class="card-label">
+                    <span style="color:var(--accent)">●</span> PWR
+                </div>
+                <div class="card-value" id="val-pwr">0 W</div>
+                <div class="card-sub" id="val-pwr-max">Max: -- W</div>
+            </div>
+            <div class="card-chart-area" id="chart-area-pwr">
+                <canvas id="chart-pwr" class="mini-chart-canvas"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- 下半部分：进程 -->
+    <section class="bottom-section">
+        <!-- 进程 -->
+        <div class="process-panel glass-panel">
+            <div class="panel-title" style="margin-bottom: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                进程列表
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="搜索进程..." id="search-input" oninput="handleSearch(this.value)">
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th onclick="handleSort('name')" id="th-name">应用名称</th>
+                            <th onclick="handleSort('pid')" id="th-pid">PID</th>
+                            <th onclick="handleSort('cpu')" id="th-cpu">CPU</th>
+                            <th onclick="handleSort('ram')" id="th-ram">RAM</th>
+                            <th onclick="handleSort('gpu')" id="th-gpu">GPU</th>
+                            <th onclick="handleSort('vram')" id="th-vram">VRAM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="process-list">
+                        <!-- JS Rendered -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </section>
+</div>
+
+<!-- 移动端底部导航 -->
+<nav class="mobile-nav">
+    <div class="nav-icon active">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>监控</span>
+    </div>
+    <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2zm-4 6H7V7h10v10z"/></svg>
+        <span>硬件</span>
+    </div>
+    <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+        <span>设置</span>
+    </div>
+</nav>
+
+<script>
+    // --- 模拟数据源 ---
+    const MAX_POINTS = 40; // 减少点数以适应小图表
+    
+    class DataStream {
+        constructor() {
+            this.cpu = new Array(MAX_POINTS).fill(0);
+            this.gpu = new Array(MAX_POINTS).fill(0);
+            this.ram = new Array(MAX_POINTS).fill(0);
+            this.vram = new Array(MAX_POINTS).fill(0);
+            this.net = new Array(MAX_POINTS).fill(0);
+            this.pwr = new Array(MAX_POINTS).fill(0);
+            this.tick = 0;
+            this.maxPwr = 0;
+        }
+
+        next() {
+            this.tick++;
+            // 模拟更加动态的数据
+            const cpuVal = 30 + Math.sin(this.tick * 0.2) * 20 + Math.random() * 10;
+            const gpuVal = 40 + Math.cos(this.tick * 0.15) * 30 + Math.random() * 5;
+            const ramVal = 60 + Math.sin(this.tick * 0.05) * 5;
+            const vramVal = gpuVal * 0.8 + 10;
+            
+            // Net: fluctuate between 0 and 20MB
+            const netVal = Math.random() * 1024 * 20; // KB
+            // Power: fluctuate between 50 and 300 W
+            const pwrVal = 50 + cpuVal * 1.5 + gpuVal * 2.5 + Math.random() * 20;
+
+            if (pwrVal > this.maxPwr) this.maxPwr = pwrVal;
+
+            this.shiftAndPush(this.cpu, this.clamp(cpuVal));
+            this.shiftAndPush(this.gpu, this.clamp(gpuVal));
+            this.shiftAndPush(this.ram, this.clamp(ramVal));
+            this.shiftAndPush(this.vram, this.clamp(vramVal));
+            this.shiftAndPush(this.net, netVal); // not clamped to 100, custom scale needed? MiniChart default draws based on max? No, it expects 0-100 usually unless scale is dynamic.
+            // MiniChart logic assumes 0-100 for drawing y: `(val / 100) * drawHeight`. 
+            // We need to normalize Net and Pwr for the chart to look good. 
+            // Let's normalize Net to 0-100% of "Max Bandwidth" (e.g., 50MB/s)
+            // Let's normalize Pwr to 0-100% of "Max PSU" (e.g. 600W)
+            
+            this.shiftAndPush(this.pwr, (pwrVal / 600) * 100);
+
+            return {
+                cpu: this.last(this.cpu),
+                gpu: this.last(this.gpu),
+                ram: this.last(this.ram),
+                vram: this.last(this.vram),
+                net: this.last(this.net), // Raw value for display
+                netNorm: (netVal / (1024 * 50)) * 100, // Normalized for chart (50MB max)
+                pwr: pwrVal, // Raw value
+                pwrMax: this.maxPwr,
+                pwrNorm: (pwrVal / 600) * 100 // Normalized for chart
+            };
+        }
+
+        shiftAndPush(arr, val) {
+            arr.shift();
+            arr.push(val);
+        }
+
+        last(arr) { return arr[arr.length - 1]; }
+        clamp(val) { return Math.min(100, Math.max(0, val)); }
+    }
+
+    // --- 通用迷你图表引擎 (带左侧渐隐和动态峰谷标注) ---
+    class MiniChart {
+        constructor(canvasId, containerId, color, formatFn) {
+            this.canvas = document.getElementById(canvasId);
+            this.container = document.getElementById(containerId);
+            this.ctx = this.canvas.getContext('2d');
+            this.color = color;
+            this.formatFn = formatFn || (v => v.toFixed(0) + '%');
+            this.markers = []; // 存储峰谷标记 { index, value, type: 'max'|'min', element }
+            this.resize();
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => this.resize(), 100);
+            });
+        }
+
+        resize() {
+            const parent = this.canvas.parentElement;
+            this.canvas.width = parent.clientWidth;
+            this.canvas.height = parent.clientHeight;
+        }
+
+        // Added `useRawData` param to support charting normalized data but displaying raw values in markers if needed
+        // For simplicity, we just pass the data to be drawn. If marker needs different value, we might need a separate array.
+        // But for Net/Power, the "normalized" data is what we draw. The marker would show "%" which is wrong.
+        // We need a way to pass "display value" vs "chart value".
+        // For this demo, let's just chart the normalized value and let the marker show normalized % for now, 
+        // OR we just hack the formatFn to handle it if we passed raw data?
+        // Actually, easiest is to pass raw data to draw, but `draw` assumes 0-100 range for Y coord.
+        // Let's modify `draw` to accept an optional `maxValue` for scaling.
+        draw(data, maxValue = 100) {
+            const { width, height } = this.canvas;
+            const ctx = this.ctx;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const stepX = width / (data.length - 1);
+            const topPadding = 15;
+            const bottomPadding = 15;
+            const drawHeight = height - topPadding - bottomPadding;
+
+            // 计算所有点的坐标
+            const points = data.map((val, index) => ({
+                x: index * stepX,
+                y: topPadding + drawHeight - (val / maxValue) * drawHeight,
+                value: val,
+                index: index
+            }));
+
+            // 绘制曲线（带渐隐效果）
+            ctx.save();
+
+            // 绘制曲线路径
+            ctx.beginPath();
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            points.forEach((pt, i) => {
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.stroke();
+
+            // 绘制渐变填充
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+
+            const fillGradient = ctx.createLinearGradient(0, 0, 0, height);
+            fillGradient.addColorStop(0, this.hexToRgba(this.color, 0.35));
+            fillGradient.addColorStop(1, this.hexToRgba(this.color, 0.0));
+            ctx.fillStyle = fillGradient;
+            ctx.fill();
+
+            ctx.restore();
+
+            // 左侧50%渐隐 - 使用 destination-out 擦除模式
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            const fadeGradient = ctx.createLinearGradient(0, 0, width * 0.5, 0);
+            fadeGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');      // 完全擦除
+            fadeGradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.5)');  // 半透明
+            fadeGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');      // 不擦除
+            ctx.fillStyle = fadeGradient;
+            ctx.fillRect(0, 0, width * 0.5, height);
+            ctx.restore();
+
+            // 更新峰谷标记
+            this.updateMarkers(data, points);
+        }
+
+        updateMarkers(data, points) {
+            // 使用改进的算法：只保留显著的峰谷，遵循 峰-谷-峰-谷 交替规律
+            const validData = data.filter(v => v > 0);
+            if (validData.length < 3) return;
+
+            // 找出所有候选极值点
+            const candidates = [];
+            for (let i = 1; i < data.length - 1; i++) {
+                const prev = data[i - 1];
+                const curr = data[i];
+                const next = data[i + 1];
+
+                if (curr > prev && curr > next) {
+                    candidates.push({ index: i, value: curr, type: 'max' });
+                } else if (curr < prev && curr < next) {
+                    candidates.push({ index: i, value: curr, type: 'min' });
+                }
+            }
+
+            // 过滤：确保峰谷交替，且变化幅度足够大
+            // Assuming data is 0-100 roughly. For Net/Pwr it might be large.
+            // We should use a relative amplitude threshold.
+            const minAmplitude = 5; // simplified
+            const filtered = [];
+            let lastType = null;
+            let lastValue = null;
+
+            for (const c of candidates) {
+                // 确保峰谷交替
+                if (lastType === c.type) {
+                    // 同类型：保留更极端的那个
+                    if (filtered.length > 0) {
+                        const last = filtered[filtered.length - 1];
+                        if ((c.type === 'max' && c.value > last.value) ||
+                            (c.type === 'min' && c.value < last.value)) {
+                            filtered[filtered.length - 1] = c;
+                            lastValue = c.value;
+                        }
+                    }
+                    continue;
+                }
+
+                // 检查与上一个极值的幅度差
+                if (lastValue !== null && Math.abs(c.value - lastValue) < minAmplitude) {
+                    continue;
+                }
+
+                filtered.push(c);
+                lastType = c.type;
+                lastValue = c.value;
+            }
+
+            // 清理已移出视图的标记
+            this.markers = this.markers.filter(m => {
+                if (m.index < 0) {
+                    m.element.remove();
+                    return false;
+                }
+                return true;
+            });
+
+            // 更新现有标记的索引（数据左移）
+            this.markers.forEach(m => {
+                m.index--;
+            });
+
+            // 添加新的极值标记（只添加右侧新出现的）
+            filtered.forEach(ext => {
+                // 检查是否已存在相近的标记
+                const exists = this.markers.some(m =>
+                    Math.abs(m.index - ext.index) < 3 && m.type === ext.type
+                );
+                if (!exists && ext.index > data.length - 5) {
+                    // 新峰出现时，移除所有比它小的峰；新谷出现时，移除所有比它大的谷
+                    this.markers = this.markers.filter(m => {
+                        if (m.type === ext.type) {
+                            const shouldRemove = (ext.type === 'max' && ext.value > m.value) ||
+                                                 (ext.type === 'min' && ext.value < m.value);
+                            if (shouldRemove) {
+                                m.element.remove();
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+                    this.addMarker(ext);
+                }
+            });
+
+            // 更新所有标记的位置
+            const { width, height } = this.canvas;
+            // Need to know max value here to plot Y correctly. 
+            // In a real app we'd store the current scale factor.
+            // For this demo, let's assume 'points' already has the correct Y.
+            // But points are recalculated every draw. We need to persist that.
+            // Actually 'points' is local variable in draw.
+            // We need to re-calculate Y for markers based on current canvas size.
+            // We'll rely on draw() passing the correct scale logic or similar.
+            // Simplified: Re-calculate Y here using a hardcoded or passed max.
+            // Since we don't pass max here easily without refactor, we'll assume 0-100 for now or rely on consistent scaling.
+            // Wait, I changed draw() to take maxValue. I should probably use it here too.
+            // But updateMarkers is called from draw, so I can pass points directly.
+            
+            // Re-using 'points' array passed from draw() which has correct x,y!
+            // But 'points' matches 'data'. 'markers' has 'index'.
+            // So we can look up point by index.
+            
+            this.markers.forEach(m => {
+                if (m.index < 0 || m.index >= points.length) return;
+                
+                const pt = points[m.index];
+                
+                m.element.style.left = pt.x + 'px';
+                m.element.style.top = pt.y + 'px';
+                m.element.innerText = this.formatFn(data[m.index]);
+
+                // 左侧50%渐隐区域内的标记也渐隐
+                const fadeRatio = Math.min(1, pt.x / (width * 0.5));
+                m.element.style.opacity = fadeRatio;
+            });
+        }
+
+        addMarker(ext) {
+            const el = document.createElement('div');
+            el.className = 'chart-peak-marker ' + ext.type;
+            el.style.color = ext.type === 'max' ? this.color : '#94a3b8';
+            el.innerText = this.formatFn(ext.value);
+            this.container.appendChild(el);
+
+            this.markers.push({
+                index: ext.index,
+                value: ext.value,
+                type: ext.type,
+                element: el
+            });
+        }
+
+        hexToRgba(hex, alpha) {
+            let r = 0, g = 0, b = 0;
+            if (hex.length === 4) {
+                r = parseInt(hex[1] + hex[1], 16);
+                g = parseInt(hex[2] + hex[2], 16);
+                b = parseInt(hex[3] + hex[3], 16);
+            } else if (hex.length === 7) {
+                r = parseInt(hex[1] + hex[2], 16);
+                g = parseInt(hex[3] + hex[4], 16);
+                b = parseInt(hex[5] + hex[6], 16);
+            }
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+    }
+
+    // --- 动态缩放控制器 ---
+    class DynamicScaler {
+        constructor(initialMax = 1024, shrinkDelay = 3000) {
+            this.currentMax = initialMax;
+            this.shrinkDelay = shrinkDelay;
+            this.lowUsageStartTime = null;
+        }
+
+        update(data) {
+            let maxInWindow = 0;
+            for (const v of data) {
+                if (v > maxInWindow) maxInWindow = v;
+            }
+            
+            // 设定最小底线 (例如 10KB/s)，防止缩放到 0
+            if (maxInWindow < 10) maxInWindow = 10; 
+
+            // 目标上限：让最大值处于 90% 高度
+            const targetMax = maxInWindow / 0.9;
+
+            // 1. 立即拔高：当当前值超过当前上限的 90% (即超过了安全区)
+            // 或者直接超过了 currentMax (为了安全)
+            if (targetMax > this.currentMax) {
+                this.currentMax = targetMax;
+                this.lowUsageStartTime = null; // 重置缩小计时器
+            } 
+            // 2. 延迟缩小：当前窗口最大值不到上限的 60%
+            else if (maxInWindow < this.currentMax * 0.6) {
+                if (!this.lowUsageStartTime) {
+                    this.lowUsageStartTime = Date.now();
+                } else {
+                    const elapsed = Date.now() - this.lowUsageStartTime;
+                    if (elapsed > this.shrinkDelay) {
+                        // 平滑过渡：每次更新向目标值逼近 (Lerp 0.2)
+                        // 这样视觉上会有“缓缓下降”的效果，而不是突变
+                        this.currentMax = this.currentMax + (targetMax - this.currentMax) * 0.2;
+                    }
+                }
+            } else {
+                // 在 60% - 90% 之间，保持稳定
+                this.lowUsageStartTime = null;
+            }
+            
+            return this.currentMax;
+        }
+    }
+
+    // --- 初始化 ---
+    const stream = new DataStream();
+    const style = getComputedStyle(document.body);
+    const netScaler = new DynamicScaler(20480); // 初始 20MB
+
+    // 格式化函数
+    const fmtPercent = v => v.toFixed(0) + '%';
+    const fmtRamGB = v => (v / 100 * 32).toFixed(1) + 'G';
+    const fmtVramGB = v => (v / 100 * 24).toFixed(1) + 'G';
+    const fmtNet = v => {
+        if (v > 1024 * 1024) return (v / (1024 * 1024)).toFixed(1) + 'G';
+        if (v > 1024) return (v / 1024).toFixed(1) + 'M';
+        return v.toFixed(0) + 'K';
+    };
+    const fmtPwr = v => v.toFixed(0) + 'W';
+
+    const charts = {
+        cpu: new MiniChart('chart-cpu', 'chart-area-cpu', style.getPropertyValue('--color-cpu').trim(), fmtPercent),
+        ram: new MiniChart('chart-ram', 'chart-area-ram', style.getPropertyValue('--color-ram').trim(), fmtRamGB),
+        gpu: new MiniChart('chart-gpu', 'chart-area-gpu', style.getPropertyValue('--color-gpu').trim(), fmtPercent),
+        vram: new MiniChart('chart-vram', 'chart-area-vram', style.getPropertyValue('--color-vram').trim(), fmtVramGB),
+        net: new MiniChart('chart-net', 'chart-area-net', style.getPropertyValue('--color-net').trim(), fmtNet),
+        pwr: new MiniChart('chart-pwr', 'chart-area-pwr', style.getPropertyValue('--color-pwr').trim(), fmtPwr),
+    };
+
+    // --- 进程数据模拟 ---
+    let sortField = 'cpu';
+    let sortOrder = 'desc'; // 'asc' | 'desc'
+    let searchTerm = '';
+    
+    // Updated mock data with PID, CMD, and VRAM
+    const mockProcesses = [
+        { pid: 10245, name: 'XhMonitor.exe', cmd: 'C:\\Program Files\\XhMonitor\\XhMonitor.exe --minimized', icon: 'M', cpu: 0.5, ram: 125829120, gpu: 0, vram: 0 },
+        { pid: 8842, name: 'Cyberpunk2077.exe', cmd: 'E:\\Games\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe', icon: 'C', cpu: 45.2, ram: 9126805504, gpu: 88, vram: 1024 * 1024 * 1024 * 11.5 },
+        { pid: 1452, name: 'chrome.exe', cmd: '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --profile-directory="Default"', icon: 'G', cpu: 12.4, ram: 2576980377, gpu: 5, vram: 1024 * 1024 * 450 },
+        { pid: 22015, name: 'Code.exe', cmd: 'C:\\Users\\Admin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe', icon: 'V', cpu: 5.1, ram: 1027604480, gpu: 1, vram: 1024 * 1024 * 120 },
+        { pid: 4521, name: 'steamwebhelper.exe', cmd: 'C:\\Program Files (x86)\\Steam\\bin\\steamwebhelper.exe', icon: 'S', cpu: 1.2, ram: 471859200, gpu: 0, vram: 0 },
+        { pid: 1024, name: 'svchost.exe', cmd: 'C:\\Windows\\System32\\svchost.exe -k netsvcs -p', icon: 'S', cpu: 0.1, ram: 20971520, gpu: 0, vram: 0 },
+    ];
+    
+    function handleSort(field) {
+        if (sortField === field) {
+            sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+        } else {
+            sortField = field;
+            sortOrder = 'desc';
+        }
+        renderProcesses();
+    }
+    
+    function handleSearch(val) {
+        searchTerm = val.toLowerCase();
+        renderProcesses();
+    }
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    
+    function renderBar(value, max, color) {
+        const percent = Math.min(100, (value / max) * 100);
+        return `
+            <div class="progress-bg">
+                <div class="progress-fill" style="width: ${percent}%; background-color: ${color}"></div>
+            </div>
+        `;
+    }
+
+    function renderProcesses() {
+        // Filter
+        let filtered = mockProcesses.filter(p => 
+            p.name.toLowerCase().includes(searchTerm) || 
+            p.cmd.toLowerCase().includes(searchTerm) ||
+            p.pid.toString().includes(searchTerm)
+        );
+    
+        // Sort
+        const sorted = filtered.sort((a, b) => {
+            let valA = a[sortField];
+            let valB = b[sortField];
+            
+            // Handle strings (case insensitive)
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+            
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Update Headers Active State
+        ['name', 'pid', 'cpu', 'ram', 'gpu', 'vram'].forEach(f => {
+            const th = document.getElementById('th-' + f);
+            if (!th) return;
+            th.className = '';
+            if (f === sortField) {
+                th.className = 'active-sort';
+                const arrow = sortOrder === 'asc' ? ' ↑' : ' ↓';
+                const label = f === 'name' ? '应用名称' : f.toUpperCase();
+                th.innerText = label + arrow;
+            } else {
+                const label = f === 'name' ? '应用名称' : f.toUpperCase();
+                th.innerText = label;
+            }
+        });
+
+        const tbody = document.getElementById('process-list');
+        // Colors from CSS vars
+        const cCpu = style.getPropertyValue('--color-cpu').trim();
+        const cRam = style.getPropertyValue('--color-ram').trim();
+        const cGpu = style.getPropertyValue('--color-gpu').trim();
+        const cVram = style.getPropertyValue('--color-vram').trim();
+        
+        // Max values for bars (Hardcoded for demo: 32GB RAM, 24GB VRAM)
+        const MAX_RAM = 32 * 1024 * 1024 * 1024;
+        const MAX_VRAM = 24 * 1024 * 1024 * 1024;
+
+        tbody.innerHTML = sorted.map(p => `
+            <tr>
+                <td>
+                    <div class="proc-name-cell">
+                        <div class="proc-icon">${p.icon}</div>
+                        <div class="proc-info">
+                            <div class="proc-name">${p.name}</div>
+                            <div class="proc-cmd" title="${p.cmd}">${p.cmd}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="pid-cell">${p.pid}</td>
+                
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color:${cCpu}">${p.cpu}%</span>
+                        ${renderBar(p.cpu, 100, cCpu)}
+                    </div>
+                </td>
+                
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color:${cRam}">${formatBytes(p.ram)}</span>
+                        ${renderBar(p.ram, MAX_RAM, cRam)}
+                    </div>
+                </td>
+                
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color:${cGpu}">${p.gpu}%</span>
+                        ${renderBar(p.gpu, 100, cGpu)}
+                    </div>
+                </td>
+                
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color:${cVram}">${formatBytes(p.vram)}</span>
+                        ${renderBar(p.vram, MAX_VRAM, cVram)}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // --- 磁盘数据模拟 ---
+    const mockDisks = [
+        { name: 'Samsung SSD 980 PRO 1TB', used: 45, total: 1024, color: '#3b82f6', r: 0, w: 0 }, 
+        { name: 'WDC WD40EZAZ-00SF3B0', used: 85, total: 4096, color: '#10b981', r: 0, w: 0 }
+    ];
+
+    function renderDisks() {
+        const container = document.getElementById('disk-container');
+        
+        const formatSize = (gb) => {
+            if (gb >= 1000) return (gb / 1024).toFixed(1) + 'T';
+            return gb.toFixed(0) + 'G';
+        };
+        
+        container.innerHTML = mockDisks.map((d, i) => {
+            const usedGB = d.total * (d.used / 100);
+            const totalStr = formatSize(d.total);
+            const usedStr = formatSize(usedGB);
+            
+            return `
+            <div class="disk-item">
+                <div class="disk-label" title="${d.name}">${d.name}</div>
+                
+                <div class="disk-details-row">
+                    <div class="disk-bar-container" title="Usage: ${d.used}%">
+                        <div class="disk-bar-bg">
+                            <div class="disk-bar-fill" style="width: ${d.used}%; background-color: ${d.color}"></div>
+                        </div>
+                    </div>
+                    
+                    <span class="disk-info-text">${usedStr}/${totalStr}</span>
+                    
+                    <div class="disk-speed-group">
+                        <span class="speed-r">R:<span class="speed-val" id="disk-r-${i}">   0M</span></span>
+                        <span class="speed-w">W:<span class="speed-val" id="disk-w-${i}">   0M</span></span>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    // --- 主循环 ---
+    function update() {
+        const current = stream.next();
+        
+        // Update Disk Speeds (Simulated)
+        mockDisks.forEach((d, i) => {
+            // Random fluctuation
+            d.r = Math.random() > 0.7 ? Math.random() * 200 : 0;
+            d.w = Math.random() > 0.8 ? Math.random() * 100 : 0;
+            
+            // Only update DOM if it exists
+            const elR = document.getElementById(`disk-r-${i}`);
+            const elW = document.getElementById(`disk-w-${i}`);
+            
+            // Format helper locally or just inline
+            const fmt = (v) => (v < 10 ? v.toFixed(1) : v.toFixed(0)).padStart(4, '\u00A0') + 'M';
+            
+            if (elR) elR.innerText = fmt(d.r);
+            if (elW) elW.innerText = fmt(d.w);
+        });
+
+        // 1. 更新图表
+        charts.cpu.draw(stream.cpu);
+        charts.ram.draw(stream.ram);
+        charts.gpu.draw(stream.gpu);
+        charts.vram.draw(stream.vram);
+        
+        // Net chart: Dynamic Scaling
+        const netMax = netScaler.update(stream.net);
+        charts.net.draw(stream.net, netMax);
+        
+        // Power chart: 600W max
+        charts.pwr.draw(stream.pwr, 600);
+
+
+        // 2. 更新数值
+        document.getElementById('val-cpu').innerText = current.cpu.toFixed(1) + '%';
+
+        const ramGB = (current.ram / 100 * 32).toFixed(1);
+        document.getElementById('val-ram').innerText = ramGB + ' GB';
+
+        document.getElementById('val-gpu').innerText = current.gpu.toFixed(1) + '%';
+
+        const vramGB = (current.vram / 100 * 24).toFixed(1);
+        document.getElementById('val-vram').innerText = vramGB + ' GB';
+        
+        // Net
+        const netKB = current.net;
+        let netStr = netKB.toFixed(0) + ' KB/s';
+        if (netKB > 1024) netStr = (netKB / 1024).toFixed(1) + ' MB/s';
+        document.getElementById('val-net').innerText = netStr;
+        
+        const netUp = netKB * 0.2; // mock upload
+        const netDown = netKB * 0.8; // mock download
+        const fmtSpeed = (kb) => kb > 1024 ? (kb/1024).toFixed(1)+'M' : kb.toFixed(0)+'K';
+        document.getElementById('val-net-up').innerText = '↑ ' + fmtSpeed(netUp);
+        document.getElementById('val-net-down').innerText = '↓ ' + fmtSpeed(netDown);
+        
+        // Power
+        document.getElementById('val-pwr').innerText = current.pwr.toFixed(0) + ' W';
+        document.getElementById('val-pwr-max').innerText = 'Max: ' + current.pwrMax.toFixed(0) + ' W';
+
+        // 3. 更新温度 (Now in card labels)
+        const cpuTemp = 40 + current.cpu * 0.5;
+        const gpuTemp = 35 + current.gpu * 0.6;
+
+        document.getElementById('val-temp-cpu-title').innerText = '· ' + cpuTemp.toFixed(0) + '°C';
+        document.getElementById('val-temp-gpu-title').innerText = '· ' + gpuTemp.toFixed(0) + '°C';
+    }
+
+    // 启动
+    renderProcesses();
+    renderDisks();
+    setInterval(update, 1000);
+    update();
+
+    // 初始 Resize
+    setTimeout(() => {
+        Object.values(charts).forEach(c => c.resize());
+    }, 100);
+
+</script>
+</body>
+</html>
