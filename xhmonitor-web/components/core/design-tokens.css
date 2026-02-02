@@ -1,0 +1,144 @@
+/**
+ * XhMonitor Design Tokens
+ * 从 ui-preview-v2.html 提取的设计系统
+ * 版本: 1.0.0
+ */
+
+:root {
+  /* ========== 颜色系统 ========== */
+
+  /* 基础色 */
+  --xh-color-bg: #0f172a;
+  --xh-color-text-primary: #f8fafc;
+  --xh-color-text-secondary: #94a3b8;
+
+  /* 玻璃拟态 */
+  --xh-color-glass-bg: rgba(30, 41, 59, 0.6);
+  --xh-color-glass-border: rgba(255, 255, 255, 0.08);
+  --xh-color-glass-highlight: rgba(255, 255, 255, 0.05);
+
+  /* 语义色 - 监控指标 */
+  --xh-color-cpu: #3b82f6;      /* Blue */
+  --xh-color-ram: #8b5cf6;      /* Violet */
+  --xh-color-gpu: #10b981;      /* Green */
+  --xh-color-vram: #f59e0b;     /* Amber */
+  --xh-color-net: #0ea5e9;      /* Sky Blue */
+  --xh-color-pwr: #f43f5e;      /* Rose */
+
+  /* 状态色 */
+  --xh-color-success: #10b981;
+  --xh-color-warning: #f59e0b;
+  --xh-color-error: #f43f5e;
+  --xh-color-info: #0ea5e9;
+
+  /* ========== 排版系统 ========== */
+
+  /* 字体族 */
+  --xh-font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --xh-font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+
+  /* 字号 */
+  --xh-font-size-xs: 0.65rem;    /* 10.4px */
+  --xh-font-size-sm: 0.75rem;    /* 12px */
+  --xh-font-size-base: 0.85rem;  /* 13.6px */
+  --xh-font-size-md: 0.9rem;     /* 14.4px */
+  --xh-font-size-lg: 1.25rem;    /* 20px */
+  --xh-font-size-xl: 1.8rem;     /* 28.8px */
+
+  /* 字重 */
+  --xh-font-weight-normal: 400;
+  --xh-font-weight-medium: 500;
+  --xh-font-weight-semibold: 600;
+  --xh-font-weight-bold: 700;
+
+  /* 行高 */
+  --xh-line-height-tight: 1.1;
+  --xh-line-height-normal: 1.5;
+
+  /* ========== 间距系统 ========== */
+
+  --xh-spacing-xs: 2px;
+  --xh-spacing-sm: 4px;
+  --xh-spacing-md: 6px;
+  --xh-spacing-base: 10px;
+  --xh-spacing-lg: 12px;
+  --xh-spacing-xl: 16px;
+  --xh-spacing-2xl: 20px;
+
+  /* ========== 圆角 ========== */
+
+  --xh-radius-sm: 4px;
+  --xh-radius-md: 8px;
+  --xh-radius-lg: 16px;
+  --xh-radius-full: 9999px;
+
+  /* ========== 阴影 ========== */
+
+  --xh-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --xh-shadow-glow: 0 0 15px rgba(59, 130, 246, 0.3);
+  --xh-shadow-text: 0 1px 4px rgba(0, 0, 0, 0.8);
+  --xh-shadow-text-strong: 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.8);
+
+  /* ========== 效果 ========== */
+
+  --xh-blur: 16px;
+  --xh-blur-glow: 40px;
+
+  /* ========== 布局 ========== */
+
+  --xh-card-height: 140px;
+  --xh-max-width: 1400px;
+  --xh-grid-gap: 16px;
+
+  /* ========== 断点 ========== */
+
+  --xh-breakpoint-sm: 768px;
+  --xh-breakpoint-md: 1200px;
+
+  /* ========== 动画 ========== */
+
+  /* Duration */
+  --xh-duration-instant: 0ms;
+  --xh-duration-fast: 200ms;
+  --xh-duration-normal: 300ms;
+  --xh-duration-slow: 500ms;
+  --xh-duration-slower: 1000ms;
+  --xh-duration-pulse: 2000ms;
+
+  /* Easing */
+  --xh-ease-linear: linear;
+  --xh-ease: ease;
+  --xh-ease-in: ease-in;
+  --xh-ease-out: ease-out;
+  --xh-ease-in-out: ease-in-out;
+
+  /* ========== Z-index 层级 ========== */
+
+  --xh-z-base: 1;
+  --xh-z-overlay: 10;
+  --xh-z-nav: 20;
+  --xh-z-dropdown: 100;
+  --xh-z-modal: 1000;
+}
+
+/* ========== 全局样式 ========== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--xh-color-bg);
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+  color: var(--xh-color-text-primary);
+  font-family: var(--xh-font-sans);
+  line-height: var(--xh-line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}

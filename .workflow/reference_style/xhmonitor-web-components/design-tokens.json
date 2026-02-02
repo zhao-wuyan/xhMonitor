@@ -1,0 +1,385 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "color": {
+    "background": {
+      "$type": "color",
+      "$value": {
+        "light": "#0f172a",
+        "dark": "#0f172a"
+      },
+      "source": "ui-preview-v2.html:10"
+    },
+    "foreground": {
+      "$type": "color",
+      "$value": {
+        "light": "#f8fafc",
+        "dark": "#f8fafc"
+      },
+      "source": "ui-preview-v2.html:11"
+    },
+    "text_secondary": {
+      "$type": "color",
+      "$value": {
+        "light": "#94a3b8",
+        "dark": "#94a3b8"
+      },
+      "source": "ui-preview-v2.html:12"
+    },
+    "glass_bg": {
+      "$type": "color",
+      "$value": {
+        "light": "rgba(30, 41, 59, 0.6)",
+        "dark": "rgba(30, 41, 59, 0.6)"
+      },
+      "source": "ui-preview-v2.html:13"
+    },
+    "glass_border": {
+      "$type": "color",
+      "$value": {
+        "light": "rgba(255, 255, 255, 0.08)",
+        "dark": "rgba(255, 255, 255, 0.08)"
+      },
+      "source": "ui-preview-v2.html:14"
+    },
+    "glass_highlight": {
+      "$type": "color",
+      "$value": {
+        "light": "rgba(255, 255, 255, 0.05)",
+        "dark": "rgba(255, 255, 255, 0.05)"
+      },
+      "source": "ui-preview-v2.html:15"
+    },
+    "semantic": {
+      "cpu": {
+        "$type": "color",
+        "$value": {
+          "light": "#3b82f6",
+          "dark": "#3b82f6"
+        },
+        "source": "ui-preview-v2.html:18"
+      },
+      "ram": {
+        "$type": "color",
+        "$value": {
+          "light": "#8b5cf6",
+          "dark": "#8b5cf6"
+        },
+        "source": "ui-preview-v2.html:19"
+      },
+      "gpu": {
+        "$type": "color",
+        "$value": {
+          "light": "#10b981",
+          "dark": "#10b981"
+        },
+        "source": "ui-preview-v2.html:20"
+      },
+      "vram": {
+        "$type": "color",
+        "$value": {
+          "light": "#f59e0b",
+          "dark": "#f59e0b"
+        },
+        "source": "ui-preview-v2.html:21"
+      },
+      "net": {
+        "$type": "color",
+        "$value": {
+          "light": "#0ea5e9",
+          "dark": "#0ea5e9"
+        },
+        "source": "ui-preview-v2.html:22"
+      },
+      "pwr": {
+        "$type": "color",
+        "$value": {
+          "light": "#f43f5e",
+          "dark": "#f43f5e"
+        },
+        "source": "ui-preview-v2.html:23"
+      }
+    }
+  },
+  "typography": {
+    "font_families": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "'Segoe UI', system-ui, -apple-system, sans-serif",
+        "source": "ui-preview-v2.html:25"
+      },
+      "monospace": {
+        "$type": "fontFamily",
+        "$value": "'Consolas', 'Monaco', 'Courier New', monospace",
+        "source": "ui-preview-v2.html:448"
+      }
+    },
+    "font_sizes": {
+      "xs": {
+        "$type": "dimension",
+        "$value": "0.65rem",
+        "source": "ui-preview-v2.html:298"
+      },
+      "sm": {
+        "$type": "dimension",
+        "$value": "0.75rem",
+        "source": "ui-preview-v2.html:94"
+      },
+      "base": {
+        "$type": "dimension",
+        "$value": "0.9rem",
+        "source": "ui-preview-v2.html:320"
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "1.25rem",
+        "source": "ui-preview-v2.html:86"
+      },
+      "xl": {
+        "$type": "dimension",
+        "$value": "1.8rem",
+        "source": "ui-preview-v2.html:337"
+      }
+    },
+    "font_weights": {
+      "normal": {
+        "$type": "fontWeight",
+        "$value": "400",
+        "source": "ui-preview-v2.html:96"
+      },
+      "medium": {
+        "$type": "fontWeight",
+        "$value": "500",
+        "source": "ui-preview-v2.html:441"
+      },
+      "semibold": {
+        "$type": "fontWeight",
+        "$value": "600",
+        "source": "ui-preview-v2.html:136"
+      },
+      "bold": {
+        "$type": "fontWeight",
+        "$value": "700",
+        "source": "ui-preview-v2.html:87"
+      }
+    },
+    "line_heights": {
+      "tight": {
+        "$type": "lineHeight",
+        "$value": "1.1",
+        "source": "ui-preview-v2.html:340"
+      },
+      "normal": {
+        "$type": "lineHeight",
+        "$value": "1.5",
+        "source": "ui-preview-v2.html:43"
+      }
+    }
+  },
+  "spacing": {
+    "xs": {
+      "$type": "dimension",
+      "$value": "2px",
+      "source": "ui-preview-v2.html:98"
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": "4px",
+      "source": "ui-preview-v2.html:6"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "6px",
+      "source": "ui-preview-v2.html:2"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "10px",
+      "source": "ui-preview-v2.html:77"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "12px",
+      "source": "ui-preview-v2.html:97"
+    },
+    "2xl": {
+      "$type": "dimension",
+      "$value": "16px",
+      "source": "ui-preview-v2.html:269"
+    },
+    "3xl": {
+      "$type": "dimension",
+      "$value": "20px",
+      "source": "ui-preview-v2.html:66"
+    }
+  },
+  "shadows": {
+    "sm": {
+      "$type": "shadow",
+      "$value": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      "source": "ui-preview-v2.html:59"
+    },
+    "glow": {
+      "$type": "shadow",
+      "$value": "0 0 15px rgba(59, 130, 246, 0.3)",
+      "source": "ui-preview-v2.html:205"
+    },
+    "text": {
+      "$type": "shadow",
+      "$value": "0 1px 4px rgba(0,0,0,0.8)",
+      "source": "ui-preview-v2.html:327"
+    },
+    "text_strong": {
+      "$type": "shadow",
+      "$value": "0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.8)",
+      "source": "ui-preview-v2.html:341"
+    }
+  },
+  "border_radius": {
+    "sm": {
+      "$type": "dimension",
+      "$value": "4px",
+      "source": "ui-preview-v2.html:100"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "8px",
+      "source": "ui-preview-v2.html:482"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "16px",
+      "source": "ui-preview-v2.html:58"
+    }
+  },
+  "breakpoints": {
+    "sm": {
+      "$type": "dimension",
+      "$value": "768px",
+      "source": "ui-preview-v2.html:116"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "1200px",
+      "source": "ui-preview-v2.html:240"
+    }
+  },
+  "effects": {
+    "blur": {
+      "$type": "dimension",
+      "$value": "16px",
+      "source": "ui-preview-v2.html:55"
+    },
+    "glow_blur": {
+      "$type": "dimension",
+      "$value": "40px",
+      "source": "ui-preview-v2.html:366"
+    }
+  },
+  "layout": {
+    "card_height": {
+      "$type": "dimension",
+      "$value": "140px",
+      "source": "ui-preview-v2.html:26"
+    },
+    "max_width": {
+      "$type": "dimension",
+      "$value": "1400px",
+      "source": "ui-preview-v2.html:64"
+    },
+    "grid_gap": {
+      "$type": "dimension",
+      "$value": "16px",
+      "source": "ui-preview-v2.html:236"
+    }
+  },
+  "_metadata": {
+    "version": "1.0.0",
+    "created": "2026-01-31T12:19:00Z",
+    "source": "code-import",
+    "extraction_source": "xhmonitor-web/design/ui-preview-v2.html",
+    "files_analyzed": {
+      "html": ["ui-preview-v2.html"]
+    },
+    "completeness": {
+      "status": "partial",
+      "missing_categories": [
+        "interactive color states (hover, active, disabled)",
+        "complete component token definitions",
+        "elevation/z-index system",
+        "animation duration and easing tokens",
+        "OKLCH color format conversion needed"
+      ],
+      "recommendations": [
+        "Add interactive state colors for buttons and links",
+        "Define component-specific tokens (button, card, input, etc.)",
+        "Extract z-index values for layered components",
+        "Identify and extract animation durations and easing functions",
+        "Convert hex colors to OKLCH format for better color manipulation",
+        "Add dark mode variants (currently uses same colors for both modes)"
+      ]
+    },
+    "code_snippets": {
+      "css_variables": {
+        "source_file": "xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 9,
+        "line_end": 27,
+        "context_type": "css-variable",
+        "snippet": "/* --- 核心变量 --- */\n:root {\n    --bg-color: #0f172a;\n    --text-primary: #f8fafc;\n    --text-secondary: #94a3b8;\n    --glass-bg: rgba(30, 41, 59, 0.6);\n    --glass-border: rgba(255, 255, 255, 0.08);\n    --glass-highlight: rgba(255, 255, 255, 0.05);\n    \n    /* 语义色 - 修复了 v1 中的颜色对应关系 */\n    --color-cpu: #3b82f6;   /* Blue */\n    --color-ram: #8b5cf6;   /* Violet */\n    --color-gpu: #10b981;   /* Green */\n    --color-vram: #f59e0b;  /* Amber */\n    --color-net: #0ea5e9;   /* Sky Blue */\n    --color-pwr: #f43f5e;   /* Rose */\n    \n    --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;\n    --card-height: 140px;\n}"
+      },
+      "glass_panel": {
+        "source_file": "xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 52,
+        "line_end": 60,
+        "context_type": "css-class",
+        "snippet": "/* --- 玻璃拟态组件 --- */\n.glass-panel {\n    background: var(--glass-bg);\n    backdrop-filter: blur(16px);\n    -webkit-backdrop-filter: blur(16px);\n    border: 1px solid var(--glass-border);\n    border-radius: 16px;\n    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);\n}"
+      },
+      "stat_card": {
+        "source_file": "xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 248,
+        "line_end": 260,
+        "context_type": "css-class",
+        "snippet": "/* --- 新版卡片设计 (左指标右曲线) --- */\n.stat-card {\n    height: var(--card-height);\n    padding: 0;\n    display: flex;\n    overflow: hidden;\n    position: relative;\n    transition: transform 0.2s;\n}\n\n.stat-card:active {\n    transform: scale(0.98);\n}"
+      },
+      "responsive_breakpoints": {
+        "source_file": "xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 116,
+        "line_end": 118,
+        "context_type": "css-media-query",
+        "snippet": "@media (min-width: 768px) {\n    .disk-info-container { display: flex; }\n}"
+      },
+      "animation_pulse": {
+        "source_file": "xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 570,
+        "line_end": 574,
+        "context_type": "css-keyframes",
+        "snippet": "@keyframes pulse {\n    0% { opacity: 1; }\n    50% { opacity: 0.4; }\n    100% { opacity: 1; }\n}"
+      }
+    },
+    "usage_recommendations": {
+      "color_usage": {
+        "cpu": "Used for CPU metrics and disk usage bars - Blue indicates processing power",
+        "ram": "Used for RAM/memory metrics - Violet provides good contrast with blue",
+        "gpu": "Used for GPU metrics - Green suggests performance/efficiency",
+        "vram": "Used for VRAM/video memory metrics - Amber warns of high usage",
+        "net": "Used for network metrics - Sky blue represents data flow",
+        "pwr": "Used for power consumption - Rose/Red indicates energy usage intensity"
+      },
+      "glassmorphism": {
+        "background": "Use glass-bg for semi-transparent panel backgrounds",
+        "border": "Use glass-border for subtle edge definition",
+        "blur": "16px backdrop-filter creates frosted glass effect",
+        "highlight": "glass-highlight adds subtle inner glow for depth"
+      },
+      "typography": {
+        "primary": "Use text-primary for main content and headings",
+        "secondary": "Use text-secondary for labels, metadata, and supporting text",
+        "monospace": "Use Consolas/Monaco font stack for numerical data, PID, and command paths"
+      },
+      "layout": {
+        "grid": "3-column grid for desktop, 2-column for tablet, 1-column for mobile",
+        "card_height": "Fixed 140px height ensures consistent card sizes",
+        "spacing": "16px gap between grid items maintains breathing room"
+      }
+    }
+  }
+}

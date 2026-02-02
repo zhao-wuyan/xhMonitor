@@ -1,0 +1,98 @@
+{
+  "symptom": {
+    "description": "网速监控显示的上传/下载速度是实际速度的2倍或更多，疑似所有网络适配器（包括虚拟网卡）的速度被累加",
+    "error_message": null,
+    "stack_trace": null,
+    "frequency": "always",
+    "user_impact": "用户看到的网速数据不准确，无法正确评估实际网络使用情况，影响监控系统的可信度"
+  },
+  "root_cause": {
+    "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "line_range": "238-285",
+    "function": "GetNetworkSpeed",
+    "issue": "LibreHardwareMonitor 枚举所有 HardwareType.Network 类型的传感器（包括物理网卡和虚拟网卡如 VMware、Hyper-V、VPN 等），在 line 268 和 272 处使用 += 累加所有传感器的吞吐量值，导致虚拟网卡的流量被重复计入总网速",
+    "confidence": 0.95,
+    "introduced_by": null,
+    "category": "logic_error"
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "relevance": 0.95,
+      "rationale": "包含 GetNetworkSpeed() 方法（line 238-285），该方法通过 LibreHardwareManager.GetSensorValues() 获取所有网络传感器并累加，是数据流的核心聚合点",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+      "relevance": 0.75,
+      "rationale": "LibreHardwareManager 负责枚举硬件传感器（line 105-118 的 EnsureSnapshotFresh 方法），IsNetworkEnabled=true（line 40）启用了所有网络适配器的监控，是数据流的源头",
+      "change_type": "reference_only"
+    },
+    {
+      "path": "XhMonitor.Tests/Providers/SystemMetricProviderTests.cs",
+      "relevance": 0.60,
+      "rationale": "包含网络速度测试用例 DoneWhen_GetSystemUsageAsync_IncludesNetworkThroughput_WhenHardwareManagerAvailable，需要更新以验证虚拟网卡过滤逻辑",
+      "change_type": "test_coverage"
+    }
+  ],
+  "reproduction_steps": [
+    "在系统中安装虚拟网络适配器（如 VMware Network Adapter、Hyper-V Virtual Ethernet Adapter、VPN 适配器等）",
+    "启动 XhMonitor 应用程序，观察网速监控显示",
+    "使用实际网络工具（如 Windows 任务管理器、Resource Monitor）测量真实网速",
+    "对比 XhMonitor 显示的网速与实际网速，发现 XhMonitor 显示的速度是实际速度的倍数（取决于虚拟网卡数量）",
+    "通过 LibreHardwareMonitor 诊断工具查看所有 HardwareType.Network 传感器，确认虚拟网卡被包含在枚举中"
+  ],
+  "fix_hints": [
+    {
+      "description": "过滤虚拟网络适配器，只累加物理网卡的速度",
+      "approach": "在 GetNetworkSpeed() 方法中，根据传感器的硬件名称（sensor.HardwareName 或通过 LibreHardwareMonitor 的 IHardware.Name）过滤虚拟网卡。常见虚拟网卡名称包含关键词：'VMware', 'Virtual', 'Hyper-V', 'VPN', 'Loopback', 'Tunnel', 'TAP', 'vEthernet'",
+      "code_example": "// 在 SystemMetricProvider.cs 的 GetNetworkSpeed() 方法中添加过滤逻辑\nprivate static readonly string[] VirtualAdapterKeywords = \n[\n    \"vmware\", \"virtual\", \"hyper-v\", \"vpn\", \"loopback\", \n    \"tunnel\", \"tap\", \"vethernet\", \"microsoft wi-fi direct\"\n];\n\nprivate (double UploadSpeed, double DownloadSpeed) GetNetworkSpeed()\n{\n    // ... existing code ...\n    foreach (var sensor in sensors)\n    {\n        // 添加虚拟网卡过滤\n        if (IsVirtualAdapter(sensor.HardwareName))\n        {\n            continue;\n        }\n        \n        if (sensor.Value <= 0)\n        {\n            continue;\n        }\n        // ... existing aggregation logic ...\n    }\n}\n\nprivate static bool IsVirtualAdapter(string hardwareName)\n{\n    return VirtualAdapterKeywords.Any(keyword => \n        hardwareName.Contains(keyword, StringComparison.OrdinalIgnoreCase));\n}",
+      "risk": "medium"
+    },
+    {
+      "description": "使用 System.Net.NetworkInformation.NetworkInterface 验证物理网卡",
+      "approach": "结合 .NET 的 NetworkInterface API 获取网卡的 NetworkInterfaceType 和 OperationalStatus，只累加 OperationalStatus.Up 且 NetworkInterfaceType 为 Ethernet/Wireless80211 的物理网卡",
+      "code_example": "// 使用 NetworkInterface API 验证物理网卡\nusing System.Net.NetworkInformation;\n\nprivate static bool IsPhysicalAdapter(string adapterName)\n{\n    try\n    {\n        var interfaces = NetworkInterface.GetAllNetworkInterfaces();\n        var matchedInterface = interfaces.FirstOrDefault(ni => \n            ni.Name.Equals(adapterName, StringComparison.OrdinalIgnoreCase) ||\n            ni.Description.Equals(adapterName, StringComparison.OrdinalIgnoreCase));\n        \n        if (matchedInterface == null)\n        {\n            return false;\n        }\n        \n        // 只接受物理网卡类型\n        var physicalTypes = new[] \n        {\n            NetworkInterfaceType.Ethernet,\n            NetworkInterfaceType.Wireless80211,\n            NetworkInterfaceType.GigabitEthernet\n        };\n        \n        return physicalTypes.Contains(matchedInterface.NetworkInterfaceType) &&\n               matchedInterface.OperationalStatus == OperationalStatus.Up;\n    }\n    catch\n    {\n        return false;\n    }\n}",
+      "risk": "low"
+    },
+    {
+      "description": "添加配置选项让用户选择监控的网卡",
+      "approach": "在设置界面添加网卡选择功能，让用户手动选择要监控的物理网卡，避免自动过滤逻辑的误判",
+      "code_example": "// 在 ApplicationSettings 中添加配置项\npublic class ApplicationSettings\n{\n    // ... existing properties ...\n    public List<string> MonitoredNetworkAdapters { get; set; } = new();\n    public bool AutoFilterVirtualAdapters { get; set; } = true;\n}\n\n// 在 GetNetworkSpeed() 中使用配置\nprivate (double UploadSpeed, double DownloadSpeed) GetNetworkSpeed()\n{\n    var settings = _settingsProvider.GetSettings();\n    \n    foreach (var sensor in sensors)\n    {\n        // 如果用户指定了监控的网卡列表，只累加列表中的网卡\n        if (settings.MonitoredNetworkAdapters.Any())\n        {\n            if (!settings.MonitoredNetworkAdapters.Contains(sensor.HardwareName))\n            {\n                continue;\n            }\n        }\n        // 否则使用自动过滤逻辑\n        else if (settings.AutoFilterVirtualAdapters && IsVirtualAdapter(sensor.HardwareName))\n        {\n            continue;\n        }\n        \n        // ... existing aggregation logic ...\n    }\n}",
+      "risk": "low"
+    }
+  ],
+  "dependencies": "LibreHardwareMonitor (用于硬件传感器枚举), System.Net.NetworkInformation (用于网卡类型验证)",
+  "constraints": "必须保持向后兼容性，不能破坏现有的网速监控功能；过滤逻辑应该是可配置的，避免误过滤用户关心的网卡；需要考虑不同虚拟化软件（VMware、Hyper-V、VirtualBox、Docker）的网卡命名规则",
+  "related_issues": [],
+  "clarification_needs": [
+    {
+      "question": "应该使用哪种虚拟网卡过滤策略？",
+      "context": "有三种可选的过滤策略：1) 基于关键词的黑名单过滤（简单但可能误判）；2) 使用 NetworkInterface API 验证物理网卡类型（更准确但性能开销稍大）；3) 添加用户配置选项让用户手动选择监控的网卡（最灵活但需要 UI 改动）。需要在准确性、性能和用户体验之间权衡。",
+      "options": [
+        "方案1：基于关键词黑名单过滤（推荐，简单高效，覆盖常见虚拟网卡）",
+        "方案2：使用 NetworkInterface API 验证物理网卡类型（最准确，但需要额外的 API 调用）",
+        "方案3：添加用户配置选项（最灵活，但需要修改设置界面和数据库）",
+        "方案4：组合方案1+2（先用关键词快速过滤，再用 API 验证边界情况）"
+      ]
+    },
+    {
+      "question": "是否需要支持多网卡场景下的独立监控？",
+      "context": "当前实现将所有（物理）网卡的速度累加为总网速。在多网卡场景下（如同时使用有线和无线），用户可能希望分别查看每个网卡的速度，而不是总和。这需要修改数据模型（SystemUsage）和 UI 显示逻辑。",
+      "options": [
+        "保持当前累加逻辑，只修复虚拟网卡问题（最小改动）",
+        "支持多网卡独立监控，返回每个物理网卡的速度（需要修改数据模型和 UI）",
+        "同时提供总速度和分网卡速度（最完整，但改动最大）"
+      ]
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-29T00:00:00Z",
+    "bug_description": "网速监控显示的速度被x2了，可能是所有网卡（包括虚拟网卡）的速度被累加了",
+    "source": "cli-explore-agent",
+    "diagnosis_angle": "dataflow",
+    "diagnosis_index": 1,
+    "total_diagnoses": 2,
+    "duration_seconds": 0
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "mode": "bugfix",
+  "severity": "Medium",
+  "planObject": {
+    "summary": "修复网速监控重复计算问题，通过两阶段过滤策略区分虚拟网卡和物理网卡。第一阶段使用关键词黑名单快速过滤常见虚拟网卡，第二阶段异步验证网卡类型并动态更新白名单，确保只统计已验证的物理网卡流量。",
+    "root_cause": "LibreHardwareManager 在构建 SensorReading 时未保留硬件名称上下文，导致 SystemMetricProvider 无法区分物理网卡和虚拟网卡，所有网卡流量被累加造成速度翻倍。",
+    "strategy": "comprehensive_fix",
+    "tasks": [
+      {
+        "id": "FIX1",
+        "title": "扩展 SensorReading 数据模型支持硬件名称",
+        "scope": "XhMonitor.Core/Models/",
+        "action": "Update",
+        "description": "在 SensorReading record 中添加 HardwareName 字段，用于传递硬件名称上下文，使上层能够识别网卡类型。",
+        "modification_points": [
+          {
+            "file": "XhMonitor.Core/Models/SensorReading.cs",
+            "target": "SensorReading record definition",
+            "change": "添加 string HardwareName 参数到构造函数"
+          }
+        ],
+        "implementation": [
+          "打开 XhMonitor.Core/Models/SensorReading.cs",
+          "在 SensorReading record 定义中，在 HardwareType 参数后添加 string HardwareName 参数",
+          "更新构造函数签名为：public sealed record SensorReading(HardwareType HardwareType, string HardwareName, SensorType SensorType, string Name, float Value)",
+          "保存文件"
+        ],
+        "verification": [
+          "编译项目确认无语法错误",
+          "检查所有使用 SensorReading 的地方是否需要更新（编译器会提示）"
+        ],
+        "risk": "low",
+        "cli_execution_id": "network-fix-FIX1",
+        "cli_execution": {
+          "strategy": "new"
+        }
+      },
+      {
+        "id": "FIX2",
+        "title": "更新 LibreHardwareManager 注入硬件名称",
+        "scope": "XhMonitor.Core/Services/",
+        "action": "Update",
+        "description": "修改 AddSensorReadings 方法，在构造 SensorReading 时传入 hardware.Name，保留硬件名称上下文。",
+        "modification_points": [
+          {
+            "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+            "target": "AddSensorReadings:215-223",
+            "change": "在 SensorReading 构造时添加 hardware.Name 参数"
+          }
+        ],
+        "implementation": [
+          "打开 XhMonitor.Core/Services/LibreHardwareManager.cs",
+          "定位到 AddSensorReadings 方法（第 215 行）",
+          "修改 results.Add 语句，将 new SensorReading(hardware.HardwareType, sensor.SensorType, sensor.Name, sensor.Value.Value) 改为 new SensorReading(hardware.HardwareType, hardware.Name, sensor.SensorType, sensor.Name, sensor.Value.Value)",
+          "保存文件"
+        ],
+        "verification": [
+          "编译项目确认无错误",
+          "运行应用，检查日志确认 SensorReading 包含硬件名称"
+        ],
+        "depends_on": ["FIX1"],
+        "risk": "low",
+        "cli_execution_id": "network-fix-FIX2",
+        "cli_execution": {
+          "strategy": "resume",
+          "resume_from": "network-fix-FIX1"
+        }
+      },
+      {
+        "id": "FIX3",
+        "title": "实现两阶段网卡过滤策略",
+        "scope": "XhMonitor.Core/Providers/",
+        "action": "Add",
+        "description": "在 SystemMetricProvider 中实现两阶段过滤：第一阶段使用关键词黑名单快速过滤，第二阶段异步验证网卡类型并动态更新白名单。",
+        "modification_points": [
+          {
+            "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+            "target": "Class level fields",
+            "change": "添加虚拟网卡黑名单关键字数组、已验证网卡白名单集合、验证锁"
+          },
+          {
+            "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+            "target": "Constructor or Initialize method",
+            "change": "启动异步网卡验证任务"
+          },
+          {
+            "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+            "target": "GetNetworkSpeed:238-285",
+            "change": "添加两阶段过滤逻辑：先黑名单过滤，再白名单验证"
+          },
+          {
+            "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+            "target": "New methods",
+            "change": "添加 IsVirtualAdapter、VerifyPhysicalAdaptersAsync、IsPhysicalAdapterVerified 方法"
+          }
+        ],
+        "implementation": [
+          "在 SystemMetricProvider 类中添加字段：private static readonly string[] VirtualAdapterKeywords = [\"vEthernet\", \"Hyper-V\", \"VirtualBox\", \"VMware\", \"TAP-\", \"VPN\", \"Radmin\", \"Loopback\", \"Pseudo\", \"WireGuard\", \"OpenVPN\", \"Tun\", \"Fortinet\", \"Cisco AnyConnect\", \"TeamViewer\", \"AnyDesk\", \"Kernel\"]; private readonly HashSet<string> _verifiedPhysicalAdapters = new(); private readonly SemaphoreSlim _verificationLock = new(1, 1);",
+          "添加 IsVirtualAdapter 方法：检查硬件名称是否包含黑名单关键字（不区分大小写）",
+          "添加 VerifyPhysicalAdaptersAsync 方法：使用 System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces() 获取所有网卡，过滤出 NetworkInterfaceType 为 Ethernet 或 Wireless80211 的物理网卡，将其名称添加到 _verifiedPhysicalAdapters 集合",
+          "在构造函数或 Initialize 方法中启动异步验证：Task.Run(async () => { await Task.Delay(2000); await VerifyPhysicalAdaptersAsync(); })",
+          "修改 GetNetworkSpeed 方法：在 foreach (var sensor in sensors) 循环中，先检查 IsVirtualAdapter(sensor.HardwareName)，如果是虚拟网卡则跳过；如果不是虚拟网卡，再检查 _verifiedPhysicalAdapters.Count > 0 && !_verifiedPhysicalAdapters.Contains(sensor.HardwareName)，如果未通过验证则跳过；只有通过两阶段验证的网卡才累加流量",
+          "添加日志记录：在过滤虚拟网卡和未验证网卡时记录 Debug 级别日志"
+        ],
+        "verification": [
+          "编译项目确认无错误",
+          "在有虚拟网卡的环境中运行应用，检查日志确认虚拟网卡被过滤",
+          "使用任务管理器对比网速，确认 xhMonitor 显示的网速与实际一致",
+          "检查日志确认异步验证完成后，_verifiedPhysicalAdapters 包含物理网卡名称"
+        ],
+        "depends_on": ["FIX2"],
+        "risk": "medium",
+        "cli_execution_id": "network-fix-FIX3",
+        "cli_execution": {
+          "strategy": "resume",
+          "resume_from": "network-fix-FIX2"
+        }
+      }
+    ],
+    "flow_control": {
+      "execution_order": [
+        {
+          "phase": "sequential-1",
+          "tasks": ["FIX1", "FIX2", "FIX3"],
+          "type": "sequential"
+        }
+      ],
+      "exit_conditions": {
+        "success": "所有任务完成，编译通过，网速显示准确（与任务管理器一致），虚拟网卡被正确过滤",
+        "failure": "编译失败，或网速仍然翻倍，或物理网卡被误过滤"
+      }
+    },
+    "focus_paths": [
+      "XhMonitor.Core/Models/SensorReading.cs",
+      "XhMonitor.Core/Services/LibreHardwareManager.cs",
+      "XhMonitor.Core/Providers/SystemMetricProvider.cs"
+    ],
+    "test_strategy": {
+      "scope": "integration",
+      "manual_verification": [
+        "在有虚拟网卡的环境中运行应用（VMware、Hyper-V、VPN 等）",
+        "产生网络流量（下载文件），观察 xhMonitor 显示的网速",
+        "打开任务管理器或 Resource Monitor，对比网速数值",
+        "检查应用日志，确认虚拟网卡被过滤，物理网卡通过验证",
+        "测试多网卡场景（有线+无线），确认总网速为两者之和"
+      ]
+    },
+    "rollback_plan": {
+      "strategy": "git_revert",
+      "steps": [
+        "如果修复导致网速显示为 0 或异常，使用 git revert 回退提交",
+        "检查日志确认问题原因（是否所有网卡被误过滤）",
+        "调整黑名单关键字或验证逻辑后重新提交"
+      ]
+    },
+    "estimated_time": "45 minutes",
+    "recommended_execution": "Agent",
+    "severity": "Medium",
+    "risk_level": "medium",
+    "complexity": "Medium",
+    "_metadata": {
+      "timestamp": "2026-01-29T00:00:00Z",
+      "source": "direct-planning",
+      "planning_mode": "direct",
+      "complexity": "Medium",
+      "diagnosis_angles": ["dataflow", "adapter-filtering"]
+    }
+  },
+  "diagnosisAngles": ["dataflow", "adapter-filtering"],
+  "clarificationContext": {
+    "filtering_strategy": "方案1：关键词黑名单 + 异步验证（用户自定义混合方案）",
+    "multi_adapter_display": "保持累加逻辑",
+    "configuration_option": "硬编码黑名单",
+    "fallback_strategy": "不回退",
+    "user_instruction": "先使用方案1，此时可以统计，然后启动后，异步验证网卡类型，验证成功后动态更新监控的网卡。只有通过验证的网卡才会被合计。"
+  },
+  "executionMethod": "Codex",
+  "codeReviewTool": "Gemini Review",
+  "originalUserInput": "当前网速监控的逻辑时什么,好像速度被x2了,不会是所有网卡合计的速度吧,主要是我有虚拟网卡会重复的网速。可以区分虚拟网卡和物理网卡吗",
+  "session": {
+    "id": "network-speed-doubled-2026-01-29",
+    "folder": ".workflow/.lite-fix/network-speed-doubled-2026-01-29",
+    "artifacts": {
+      "diagnoses": [
+        {
+          "angle": "dataflow",
+          "path": ".workflow/.lite-fix/network-speed-doubled-2026-01-29/diagnosis-dataflow.json"
+        },
+        {
+          "angle": "adapter-filtering",
+          "path": ".workflow/.lite-fix/network-speed-doubled-2026-01-29/diagnosis-adapter-filtering.json"
+        }
+      ],
+      "diagnoses_manifest": ".workflow/.lite-fix/network-speed-doubled-2026-01-29/diagnoses-manifest.json",
+      "fix_plan": ".workflow/.lite-fix/network-speed-doubled-2026-01-29/fix-plan.json"
+    }
+  }
+}

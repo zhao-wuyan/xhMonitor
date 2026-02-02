@@ -1,0 +1,1009 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "templates": [
+    {
+      "target": "app-container",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "flex-column",
+      "description": "Main application wrapper with flex column layout, responsive padding and gap",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "app-container"
+        },
+        "layout": {
+          "display": "flex",
+          "flex_direction": "column",
+          "gap": "{spacing.5}",
+          "max_width": "1400px",
+          "margin": "0 auto",
+          "padding": "{spacing.5}"
+        },
+        "responsive": [
+          {
+            "breakpoint": "768px",
+            "layout": {
+              "padding": "{spacing.4}",
+              "gap": "{spacing.4}"
+            }
+          }
+        ],
+        "children": [
+          {
+            "tag": "header",
+            "content": "{{header}}"
+          },
+          {
+            "tag": "section",
+            "content": "{{stats-grid}}"
+          },
+          {
+            "tag": "section",
+            "content": "{{bottom-section}}"
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["landmark-role"],
+        "keyboard_navigation": "N/A",
+        "focus_management": "N/A",
+        "screen_reader_notes": "Main container landmark"
+      },
+      "usage_guide": {
+        "common_sizes": ["max-width: 1400px"],
+        "variant_recommendations": ["Add sidebar modifier for dashboard layouts"],
+        "usage_context": "Use as outer wrapper for all dashboard pages",
+        "accessibility_tips": "Include main landmark role for screen readers"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 63,
+            "line_end": 70,
+            "snippet": ".app-container {\n    max-width: 1400px;\n    margin: 0 auto;\n    padding: 20px;\n    display: flex;\n    flex-direction: column;\n    gap: 20px;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 579,
+            "line_end": 581,
+            "snippet": "<div class=\"app-container\">\n    <!-- Header -->\n    <header class=\"header\">",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "header",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "flex-row-space-between",
+      "description": "Top navigation header with brand, center disk info, and status badge",
+      "structure": {
+        "tag": "header",
+        "attributes": {
+          "class": "header",
+          "role": "banner"
+        },
+        "layout": {
+          "display": "flex",
+          "justify_content": "space-between",
+          "align_items": "center",
+          "padding": "{spacing.2} {spacing.1}",
+          "gap": "{spacing.5}",
+          "position": "relative"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "brand"
+            },
+            "content": "{{brand}}"
+          },
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "disk-info-container"
+            },
+            "content": "{{disk-items}}",
+            "layout": {
+              "display": "flex",
+              "gap": "{spacing.3}",
+              "position": "absolute",
+              "left": "50%",
+              "top": "50%",
+              "transform": "translate(-50%, -50%)",
+              "z_index": "10"
+            },
+            "responsive": [
+              {
+                "breakpoint": "768px",
+                "layout": {
+                  "display": "flex"
+                }
+              },
+              {
+                "breakpoint": "default",
+                "layout": {
+                  "display": "none"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "status-badge"
+            },
+            "content": "{{status}}"
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["landmark-banner"],
+        "keyboard_navigation": "N/A",
+        "focus_management": "N/A",
+        "screen_reader_notes": "Banner landmark with brand and status"
+      },
+      "usage_guide": {
+        "common_sizes": ["height: auto"],
+        "variant_recommendations": ["Add search box modifier", "Add user menu variant"],
+        "usage_context": "Use as top navigation for all pages",
+        "accessibility_tips": "Include role='banner' landmark"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 73,
+            "line_end": 80,
+            "snippet": ".header {\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    padding: 10px 5px;\n    gap: 20px;\n    position: relative;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 581,
+            "line_end": 602,
+            "snippet": "<header class=\"header\">\n    <div class=\"brand\">\n        <div class=\"logo-box\">XM</div>\n        XhMonitor <span class=\"version-tag\">v0.2.4</span>\n    </div>\n    <div class=\"disk-info-container\" id=\"disk-container\">\n        <!-- JS Rendered -->\n    </div>\n    <div class=\"status-badge\">\n        <div class=\"status-dot\"></div>\n        <span>Online</span>\n    </div>\n</header>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "stats-grid",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "grid-responsive",
+      "description": "Responsive grid for resource monitoring cards (3→2→1 columns)",
+      "structure": {
+        "tag": "section",
+        "attributes": {
+          "class": "stats-grid"
+        },
+        "layout": {
+          "display": "grid",
+          "grid_template_columns": "repeat(3, 1fr)",
+          "gap": "{spacing.4}"
+        },
+        "responsive": [
+          {
+            "breakpoint": "1200px",
+            "layout": {
+              "grid_template_columns": "repeat(2, 1fr)"
+            }
+          },
+          {
+            "breakpoint": "768px",
+            "layout": {
+              "grid_template_columns": "1fr"
+            }
+          }
+        ],
+        "children": [
+          {
+            "tag": "div",
+            "content": "{{stat-card}}",
+            "repeat": "variable"
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["section-landmark"],
+        "keyboard_navigation": "Cards can be focusable if interactive",
+        "focus_management": "Tab order follows grid order",
+        "screen_reader_notes": "Section landmark for metrics"
+      },
+      "usage_guide": {
+        "common_sizes": ["gap: 16px default", "gap: 12px for compact"],
+        "variant_recommendations": ["2-column variant for tablets", "4-column variant for large screens"],
+        "usage_context": "Dashboard metric cards, image galleries, card lists",
+        "accessibility_tips": "Ensure card focus states are visible"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 233,
+            "line_end": 246,
+            "snippet": ".stats-grid {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 16px;\n}\n@media (max-width: 1200px) {\n    .stats-grid { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 768px) {\n    .app-container { padding: 16px; gap: 16px; }\n    .stats-grid { grid-template-columns: 1fr; }\n}",
+            "context_type": "css-grid"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 605,
+            "line_end": 620,
+            "snippet": "<section class=\"stats-grid\">\n    <!-- CPU Card -->\n    <div class=\"stat-card glass-panel\" style=\"--accent: var(--color-cpu)\">",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "stat-card",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "flex-overlay",
+      "description": "Resource monitoring card with info overlay on chart background",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "stat-card glass-panel"
+        },
+        "layout": {
+          "height": "140px",
+          "padding": "0",
+          "display": "flex",
+          "overflow": "hidden",
+          "position": "relative"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "card-glow"
+            },
+            "layout": {
+              "position": "absolute",
+              "left": "-20px",
+              "top": "-20px",
+              "width": "100px",
+              "height": "100px",
+              "border_radius": "50%",
+              "filter": "blur(40px)",
+              "opacity": "0.25",
+              "pointer_events": "none"
+            }
+          },
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "card-info-area"
+            },
+            "layout": {
+              "position": "absolute",
+              "left": "0",
+              "top": "0",
+              "bottom": "0",
+              "width": "150px",
+              "padding": "{spacing.4} {spacing.5}",
+              "display": "flex",
+              "flex_direction": "column",
+              "justify_content": "center",
+              "align_items": "flex-start",
+              "z_index": "10"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "class": "card-label"
+                },
+                "content": "{{label}}"
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "class": "card-value"
+                },
+                "content": "{{value}}"
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "class": "card-sub"
+                },
+                "content": "{{subtitle}}"
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "card-chart-area"
+            },
+            "layout": {
+              "position": "absolute",
+              "left": "0",
+              "right": "0",
+              "top": "0",
+              "bottom": "0",
+              "z_index": "1"
+            },
+            "children": [
+              {
+                "tag": "canvas",
+                "attributes": {
+                  "class": "mini-chart-canvas"
+                },
+                "content": "{{chart}}"
+              }
+            ]
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["card-semantic"],
+        "keyboard_navigation": ":active state for touch feedback",
+        "focus_management": "Visual feedback on interaction",
+        "screen_reader_notes": "Card info should be announced with aria-label"
+      },
+      "usage_guide": {
+        "common_sizes": ["height: 140px", "info-width: 150px"],
+        "variant_recommendations": ["Tall variant for detailed metrics", "Wide variant for charts"],
+        "usage_context": "Resource monitoring, analytics cards, metric display",
+        "accessibility_tips": "Include aria-label with metric name and value"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 249,
+            "line_end": 287,
+            "snippet": ".stat-card {\n    height: var(--card-height);\n    padding: 0;\n    display: flex;\n    overflow: hidden;\n    position: relative;\n    transition: transform 0.2s;\n}\n.card-info-area {\n    position: absolute;\n    left: 0;\n    top: 0;\n    bottom: 0;\n    width: 150px;\n    padding: 16px 20px;\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: flex-start;\n    text-align: left;\n    z-index: 10;\n}\n.card-chart-area {\n    position: absolute;\n    left: 0;\n    right: 0;\n    top: 0;\n    bottom: 0;\n    z-index: 1;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 607,
+            "line_end": 619,
+            "snippet": "<div class=\"stat-card glass-panel\" style=\"--accent: var(--color-cpu)\">\n    <div class=\"card-glow\" style=\"background: var(--accent)\"></div>\n    <div class=\"card-info-area\">\n        <div class=\"card-label\">\n            <span style=\"color:var(--accent)\">●</span> CPU <span class=\"label-temp\" id=\"val-temp-cpu-title\">· --°C</span>\n        </div>\n        <div class=\"card-value\" id=\"val-cpu\">0%</div>\n        <div class=\"card-sub\">i9-13900K</div>\n    </div>\n    <div class=\"card-chart-area\" id=\"chart-area-cpu\">\n        <canvas id=\"chart-cpu\" class=\"mini-chart-canvas\"></canvas>\n    </div>\n</div>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "glass-panel",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "static",
+      "description": "Glassmorphism container with backdrop blur",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "glass-panel"
+        },
+        "layout": {
+          "background": "rgba(30, 41, 59, 0.6)",
+          "backdrop_filter": "blur(16px)",
+          "webkit_backdrop_filter": "blur(16px)",
+          "border": "1px solid rgba(255, 255, 255, 0.08)",
+          "border_radius": "{border_radius.lg}",
+          "box_shadow": "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "content": "{{content}}"
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["container-semantic"],
+        "keyboard_navigation": "N/A",
+        "focus_management": "N/A",
+        "screen_reader_notes": "Visual style only, no semantic impact"
+      },
+      "usage_guide": {
+        "common_sizes": ["border-radius: 16px"],
+        "variant_recommendations": ["Smaller radius for compact cards", "Larger radius for modals"],
+        "usage_context": "Cards, panels, modals, dropdowns",
+        "accessibility_tips": "Ensure sufficient contrast for text content"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 53,
+            "line_end": 60,
+            "snippet": ".glass-panel {\n    background: var(--glass-bg);\n    backdrop-filter: blur(16px);\n    -webkit-backdrop-filter: blur(16px);\n    border: 1px solid var(--glass-border);\n    border-radius: 16px;\n    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);\n}",
+            "context_type": "css-glassmorphism"
+          }
+        ]
+      }
+    },
+    {
+      "target": "process-panel",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "flex-column",
+      "description": "Process list panel with search and scrollable table",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "process-panel glass-panel"
+        },
+        "layout": {
+          "padding": "{spacing.5}",
+          "overflow": "hidden"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "panel-title"
+            },
+            "layout": {
+              "margin_bottom": "15px",
+              "display": "flex",
+              "align_items": "center",
+              "flex_wrap": "wrap",
+              "gap": "{spacing.2}"
+            },
+            "children": [
+              {
+                "tag": "span",
+                "content": "{{title}}"
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "class": "search-box"
+                },
+                "content": "{{search-input}}"
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "table-scroll"
+            },
+            "layout": {
+              "width": "100%",
+              "overflow_x": "auto",
+              "webkit_overflow_scrolling": "touch"
+            },
+            "children": [
+              {
+                "tag": "table",
+                "content": "{{process-table}}"
+              }
+            ]
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["table-semantic"],
+        "keyboard_navigation": "Full table keyboard support",
+        "focus_management": "Sortable headers, searchable",
+        "screen_reader_notes": "Table with sortable columns"
+      },
+      "usage_guide": {
+        "common_sizes": ["padding: 20px"],
+        "variant_recommendations": ["Compact variant for mobile", "Full-width variant"],
+        "usage_context": "Data tables, lists with search, sortable grids",
+        "accessibility_tips": "Use semantic table elements, include aria-sort on headers"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 380,
+            "line_end": 396,
+            "snippet": ".process-panel {\n    padding: 20px;\n    overflow: hidden;\n}\n.table-scroll {\n    width: 100%;\n    overflow-x: auto;\n    -webkit-overflow-scrolling: touch;\n}\ntable {\n    width: 100%;\n    border-collapse: collapse;\n    font-size: 0.85rem;\n    min-width: 600px;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 702,
+            "line_end": 727,
+            "snippet": "<div class=\"process-panel glass-panel\">\n    <div class=\"panel-title\" style=\"margin-bottom: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;\">\n        进程列表\n        <div class=\"search-box\">\n            <span class=\"search-icon\">🔍</span>\n            <input type=\"text\" class=\"search-input\" placeholder=\"搜索进程...\" id=\"search-input\" oninput=\"handleSearch(this.value)\">\n        </div>\n    </div>\n    <div class=\"table-scroll\">\n        <table>\n            <thead>\n                <tr>\n                    <th onclick=\"handleSort('name')\" id=\"th-name\">应用名称</th>\n                    <th onclick=\"handleSort('pid')\" id=\"th-pid\">PID</th>\n                    <th onclick=\"handleSort('cpu')\" id=\"th-cpu\">CPU</th>\n                    <th onclick=\"handleSort('ram')\" id=\"th-ram\">RAM</th>\n                    <th onclick=\"handleSort('gpu')\" id=\"th-gpu\">GPU</th>\n                    <th onclick=\"handleSort('vram')\" id=\"th-vram\">VRAM</th>\n                </tr>\n            </thead>\n            <tbody id=\"process-list\">\n                <!-- JS Rendered -->\n            </tbody>\n        </table>\n    </div>\n</div>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "search-box",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "flex-row",
+      "description": "Search input with icon and focus expansion",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "search-box"
+        },
+        "layout": {
+          "margin_left": "auto",
+          "position": "relative"
+        },
+        "children": [
+          {
+            "tag": "span",
+            "attributes": {
+              "class": "search-icon"
+            },
+            "layout": {
+              "position": "absolute",
+              "left": "10px",
+              "top": "50%",
+              "transform": "translateY(-50%)",
+              "pointer_events": "none"
+            },
+            "content": "{{icon}}"
+          },
+          {
+            "tag": "input",
+            "attributes": {
+              "class": "search-input",
+              "type": "text",
+              "placeholder": "{{placeholder}}"
+            },
+            "layout": {
+              "background": "rgba(0, 0, 0, 0.2)",
+              "border": "1px solid rgba(255, 255, 255, 0.08)",
+              "border_radius": "8px",
+              "padding": "6px 12px 6px 32px",
+              "color": "#f8fafc",
+              "font_family": "inherit",
+              "font_size": "0.9rem",
+              "width": "180px",
+              "transition": "all 0.2s"
+            },
+            "states": {
+              "focus": {
+                "background": "rgba(0, 0, 0, 0.4)",
+                "border_color": "#3b82f6",
+                "outline": "none",
+                "width": "220px"
+              }
+            }
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["input-semantic"],
+        "keyboard_navigation": "Full keyboard support",
+        "focus_management": "Visible focus state",
+        "screen_reader_notes": "Label via placeholder or aria-label"
+      },
+      "usage_guide": {
+        "common_sizes": ["width: 180px default", "width: 220px focus"],
+        "variant_recommendations": ["Compact variant for mobile", "Full-width variant"],
+        "usage_context": "Search inputs, filter inputs",
+        "accessibility_tips": "Include aria-label if placeholder is not sufficient"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 474,
+            "line_end": 506,
+            "snippet": ".search-box {\n    margin-left: auto;\n    position: relative;\n}\n.search-input {\n    background: rgba(0, 0, 0, 0.2);\n    border: 1px solid var(--glass-border);\n    border-radius: 8px;\n    padding: 6px 12px 6px 32px;\n    color: var(--text-primary);\n    font-family: inherit;\n    font-size: 0.9rem;\n    width: 180px;\n    transition: all 0.2s;\n}\n.search-input:focus {\n    background: rgba(0, 0, 0, 0.4);\n    border-color: var(--color-cpu);\n    outline: none;\n    width: 220px;\n}\n.search-icon {\n    position: absolute;\n    left: 10px;\n    top: 50%;\n    transform: translateY(-50%);\n    color: var(--text-secondary);\n    font-size: 0.9rem;\n    pointer-events: none;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 705,
+            "line_end": 708,
+            "snippet": "<div class=\"search-box\">\n    <span class=\"search-icon\">🔍</span>\n    <input type=\"text\" class=\"search-input\" placeholder=\"搜索进程...\" id=\"search-input\" oninput=\"handleSearch(this.value)\">\n</div>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "mobile-nav",
+      "component_type": "universal",
+      "device_type": "mobile",
+      "layout_strategy": "flex-row-fixed",
+      "description": "Bottom navigation bar for mobile devices",
+      "structure": {
+        "tag": "nav",
+        "attributes": {
+          "class": "mobile-nav",
+          "role": "navigation"
+        },
+        "layout": {
+          "position": "fixed",
+          "bottom": "0",
+          "left": "0",
+          "width": "100%",
+          "height": "60px",
+          "background": "rgba(15, 23, 42, 0.9)",
+          "backdrop_filter": "blur(20px)",
+          "border_top": "1px solid rgba(255, 255, 255, 0.08)",
+          "display": "none",
+          "justify_content": "space-around",
+          "align_items": "center",
+          "z_index": "100"
+        },
+        "responsive": [
+          {
+            "breakpoint": "768px",
+            "layout": {
+              "display": "flex"
+            }
+          }
+        ],
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "nav-icon"
+            },
+            "content": "{{nav-item}}",
+            "repeat": "variable",
+            "layout": {
+              "display": "flex",
+              "flex_direction": "column",
+              "align_items": "center",
+              "gap": "4px",
+              "color": "rgba(148, 163, 184, 1)",
+              "font_size": "0.75rem",
+              "cursor": "pointer"
+            }
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["landmark-navigation"],
+        "keyboard_navigation": "Tab navigation between items",
+        "focus_management": "Visual active state",
+        "screen_reader_notes": "Navigation landmark with aria-current for active page"
+      },
+      "usage_guide": {
+        "common_sizes": ["height: 60px"],
+        "variant_recommendations": ["Top navigation variant for desktop"],
+        "usage_context": "Mobile app navigation, tab bars",
+        "accessibility_tips": "Use aria-current='page' for active item"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 538,
+            "line_end": 568,
+            "snippet": ".mobile-nav {\n    position: fixed;\n    bottom: 0;\n    left: 0;\n    width: 100%;\n    height: 60px;\n    background: rgba(15, 23, 42, 0.9);\n    backdrop-filter: blur(20px);\n    border-top: 1px solid var(--glass-border);\n    display: none;\n    justify-content: space-around;\n    align-items: center;\n    z-index: 100;\n}\n@media (max-width: 768px) {\n    .mobile-nav { display: flex; }\n}\n.nav-icon {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    gap: 4px;\n    color: var(--text-secondary);\n    font-size: 0.75rem;\n    cursor: pointer;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 733,
+            "line_end": 746,
+            "snippet": "<nav class=\"mobile-nav\">\n    <div class=\"nav-icon active\">\n        <svg viewBox=\"0 0 24 24\"><path d=\"M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z\"/></svg>\n        <span>监控</span>\n    </div>\n    <div class=\"nav-icon\">\n        <svg viewBox=\"0 0 24 24\"><path d=\"M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2zm-4 6H7V7h10v10z\"/></svg>\n        <span>硬件</span>\n    </div>\n    <div class=\"nav-icon\">\n        <svg viewBox=\"0 0 24 24\"><path d=\"M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z\"/></svg>\n        <span>设置</span>\n    </div>\n</nav>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "disk-item",
+      "component_type": "specialized",
+      "device_type": "responsive",
+      "layout_strategy": "flex-column",
+      "description": "Disk usage display with progress bar and speed indicators",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "disk-item"
+        },
+        "layout": {
+          "display": "flex",
+          "flex_direction": "column",
+          "justify_content": "center",
+          "gap": "2px",
+          "font_size": "0.75rem",
+          "background": "rgba(255, 255, 255, 0.03)",
+          "padding": "3px 10px",
+          "border_radius": "4px",
+          "border": "1px solid rgba(255, 255, 255, 0.05)",
+          "height": "38px",
+          "min_width": "200px",
+          "max_width": "240px"
+        },
+        "children": [
+          {
+            "tag": "span",
+            "attributes": {
+              "class": "disk-label"
+            },
+            "content": "{{disk-name}}"
+          },
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "disk-details-row"
+            },
+            "layout": {
+              "display": "flex",
+              "align_items": "center",
+              "justify_content": "space-between",
+              "gap": "8px"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "class": "disk-bar-container"
+                },
+                "layout": {
+                  "display": "flex",
+                  "align_items": "center",
+                  "width": "40px",
+                  "flex_shrink": "0"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "attributes": {
+                      "class": "disk-bar-bg"
+                    },
+                    "layout": {
+                      "flex": "1",
+                      "height": "4px",
+                      "background": "rgba(255, 255, 255, 0.1)",
+                      "border_radius": "2px",
+                      "overflow": "hidden"
+                    },
+                    "children": [
+                      {
+                        "tag": "div",
+                        "attributes": {
+                          "class": "disk-bar-fill"
+                        },
+                        "layout": {
+                          "height": "100%",
+                          "background": "{{disk-color}}",
+                          "border_radius": "2px"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "span",
+                "attributes": {
+                  "class": "disk-info-text"
+                },
+                "content": "{{usage}}"
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "class": "disk-speed-group"
+                },
+                "layout": {
+                  "display": "flex",
+                  "gap": "6px",
+                  "font_family": "'Consolas', monospace",
+                  "font_size": "0.7rem",
+                  "border_left": "1px solid rgba(255, 255, 255, 0.1)",
+                  "padding_left": "8px",
+                  "margin_left": "auto"
+                },
+                "children": [
+                  {
+                    "tag": "span",
+                    "attributes": {
+                      "class": "speed-r"
+                    },
+                    "content": "{{read-speed}}"
+                  },
+                  {
+                    "tag": "span",
+                    "attributes": {
+                      "class": "speed-w"
+                    },
+                    "content": "{{write-speed}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["data-display"],
+        "keyboard_navigation": "N/A",
+        "focus_management": "N/A",
+        "screen_reader_notes": "Display-only content, use aria-live for dynamic updates"
+      },
+      "usage_guide": {
+        "common_sizes": ["height: 38px", "min-width: 200px"],
+        "variant_recommendations": ["Compact variant for mobile"],
+        "usage_context": "Dashboard disk monitoring",
+        "accessibility_tips": "Include aria-label with full disk info"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 120,
+            "line_end": 196,
+            "snippet": ".disk-item {\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    gap: 2px;\n    font-size: 0.75rem;\n    background: rgba(255,255,255,0.03);\n    padding: 3px 10px;\n    border-radius: 4px;\n    border: 1px solid rgba(255,255,255,0.05);\n    height: 38px;\n    min-width: 200px;\n    max-width: 240px;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 1294,
+            "line_end": 1312,
+            "snippet": "<div class=\"disk-item\">\n    <div class=\"disk-label\" title=\"${d.name}\">${d.name}</div>\n    <div class=\"disk-details-row\">\n        <div class=\"disk-bar-container\" title=\"Usage: ${d.used}%\">\n            <div class=\"disk-bar-bg\">\n                <div class=\"disk-bar-fill\" style=\"width: ${d.used}%; background-color: ${d.color}\"></div>\n            </div>\n        </div>\n        <span class=\"disk-info-text\">${usedStr}/${totalStr}</span>\n        <div class=\"disk-speed-group\">\n            <span class=\"speed-r\">R:<span class=\"speed-val\" id=\"disk-r-${i}\">   0M</span></span>\n            <span class=\"speed-w\">W:<span class=\"speed-val\" id=\"disk-w-${i}\">   0M</span></span>\n        </div>\n    </div>\n</div>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "bottom-section",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "grid-single",
+      "description": "Full-width bottom section for process panel",
+      "structure": {
+        "tag": "section",
+        "attributes": {
+          "class": "bottom-section"
+        },
+        "layout": {
+          "display": "grid",
+          "grid_template_columns": "1fr",
+          "gap": "{spacing.5}",
+          "align_items": "start"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "content": "{{process-panel}}"
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["section-landmark"],
+        "keyboard_navigation": "N/A",
+        "focus_management": "N/A",
+        "screen_reader_notes": "Section landmark for detailed content"
+      },
+      "usage_guide": {
+        "common_sizes": ["gap: 20px"],
+        "variant_recommendations": ["2-column variant for additional panels"],
+        "usage_context": "Bottom content sections, detail panels",
+        "accessibility_tips": "Include descriptive heading for screen readers"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 372,
+            "line_end": 377,
+            "snippet": ".bottom-section {\n    display: grid;\n    grid-template-columns: 1fr;\n    gap: 20px;\n    align-items: start;\n}",
+            "context_type": "css-grid"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 700,
+            "line_end": 729,
+            "snippet": "<section class=\"bottom-section\">\n    <!-- 进程 -->\n    <div class=\"process-panel glass-panel\">\n        <div class=\"panel-title\" style=\"margin-bottom: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;\">\n            进程列表\n            <div class=\"search-box\">\n                <span class=\"search-icon\">🔍</span>\n                <input type=\"text\" class=\"search-input\" placeholder=\"搜索进程...\" id=\"search-input\" oninput=\"handleSearch(this.value)\">\n            </div>\n        </div>\n        <div class=\"table-scroll\">\n            <table>\n                <thead>\n                    <tr>\n                        <th onclick=\"handleSort('name')\" id=\"th-name\">应用名称</th>\n                        <th onclick=\"handleSort('pid')\" id=\"th-pid\">PID</th>\n                        <th onclick=\"handleSort('cpu')\" id=\"th-cpu\">CPU</th>\n                        <th onclick=\"handleSort('ram')\" id=\"th-ram\">RAM</th>\n                        <th onclick=\"handleSort('gpu')\" id=\"th-gpu\">GPU</th>\n                        <th onclick=\"handleSort('vram')\" id=\"th-vram\">VRAM</th>\n                    </tr>\n                </thead>\n                <tbody id=\"process-list\">\n                    <!-- JS Rendered -->\n                </tbody>\n            </table>\n        </div>\n    </div>\n</section>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    },
+    {
+      "target": "status-badge",
+      "component_type": "universal",
+      "device_type": "responsive",
+      "layout_strategy": "flex-row",
+      "description": "Status indicator with animated dot and label",
+      "structure": {
+        "tag": "div",
+        "attributes": {
+          "class": "status-badge"
+        },
+        "layout": {
+          "padding": "6px 12px",
+          "border_radius": "20px",
+          "background": "rgba(16, 185, 129, 0.15)",
+          "color": "#10b981",
+          "font_size": "0.8rem",
+          "font_weight": "600",
+          "display": "flex",
+          "align_items": "center",
+          "gap": "6px",
+          "border": "1px solid rgba(16, 185, 129, 0.3)",
+          "white_space": "nowrap",
+          "z_index": "20"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "class": "status-dot"
+            },
+            "layout": {
+              "width": "6px",
+              "height": "6px",
+              "background_color": "currentColor",
+              "border_radius": "50%",
+              "box_shadow": "0 0 8px currentColor",
+              "animation": "pulse 2s infinite"
+            }
+          },
+          {
+            "tag": "span",
+            "content": "{{status-text}}"
+          }
+        ]
+      },
+      "accessibility": {
+        "patterns": ["status-indicator"],
+        "keyboard_navigation": "N/A",
+        "focus_management": "N/A",
+        "screen_reader_notes": "Use aria-live for dynamic status changes"
+      },
+      "usage_guide": {
+        "common_sizes": ["padding: 6px 12px", "dot: 6px"],
+        "variant_recommendations": ["Different colors for different states"],
+        "usage_context": "Online/offline status, connection state, health indicators",
+        "accessibility_tips": "Include aria-label for screen readers, use aria-live for dynamic updates"
+      },
+      "extraction_metadata": {
+        "source": "xhmonitor-web/design/ui-preview-v2.html",
+        "created": "2025-01-31T12:19:00Z",
+        "code_snippets": [
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 208,
+            "line_end": 230,
+            "snippet": ".status-badge {\n    padding: 6px 12px;\n    border-radius: 20px;\n    background: rgba(16, 185, 129, 0.15);\n    color: var(--color-gpu);\n    font-size: 0.8rem;\n    font-weight: 600;\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    border: 1px solid rgba(16, 185, 129, 0.3);\n    white-space: nowrap;\n    z-index: 20;\n}\n.status-dot {\n    width: 6px;\n    height: 6px;\n    background-color: currentColor;\n    border-radius: 50%;\n    box-shadow: 0 0 8px currentColor;\n    animation: pulse 2s infinite;\n}",
+            "context_type": "css-flexbox"
+          },
+          {
+            "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+            "line_start": 598,
+            "line_end": 601,
+            "snippet": "<div class=\"status-badge\">\n    <div class=\"status-dot\"></div>\n    <span>Online</span>\n</div>",
+            "context_type": "html-structure"
+          }
+        ]
+      }
+    }
+  ]
+}

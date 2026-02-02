@@ -1,0 +1,103 @@
+{
+  "project_structure": "xhMonitor 采用多项目解决方案架构：\n- XhMonitor.Core (共享库，net8.0)\n- XhMonitor.Service (ASP.NET Core 后端，net8.0)\n- XhMonitor.Desktop (WPF 桌面应用，net8.0-windows)\n- xhmonitor-web (React 前端，npm 包)\n\n版本号分散在 4 个独立位置，无统一管理机制。打包流程依赖 PowerShell 脚本手动传递版本号参数。",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+      "relevance": 0.95,
+      "rationale": "Desktop 项目版本号定义（<Version>0.1.0</Version>），需要改为从中央源读取"
+    },
+    {
+      "path": "XhMonitor.Service/XhMonitor.Service.csproj",
+      "relevance": 0.95,
+      "rationale": "Service 项目版本号定义（<Version>0.1.0</Version>），需要改为从中央源读取"
+    },
+    {
+      "path": "XhMonitor.Core/XhMonitor.Core.csproj",
+      "relevance": 0.95,
+      "rationale": "Core 库版本号定义（<Version>0.1.0</Version>），需要改为从中央源读取"
+    },
+    {
+      "path": "xhmonitor-web/package.json",
+      "relevance": 0.90,
+      "rationale": "Web 前端版本号定义（\"version\": \"0.1.0\"），需要与 .NET 项目同步"
+    },
+    {
+      "path": "XhMonitor.Desktop/Windows/AboutWindow.xaml",
+      "relevance": 0.85,
+      "rationale": "关于页面硬编码版本号（第 57 行：版本：0.1.0），需要改为动态绑定"
+    },
+    {
+      "path": "publish.ps1",
+      "relevance": 0.80,
+      "rationale": "发布脚本版本号参数（默认 0.1.0），需要改为从中央源读取"
+    },
+    {
+      "path": "build-installer.ps1",
+      "relevance": 0.80,
+      "rationale": "安装包构建脚本版本号参数（默认 0.0.0），需要改为从中央源读取"
+    },
+    {
+      "path": "installer/XhMonitor.iss",
+      "relevance": 0.75,
+      "rationale": "Inno Setup 脚本版本号定义（第 9 行默认 0.2.1），通过命令行参数注入"
+    }
+  ],
+  "patterns": "## 现有版本管理模式\n\n### 1. .NET 项目版本号模式\n**位置**: 每个 .csproj 文件的 <PropertyGroup> 中\n```xml\n<Version>0.1.0</Version>\n```\n**问题**: 3 个项目各自独立定义，需要手动同步\n\n### 2. npm 包版本号模式\n**位置**: xhmonitor-web/package.json\n```json\n\"version\": \"0.1.0\"\n```\n**问题**: 与 .NET 项目版本号独立，无自动同步机制\n\n### 3. PowerShell 脚本版本号传递模式\n**publish.ps1 模式**:\n```powershell\nparam([string]$Version = \"0.1.0\")\n$OutputDir = Join-Path $RootDir \"release\\XhMonitor-v$Version\"\n```\n**问题**: 默认值硬编码，用户必须手动传递 -Version 参数\n\n**build-installer.ps1 模式**:\n```powershell\nparam([string]$Version = \"0.0.0\")\n& $isccPath \"/DMyAppVersion=$Version\" $IssFile\n```\n**问题**: 默认值为 0.0.0，容易忘记传递正确版本号\n\n### 4. Inno Setup 版本号注入模式\n**installer/XhMonitor.iss 模式**:\n```inno\n#ifndef MyAppVersion\n  #define MyAppVersion \"0.2.1\"\n#endif\n```\n**问题**: 通过命令行参数 /DMyAppVersion 注入，但有硬编码后备值\n\n### 5. XAML 硬编码版本号模式\n**AboutWindow.xaml 第 57 行**:\n```xml\n<TextBlock Text=\"版本：0.1.0\" .../>\n```\n**问题**: 完全硬编码，无法自动更新\n\n## 推荐的版本管理模式\n\n### 单一数据源模式 (Directory.Build.props)\n创建根目录 Directory.Build.props 文件，所有 .csproj 自动继承：\n```xml\n<Project>\n  <PropertyGroup>\n    <Version>0.2.5</Version>\n    <AssemblyVersion>0.2.5.0</AssemblyVersion>\n    <FileVersion>0.2.5.0</FileVersion>\n  </PropertyGroup>\n</Project>\n```\n\n### MSBuild 属性注入模式\n在 Desktop 项目中通过 MSBuild Target 生成版本号类：\n```xml\n<Target Name=\"GenerateVersionInfo\" BeforeTargets=\"BeforeBuild\">\n  <WriteLinesToFile File=\"$(ProjectDir)Generated\\VersionInfo.cs\" \n    Lines=\"public static class VersionInfo { public const string Version = &quot;$(Version)&quot;%3B }\" />\n</Target>\n```\n\n### XAML 数据绑定模式\nAboutWindow.xaml 改为绑定：\n```xml\n<TextBlock Text=\"{Binding Version, StringFormat='版本：{0}'}\" />\n```\nAboutWindow.xaml.cs 提供 DataContext：\n```csharp\npublic AboutWindow() {\n    InitializeComponent();\n    DataContext = new { Version = Assembly.GetExecutingAssembly().GetName().Version.ToString(3) };\n}\n```\n\n### PowerShell 自动读取模式\npublish.ps1 从 Directory.Build.props 读取版本号：\n```powershell\n[xml]$buildProps = Get-Content \"Directory.Build.props\"\n$Version = $buildProps.Project.PropertyGroup.Version\n```",
+  "dependencies": "## 版本管理相关依赖\n\n### MSBuild 系统\n- **Directory.Build.props**: MSBuild 自动导入机制，所有子项目自动继承属性\n- **AssemblyInfo 生成**: .NET SDK 自动生成 AssemblyInfo，从 <Version> 读取\n\n### PowerShell 脚本依赖\n- **XML 解析**: Get-Content + [xml] 类型转换读取 .props 文件\n- **dotnet CLI**: publish 命令支持 -p:Version=x.x.x 覆盖版本号\n\n### Inno Setup 依赖\n- **命令行参数**: /DMyAppVersion=x.x.x 注入预处理器变量\n- **ISS 预处理器**: #define 和 #ifndef 支持条件编译\n\n### WPF 数据绑定依赖\n- **System.Reflection.Assembly**: GetExecutingAssembly().GetName().Version 读取程序集版本\n- **INotifyPropertyChanged**: 如果需要运行时更新版本号显示\n\n### npm 包版本同步依赖\n- **Node.js fs 模块**: 读取 Directory.Build.props 或生成的 version.json\n- **package.json scripts**: 添加 preversion 钩子自动同步版本号",
+  "integration_points": "## 版本号集成点\n\n### 1. MSBuild 集成点\n**文件**: 根目录创建 `Directory.Build.props`\n**机制**: MSBuild 自动导入，所有 .csproj 继承 <Version> 属性\n**影响范围**: XhMonitor.Core, XhMonitor.Service, XhMonitor.Desktop\n**代码示例**:\n```xml\n<!-- Directory.Build.props -->\n<Project>\n  <PropertyGroup>\n    <Version>0.2.5</Version>\n  </PropertyGroup>\n</Project>\n```\n\n### 2. AssemblyInfo 集成点\n**文件**: 自动生成的 obj/Debug/net8.0/XhMonitor.Desktop.AssemblyInfo.cs\n**机制**: .NET SDK 从 <Version> 生成 [assembly: AssemblyVersion]\n**读取位置**: AboutWindow.xaml.cs 通过 Assembly.GetExecutingAssembly().GetName().Version\n**代码示例**:\n```csharp\n// AboutWindow.xaml.cs:9\nvar version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? \"0.0.0\";\nDataContext = new { Version = version };\n```\n\n### 3. XAML 数据绑定集成点\n**文件**: XhMonitor.Desktop/Windows/AboutWindow.xaml:57\n**当前代码**: `<TextBlock Text=\"版本：0.1.0\" .../>`\n**改为**: `<TextBlock Text=\"{Binding Version, StringFormat='版本：{0}'}\" .../>`\n**依赖**: AboutWindow.xaml.cs 设置 DataContext\n\n### 4. PowerShell 脚本集成点\n**文件**: publish.ps1:6, build-installer.ps1:5\n**当前代码**: `param([string]$Version = \"0.1.0\")`\n**改为**: 从 Directory.Build.props 读取\n```powershell\nif (-not $Version) {\n    [xml]$buildProps = Get-Content \"$PSScriptRoot\\Directory.Build.props\"\n    $Version = $buildProps.Project.PropertyGroup.Version\n}\n```\n\n### 5. Inno Setup 集成点\n**文件**: installer/XhMonitor.iss:9\n**当前代码**: `#define MyAppVersion \"0.2.1\"`\n**保持不变**: 通过 build-installer.ps1 传递 /DMyAppVersion 参数\n**依赖**: build-installer.ps1 从 Directory.Build.props 读取版本号\n\n### 6. npm 包集成点\n**文件**: xhmonitor-web/package.json:4\n**当前代码**: `\"version\": \"0.1.0\"`\n**同步方案 A**: 添加 npm script 从 Directory.Build.props 读取\n```json\n\"scripts\": {\n  \"sync-version\": \"node scripts/sync-version.js\"\n}\n```\n**同步方案 B**: publish.ps1 在构建前自动更新 package.json\n```powershell\n$packageJson = Get-Content \"xhmonitor-web/package.json\" | ConvertFrom-Json\n$packageJson.version = $Version\n$packageJson | ConvertTo-Json -Depth 10 | Set-Content \"xhmonitor-web/package.json\"\n```",
+  "constraints": "## 版本管理约束\n\n### 技术约束\n1. **MSBuild 导入顺序**: Directory.Build.props 必须在根目录，子目录的同名文件会覆盖父级\n2. **AssemblyVersion 格式**: 必须是 4 段数字（Major.Minor.Build.Revision），如 0.2.5.0\n3. **SemVer 兼容性**: npm 包版本号必须符合 SemVer 规范（Major.Minor.Patch）\n4. **Inno Setup 限制**: 版本号只能通过命令行参数或 ISS 文件定义，无法直接读取外部文件\n\n### 兼容性约束\n1. **现有发布流程**: 必须保持 publish.ps1 和 build-installer.ps1 的命令行接口不变\n2. **向后兼容**: 支持手动传递 -Version 参数覆盖自动读取的版本号\n3. **多项目同步**: 所有 .NET 项目必须使用相同版本号，避免程序集版本冲突\n\n### 工作流约束\n1. **单一修改点**: 版本号更新只需修改 Directory.Build.props 一处\n2. **自动传播**: 修改后自动影响所有项目、脚本、安装包\n3. **构建验证**: 构建过程应验证所有位置的版本号一致性\n\n### 显示约束\n1. **关于页面**: AboutWindow.xaml 必须显示运行时程序集版本，而非编译时硬编码\n2. **版本格式**: 统一使用 3 段版本号（Major.Minor.Patch），如 0.2.5\n3. **安装包命名**: 保持现有命名规则 XhMonitor-v{Version}-Setup.exe",
+  "clarification_needs": [
+    {
+      "question": "版本号格式规范：是否采用语义化版本（SemVer）规范？",
+      "context": "当前项目使用 0.1.0 格式，但 .NET AssemblyVersion 需要 4 段数字（0.1.0.0）。需要明确版本号格式规范，以便统一所有位置的版本号表示。",
+      "options": [
+        "采用 SemVer 3 段格式（Major.Minor.Patch），AssemblyVersion 自动补 .0",
+        "采用 4 段格式（Major.Minor.Build.Revision），npm 包截取前 3 段",
+        "混合模式：对外显示 3 段，内部使用 4 段"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "版本号自动递增策略：是否需要自动递增 Build 或 Patch 版本号？",
+      "context": "当前完全手动管理版本号。可以考虑在 CI/CD 或本地构建时自动递增版本号，减少人工错误。",
+      "options": [
+        "完全手动管理，开发者在 Directory.Build.props 中手动修改",
+        "自动递增 Patch 版本号（每次 publish.ps1 执行时 +1）",
+        "基于 Git 提交数作为 Build 号（如 0.2.{CommitCount}）",
+        "基于日期作为 Build 号（如 0.2.20260129）"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "npm 包版本号同步时机：何时同步 package.json 的版本号？",
+      "context": "xhmonitor-web 的 package.json 版本号需要与 .NET 项目同步。需要确定同步时机，避免版本号不一致。",
+      "options": [
+        "构建时同步：publish.ps1 在构建 Web 资源前自动更新 package.json",
+        "提交前同步：添加 Git pre-commit hook 检查并同步版本号",
+        "手动同步：提供独立脚本 sync-version.ps1，开发者手动执行",
+        "不同步：Web 前端独立版本号，仅在 README 中说明对应关系"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "版本号验证机制：是否需要在构建时验证版本号一致性？",
+      "context": "引入版本管理体系后，需要确保所有位置的版本号保持一致。可以添加验证步骤，在构建失败时提前发现问题。",
+      "options": [
+        "添加 MSBuild Target 验证所有项目版本号一致",
+        "publish.ps1 添加验证步骤，检查 .csproj 和 package.json 版本号",
+        "仅依赖 Directory.Build.props 自动同步，不添加额外验证",
+        "添加独立验证脚本 verify-version.ps1，CI/CD 中执行"
+      ],
+      "recommended": 1
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-29T08:50:00Z",
+    "task_description": "引入版本管理体系，目前打包纯靠手传版本号，且关于页面的版本号是写死的。",
+    "source": "cli-explore-agent",
+    "exploration_angle": "patterns",
+    "exploration_index": 1,
+    "total_explorations": 3,
+    "duration_seconds": 180
+  }
+}

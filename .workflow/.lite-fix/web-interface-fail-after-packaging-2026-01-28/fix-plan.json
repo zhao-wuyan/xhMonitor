@@ -1,0 +1,33 @@
+{
+  "summary": "打包后 Web 界面无法访问，原因是 csproj 的 BuildWebAssets Target 只复制到 OutputPath，而 dotnet publish 使用不同的输出目录",
+  "root_cause": "XhMonitor.Desktop.csproj 的 BuildWebAssets Target 使用 $(OutputPath) 复制 wwwroot，但 dotnet publish -o 使用的是不同的发布目录，导致 wwwroot 没有被包含在发布包中",
+  "strategy": "comprehensive_fix",
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "修改 csproj 添加 Publish 时的 wwwroot 复制",
+      "scope": "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+      "action": "Update",
+      "description": "添加 AfterPublish Target 或修改现有 Target 以支持 publish 场景，确保 wwwroot 被复制到 PublishDir",
+      "modification_points": [
+        "XhMonitor.Desktop.csproj:46-59 (BuildWebAssets Target)"
+      ],
+      "implementation": [
+        "方案A: 添加 AfterPublish Target 复制 wwwroot 到 $(PublishDir)",
+        "方案B: 将 wwwroot 作为 Content 包含在项目中，自动随 publish 复制",
+        "推荐方案B，更符合 MSBuild 最佳实践"
+      ],
+      "acceptance": "执行 dotnet publish 后，发布目录包含完整的 wwwroot 文件夹"
+    }
+  ],
+  "estimated_time": "10 分钟",
+  "recommended_execution": "Agent",
+  "severity": "Medium",
+  "risk_level": "Low",
+  "_metadata": {
+    "timestamp": "2026-01-28T12:30:00.000Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "complexity": "Medium"
+  }
+}

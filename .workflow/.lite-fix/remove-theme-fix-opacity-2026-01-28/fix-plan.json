@@ -1,0 +1,54 @@
+{
+  "summary": "移除设置页主题颜色设置项，并修复悬浮窗透明度设置不生效的问题",
+  "root_cause": "FloatingWindow.LoadMonitoringSettingsAsync 方法只加载了 Monitoring 设置，没有加载 Appearance.Opacity 设置并应用到窗口的 Opacity 属性",
+  "strategy": "immediate_patch",
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "移除主题颜色设置项",
+      "scope": "XhMonitor.Desktop/Windows",
+      "action": "Delete",
+      "description": "从设置页 XAML 中移除主题颜色下拉框，从 RestoreDefaults_Click 中移除 ThemeColor 重置代码",
+      "modification_points": [
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs"
+      ],
+      "implementation": [
+        "移除 XAML 中主题颜色 ComboBox 及其标签",
+        "移除 RestoreDefaults_Click 中的 ThemeColor 重置行"
+      ],
+      "acceptance": "设置页外观设置区域只显示透明度滑块，不显示主题颜色选项",
+      "depends_on": [],
+      "complexity": "Low"
+    },
+    {
+      "id": "task-2",
+      "title": "修复透明度设置不生效",
+      "scope": "XhMonitor.Desktop",
+      "action": "Fix",
+      "description": "在 FloatingWindow 加载设置时读取 Opacity 并应用，在设置保存后立即应用到悬浮窗",
+      "modification_points": [
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs"
+      ],
+      "implementation": [
+        "在 LoadMonitoringSettingsAsync 中添加加载 Appearance.Opacity 的逻辑",
+        "将 Opacity 值 (20-100) 转换为 Window.Opacity (0.2-1.0)",
+        "在 Save_Click 保存成功后立即应用透明度到 Owner FloatingWindow"
+      ],
+      "acceptance": "调整透明度滑块并保存后，悬浮窗透明度立即变化；重启应用后透明度设置保持",
+      "depends_on": [],
+      "complexity": "Low"
+    }
+  ],
+  "estimated_time": "15 minutes",
+  "recommended_execution": "Agent",
+  "severity": "Medium",
+  "risk_level": "Low",
+  "_metadata": {
+    "timestamp": "2026-01-28T00:00:00.000Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "complexity": "Low"
+  }
+}

@@ -1,0 +1,392 @@
+{
+  "summary": "引入基于 Directory.Build.props 的统一版本管理体系，实现版本号的单一数据源管理。通过 MSBuild 属性继承机制自动同步所有 .NET 项目版本号，修改构建脚本自动读取并传递版本号，改造 AboutWindow 使用 Assembly 反射动态显示版本号，并在构建时自动同步前端 package.json 版本号。",
+  "approach": "采用 MSBuild 原生的 Directory.Build.props 机制作为版本号单一数据源，所有 .csproj 文件自动继承版本号属性。修改 PowerShell 构建脚本从 Directory.Build.props 读取版本号并通过 -p:Version 参数传递给 dotnet publish 命令。改造 AboutWindow 使用 Assembly.GetExecutingAssembly().GetName().Version 动态获取版本号。在 publish.ps1 中添加构建前钩子自动同步 package.json 版本号。整个方案保持向后兼容，支持手动传递 -Version 参数覆盖。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "创建 Directory.Build.props 版本号中央配置",
+      "scope": "根目录",
+      "action": "Create",
+      "description": "在解决方案根目录创建 Directory.Build.props 文件，定义统一的版本号属性（Version, AssemblyVersion, FileVersion），采用 SemVer 3段格式。所有子项目的 .csproj 文件将自动继承这些属性。",
+      "modification_points": [
+        {
+          "file": "Directory.Build.props",
+          "target": "新文件",
+          "change": "创建 MSBuild 属性文件，定义 <Version>0.2.5</Version>"
+        },
+        {
+          "file": "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+          "target": "PropertyGroup:10",
+          "change": "删除 <Version>0.1.0</Version> 行，改为继承 Directory.Build.props"
+        },
+        {
+          "file": "XhMonitor.Service/XhMonitor.Service.csproj",
+          "target": "PropertyGroup:8",
+          "change": "删除 <Version>0.1.0</Version> 行，改为继承 Directory.Build.props"
+        },
+        {
+          "file": "XhMonitor.Core/XhMonitor.Core.csproj",
+          "target": "PropertyGroup:7",
+          "change": "删除 <Version>0.1.0</Version> 行，改为继承 Directory.Build.props"
+        }
+      ],
+      "implementation": [
+        "创建 Directory.Build.props 文件，内容包含 <Project><PropertyGroup><Version>0.2.5</Version><AssemblyVersion>0.2.5.0</AssemblyVersion><FileVersion>0.2.5.0</FileVersion></PropertyGroup></Project>",
+        "打开 XhMonitor.Desktop.csproj，删除第 10 行的 <Version>0.1.0</Version>",
+        "打开 XhMonitor.Service.csproj，删除第 8 行的 <Version>0.1.0</Version>",
+        "打开 XhMonitor.Core.csproj，删除第 7 行的 <Version>0.1.0</Version>",
+        "执行 dotnet build 验证所有项目能正确继承版本号"
+      ],
+      "reference": {
+        "pattern": "MSBuild Directory.Build.props 自动导入机制",
+        "files": [],
+        "examples": "MSBuild 会自动从当前目录向上查找 Directory.Build.props 并导入，所有子项目自动继承属性"
+      },
+      "acceptance": [
+        "Directory.Build.props 文件存在且包含 <Version>0.2.5</Version>",
+        "3 个 .csproj 文件不再包含 <Version> 元素",
+        "执行 dotnet build 后，生成的 DLL 文件版本号为 0.2.5.0"
+      ],
+      "rationale": {
+        "chosen_approach": "使用 Directory.Build.props 作为单一数据源，利用 MSBuild 原生的属性继承机制自动同步所有项目版本号",
+        "alternatives_considered": [
+          "使用独立的 VERSION 文件，需要自定义脚本解析",
+          "使用 GitVersion 工具，增加外部依赖和学习成本",
+          "保持脚本参数为主源，需要在每次构建时手动传递"
+        ],
+        "decision_factors": [
+          "MSBuild 原生支持，无需额外工具",
+          "自动继承机制，零维护成本",
+          "符合 .NET 生态系统最佳实践",
+          "向后兼容，可通过 -p:Version 覆盖"
+        ],
+        "tradeoffs": "需要删除现有 .csproj 中的 <Version> 元素，但这是一次性操作，后续维护更简单"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "执行 dotnet build，检查输出日志中的版本号",
+          "检查生成的 DLL 文件属性，验证版本号为 0.2.5.0",
+          "使用 dotnet publish -p:Version=1.0.0 测试覆盖机制"
+        ],
+        "success_metrics": [
+          "所有项目编译成功",
+          "生成的程序集版本号一致为 0.2.5.0",
+          "手动覆盖版本号参数生效"
+        ]
+      }
+    },
+    {
+      "id": "T2",
+      "title": "修改构建脚本自动读取和传递版本号",
+      "scope": "构建脚本",
+      "action": "Update",
+      "description": "修改 publish.ps1 和 build-installer.ps1 脚本，从 Directory.Build.props 自动读取版本号作为默认值，并在 dotnet publish 命令中通过 -p:Version 参数传递版本号，确保编译层和打包层版本号一致。保持向后兼容，支持手动传递 -Version 参数覆盖。",
+      "modification_points": [
+        {
+          "file": "publish.ps1",
+          "target": "参数定义:6",
+          "change": "修改 $Version 参数默认值逻辑，从 Directory.Build.props 读取"
+        },
+        {
+          "file": "publish.ps1",
+          "target": "Service 发布参数:168-193",
+          "change": "在 $publishArgs 数组中添加 \"-p:Version=$Version\""
+        },
+        {
+          "file": "publish.ps1",
+          "target": "Desktop 发布参数:211-236",
+          "change": "在 $publishArgs 数组中添加 \"-p:Version=$Version\""
+        },
+        {
+          "file": "build-installer.ps1",
+          "target": "参数定义:5",
+          "change": "修改 $Version 参数默认值逻辑，从 Directory.Build.props 读取"
+        }
+      ],
+      "implementation": [
+        "在 publish.ps1 第 6 行后添加版本号读取逻辑：if (-not $Version) { [xml]$buildProps = Get-Content \"$PSScriptRoot\\Directory.Build.props\"; $Version = $buildProps.Project.PropertyGroup.Version }",
+        "在 publish.ps1 第 193 行（Service 发布参数末尾）添加：$publishArgs += \"-p:Version=$Version\"",
+        "在 publish.ps1 第 236 行（Desktop 发布参数末尾）添加：$publishArgs += \"-p:Version=$Version\"",
+        "在 build-installer.ps1 第 5 行后添加相同的版本号读取逻辑",
+        "测试不传递 -Version 参数时脚本能自动读取 Directory.Build.props",
+        "测试传递 -Version 参数时能正确覆盖默认值"
+      ],
+      "reference": {
+        "pattern": "PowerShell XML 解析和参数默认值",
+        "files": [
+          "publish.ps1",
+          "build-installer.ps1"
+        ],
+        "examples": "使用 [xml] 类型转换和 XPath 导航读取 XML 文件内容"
+      },
+      "acceptance": [
+        "不传递 -Version 参数时，脚本自动从 Directory.Build.props 读取版本号",
+        "传递 -Version 参数时，能正确覆盖默认值",
+        "dotnet publish 命令包含 -p:Version 参数",
+        "生成的二进制文件版本号与 Directory.Build.props 一致"
+      ],
+      "depends_on": ["T1"],
+      "rationale": {
+        "chosen_approach": "在脚本参数默认值中添加条件逻辑，从 Directory.Build.props 读取版本号，并通过 -p:Version 参数传递给 dotnet publish",
+        "alternatives_considered": [
+          "完全移除 -Version 参数，强制从 Directory.Build.props 读取（破坏向后兼容）",
+          "使用环境变量传递版本号（增加复杂度）",
+          "在 .csproj 中添加 BeforeBuild Target 读取版本号（过度工程化）"
+        ],
+        "decision_factors": [
+          "保持向后兼容性，现有调用方式不受影响",
+          "PowerShell 原生 XML 解析能力，无需外部工具",
+          "dotnet publish -p:Version 是官方推荐的版本号注入方式",
+          "修改点集中，易于维护"
+        ],
+        "tradeoffs": "需要在两个脚本中重复版本号读取逻辑，但代码量很小（3-4 行）"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "执行 .\\publish.ps1（不传参数），检查输出目录名称是否包含正确版本号",
+          "执行 .\\publish.ps1 -Version 1.0.0，检查是否使用覆盖的版本号",
+          "检查生成的 DLL 文件属性，验证版本号正确",
+          "执行 .\\build-installer.ps1，检查安装包文件名是否包含正确版本号"
+        ],
+        "success_metrics": [
+          "脚本执行成功，无错误输出",
+          "输出目录名称格式为 XhMonitor-v0.2.5",
+          "生成的程序集版本号为 0.2.5.0",
+          "安装包文件名格式为 XhMonitor-v0.2.5-Setup.exe"
+        ]
+      }
+    },
+    {
+      "id": "T3",
+      "title": "改造 AboutWindow 动态显示版本号",
+      "scope": "XhMonitor.Desktop/Windows/AboutWindow",
+      "action": "Update",
+      "description": "修改 AboutWindow.xaml 和 AboutWindow.xaml.cs，使用 Assembly.GetExecutingAssembly().GetName().Version 动态获取程序集版本号并显示在关于页面，替换当前硬编码的 \"版本：0.1.0\" 文本。采用简单的代码后台方式，无需引入 ViewModel。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Desktop/Windows/AboutWindow.xaml",
+          "target": "TextBlock:57",
+          "change": "将 Text=\"版本：0.1.0\" 改为 x:Name=\"VersionTextBlock\" Text=\"版本：加载中...\""
+        },
+        {
+          "file": "XhMonitor.Desktop/Windows/AboutWindow.xaml.cs",
+          "target": "构造函数:7-16",
+          "change": "在 InitializeComponent() 后添加版本号获取和设置逻辑"
+        }
+      ],
+      "implementation": [
+        "打开 AboutWindow.xaml，找到第 57 行的 TextBlock",
+        "修改为：<TextBlock x:Name=\"VersionTextBlock\" Text=\"版本：加载中...\" FontSize=\"14\" Foreground=\"#B0B0B0\" Margin=\"0,5,0,0\"/>",
+        "打开 AboutWindow.xaml.cs，在构造函数的 InitializeComponent() 后添加代码",
+        "添加：var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;",
+        "添加：VersionTextBlock.Text = $\"版本：{version.Major}.{version.Minor}.{version.Build}\";",
+        "编译并运行，打开关于窗口验证版本号显示"
+      ],
+      "reference": {
+        "pattern": "WPF 代码后台直接操作控件",
+        "files": [
+          "XhMonitor.Desktop/Windows/AboutWindow.xaml",
+          "XhMonitor.Desktop/Windows/AboutWindow.xaml.cs"
+        ],
+        "examples": "使用 x:Name 命名控件，在代码后台通过名称直接访问和修改属性"
+      },
+      "acceptance": [
+        "AboutWindow.xaml 中的 TextBlock 有 x:Name 属性",
+        "AboutWindow.xaml.cs 构造函数中包含版本号获取逻辑",
+        "运行程序，打开关于窗口，显示的版本号为 0.2.5（与 Directory.Build.props 一致）",
+        "版本号格式为 3 段（Major.Minor.Build），不包含 Revision"
+      ],
+      "depends_on": ["T1", "T2"],
+      "rationale": {
+        "chosen_approach": "使用 Assembly 反射在代码后台动态获取版本号，通过 x:Name 直接设置 TextBlock.Text 属性",
+        "alternatives_considered": [
+          "创建 AboutViewModel 并使用数据绑定（过度工程化，项目中其他窗口未使用 MVVM）",
+          "使用依赖注入提供 IVersionService（增加复杂度，版本号是静态信息）",
+          "在 App.xaml.cs 中设置全局资源（增加耦合度）"
+        ],
+        "decision_factors": [
+          "简单直接，代码量最少（3-4 行）",
+          "符合项目现有代码风格（AboutWindow 当前未使用 MVVM）",
+          "Assembly 反射是获取程序集版本号的标准方式",
+          "零维护成本，版本号自动同步"
+        ],
+        "tradeoffs": "代码后台直接操作控件不符合 MVVM 模式，但 AboutWindow 是简单的静态信息展示窗口，不需要复杂的数据绑定"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "编译项目，确保无编译错误",
+          "运行 XhMonitor.Desktop.exe",
+          "点击关于按钮或菜单项打开 AboutWindow",
+          "检查版本号显示是否为 \"版本：0.2.5\"",
+          "修改 Directory.Build.props 中的版本号为 1.0.0，重新编译运行，验证版本号自动更新"
+        ],
+        "success_metrics": [
+          "关于窗口正确显示版本号",
+          "版本号格式为 3 段（不包含 .0 后缀）",
+          "版本号与 Directory.Build.props 中定义的一致",
+          "修改 Directory.Build.props 后版本号自动更新"
+        ]
+      }
+    },
+    {
+      "id": "T4",
+      "title": "添加前端版本号构建时同步",
+      "scope": "构建脚本和前端配置",
+      "action": "Update",
+      "description": "在 publish.ps1 中添加构建前钩子，在执行 npm run build 之前自动读取 Directory.Build.props 中的版本号并更新 xhmonitor-web/package.json，确保前端版本号与后端保持同步。",
+      "modification_points": [
+        {
+          "file": "publish.ps1",
+          "target": "Web 构建前:95-105",
+          "change": "在 npm run build 之前添加 package.json 版本号同步逻辑"
+        }
+      ],
+      "implementation": [
+        "在 publish.ps1 中找到 Web 构建部分（约第 95-105 行，npm run build 之前）",
+        "添加版本号同步逻辑：$packageJsonPath = Join-Path $WebDir \"package.json\"",
+        "添加：$packageJson = Get-Content $packageJsonPath | ConvertFrom-Json",
+        "添加：$packageJson.version = $Version",
+        "添加：$packageJson | ConvertTo-Json -Depth 10 | Set-Content $packageJsonPath",
+        "添加日志输出：Write-Host \"已同步前端版本号: $Version\" -ForegroundColor Green",
+        "测试执行 publish.ps1，检查 package.json 是否被正确更新"
+      ],
+      "reference": {
+        "pattern": "PowerShell JSON 操作",
+        "files": [
+          "publish.ps1"
+        ],
+        "examples": "使用 ConvertFrom-Json 和 ConvertTo-Json 进行 JSON 文件的读取和写入"
+      },
+      "acceptance": [
+        "publish.ps1 在 npm run build 之前包含 package.json 更新逻辑",
+        "执行 publish.ps1 后，xhmonitor-web/package.json 中的 version 字段与 Directory.Build.props 一致",
+        "构建日志中显示版本号同步成功的消息"
+      ],
+      "depends_on": ["T1", "T2"],
+      "rationale": {
+        "chosen_approach": "在 publish.ps1 构建前钩子中使用 PowerShell JSON 操作自动更新 package.json 版本号",
+        "alternatives_considered": [
+          "添加 Git pre-commit hook 检查并同步版本号（需要开发者配置 Git hooks）",
+          "提供独立脚本 sync-version.ps1，开发者手动执行（容易忘记）",
+          "前端不同步版本号（版本号不一致，用户困惑）",
+          "前端通过 API 从后端获取版本号（增加运行时依赖）"
+        ],
+        "decision_factors": [
+          "构建时自动同步，零人工干预",
+          "PowerShell 原生 JSON 支持，无需外部工具",
+          "集成在现有构建流程中，无需额外步骤",
+          "保证前后端版本号一致性"
+        ],
+        "tradeoffs": "每次构建都会修改 package.json 文件，可能产生 Git 变更，但这是预期行为（版本号变更应该提交）"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "执行 .\\publish.ps1",
+          "检查 xhmonitor-web/package.json 中的 version 字段",
+          "验证版本号是否与 Directory.Build.props 一致",
+          "检查构建日志中是否有版本号同步成功的消息",
+          "执行 git diff xhmonitor-web/package.json 查看变更"
+        ],
+        "success_metrics": [
+          "package.json 版本号自动更新",
+          "版本号与 Directory.Build.props 一致",
+          "构建日志显示同步成功",
+          "前端构建成功，无错误"
+        ]
+      }
+    }
+  ],
+  "focus_paths": [
+    "Directory.Build.props",
+    "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+    "XhMonitor.Service/XhMonitor.Service.csproj",
+    "XhMonitor.Core/XhMonitor.Core.csproj",
+    "publish.ps1",
+    "build-installer.ps1",
+    "XhMonitor.Desktop/Windows/AboutWindow.xaml",
+    "XhMonitor.Desktop/Windows/AboutWindow.xaml.cs",
+    "xhmonitor-web/package.json"
+  ],
+  "estimated_time": "1-1.5 小时",
+  "recommended_execution": "Agent",
+  "complexity": "Medium",
+  "design_decisions": [
+    {
+      "decision": "使用 Directory.Build.props 作为版本号单一数据源",
+      "rationale": "MSBuild 原生支持，所有 .csproj 文件自动继承，无需额外工具或脚本解析，符合 .NET 生态系统最佳实践",
+      "tradeoff": "需要删除现有 .csproj 中的 <Version> 元素，但这是一次性操作",
+      "alternatives": [
+        "使用独立的 VERSION 文件（需要自定义解析逻辑）",
+        "使用 GitVersion 工具（增加外部依赖）",
+        "保持脚本参数为主源（需要手动传递，容易出错）"
+      ]
+    },
+    {
+      "decision": "采用 SemVer 3段版本号格式（Major.Minor.Patch）",
+      "rationale": "符合语义化版本规范，用户友好，AssemblyVersion 自动补 .0 后缀满足 .NET 要求",
+      "tradeoff": "AssemblyVersion 实际为 4 段（0.2.5.0），但对外显示为 3 段",
+      "alternatives": [
+        "使用 4 段格式（对用户不友好）",
+        "混合模式（增加复杂度）"
+      ]
+    },
+    {
+      "decision": "AboutWindow 使用 Assembly 反射动态获取版本号",
+      "rationale": "简单直接，零维护成本，版本号自动同步，符合项目现有代码风格",
+      "tradeoff": "不符合 MVVM 模式，但 AboutWindow 是简单的静态信息展示窗口",
+      "alternatives": [
+        "创建 AboutViewModel（过度工程化）",
+        "使用依赖注入（增加复杂度）",
+        "使用全局资源（增加耦合度）"
+      ]
+    },
+    {
+      "decision": "在 publish.ps1 构建前自动同步 package.json 版本号",
+      "rationale": "构建时自动同步，零人工干预，保证前后端版本号一致性",
+      "tradeoff": "每次构建都会修改 package.json 文件，产生 Git 变更",
+      "alternatives": [
+        "Git pre-commit hook（需要开发者配置）",
+        "独立脚本手动执行（容易忘记）",
+        "不同步（版本号不一致）"
+      ]
+    }
+  ],
+  "flow_control": {
+    "execution_order": [
+      {
+        "phase": "sequential-1",
+        "tasks": ["T1"],
+        "type": "sequential"
+      },
+      {
+        "phase": "sequential-2",
+        "tasks": ["T2"],
+        "type": "sequential"
+      },
+      {
+        "phase": "parallel-1",
+        "tasks": ["T3", "T4"],
+        "type": "parallel"
+      }
+    ],
+    "exit_conditions": {
+      "success": "所有任务完成，版本号管理体系正常工作，构建和运行无错误",
+      "failure": "任何任务失败导致构建错误或版本号不一致"
+    }
+  },
+  "_metadata": {
+    "timestamp": "2026-01-29T08:54:00Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "exploration_angles": ["patterns", "integration-points", "dependencies"],
+    "duration_seconds": 240
+  }
+}
