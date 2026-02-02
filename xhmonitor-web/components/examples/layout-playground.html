@@ -4,87 +4,189 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>XhMonitor Layout Playground - UI 布局探索</title>
-    
+
     <!-- 引入组件库 CSS -->
     <link rel="stylesheet" href="../core/design-tokens.css">
     <link rel="stylesheet" href="../core/glass-panel.css">
     <link rel="stylesheet" href="../core/stat-card.css">
-    
+
     <style>
         /* === 变量别名（映射到组件库的 --xh- 前缀变量）=== */
         :root {
-            --color-bg: var(--xh-color-bg);
-            --color-text-primary: var(--xh-color-text-primary);
-            --color-text-secondary: var(--xh-color-text-secondary);
+            --bg-color: var(--xh-color-bg);
+            --text-primary: var(--xh-color-text-primary);
+            --text-secondary: var(--xh-color-text-secondary);
             --glass-bg: var(--xh-color-glass-bg);
             --glass-border: var(--xh-color-glass-border);
+            --glass-highlight: var(--xh-color-glass-highlight);
             --color-cpu: var(--xh-color-cpu);
             --color-ram: var(--xh-color-ram);
             --color-gpu: var(--xh-color-gpu);
             --color-vram: var(--xh-color-vram);
             --color-net: var(--xh-color-net);
             --color-pwr: var(--xh-color-pwr);
-            --font-family-sans: var(--xh-font-sans);
+            --font-family: var(--xh-font-sans);
             --font-family-mono: var(--xh-font-mono);
-            --spacing-lg: var(--xh-spacing-lg);
             --card-height: var(--xh-card-height);
+
+            --xh-grid-columns: 3;
+            --xh-grid-columns-effective: 3;
+            --xh-grid-min-col-width: 260px;
+            --xh-grid-gap: 16px;
+            --xh-grid-row-height: var(--xh-card-height);
+            --xh-glow-opacity: 0.1;
+            --xh-panel-width: 320px;
         }
 
-        /* === 页面基础样式 === */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.5;
             min-height: 100vh;
-            padding: 20px;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
-        /* === Playground 控制面板 === */
+        body.no-gradient {
+            background-image: none;
+        }
+
+        /* === 布局骨架 === */
+        .playground-shell {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) var(--xh-panel-width);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .layout-preview {
+            min-width: 0;
+        }
+
+        .app-container {
+            max-width: var(--xh-max-width);
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* === 控制面板 === */
         .playground-controls {
-            position: fixed;
+            position: sticky;
             top: 20px;
-            right: 20px;
-            z-index: 1000;
+            align-self: start;
             background: var(--glass-bg);
-            backdrop-filter: blur(16px);
+            backdrop-filter: blur(var(--xh-blur));
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 16px;
-            width: 280px;
-            max-height: 90vh;
+            border-radius: 16px;
+            box-shadow: var(--xh-shadow-sm);
+            padding: 18px;
+            max-height: calc(100vh - 40px);
             overflow-y: auto;
         }
 
         .controls-title {
-            font-size: 14px;
+            font-size: 1rem;
             font-weight: 600;
-            color: var(--color-text-primary);
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
             border-bottom: 1px solid var(--glass-border);
         }
 
         .control-group {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .control-label {
-            font-size: 12px;
-            color: var(--color-text-secondary);
-            margin-bottom: 6px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
             display: block;
+            letter-spacing: 0.4px;
         }
 
-        .control-select, .control-input {
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .control-pill {
+            border: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .control-pill.active {
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3) inset;
+            color: #fff;
+        }
+
+        .control-input,
+        .control-select {
             width: 100%;
             padding: 8px 12px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--glass-border);
-            border-radius: 6px;
-            color: var(--color-text-primary);
-            font-size: 13px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
         }
 
-        .control-select:focus, .control-input:focus {
+        .control-input:focus,
+        .control-select:focus {
             outline: none;
             border-color: var(--color-cpu);
+        }
+
+        .control-range {
+            width: 100%;
+        }
+
+        .control-hint {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .control-toggle {
+            display: grid;
+            gap: 8px;
+        }
+
+        .control-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text-primary);
         }
 
         .control-btn {
@@ -92,12 +194,12 @@
             padding: 10px;
             background: var(--color-cpu);
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             color: white;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 0.8rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease;
         }
 
         .control-btn:hover {
@@ -105,24 +207,70 @@
         }
 
         .control-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-btn.ghost {
+            width: auto;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.72rem;
+            font-family: var(--font-family-mono);
+            padding: 8px;
+            margin-top: 10px;
+            resize: vertical;
+        }
+
+        .control-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-top: 8px;
         }
 
-        /* === 布局预览区域 === */
-        .layout-preview {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-right: 300px; /* 为控制面板留空间 */
+        .control-status {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
         }
 
-        /* === Header 组件 === */
+        .control-tip {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            border-top: 1px dashed var(--glass-border);
+            padding-top: 12px;
+        }
+
+        /* === 玻璃拟态组件（兼容类名） === */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--xh-blur));
+            -webkit-backdrop-filter: blur(var(--xh-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--xh-radius-lg);
+            box-shadow: var(--xh-shadow-sm);
+        }
+
+        /* === Header === */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 10px 5px;
-            margin-bottom: 20px;
+            gap: 20px;
+            position: relative;
         }
 
         .brand {
@@ -132,6 +280,8 @@
             font-size: 1.25rem;
             font-weight: 700;
             color: white;
+            white-space: nowrap;
+            z-index: 20;
         }
 
         .logo-box {
@@ -141,17 +291,17 @@
             border-radius: 10px;
             display: grid;
             place-items: center;
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 18px;
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
 
         .version-tag {
             font-size: 0.75rem;
-            color: var(--color-text-secondary);
+            color: var(--text-secondary);
             font-weight: 400;
+            margin-left: 4px;
             padding: 2px 6px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
         }
 
@@ -166,6 +316,8 @@
             align-items: center;
             gap: 6px;
             border: 1px solid rgba(16, 185, 129, 0.3);
+            white-space: nowrap;
+            z-index: 20;
         }
 
         .status-dot {
@@ -177,235 +329,135 @@
             animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        /* === Stats Grid 布局变体 === */
-        .stats-grid {
-            display: grid;
-            gap: var(--spacing-lg);
-            margin-bottom: 20px;
-        }
-
-        /* 布局变体 */
-        .stats-grid.layout-3col {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        .stats-grid.layout-2col {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .stats-grid.layout-1col {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-grid.layout-2-1 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .stats-grid.layout-2-1 .stat-card:nth-child(3) {
-            grid-column: span 2;
-        }
-
-        .stats-grid.layout-1-2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .stats-grid.layout-1-2 .stat-card:first-child {
-            grid-column: span 2;
-        }
-
-        /* === 进程面板 === */
-        .process-panel {
-            padding: 20px;
-        }
-
-        .panel-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-box {
-            margin-left: auto;
-            position: relative;
-        }
-
-        .search-icon {
+        /* === 磁盘信息 === */
+        .disk-info-container {
+            display: none;
+            gap: 15px;
             position: absolute;
-            left: 10px;
+            left: 50%;
             top: 50%;
-            transform: translateY(-50%);
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
+            transform: translate(-50%, -50%);
+            z-index: 10;
         }
 
-        .search-input {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            padding: 6px 12px 6px 32px;
-            color: var(--color-text-primary);
-            font-size: 0.85rem;
-            width: 180px;
+        @media (min-width: 768px) {
+            .disk-info-container {
+                display: flex;
+            }
         }
 
-        .search-input:focus {
-            outline: none;
-            border-color: var(--color-cpu);
+        .disk-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 3px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            height: 38px;
+            min-width: 200px;
+            max-width: 240px;
         }
 
-        /* === 表格样式 === */
-        .table-scroll {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            min-width: 500px;
-        }
-
-        th {
-            text-align: left;
-            padding: 12px;
-            color: var(--color-text-secondary);
+        .disk-label {
             font-weight: 600;
-            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            opacity: 0.95;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
         }
 
-        td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.02);
-        }
-
-        .proc-name-cell {
+        .disk-details-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            gap: 8px;
+            line-height: 1.2;
         }
 
-        .proc-icon {
-            width: 32px;
-            height: 32px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            display: grid;
-            place-items: center;
-            font-size: 14px;
-        }
-
-        .proc-info {
+        .disk-bar-container {
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            align-items: center;
+            width: 40px;
+            flex-shrink: 0;
         }
 
-        .proc-name {
-            font-weight: 500;
-        }
-
-        .proc-cmd {
-            font-size: 0.7rem;
-            color: var(--color-text-secondary);
-            font-family: var(--font-family-mono);
-        }
-
-        .metric-cell {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .metric-val {
-            font-family: var(--font-family-mono);
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .progress-bg {
+        .disk-bar-bg {
+            flex: 1;
             height: 4px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 2px;
             overflow: hidden;
         }
 
-        .progress-fill {
+        .disk-bar-fill {
             height: 100%;
+            background: var(--color-cpu);
             border-radius: 2px;
         }
 
-        /* === 响应式 === */
-        @media (max-width: 1400px) {
-            .layout-preview {
-                padding-right: 20px;
-            }
-            .playground-controls {
-                position: static;
-                width: 100%;
-                max-width: 100%;
-                margin-bottom: 20px;
-            }
-        }
-
-        @media (max-width: 900px) {
-            .stats-grid.layout-3col {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .stats-grid.layout-3col,
-            .stats-grid.layout-2col {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* === 布局信息提示 === */
-        .layout-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: var(--color-text-secondary);
-        }
-
-        .layout-info code {
-            background: rgba(0,0,0,0.3);
-            padding: 2px 6px;
-            border-radius: 4px;
+        .disk-info-text {
+            color: var(--text-secondary);
             font-family: var(--font-family-mono);
-            color: var(--color-cpu);
+            font-size: 0.7rem;
+            opacity: 0.8;
+            white-space: nowrap;
         }
 
-        /* === 兼容样式（映射到组件库的 xh- 前缀类名）=== */
-        .glass-panel {
-            background: var(--xh-color-glass-bg);
-            backdrop-filter: blur(var(--xh-blur, 16px));
-            -webkit-backdrop-filter: blur(var(--xh-blur, 16px));
-            border: 1px solid var(--xh-color-glass-border);
-            border-radius: var(--xh-radius-lg, 16px);
-            box-shadow: var(--xh-shadow-sm);
+        .disk-speed-group {
+            display: flex;
+            gap: 6px;
+            font-family: var(--font-family-mono);
+            font-size: 0.7rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding-left: 8px;
+            margin-left: auto;
+        }
+
+        .speed-val {
+            font-weight: 600;
+        }
+
+        .speed-r {
+            color: #60a5fa;
+        }
+
+        .speed-w {
+            color: #f472b6;
+        }
+
+        /* === 资源卡片 Grid === */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(var(--xh-grid-columns-effective), minmax(var(--xh-grid-min-col-width), 1fr));
+            gap: var(--xh-grid-gap);
+            grid-auto-rows: var(--xh-grid-row-height);
         }
 
         .stat-card {
-            height: var(--card-height, 140px);
+            height: 100%;
+            min-height: var(--xh-card-height);
             padding: 0;
             display: flex;
             overflow: hidden;
             position: relative;
             transition: transform 0.2s;
+            grid-column: span var(--xh-grid-col-span, 1);
+            grid-row: span var(--xh-grid-row-span, 1);
         }
 
         .stat-card:active {
             transform: scale(0.98);
+        }
+
+        .stat-card.is-resizing {
+            z-index: 30;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
         }
 
         .card-info-area {
@@ -433,6 +485,12 @@
             z-index: 1;
         }
 
+        .mini-chart-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
         .card-label {
             font-size: 0.9rem;
             font-weight: 600;
@@ -441,7 +499,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
         }
 
         .label-temp {
@@ -455,8 +513,12 @@
             font-weight: 700;
             color: #fff;
             line-height: 1.1;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.8);
             white-space: nowrap;
+        }
+
+        .card-value.small-text {
+            font-size: 1.4rem;
         }
 
         .card-sub {
@@ -464,7 +526,7 @@
             margin-top: 6px;
             opacity: 0.8;
             font-family: var(--font-family-mono);
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
             white-space: nowrap;
         }
 
@@ -475,357 +537,1264 @@
             width: 100px;
             height: 100px;
             border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.1;
+            filter: blur(var(--xh-blur-glow));
+            opacity: var(--xh-glow-opacity);
             pointer-events: none;
         }
 
-        .mini-chart-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* 峰谷值标记 */
-        .xh-chart-peak-marker {
+        .card-drag-handle {
             position: absolute;
-            font-size: 0.65rem;
-            font-weight: 600;
-            padding: 2px 5px;
-            border-radius: 3px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            pointer-events: none;
-            white-space: nowrap;
-            z-index: 10;
-            transform: translate(-50%, -100%);
-            margin-top: -6px;
-            transition: left 0.3s ease, top 0.3s ease, opacity 0.3s ease;
+            top: 10px;
+            right: 10px;
+            width: 18px;
+            height: 18px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: grid;
+            place-items: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: grab;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 15;
         }
 
-        .xh-chart-peak-marker.min {
-            transform: translate(-50%, 0);
-            margin-top: 6px;
+        .card-drag-handle::before {
+            content: "⋮⋮";
+            letter-spacing: -2px;
+        }
+
+        .card-resize-handle {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.35);
+            cursor: se-resize;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 15;
+        }
+
+        .stat-card:hover .card-drag-handle,
+        .stat-card:hover .card-resize-handle {
+            opacity: 0.9;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            filter: grayscale(0.4);
+        }
+
+        .sortable-chosen {
+            outline: 1px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        /* === 进程列表 === */
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .process-panel {
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .table-scroll {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 600px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s ease;
+        }
+
+        th:hover {
+            color: var(--text-primary);
+        }
+
+        th.active-sort {
+            color: var(--color-cpu);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .proc-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .proc-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-width: 200px;
+        }
+
+        .proc-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .proc-cmd {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: var(--font-family-mono);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.85;
+        }
+
+        .proc-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .pid-cell {
+            font-family: var(--font-family-mono);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .search-box {
+            margin-left: auto;
+            position: relative;
+        }
+
+        .search-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 6px 12px 6px 32px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            width: 180px;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--color-cpu);
+            outline: none;
+            width: 220px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        .metric-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 80px;
+        }
+
+        .metric-val {
+            font-family: var(--font-family-mono);
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bg {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* === 移动端底部导航 === */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: flex;
+            }
+        }
+
+        .nav-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .nav-icon.active {
+            color: var(--color-cpu);
+        }
+
+        .nav-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* === 工具状态 === */
+        .is-hidden {
+            display: none !important;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        /* === 响应式 === */
+        @media (max-width: 1400px) {
+            .playground-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .playground-controls {
+                position: static;
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 16px 8px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+<div class="playground-shell">
+    <!-- 主内容区域 -->
+    <main class="layout-preview">
+        <div class="app-container">
+            <!-- Header -->
+            <header class="header" id="section-header">
+                <div class="brand">
+                    <div class="logo-box">XM</div>
+                    XhMonitor <span class="version-tag">v0.2.4</span>
+                </div>
 
-<!-- 控制面板 -->
-<div class="playground-controls">
-    <div class="controls-title">Layout Playground</div>
-    
-    <div class="control-group">
-        <label class="control-label">Grid 布局</label>
-        <select class="control-select" id="layout-select" onchange="changeLayout(this.value)">
-            <option value="layout-3col">3 列均分</option>
-            <option value="layout-2col">2 列均分</option>
-            <option value="layout-1col">单列</option>
-            <option value="layout-2-1">2+1 (前两个小，第三个宽)</option>
-            <option value="layout-1-2">1+2 (第一个宽，后两个小)</option>
-        </select>
-    </div>
-    
-    <div class="control-group">
-        <label class="control-label">卡片数量</label>
-        <select class="control-select" id="card-count" onchange="updateCards()">
-            <option value="3">3 张卡片</option>
-            <option value="4">4 张卡片</option>
-            <option value="6" selected>6 张卡片</option>
-        </select>
-    </div>
-    
-    <div class="control-group">
-        <label class="control-label">卡片高度</label>
-        <input type="range" class="control-input" id="card-height" min="100" max="200" value="140" 
-               oninput="updateCardHeight(this.value)">
-        <span id="height-value" style="font-size: 12px; color: var(--color-text-secondary);">140px</span>
-    </div>
-    
-    <div class="control-group">
-        <label class="control-label">Grid Gap</label>
-        <input type="range" class="control-input" id="grid-gap" min="8" max="32" value="16" 
-               oninput="updateGridGap(this.value)">
-        <span id="gap-value" style="font-size: 12px; color: var(--color-text-secondary);">16px</span>
-    </div>
-    
-    <div class="control-group">
-        <label class="control-label">Glow 效果</label>
-        <select class="control-select" id="glow-style" onchange="updateGlowStyle(this.value)">
-            <option value="subtle">微弱 (opacity: 0.1)</option>
-            <option value="medium">中等 (opacity: 0.2)</option>
-            <option value="strong">强烈 (opacity: 0.3)</option>
-            <option value="none">无</option>
-        </select>
-    </div>
-    
-    <button class="control-btn" onclick="exportLayout()">导出当前布局 CSS</button>
-    <button class="control-btn secondary" onclick="resetLayout()">重置</button>
-</div>
+                <!-- Disk Usage (Center) -->
+                <div class="disk-info-container" id="disk-container"></div>
 
-<!-- 布局预览区域 -->
-<div class="layout-preview">
-    
-    <!-- Header -->
-    <header class="header">
-        <div class="brand">
-            <div class="logo-box">XM</div>
-            XhMonitor <span class="version-tag">v0.2.4</span>
-        </div>
-        <div class="status-badge">
-            <div class="status-dot"></div>
-            <span>Online</span>
-        </div>
-    </header>
-    
-    <!-- 布局信息 -->
-    <div class="layout-info" id="layout-info">
-        当前布局: <code>grid-template-columns: repeat(3, 1fr)</code>
-    </div>
-    
-    <!-- Stats Grid -->
-    <section class="stats-grid layout-3col" id="stats-grid">
-        <!-- 卡片由 JS 动态生成 -->
-    </section>
-    
-    <!-- 进程面板 -->
-    <div class="process-panel glass-panel">
-        <div class="panel-title">
-            进程列表
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" placeholder="搜索进程...">
+                <div class="status-badge">
+                    <div class="status-dot"></div>
+                    <span>Online</span>
+                </div>
+            </header>
+
+            <!-- 资源卡片组 -->
+            <section class="stats-grid" id="stats-grid">
+                <!-- CPU Card -->
+                <div class="stat-card glass-panel xh-stat-card xh-glass-panel" style="--xh-card-accent: var(--color-cpu)" data-card-id="cpu">
+                    <div class="card-glow xh-stat-card__glow" style="background: var(--xh-card-accent)"></div>
+                    <div class="card-drag-handle" title="拖拽排序"></div>
+                    <div class="card-resize-handle" title="拖拽调整大小"></div>
+                    <div class="card-info-area xh-stat-card__info">
+                        <div class="card-label xh-stat-card__label">
+                            <span class="xh-stat-card__label-indicator" style="color:var(--xh-card-accent)">●</span> CPU <span class="label-temp" id="val-temp-cpu-title">· --°C</span>
+                        </div>
+                        <div class="card-value xh-stat-card__value" id="val-cpu">0%</div>
+                        <div class="card-sub xh-stat-card__subtitle">i9-13900K</div>
+                    </div>
+                    <div class="card-chart-area xh-stat-card__chart" id="chart-area-cpu">
+                        <canvas id="chart-cpu" class="mini-chart-canvas xh-stat-card__canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- RAM Card -->
+                <div class="stat-card glass-panel xh-stat-card xh-glass-panel" style="--xh-card-accent: var(--color-ram)" data-card-id="ram">
+                    <div class="card-glow xh-stat-card__glow" style="background: var(--xh-card-accent)"></div>
+                    <div class="card-drag-handle" title="拖拽排序"></div>
+                    <div class="card-resize-handle" title="拖拽调整大小"></div>
+                    <div class="card-info-area xh-stat-card__info">
+                        <div class="card-label xh-stat-card__label">
+                            <span class="xh-stat-card__label-indicator" style="color:var(--xh-card-accent)">●</span> RAM
+                        </div>
+                        <div class="card-value xh-stat-card__value" id="val-ram">0 GB</div>
+                        <div class="card-sub xh-stat-card__subtitle">/ 32 GB</div>
+                    </div>
+                    <div class="card-chart-area xh-stat-card__chart" id="chart-area-ram">
+                        <canvas id="chart-ram" class="mini-chart-canvas xh-stat-card__canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- GPU Card -->
+                <div class="stat-card glass-panel xh-stat-card xh-glass-panel" style="--xh-card-accent: var(--color-gpu)" data-card-id="gpu">
+                    <div class="card-glow xh-stat-card__glow" style="background: var(--xh-card-accent)"></div>
+                    <div class="card-drag-handle" title="拖拽排序"></div>
+                    <div class="card-resize-handle" title="拖拽调整大小"></div>
+                    <div class="card-info-area xh-stat-card__info">
+                        <div class="card-label xh-stat-card__label">
+                            <span class="xh-stat-card__label-indicator" style="color:var(--xh-card-accent)">●</span> GPU <span class="label-temp" id="val-temp-gpu-title">· --°C</span>
+                        </div>
+                        <div class="card-value xh-stat-card__value" id="val-gpu">0%</div>
+                        <div class="card-sub xh-stat-card__subtitle">RTX 4090</div>
+                    </div>
+                    <div class="card-chart-area xh-stat-card__chart" id="chart-area-gpu">
+                        <canvas id="chart-gpu" class="mini-chart-canvas xh-stat-card__canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- VRAM Card -->
+                <div class="stat-card glass-panel xh-stat-card xh-glass-panel" style="--xh-card-accent: var(--color-vram)" data-card-id="vram">
+                    <div class="card-glow xh-stat-card__glow" style="background: var(--xh-card-accent)"></div>
+                    <div class="card-drag-handle" title="拖拽排序"></div>
+                    <div class="card-resize-handle" title="拖拽调整大小"></div>
+                    <div class="card-info-area xh-stat-card__info">
+                        <div class="card-label xh-stat-card__label">
+                            <span class="xh-stat-card__label-indicator" style="color:var(--xh-card-accent)">●</span> VRAM
+                        </div>
+                        <div class="card-value xh-stat-card__value" id="val-vram">0 GB</div>
+                        <div class="card-sub xh-stat-card__subtitle">/ 24 GB</div>
+                    </div>
+                    <div class="card-chart-area xh-stat-card__chart" id="chart-area-vram">
+                        <canvas id="chart-vram" class="mini-chart-canvas xh-stat-card__canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- NET Card -->
+                <div class="stat-card glass-panel xh-stat-card xh-glass-panel" style="--xh-card-accent: var(--color-net)" data-card-id="net">
+                    <div class="card-glow xh-stat-card__glow" style="background: var(--xh-card-accent)"></div>
+                    <div class="card-drag-handle" title="拖拽排序"></div>
+                    <div class="card-resize-handle" title="拖拽调整大小"></div>
+                    <div class="card-info-area xh-stat-card__info">
+                        <div class="card-label xh-stat-card__label">
+                            <span class="xh-stat-card__label-indicator" style="color:var(--xh-card-accent)">●</span> NET
+                        </div>
+                        <div class="card-value xh-stat-card__value small-text" id="val-net">0 KB/s</div>
+                        <div class="card-sub xh-stat-card__subtitle" id="val-net-up">↑ 0K</div>
+                        <div class="card-sub xh-stat-card__subtitle" id="val-net-down">↓ 0K</div>
+                    </div>
+                    <div class="card-chart-area xh-stat-card__chart" id="chart-area-net">
+                        <canvas id="chart-net" class="mini-chart-canvas xh-stat-card__canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- PWR Card -->
+                <div class="stat-card glass-panel xh-stat-card xh-glass-panel" style="--xh-card-accent: var(--color-pwr)" data-card-id="pwr">
+                    <div class="card-glow xh-stat-card__glow" style="background: var(--xh-card-accent)"></div>
+                    <div class="card-drag-handle" title="拖拽排序"></div>
+                    <div class="card-resize-handle" title="拖拽调整大小"></div>
+                    <div class="card-info-area xh-stat-card__info">
+                        <div class="card-label xh-stat-card__label">
+                            <span class="xh-stat-card__label-indicator" style="color:var(--xh-card-accent)">●</span> PWR
+                        </div>
+                        <div class="card-value xh-stat-card__value" id="val-pwr">0 W</div>
+                        <div class="card-sub xh-stat-card__subtitle" id="val-pwr-max">Max: 0 W</div>
+                    </div>
+                    <div class="card-chart-area xh-stat-card__chart" id="chart-area-pwr">
+                        <canvas id="chart-pwr" class="mini-chart-canvas xh-stat-card__canvas"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 进程列表 -->
+            <div class="bottom-section">
+                <div class="process-panel glass-panel xh-glass-panel" id="section-process">
+                    <div class="panel-title">
+                        进程列表
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" id="process-search" placeholder="搜索进程...">
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th id="th-name" data-sort="name">应用名称</th>
+                                <th id="th-pid" data-sort="pid">PID</th>
+                                <th id="th-cpu" data-sort="cpu">CPU</th>
+                                <th id="th-ram" data-sort="ram">RAM</th>
+                                <th id="th-gpu" data-sort="gpu">GPU</th>
+                                <th id="th-vram" data-sort="vram">VRAM</th>
+                            </tr>
+                            </thead>
+                            <tbody id="process-list"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="table-scroll">
-            <table>
-                <thead>
-                    <tr>
-                        <th>应用名称</th>
-                        <th>PID</th>
-                        <th>CPU</th>
-                        <th>RAM</th>
-                        <th>GPU</th>
-                    </tr>
-                </thead>
-                <tbody id="process-list">
-                    <!-- 由 JS 生成 -->
-                </tbody>
-            </table>
+    </main>
+
+    <!-- 控制面板 -->
+    <aside class="playground-controls" id="control-panel">
+        <div class="controls-title">Layout Playground</div>
+
+        <div class="control-group">
+            <label class="control-label">Grid 列数</label>
+            <div class="control-row" id="grid-buttons">
+                <button class="control-pill" data-columns="1">1 列</button>
+                <button class="control-pill" data-columns="2">2 列</button>
+                <button class="control-pill active" data-columns="3">3 列</button>
+            </div>
+            <div class="control-row" style="margin-top: 8px;">
+                <input type="number" class="control-input" id="custom-columns" min="1" max="6" value="3">
+            </div>
         </div>
-    </div>
-    
+
+        <div class="control-group">
+            <label class="control-label">卡片宽度（最小列宽）</label>
+            <input type="range" class="control-range" id="card-width" min="220" max="420" step="10" value="260">
+            <div class="control-hint">当前：<span id="card-width-value">260px</span></div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">卡片高度</label>
+            <input type="range" class="control-range" id="card-height" min="100" max="240" step="5" value="140">
+            <div class="control-hint">当前：<span id="card-height-value">140px</span></div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Grid 间距</label>
+            <input type="range" class="control-range" id="grid-gap" min="8" max="32" step="1" value="16">
+            <div class="control-hint">当前：<span id="grid-gap-value">16px</span></div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">显示区域</label>
+            <div class="control-toggle">
+                <label><input type="checkbox" id="toggle-header" checked> Header</label>
+                <label><input type="checkbox" id="toggle-disk" checked> 磁盘信息</label>
+                <label><input type="checkbox" id="toggle-cards" checked> 资源卡片</label>
+                <label><input type="checkbox" id="toggle-process" checked> 进程列表</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Glow 效果强度</label>
+            <input type="range" class="control-range" id="glow-opacity" min="0" max="0.35" step="0.01" value="0.10">
+            <div class="control-hint">当前：<span id="glow-value">0.10</span></div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">背景渐变</label>
+            <div class="control-toggle">
+                <label><input type="checkbox" id="toggle-gradient" checked> 启用渐变</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">导出布局配置</label>
+            <button class="control-btn" id="export-btn">导出当前布局配置</button>
+            <button class="control-btn secondary" id="reset-btn">重置到默认状态</button>
+            <textarea class="control-textarea" id="export-output" readonly placeholder="点击导出按钮生成配置..."></textarea>
+            <div class="control-foot">
+                <button class="control-btn ghost" id="copy-btn">复制配置</button>
+                <span class="control-status" id="export-status"></span>
+            </div>
+        </div>
+
+        <div class="control-tip">提示：拖拽卡片右上角进行排序，右下角拖拽调整大小。</div>
+    </aside>
 </div>
+
+<!-- 移动端底部导航 -->
+<nav class="mobile-nav">
+    <div class="nav-icon active">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>监控</span>
+    </div>
+    <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2zm-4 6H7V7h10v10z"/></svg>
+        <span>硬件</span>
+    </div>
+    <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+        <span>设置</span>
+    </div>
+</nav>
 
 <!-- 引入组件库 JS -->
 <script src="../charts/MiniChart.js"></script>
 <script src="../charts/DynamicScaler.js"></script>
 
+<!-- 交互库（CDN） -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+
 <script>
-    // === 卡片配置 ===
-    const cardConfigs = [
-        { id: 'cpu', label: 'CPU', color: 'var(--color-cpu)', value: '45%', sub: 'i9-13900K', temp: '65°C' },
-        { id: 'ram', label: 'RAM', color: 'var(--color-ram)', value: '18.5 GB', sub: '/ 32 GB' },
-        { id: 'gpu', label: 'GPU', color: 'var(--color-gpu)', value: '72%', sub: 'RTX 4090', temp: '58°C' },
-        { id: 'vram', label: 'VRAM', color: 'var(--color-vram)', value: '11.2 GB', sub: '/ 24 GB' },
-        { id: 'net', label: 'NET', color: 'var(--color-net)', value: '12.5 MB/s', sub: '↑ 2.1M | ↓ 10.4M' },
-        { id: 'pwr', label: 'PWR', color: 'var(--color-pwr)', value: '285 W', sub: 'Max: 320 W' },
-    ];
+    // === 模拟数据源 ===
+    const MAX_POINTS = 40;
 
-    // === 进程数据 ===
+    class DataStream {
+        constructor() {
+            this.cpu = new Array(MAX_POINTS).fill(0);
+            this.gpu = new Array(MAX_POINTS).fill(0);
+            this.ram = new Array(MAX_POINTS).fill(0);
+            this.vram = new Array(MAX_POINTS).fill(0);
+            this.net = new Array(MAX_POINTS).fill(0);
+            this.pwr = new Array(MAX_POINTS).fill(0);
+            this.tick = 0;
+            this.maxPwr = 0;
+        }
+
+        next() {
+            this.tick++;
+
+            const cpuVal = 30 + Math.sin(this.tick * 0.2) * 20 + Math.random() * 10;
+            const gpuVal = 40 + Math.cos(this.tick * 0.15) * 30 + Math.random() * 5;
+            const ramVal = 60 + Math.sin(this.tick * 0.05) * 5;
+            const vramVal = gpuVal * 0.8 + 10;
+            const netVal = Math.random() * 1024 * 20;
+            const pwrVal = 50 + cpuVal * 1.5 + gpuVal * 2.5 + Math.random() * 20;
+
+            if (pwrVal > this.maxPwr) this.maxPwr = pwrVal;
+
+            this.shiftAndPush(this.cpu, this.clamp(cpuVal));
+            this.shiftAndPush(this.gpu, this.clamp(gpuVal));
+            this.shiftAndPush(this.ram, this.clamp(ramVal));
+            this.shiftAndPush(this.vram, this.clamp(vramVal));
+            this.shiftAndPush(this.net, netVal);
+            this.shiftAndPush(this.pwr, pwrVal);
+
+            return {
+                cpu: this.last(this.cpu),
+                gpu: this.last(this.gpu),
+                ram: this.last(this.ram),
+                vram: this.last(this.vram),
+                net: this.last(this.net),
+                pwr: pwrVal,
+                pwrMax: this.maxPwr
+            };
+        }
+
+        shiftAndPush(arr, val) {
+            arr.shift();
+            arr.push(val);
+        }
+
+        last(arr) {
+            return arr[arr.length - 1];
+        }
+
+        clamp(val) {
+            return Math.min(100, Math.max(0, val));
+        }
+    }
+
+    // === 进程数据与渲染 ===
+    let sortField = 'cpu';
+    let sortOrder = 'desc';
+    let searchTerm = '';
+
     const mockProcesses = [
-        { name: 'Cyberpunk2077.exe', cmd: 'E:\\Games\\...', icon: 'C', pid: 8842, cpu: 45.2, ram: '8.5 GB', gpu: 88 },
-        { name: 'chrome.exe', cmd: 'C:\\Program Files\\...', icon: 'G', pid: 1452, cpu: 12.4, ram: '2.4 GB', gpu: 5 },
-        { name: 'Code.exe', cmd: 'C:\\Users\\...', icon: 'V', pid: 22015, cpu: 5.1, ram: '980 MB', gpu: 1 },
+        { pid: 10245, name: 'XhMonitor.exe', cmd: 'C:\\Program Files\\XhMonitor\\XhMonitor.exe --minimized', icon: 'M', cpu: 0.5, ram: 125829120, gpu: 0, vram: 0 },
+        { pid: 8842, name: 'Cyberpunk2077.exe', cmd: 'E:\\Games\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe', icon: 'C', cpu: 45.2, ram: 9126805504, gpu: 88, vram: 1024 * 1024 * 1024 * 11.5 },
+        { pid: 1452, name: 'chrome.exe', cmd: '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --profile-directory="Default"', icon: 'G', cpu: 12.4, ram: 2576980377, gpu: 5, vram: 1024 * 1024 * 450 },
+        { pid: 22015, name: 'Code.exe', cmd: 'C:\\Users\\Admin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe', icon: 'V', cpu: 5.1, ram: 1027604480, gpu: 1, vram: 1024 * 1024 * 120 },
+        { pid: 4521, name: 'steamwebhelper.exe', cmd: 'C:\\Program Files (x86)\\Steam\\bin\\steamwebhelper.exe', icon: 'S', cpu: 1.2, ram: 471859200, gpu: 0, vram: 0 },
+        { pid: 1024, name: 'svchost.exe', cmd: 'C:\\Windows\\System32\\svchost.exe -k netsvcs -p', icon: 'S', cpu: 0.1, ram: 20971520, gpu: 0, vram: 0 }
     ];
 
-    // === 布局信息映射 ===
-    const layoutInfo = {
-        'layout-3col': 'grid-template-columns: repeat(3, 1fr)',
-        'layout-2col': 'grid-template-columns: repeat(2, 1fr)',
-        'layout-1col': 'grid-template-columns: 1fr',
-        'layout-2-1': 'grid-template-columns: repeat(2, 1fr); 第3个卡片 grid-column: span 2',
-        'layout-1-2': 'grid-template-columns: repeat(2, 1fr); 第1个卡片 grid-column: span 2',
-    };
+    function handleSort(field) {
+        if (sortField === field) {
+            sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+        } else {
+            sortField = field;
+            sortOrder = 'desc';
+        }
+        renderProcesses();
+    }
 
-    // === 生成卡片 HTML ===
-    function generateCard(config) {
-        const tempHtml = config.temp ? `<span class="label-temp">· ${config.temp}</span>` : '';
+    function handleSearch(val) {
+        searchTerm = val.toLowerCase();
+        renderProcesses();
+    }
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function renderBar(value, max, color) {
+        const percent = Math.min(100, (value / max) * 100);
         return `
-            <div class="stat-card glass-panel" style="--accent: ${config.color}" data-card-id="${config.id}">
-                <div class="card-glow" style="background: ${config.color}"></div>
-                <div class="card-info-area">
-                    <div class="card-label">
-                        <span style="color:${config.color}">●</span> ${config.label} ${tempHtml}
-                    </div>
-                    <div class="card-value">${config.value}</div>
-                    <div class="card-sub">${config.sub}</div>
-                </div>
-                <div class="card-chart-area" id="chart-area-${config.id}">
-                    <canvas class="mini-chart-canvas" id="chart-${config.id}"></canvas>
-                </div>
+            <div class="progress-bg">
+                <div class="progress-fill" style="width: ${percent}%; background-color: ${color}"></div>
             </div>
         `;
     }
 
-    // === 生成进程行 ===
-    function generateProcessRow(p) {
-        return `
+    function renderProcesses() {
+        const style = getComputedStyle(document.body);
+        const cCpu = style.getPropertyValue('--color-cpu').trim();
+        const cRam = style.getPropertyValue('--color-ram').trim();
+        const cGpu = style.getPropertyValue('--color-gpu').trim();
+        const cVram = style.getPropertyValue('--color-vram').trim();
+
+        const MAX_RAM = 32 * 1024 * 1024 * 1024;
+        const MAX_VRAM = 24 * 1024 * 1024 * 1024;
+
+        let filtered = mockProcesses.filter(p =>
+            p.name.toLowerCase().includes(searchTerm) ||
+            p.cmd.toLowerCase().includes(searchTerm) ||
+            p.pid.toString().includes(searchTerm)
+        );
+
+        const sorted = filtered.sort((a, b) => {
+            let valA = a[sortField];
+            let valB = b[sortField];
+
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        ['name', 'pid', 'cpu', 'ram', 'gpu', 'vram'].forEach(f => {
+            const th = document.getElementById('th-' + f);
+            if (!th) return;
+            th.className = '';
+            if (f === sortField) {
+                th.className = 'active-sort';
+                const arrow = sortOrder === 'asc' ? ' ↑' : ' ↓';
+                const label = f === 'name' ? '应用名称' : f.toUpperCase();
+                th.innerText = label + arrow;
+            } else {
+                const label = f === 'name' ? '应用名称' : f.toUpperCase();
+                th.innerText = label;
+            }
+        });
+
+        const tbody = document.getElementById('process-list');
+        tbody.innerHTML = sorted.map(p => `
             <tr>
                 <td>
                     <div class="proc-name-cell">
                         <div class="proc-icon">${p.icon}</div>
                         <div class="proc-info">
                             <div class="proc-name">${p.name}</div>
-                            <div class="proc-cmd">${p.cmd}</div>
+                            <div class="proc-cmd" title="${p.cmd}">${p.cmd}</div>
                         </div>
                     </div>
                 </td>
-                <td style="font-family: var(--font-family-mono); color: var(--color-text-secondary);">${p.pid}</td>
+                <td class="pid-cell">${p.pid}</td>
                 <td>
                     <div class="metric-cell">
-                        <span class="metric-val" style="color: var(--color-cpu)">${p.cpu}%</span>
-                        <div class="progress-bg">
-                            <div class="progress-fill" style="width: ${p.cpu}%; background: var(--color-cpu)"></div>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="metric-cell">
-                        <span class="metric-val" style="color: var(--color-ram)">${p.ram}</span>
-                        <div class="progress-bg">
-                            <div class="progress-fill" style="width: ${Math.random() * 30}%; background: var(--color-ram)"></div>
-                        </div>
+                        <span class="metric-val" style="color:${cCpu}">${p.cpu}%</span>
+                        ${renderBar(p.cpu, 100, cCpu)}
                     </div>
                 </td>
                 <td>
                     <div class="metric-cell">
-                        <span class="metric-val" style="color: var(--color-gpu)">${p.gpu}%</span>
-                        <div class="progress-bg">
-                            <div class="progress-fill" style="width: ${p.gpu}%; background: var(--color-gpu)"></div>
-                        </div>
+                        <span class="metric-val" style="color:${cRam}">${formatBytes(p.ram)}</span>
+                        ${renderBar(p.ram, MAX_RAM, cRam)}
+                    </div>
+                </td>
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color:${cGpu}">${p.gpu}%</span>
+                        ${renderBar(p.gpu, 100, cGpu)}
+                    </div>
+                </td>
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color:${cVram}">${formatBytes(p.vram)}</span>
+                        ${renderBar(p.vram, MAX_VRAM, cVram)}
                     </div>
                 </td>
             </tr>
+        `).join('');
+    }
+
+    // === 磁盘数据 ===
+    const mockDisks = [
+        { name: 'Samsung SSD 980 PRO 1TB', used: 45, total: 1024, color: '#3b82f6', r: 0, w: 0 },
+        { name: 'WDC WD40EZAZ-00SF3B0', used: 85, total: 4096, color: '#10b981', r: 0, w: 0 }
+    ];
+
+    function renderDisks() {
+        const container = document.getElementById('disk-container');
+
+        const formatSize = (gb) => {
+            if (gb >= 1000) return (gb / 1024).toFixed(1) + 'T';
+            return gb.toFixed(0) + 'G';
+        };
+
+        container.innerHTML = mockDisks.map((d, i) => {
+            const usedGB = d.total * (d.used / 100);
+            const totalStr = formatSize(d.total);
+            const usedStr = formatSize(usedGB);
+
+            return `
+            <div class="disk-item">
+                <div class="disk-label" title="${d.name}">${d.name}</div>
+                <div class="disk-details-row">
+                    <div class="disk-bar-container" title="Usage: ${d.used}%">
+                        <div class="disk-bar-bg">
+                            <div class="disk-bar-fill" style="width: ${d.used}%; background-color: ${d.color}"></div>
+                        </div>
+                    </div>
+                    <span class="disk-info-text">${usedStr}/${totalStr}</span>
+                    <div class="disk-speed-group">
+                        <span class="speed-r">R:<span class="speed-val" id="disk-r-${i}">   0M</span></span>
+                        <span class="speed-w">W:<span class="speed-val" id="disk-w-${i}">   0M</span></span>
+                    </div>
+                </div>
+            </div>
         `;
+        }).join('');
     }
 
-    // === 更新卡片 ===
-    function updateCards() {
-        const count = parseInt(document.getElementById('card-count').value);
-        const grid = document.getElementById('stats-grid');
-        grid.innerHTML = cardConfigs.slice(0, count).map(generateCard).join('');
-        initCharts();
-    }
+    // === 图表初始化 ===
+    const stream = new DataStream();
+    const netScaler = new DynamicScaler(20480);
 
-    // === 初始化图表 ===
+    const fmtPercent = v => v.toFixed(0) + '%';
+    const fmtRamGB = v => (v / 100 * 32).toFixed(1) + 'G';
+    const fmtVramGB = v => (v / 100 * 24).toFixed(1) + 'G';
+    const fmtNet = v => {
+        if (v > 1024 * 1024) return (v / (1024 * 1024)).toFixed(1) + 'G';
+        if (v > 1024) return (v / 1024).toFixed(1) + 'M';
+        return v.toFixed(0) + 'K';
+    };
+    const fmtPwr = v => v.toFixed(0) + 'W';
+
     let charts = {};
+
     function initCharts() {
         const style = getComputedStyle(document.body);
-        const cardCount = parseInt(document.getElementById('card-count').value);
-        
-        charts = {};
-        cardConfigs.slice(0, cardCount).forEach(config => {
-            const canvasId = `chart-${config.id}`;
-            const containerId = `chart-area-${config.id}`;
-            const canvas = document.getElementById(canvasId);
-            const container = document.getElementById(containerId);
-            
-            if (canvas && container && typeof MiniChart !== 'undefined') {
-                const color = style.getPropertyValue(`--color-${config.id}`).trim();
-                // MiniChart 需要十六进制颜色，从 CSS 变量获取
-                const hexColor = color || '#3b82f6';
-                charts[config.id] = new MiniChart(canvasId, containerId, hexColor, v => v.toFixed(0) + '%');
-                
-                // 生成模拟数据
-                const data = Array.from({ length: 40 }, () => Math.random() * 60 + 20);
-                charts[config.id].draw(data);
+        charts = {
+            cpu: new MiniChart('chart-cpu', 'chart-area-cpu', style.getPropertyValue('--color-cpu').trim(), fmtPercent),
+            ram: new MiniChart('chart-ram', 'chart-area-ram', style.getPropertyValue('--color-ram').trim(), fmtRamGB),
+            gpu: new MiniChart('chart-gpu', 'chart-area-gpu', style.getPropertyValue('--color-gpu').trim(), fmtPercent),
+            vram: new MiniChart('chart-vram', 'chart-area-vram', style.getPropertyValue('--color-vram').trim(), fmtVramGB),
+            net: new MiniChart('chart-net', 'chart-area-net', style.getPropertyValue('--color-net').trim(), fmtNet),
+            pwr: new MiniChart('chart-pwr', 'chart-area-pwr', style.getPropertyValue('--color-pwr').trim(), fmtPwr)
+        };
+    }
+
+    function renderCharts() {
+        const netMax = netScaler.update(stream.net);
+        charts.cpu.draw(stream.cpu);
+        charts.ram.draw(stream.ram);
+        charts.gpu.draw(stream.gpu);
+        charts.vram.draw(stream.vram);
+        charts.net.draw(stream.net, netMax);
+        charts.pwr.draw(stream.pwr, 600);
+    }
+
+    function refreshCharts() {
+        if (!charts) return;
+        Object.values(charts).forEach(chart => chart.resize());
+        renderCharts();
+    }
+
+    // === 布局状态 ===
+    const defaultLayoutState = {
+        gridColumns: 3,
+        gridMinColWidth: 260,
+        cardHeight: 140,
+        gap: 16,
+        glowOpacity: 0.1,
+        backgroundGradient: true,
+        sections: {
+            header: true,
+            disk: true,
+            cards: true,
+            process: true
+        },
+        cardOrder: ['cpu', 'ram', 'gpu', 'vram', 'net', 'pwr'],
+        cardSpans: {
+            cpu: { col: 1, row: 1 },
+            ram: { col: 1, row: 1 },
+            gpu: { col: 1, row: 1 },
+            vram: { col: 1, row: 1 },
+            net: { col: 1, row: 1 },
+            pwr: { col: 1, row: 1 }
+        }
+    };
+
+    let layoutState = JSON.parse(JSON.stringify(defaultLayoutState));
+
+    function applyLayoutState() {
+        const root = document.documentElement;
+        const grid = document.getElementById('stats-grid');
+
+        root.style.setProperty('--xh-grid-min-col-width', layoutState.gridMinColWidth + 'px');
+        root.style.setProperty('--xh-card-height', layoutState.cardHeight + 'px');
+        root.style.setProperty('--xh-grid-row-height', layoutState.cardHeight + 'px');
+        root.style.setProperty('--xh-grid-gap', layoutState.gap + 'px');
+        root.style.setProperty('--xh-glow-opacity', layoutState.glowOpacity);
+
+        updateGradient();
+        updateSectionVisibility();
+        updateGridColumns();
+        applyCardOrder(layoutState.cardOrder, grid);
+        applyCardSpans();
+        syncControls();
+
+        requestAnimationFrame(() => refreshCharts());
+    }
+
+    function updateGradient() {
+        document.body.classList.toggle('no-gradient', !layoutState.backgroundGradient);
+    }
+
+    function updateSectionVisibility() {
+        const header = document.getElementById('section-header');
+        const disk = document.getElementById('disk-container');
+        const cards = document.getElementById('stats-grid');
+        const process = document.getElementById('section-process');
+
+        header.classList.toggle('is-hidden', !layoutState.sections.header);
+        disk.classList.toggle('is-hidden', !layoutState.sections.disk);
+        cards.classList.toggle('is-hidden', !layoutState.sections.cards);
+        process.classList.toggle('is-hidden', !layoutState.sections.process);
+    }
+
+    function updateGridColumns() {
+        const grid = document.getElementById('stats-grid');
+        const effective = computeEffectiveColumns();
+        grid.style.setProperty('--xh-grid-columns-effective', effective);
+        grid.style.setProperty('--xh-grid-columns', layoutState.gridColumns);
+    }
+
+    function computeEffectiveColumns() {
+        const grid = document.getElementById('stats-grid');
+        if (!grid) return layoutState.gridColumns;
+        const gridWidth = grid.clientWidth || 1;
+        const gap = layoutState.gap;
+        const minCol = layoutState.gridMinColWidth;
+        const maxColumnsByWidth = Math.max(1, Math.floor((gridWidth + gap) / (minCol + gap)));
+        return Math.max(1, Math.min(layoutState.gridColumns, maxColumnsByWidth));
+    }
+
+    function applyCardOrder(order, grid) {
+        if (!grid) return;
+        order.forEach(id => {
+            const card = grid.querySelector(`[data-card-id="${id}"]`);
+            if (card) grid.appendChild(card);
+        });
+    }
+
+    function applyCardSpans() {
+        const grid = document.getElementById('stats-grid');
+        const effectiveColumns = computeEffectiveColumns();
+        const cards = grid.querySelectorAll('.stat-card');
+
+        cards.forEach(card => {
+            const id = card.dataset.cardId;
+            const span = layoutState.cardSpans[id] || { col: 1, row: 1 };
+            const colSpan = Math.min(span.col, effectiveColumns);
+            const rowSpan = Math.max(1, span.row);
+            card.style.gridColumn = `span ${colSpan}`;
+            card.style.gridRow = `span ${rowSpan}`;
+            card.dataset.colSpan = colSpan;
+            card.dataset.rowSpan = rowSpan;
+        });
+    }
+
+    function syncControls() {
+        document.getElementById('custom-columns').value = layoutState.gridColumns;
+        document.getElementById('card-width').value = layoutState.gridMinColWidth;
+        document.getElementById('card-height').value = layoutState.cardHeight;
+        document.getElementById('grid-gap').value = layoutState.gap;
+        document.getElementById('glow-opacity').value = layoutState.glowOpacity.toFixed(2);
+        document.getElementById('toggle-header').checked = layoutState.sections.header;
+        document.getElementById('toggle-disk').checked = layoutState.sections.disk;
+        document.getElementById('toggle-cards').checked = layoutState.sections.cards;
+        document.getElementById('toggle-process').checked = layoutState.sections.process;
+        document.getElementById('toggle-gradient').checked = layoutState.backgroundGradient;
+
+        document.getElementById('card-width-value').textContent = layoutState.gridMinColWidth + 'px';
+        document.getElementById('card-height-value').textContent = layoutState.cardHeight + 'px';
+        document.getElementById('grid-gap-value').textContent = layoutState.gap + 'px';
+        document.getElementById('glow-value').textContent = layoutState.glowOpacity.toFixed(2);
+
+        document.querySelectorAll('#grid-buttons .control-pill').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.columns, 10) === layoutState.gridColumns);
+        });
+    }
+
+    // === 拖拽排序 ===
+    function initSortable() {
+        const grid = document.getElementById('stats-grid');
+        if (!grid || typeof Sortable === 'undefined') return;
+
+        Sortable.create(grid, {
+            animation: 150,
+            handle: '.card-drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            forceFallback: true,
+            onEnd: () => {
+                layoutState.cardOrder = Array.from(grid.children).map(el => el.dataset.cardId);
             }
         });
     }
 
-    // === 布局切换 ===
-    function changeLayout(layout) {
+    // === 卡片尺寸调整 ===
+    function initResizable() {
+        if (typeof interact === 'undefined') return;
         const grid = document.getElementById('stats-grid');
-        grid.className = 'stats-grid ' + layout;
-        document.getElementById('layout-info').innerHTML = 
-            `当前布局: <code>${layoutInfo[layout]}</code>`;
-    }
 
-    // === 卡片高度 ===
-    function updateCardHeight(value) {
-        document.documentElement.style.setProperty('--card-height', value + 'px');
-        document.getElementById('height-value').textContent = value + 'px';
-    }
+        interact('.stat-card').resizable({
+            edges: { left: false, right: true, bottom: true, top: false },
+            allowFrom: '.card-resize-handle',
+            listeners: {
+                move(event) {
+                    const target = event.target;
+                    const width = event.rect.width;
+                    const height = event.rect.height;
+                    target.style.width = width + 'px';
+                    target.style.height = height + 'px';
+                    target.classList.add('is-resizing');
+                },
+                end(event) {
+                    const target = event.target;
+                    const gridRect = grid.getBoundingClientRect();
+                    const gridStyles = getComputedStyle(grid);
+                    const gap = parseFloat(gridStyles.columnGap) || layoutState.gap;
+                    const columns = parseInt(gridStyles.getPropertyValue('--xh-grid-columns-effective'), 10) || computeEffectiveColumns();
+                    const colWidth = (gridRect.width - gap * (columns - 1)) / columns;
+                    const rowHeight = parseFloat(gridStyles.gridAutoRows) || layoutState.cardHeight;
 
-    // === Grid Gap ===
-    function updateGridGap(value) {
-        document.getElementById('stats-grid').style.gap = value + 'px';
-        document.getElementById('gap-value').textContent = value + 'px';
-    }
+                    const width = event.rect.width;
+                    const height = event.rect.height;
 
-    // === Glow 样式 ===
-    function updateGlowStyle(style) {
-        const glows = document.querySelectorAll('.card-glow');
-        const opacityMap = {
-            'subtle': 0.1,
-            'medium': 0.2,
-            'strong': 0.3,
-            'none': 0
-        };
-        glows.forEach(glow => {
-            glow.style.opacity = opacityMap[style];
+                    const colSpan = Math.max(1, Math.round((width + gap) / (colWidth + gap)));
+                    const rowSpan = Math.max(1, Math.round((height + gap) / (rowHeight + gap)));
+
+                    applySpanToCard(target, colSpan, rowSpan, columns);
+
+                    target.style.width = '';
+                    target.style.height = '';
+                    target.classList.remove('is-resizing');
+
+                    requestAnimationFrame(() => refreshCharts());
+                }
+            },
+            modifiers: [
+                interact.modifiers.restrictSize({
+                    min: { width: 220, height: 100 }
+                })
+            ],
+            inertia: true
         });
     }
 
-    // === 导出布局 ===
+    function applySpanToCard(target, colSpan, rowSpan, maxColumns) {
+        const cardId = target.dataset.cardId;
+        const finalColSpan = Math.min(colSpan, maxColumns || computeEffectiveColumns());
+        const finalRowSpan = Math.max(1, rowSpan);
+
+        target.style.gridColumn = `span ${finalColSpan}`;
+        target.style.gridRow = `span ${finalRowSpan}`;
+        target.dataset.colSpan = finalColSpan;
+        target.dataset.rowSpan = finalRowSpan;
+
+        layoutState.cardSpans[cardId] = { col: finalColSpan, row: finalRowSpan };
+    }
+
+    // === 导出配置 ===
     function exportLayout() {
-        const layout = document.getElementById('layout-select').value;
-        const height = document.getElementById('card-height').value;
-        const gap = document.getElementById('grid-gap').value;
-        const glow = document.getElementById('glow-style').value;
-        
-        const css = `/* XhMonitor Layout Export */
-.stats-grid {
-    display: grid;
-    ${layoutInfo[layout]};
-    gap: ${gap}px;
-}
+        const grid = document.getElementById('stats-grid');
+        const cardOrder = Array.from(grid.children).map(el => el.dataset.cardId);
 
-.stat-card {
-    --card-height: ${height}px;
-}
+        const exportState = {
+            gridColumns: layoutState.gridColumns,
+            gridMinColWidth: layoutState.gridMinColWidth,
+            cardHeight: layoutState.cardHeight,
+            gap: layoutState.gap,
+            glowOpacity: layoutState.glowOpacity,
+            backgroundGradient: layoutState.backgroundGradient,
+            sections: layoutState.sections,
+            cards: cardOrder.map(id => ({
+                id,
+                colSpan: layoutState.cardSpans[id]?.col || 1,
+                rowSpan: layoutState.cardSpans[id]?.row || 1
+            }))
+        };
 
-.card-glow {
-    opacity: ${glow === 'none' ? 0 : glow === 'subtle' ? 0.1 : glow === 'medium' ? 0.2 : 0.3};
-}`;
-        
-        console.log(css);
-        alert('CSS 已输出到控制台 (F12 查看)');
+        const css = `/* XhMonitor Layout Export */\n` +
+            `.stats-grid {\n  grid-template-columns: repeat(${layoutState.gridColumns}, minmax(${layoutState.gridMinColWidth}px, 1fr));\n  gap: ${layoutState.gap}px;\n}\n` +
+            `.stat-card {\n  min-height: ${layoutState.cardHeight}px;\n}\n` +
+            `.card-glow {\n  opacity: ${layoutState.glowOpacity};\n}`;
+
+        const output = document.getElementById('export-output');
+        output.value = JSON.stringify(exportState, null, 2) + "\n\n" + css;
+        setExportStatus('已生成配置');
     }
 
-    // === 重置 ===
+    function copyExport() {
+        const output = document.getElementById('export-output');
+        if (!output.value) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(output.value).then(() => {
+                setExportStatus('已复制到剪贴板');
+            }).catch(() => {
+                fallbackCopy(output);
+            });
+        } else {
+            fallbackCopy(output);
+        }
+    }
+
+    function fallbackCopy(output) {
+        output.select();
+        document.execCommand('copy');
+        setExportStatus('已复制到剪贴板');
+    }
+
+    function setExportStatus(text) {
+        const status = document.getElementById('export-status');
+        status.textContent = text;
+        setTimeout(() => {
+            status.textContent = '';
+        }, 2000);
+    }
+
     function resetLayout() {
-        document.getElementById('layout-select').value = 'layout-3col';
-        document.getElementById('card-count').value = '6';
-        document.getElementById('card-height').value = '140';
-        document.getElementById('grid-gap').value = '16';
-        document.getElementById('glow-style').value = 'subtle';
-        
-        changeLayout('layout-3col');
-        updateCardHeight(140);
-        updateGridGap(16);
-        updateGlowStyle('subtle');
-        updateCards();
+        layoutState = JSON.parse(JSON.stringify(defaultLayoutState));
+        const grid = document.getElementById('stats-grid');
+        grid.querySelectorAll('.stat-card').forEach(card => {
+            card.style.gridColumn = '';
+            card.style.gridRow = '';
+            card.dataset.colSpan = '';
+            card.dataset.rowSpan = '';
+        });
+        applyLayoutState();
+        renderProcesses();
+        renderDisks();
     }
 
-    // === 初始化 ===
+    // === 绑定控制面板事件 ===
+    function bindControls() {
+        document.querySelectorAll('#grid-buttons .control-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                layoutState.gridColumns = parseInt(btn.dataset.columns, 10);
+                applyLayoutState();
+            });
+        });
+
+        document.getElementById('custom-columns').addEventListener('change', (e) => {
+            const val = Math.max(1, Math.min(6, parseInt(e.target.value, 10) || 1));
+            layoutState.gridColumns = val;
+            applyLayoutState();
+        });
+
+        document.getElementById('card-width').addEventListener('input', (e) => {
+            layoutState.gridMinColWidth = parseInt(e.target.value, 10);
+            applyLayoutState();
+        });
+
+        document.getElementById('card-height').addEventListener('input', (e) => {
+            layoutState.cardHeight = parseInt(e.target.value, 10);
+            applyLayoutState();
+        });
+
+        document.getElementById('grid-gap').addEventListener('input', (e) => {
+            layoutState.gap = parseInt(e.target.value, 10);
+            applyLayoutState();
+        });
+
+        document.getElementById('glow-opacity').addEventListener('input', (e) => {
+            layoutState.glowOpacity = parseFloat(e.target.value);
+            applyLayoutState();
+        });
+
+        document.getElementById('toggle-header').addEventListener('change', (e) => {
+            layoutState.sections.header = e.target.checked;
+            applyLayoutState();
+        });
+
+        document.getElementById('toggle-disk').addEventListener('change', (e) => {
+            layoutState.sections.disk = e.target.checked;
+            applyLayoutState();
+        });
+
+        document.getElementById('toggle-cards').addEventListener('change', (e) => {
+            layoutState.sections.cards = e.target.checked;
+            applyLayoutState();
+        });
+
+        document.getElementById('toggle-process').addEventListener('change', (e) => {
+            layoutState.sections.process = e.target.checked;
+            applyLayoutState();
+        });
+
+        document.getElementById('toggle-gradient').addEventListener('change', (e) => {
+            layoutState.backgroundGradient = e.target.checked;
+            applyLayoutState();
+        });
+
+        document.getElementById('export-btn').addEventListener('click', exportLayout);
+        document.getElementById('reset-btn').addEventListener('click', resetLayout);
+        document.getElementById('copy-btn').addEventListener('click', copyExport);
+
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => handleSort(th.dataset.sort));
+        });
+
+        document.getElementById('process-search').addEventListener('input', (e) => {
+            handleSearch(e.target.value);
+        });
+
+        window.addEventListener('resize', () => {
+            updateGridColumns();
+            applyCardSpans();
+            refreshCharts();
+        });
+    }
+
+    // === 主循环 ===
+    function update() {
+        const current = stream.next();
+
+        mockDisks.forEach((d, i) => {
+            d.r = Math.random() > 0.7 ? Math.random() * 200 : 0;
+            d.w = Math.random() > 0.8 ? Math.random() * 100 : 0;
+
+            const elR = document.getElementById(`disk-r-${i}`);
+            const elW = document.getElementById(`disk-w-${i}`);
+
+            const fmt = (v) => (v < 10 ? v.toFixed(1) : v.toFixed(0)).padStart(4, '\u00A0') + 'M';
+
+            if (elR) elR.innerText = fmt(d.r);
+            if (elW) elW.innerText = fmt(d.w);
+        });
+
+        renderCharts();
+
+        document.getElementById('val-cpu').innerText = current.cpu.toFixed(1) + '%';
+
+        const ramGB = (current.ram / 100 * 32).toFixed(1);
+        document.getElementById('val-ram').innerText = ramGB + ' GB';
+
+        document.getElementById('val-gpu').innerText = current.gpu.toFixed(1) + '%';
+
+        const vramGB = (current.vram / 100 * 24).toFixed(1);
+        document.getElementById('val-vram').innerText = vramGB + ' GB';
+
+        const netKB = current.net;
+        let netStr = netKB.toFixed(0) + ' KB/s';
+        if (netKB > 1024) netStr = (netKB / 1024).toFixed(1) + ' MB/s';
+        document.getElementById('val-net').innerText = netStr;
+
+        const netUp = netKB * 0.2;
+        const netDown = netKB * 0.8;
+        const fmtSpeed = (kb) => kb > 1024 ? (kb / 1024).toFixed(1) + 'M' : kb.toFixed(0) + 'K';
+        document.getElementById('val-net-up').innerText = '↑ ' + fmtSpeed(netUp);
+        document.getElementById('val-net-down').innerText = '↓ ' + fmtSpeed(netDown);
+
+        document.getElementById('val-pwr').innerText = current.pwr.toFixed(0) + ' W';
+        document.getElementById('val-pwr-max').innerText = 'Max: ' + current.pwrMax.toFixed(0) + ' W';
+
+        const cpuTemp = 40 + current.cpu * 0.5;
+        const gpuTemp = 35 + current.gpu * 0.6;
+
+        document.getElementById('val-temp-cpu-title').innerText = '· ' + cpuTemp.toFixed(0) + '°C';
+        document.getElementById('val-temp-gpu-title').innerText = '· ' + gpuTemp.toFixed(0) + '°C';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        updateCards();
-        document.getElementById('process-list').innerHTML = 
-            mockProcesses.map(generateProcessRow).join('');
+        initCharts();
+        renderProcesses();
+        renderDisks();
+        bindControls();
+        initSortable();
+        initResizable();
+        applyLayoutState();
+
+        update();
+        setInterval(update, 1000);
+
+        setTimeout(() => refreshCharts(), 100);
     });
 </script>
-
 </body>
 </html>
