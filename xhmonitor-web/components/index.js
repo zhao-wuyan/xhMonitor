@@ -56,6 +56,10 @@ export const tokens = {
     slow: 500,
     slower: 1000,
     pulse: 2000
+  },
+  effects: {
+    glowOpacity: 0.1,
+    glowBlur: '40px'
   }
 };
 

@@ -84,7 +84,7 @@
   white-space: nowrap;
 }
 
-/* 装饰性背景光晕 */
+/* 装饰性背景光晕 - 微弱效果 */
 .xh-stat-card__glow {
   position: absolute;
   left: -20px;
@@ -93,7 +93,7 @@
   height: 100px;
   border-radius: 50%;
   filter: blur(var(--xh-blur-glow));
-  opacity: 0.25;
+  opacity: 0.1;
   pointer-events: none;
 }
 

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XhMonitor Layout Playground - UI 布局探索</title>
+    
+    <!-- 引入组件库 CSS -->
+    <link rel="stylesheet" href="../core/design-tokens.css">
+    <link rel="stylesheet" href="../core/glass-panel.css">
+    <link rel="stylesheet" href="../core/stat-card.css">
+    
+    <style>
+        /* === 变量别名（映射到组件库的 --xh- 前缀变量）=== */
+        :root {
+            --color-bg: var(--xh-color-bg);
+            --color-text-primary: var(--xh-color-text-primary);
+            --color-text-secondary: var(--xh-color-text-secondary);
+            --glass-bg: var(--xh-color-glass-bg);
+            --glass-border: var(--xh-color-glass-border);
+            --color-cpu: var(--xh-color-cpu);
+            --color-ram: var(--xh-color-ram);
+            --color-gpu: var(--xh-color-gpu);
+            --color-vram: var(--xh-color-vram);
+            --color-net: var(--xh-color-net);
+            --color-pwr: var(--xh-color-pwr);
+            --font-family-sans: var(--xh-font-sans);
+            --font-family-mono: var(--xh-font-mono);
+            --spacing-lg: var(--xh-spacing-lg);
+            --card-height: var(--xh-card-height);
+        }
+
+        /* === 页面基础样式 === */
+        body {
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* === Playground 控制面板 === */
+        .playground-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            width: 280px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .controls-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .control-select, .control-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--color-text-primary);
+            font-size: 13px;
+        }
+
+        .control-select:focus, .control-input:focus {
+            outline: none;
+            border-color: var(--color-cpu);
+        }
+
+        .control-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--color-cpu);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .control-btn:hover {
+            opacity: 0.9;
+        }
+
+        .control-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            margin-top: 8px;
+        }
+
+        /* === 布局预览区域 === */
+        .layout-preview {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-right: 300px; /* 为控制面板留空间 */
+        }
+
+        /* === Header 组件 === */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 5px;
+            margin-bottom: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo-box {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--color-cpu), var(--color-ram));
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .version-tag {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            font-weight: 400;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-gpu);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: currentColor;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* === Stats Grid 布局变体 === */
+        .stats-grid {
+            display: grid;
+            gap: var(--spacing-lg);
+            margin-bottom: 20px;
+        }
+
+        /* 布局变体 */
+        .stats-grid.layout-3col {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .stats-grid.layout-2col {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stats-grid.layout-1col {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid.layout-2-1 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .stats-grid.layout-2-1 .stat-card:nth-child(3) {
+            grid-column: span 2;
+        }
+
+        .stats-grid.layout-1-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .stats-grid.layout-1-2 .stat-card:first-child {
+            grid-column: span 2;
+        }
+
+        /* === 进程面板 === */
+        .process-panel {
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box {
+            margin-left: auto;
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .search-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 6px 12px 6px 32px;
+            color: var(--color-text-primary);
+            font-size: 0.85rem;
+            width: 180px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-cpu);
+        }
+
+        /* === 表格样式 === */
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 500px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .proc-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .proc-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+        }
+
+        .proc-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .proc-name {
+            font-weight: 500;
+        }
+
+        .proc-cmd {
+            font-size: 0.7rem;
+            color: var(--color-text-secondary);
+            font-family: var(--font-family-mono);
+        }
+
+        .metric-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metric-val {
+            font-family: var(--font-family-mono);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .progress-bg {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        /* === 响应式 === */
+        @media (max-width: 1400px) {
+            .layout-preview {
+                padding-right: 20px;
+            }
+            .playground-controls {
+                position: static;
+                width: 100%;
+                max-width: 100%;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .stats-grid.layout-3col {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid.layout-3col,
+            .stats-grid.layout-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* === 布局信息提示 === */
+        .layout-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .layout-info code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: var(--font-family-mono);
+            color: var(--color-cpu);
+        }
+
+        /* === 兼容样式（映射到组件库的 xh- 前缀类名）=== */
+        .glass-panel {
+            background: var(--xh-color-glass-bg);
+            backdrop-filter: blur(var(--xh-blur, 16px));
+            -webkit-backdrop-filter: blur(var(--xh-blur, 16px));
+            border: 1px solid var(--xh-color-glass-border);
+            border-radius: var(--xh-radius-lg, 16px);
+            box-shadow: var(--xh-shadow-sm);
+        }
+
+        .stat-card {
+            height: var(--card-height, 140px);
+            padding: 0;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+
+        .card-info-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 150px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            text-align: left;
+            z-index: 10;
+            background: transparent;
+        }
+
+        .card-chart-area {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .card-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+
+        .label-temp {
+            font-weight: 400;
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.1;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+
+        .card-sub {
+            font-size: 0.75rem;
+            margin-top: 6px;
+            opacity: 0.8;
+            font-family: var(--font-family-mono);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+
+        .card-glow {
+            position: absolute;
+            left: -20px;
+            top: -20px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .mini-chart-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 峰谷值标记 */
+        .xh-chart-peak-marker {
+            position: absolute;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 5px;
+            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 10;
+            transform: translate(-50%, -100%);
+            margin-top: -6px;
+            transition: left 0.3s ease, top 0.3s ease, opacity 0.3s ease;
+        }
+
+        .xh-chart-peak-marker.min {
+            transform: translate(-50%, 0);
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 控制面板 -->
+<div class="playground-controls">
+    <div class="controls-title">Layout Playground</div>
+    
+    <div class="control-group">
+        <label class="control-label">Grid 布局</label>
+        <select class="control-select" id="layout-select" onchange="changeLayout(this.value)">
+            <option value="layout-3col">3 列均分</option>
+            <option value="layout-2col">2 列均分</option>
+            <option value="layout-1col">单列</option>
+            <option value="layout-2-1">2+1 (前两个小，第三个宽)</option>
+            <option value="layout-1-2">1+2 (第一个宽，后两个小)</option>
+        </select>
+    </div>
+    
+    <div class="control-group">
+        <label class="control-label">卡片数量</label>
+        <select class="control-select" id="card-count" onchange="updateCards()">
+            <option value="3">3 张卡片</option>
+            <option value="4">4 张卡片</option>
+            <option value="6" selected>6 张卡片</option>
+        </select>
+    </div>
+    
+    <div class="control-group">
+        <label class="control-label">卡片高度</label>
+        <input type="range" class="control-input" id="card-height" min="100" max="200" value="140" 
+               oninput="updateCardHeight(this.value)">
+        <span id="height-value" style="font-size: 12px; color: var(--color-text-secondary);">140px</span>
+    </div>
+    
+    <div class="control-group">
+        <label class="control-label">Grid Gap</label>
+        <input type="range" class="control-input" id="grid-gap" min="8" max="32" value="16" 
+               oninput="updateGridGap(this.value)">
+        <span id="gap-value" style="font-size: 12px; color: var(--color-text-secondary);">16px</span>
+    </div>
+    
+    <div class="control-group">
+        <label class="control-label">Glow 效果</label>
+        <select class="control-select" id="glow-style" onchange="updateGlowStyle(this.value)">
+            <option value="subtle">微弱 (opacity: 0.1)</option>
+            <option value="medium">中等 (opacity: 0.2)</option>
+            <option value="strong">强烈 (opacity: 0.3)</option>
+            <option value="none">无</option>
+        </select>
+    </div>
+    
+    <button class="control-btn" onclick="exportLayout()">导出当前布局 CSS</button>
+    <button class="control-btn secondary" onclick="resetLayout()">重置</button>
+</div>
+
+<!-- 布局预览区域 -->
+<div class="layout-preview">
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <div class="logo-box">XM</div>
+            XhMonitor <span class="version-tag">v0.2.4</span>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Online</span>
+        </div>
+    </header>
+    
+    <!-- 布局信息 -->
+    <div class="layout-info" id="layout-info">
+        当前布局: <code>grid-template-columns: repeat(3, 1fr)</code>
+    </div>
+    
+    <!-- Stats Grid -->
+    <section class="stats-grid layout-3col" id="stats-grid">
+        <!-- 卡片由 JS 动态生成 -->
+    </section>
+    
+    <!-- 进程面板 -->
+    <div class="process-panel glass-panel">
+        <div class="panel-title">
+            进程列表
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="搜索进程...">
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>应用名称</th>
+                        <th>PID</th>
+                        <th>CPU</th>
+                        <th>RAM</th>
+                        <th>GPU</th>
+                    </tr>
+                </thead>
+                <tbody id="process-list">
+                    <!-- 由 JS 生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+
+<!-- 引入组件库 JS -->
+<script src="../charts/MiniChart.js"></script>
+<script src="../charts/DynamicScaler.js"></script>
+
+<script>
+    // === 卡片配置 ===
+    const cardConfigs = [
+        { id: 'cpu', label: 'CPU', color: 'var(--color-cpu)', value: '45%', sub: 'i9-13900K', temp: '65°C' },
+        { id: 'ram', label: 'RAM', color: 'var(--color-ram)', value: '18.5 GB', sub: '/ 32 GB' },
+        { id: 'gpu', label: 'GPU', color: 'var(--color-gpu)', value: '72%', sub: 'RTX 4090', temp: '58°C' },
+        { id: 'vram', label: 'VRAM', color: 'var(--color-vram)', value: '11.2 GB', sub: '/ 24 GB' },
+        { id: 'net', label: 'NET', color: 'var(--color-net)', value: '12.5 MB/s', sub: '↑ 2.1M | ↓ 10.4M' },
+        { id: 'pwr', label: 'PWR', color: 'var(--color-pwr)', value: '285 W', sub: 'Max: 320 W' },
+    ];
+
+    // === 进程数据 ===
+    const mockProcesses = [
+        { name: 'Cyberpunk2077.exe', cmd: 'E:\\Games\\...', icon: 'C', pid: 8842, cpu: 45.2, ram: '8.5 GB', gpu: 88 },
+        { name: 'chrome.exe', cmd: 'C:\\Program Files\\...', icon: 'G', pid: 1452, cpu: 12.4, ram: '2.4 GB', gpu: 5 },
+        { name: 'Code.exe', cmd: 'C:\\Users\\...', icon: 'V', pid: 22015, cpu: 5.1, ram: '980 MB', gpu: 1 },
+    ];
+
+    // === 布局信息映射 ===
+    const layoutInfo = {
+        'layout-3col': 'grid-template-columns: repeat(3, 1fr)',
+        'layout-2col': 'grid-template-columns: repeat(2, 1fr)',
+        'layout-1col': 'grid-template-columns: 1fr',
+        'layout-2-1': 'grid-template-columns: repeat(2, 1fr); 第3个卡片 grid-column: span 2',
+        'layout-1-2': 'grid-template-columns: repeat(2, 1fr); 第1个卡片 grid-column: span 2',
+    };
+
+    // === 生成卡片 HTML ===
+    function generateCard(config) {
+        const tempHtml = config.temp ? `<span class="label-temp">· ${config.temp}</span>` : '';
+        return `
+            <div class="stat-card glass-panel" style="--accent: ${config.color}" data-card-id="${config.id}">
+                <div class="card-glow" style="background: ${config.color}"></div>
+                <div class="card-info-area">
+                    <div class="card-label">
+                        <span style="color:${config.color}">●</span> ${config.label} ${tempHtml}
+                    </div>
+                    <div class="card-value">${config.value}</div>
+                    <div class="card-sub">${config.sub}</div>
+                </div>
+                <div class="card-chart-area" id="chart-area-${config.id}">
+                    <canvas class="mini-chart-canvas" id="chart-${config.id}"></canvas>
+                </div>
+            </div>
+        `;
+    }
+
+    // === 生成进程行 ===
+    function generateProcessRow(p) {
+        return `
+            <tr>
+                <td>
+                    <div class="proc-name-cell">
+                        <div class="proc-icon">${p.icon}</div>
+                        <div class="proc-info">
+                            <div class="proc-name">${p.name}</div>
+                            <div class="proc-cmd">${p.cmd}</div>
+                        </div>
+                    </div>
+                </td>
+                <td style="font-family: var(--font-family-mono); color: var(--color-text-secondary);">${p.pid}</td>
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color: var(--color-cpu)">${p.cpu}%</span>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: ${p.cpu}%; background: var(--color-cpu)"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color: var(--color-ram)">${p.ram}</span>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: ${Math.random() * 30}%; background: var(--color-ram)"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="metric-cell">
+                        <span class="metric-val" style="color: var(--color-gpu)">${p.gpu}%</span>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: ${p.gpu}%; background: var(--color-gpu)"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    // === 更新卡片 ===
+    function updateCards() {
+        const count = parseInt(document.getElementById('card-count').value);
+        const grid = document.getElementById('stats-grid');
+        grid.innerHTML = cardConfigs.slice(0, count).map(generateCard).join('');
+        initCharts();
+    }
+
+    // === 初始化图表 ===
+    let charts = {};
+    function initCharts() {
+        const style = getComputedStyle(document.body);
+        const cardCount = parseInt(document.getElementById('card-count').value);
+        
+        charts = {};
+        cardConfigs.slice(0, cardCount).forEach(config => {
+            const canvasId = `chart-${config.id}`;
+            const containerId = `chart-area-${config.id}`;
+            const canvas = document.getElementById(canvasId);
+            const container = document.getElementById(containerId);
+            
+            if (canvas && container && typeof MiniChart !== 'undefined') {
+                const color = style.getPropertyValue(`--color-${config.id}`).trim();
+                // MiniChart 需要十六进制颜色，从 CSS 变量获取
+                const hexColor = color || '#3b82f6';
+                charts[config.id] = new MiniChart(canvasId, containerId, hexColor, v => v.toFixed(0) + '%');
+                
+                // 生成模拟数据
+                const data = Array.from({ length: 40 }, () => Math.random() * 60 + 20);
+                charts[config.id].draw(data);
+            }
+        });
+    }
+
+    // === 布局切换 ===
+    function changeLayout(layout) {
+        const grid = document.getElementById('stats-grid');
+        grid.className = 'stats-grid ' + layout;
+        document.getElementById('layout-info').innerHTML = 
+            `当前布局: <code>${layoutInfo[layout]}</code>`;
+    }
+
+    // === 卡片高度 ===
+    function updateCardHeight(value) {
+        document.documentElement.style.setProperty('--card-height', value + 'px');
+        document.getElementById('height-value').textContent = value + 'px';
+    }
+
+    // === Grid Gap ===
+    function updateGridGap(value) {
+        document.getElementById('stats-grid').style.gap = value + 'px';
+        document.getElementById('gap-value').textContent = value + 'px';
+    }
+
+    // === Glow 样式 ===
+    function updateGlowStyle(style) {
+        const glows = document.querySelectorAll('.card-glow');
+        const opacityMap = {
+            'subtle': 0.1,
+            'medium': 0.2,
+            'strong': 0.3,
+            'none': 0
+        };
+        glows.forEach(glow => {
+            glow.style.opacity = opacityMap[style];
+        });
+    }
+
+    // === 导出布局 ===
+    function exportLayout() {
+        const layout = document.getElementById('layout-select').value;
+        const height = document.getElementById('card-height').value;
+        const gap = document.getElementById('grid-gap').value;
+        const glow = document.getElementById('glow-style').value;
+        
+        const css = `/* XhMonitor Layout Export */
+.stats-grid {
+    display: grid;
+    ${layoutInfo[layout]};
+    gap: ${gap}px;
+}
+
+.stat-card {
+    --card-height: ${height}px;
+}
+
+.card-glow {
+    opacity: ${glow === 'none' ? 0 : glow === 'subtle' ? 0.1 : glow === 'medium' ? 0.2 : 0.3};
+}`;
+        
+        console.log(css);
+        alert('CSS 已输出到控制台 (F12 查看)');
+    }
+
+    // === 重置 ===
+    function resetLayout() {
+        document.getElementById('layout-select').value = 'layout-3col';
+        document.getElementById('card-count').value = '6';
+        document.getElementById('card-height').value = '140';
+        document.getElementById('grid-gap').value = '16';
+        document.getElementById('glow-style').value = 'subtle';
+        
+        changeLayout('layout-3col');
+        updateCardHeight(140);
+        updateGridGap(16);
+        updateGlowStyle('subtle');
+        updateCards();
+    }
+
+    // === 初始化 ===
+    document.addEventListener('DOMContentLoaded', () => {
+        updateCards();
+        document.getElementById('process-list').innerHTML = 
+            mockProcesses.map(generateProcessRow).join('');
+    });
+</script>
+
+</body>
+</html>

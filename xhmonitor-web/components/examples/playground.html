@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XhMonitor UI Design Explorer - Interactive Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .playground {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: 1fr auto;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Controls Panel */
+        .controls {
+            background: rgba(15, 23, 42, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            overflow-y: auto;
+            grid-row: 1 / 3;
+        }
+
+        .controls h1 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #3b82f6;
+        }
+
+        .controls p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        .control-group h3 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #f8fafc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-item {
+            margin-bottom: 16px;
+        }
+
+        .control-item label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: #94a3b8;
+        }
+
+        .control-item input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-item input[type="color"] {
+            width: 100%;
+            height: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .control-item select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            color: #f8fafc;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .value-display {
+            display: inline-block;
+            float: right;
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            color: #3b82f6;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 4px;
+            color: #3b82f6;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        /* Preview Panel */
+        .preview {
+            background: #0f172a;
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Prompt Output */
+        .prompt-output {
+            grid-column: 2;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .prompt-text {
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #94a3b8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: #2563eb;
+        }
+
+        .copy-btn.copied {
+            background: #10b981;
+        }
+
+        /* Glass Panel Component */
+        .demo-glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount));
+            border: var(--border-width) solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: var(--padding);
+            transition: all 0.3s ease;
+        }
+
+        .demo-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .demo-stat-card {
+            height: 140px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .demo-card-glow {
+            position: absolute;
+            left: -20px;
+            top: -20px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            filter: blur(var(--glow-blur));
+            opacity: var(--glow-opacity);
+            pointer-events: none;
+            background: var(--accent-color);
+        }
+
+        .demo-card-info {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 150px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .demo-card-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .demo-card-value {
+            font-size: var(--value-font-size);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.1;
+            text-shadow: var(--text-shadow);
+        }
+
+        .demo-card-sub {
+            font-size: 0.75rem;
+            margin-top: 6px;
+            opacity: var(--subtitle-opacity);
+            font-family: monospace;
+        }
+
+        .demo-card-chart {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .demo-chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="playground">
+        <!-- Controls Panel -->
+        <div class="controls">
+            <h1>🎨 XhMonitor UI 设计探索器</h1>
+            <p>交互式 playground，实时探索 XhMonitor 玻璃拟态设计系统</p>
+
+            <!-- Presets -->
+            <div class="control-group">
+                <h3>预设方案</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPreset('default')">默认</button>
+                    <button class="preset-btn" onclick="applyPreset('subtle')">轻盈</button>
+                    <button class="preset-btn" onclick="applyPreset('bold')">大胆</button>
+                    <button class="preset-btn" onclick="applyPreset('minimal')">极简</button>
+                </div>
+            </div>
+
+            <!-- Glass Effect -->
+            <div class="control-group">
+                <h3>玻璃效果</h3>
+
+                <div class="control-item">
+                    <label>
+                        背景透明度
+                        <span class="value-display" id="bg-opacity-val">0.6</span>
+                    </label>
+                    <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="0.6">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        模糊程度
+                        <span class="value-display" id="blur-val">16px</span>
+                    </label>
+                    <input type="range" id="blur" min="0" max="40" step="2" value="16">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        边框宽度
+                        <span class="value-display" id="border-width-val">1px</span>
+                    </label>
+                    <input type="range" id="border-width" min="0" max="4" step="0.5" value="1">
+                </div>
+
+                <div class="control-item">
+                    <label>边框透明度</label>
+                    <span class="value-display" id="border-opacity-val">0.08</span>
+                    <input type="range" id="border-opacity" min="0" max="0.3" step="0.01" value="0.08">
+                </div>
+            </div>
+
+            <!-- Layout -->
+            <div class="control-group">
+                <h3>布局</h3>
+
+                <div class="control-item">
+                    <label>
+                        圆角大小
+                        <span class="value-display" id="radius-val">16px</span>
+                    </label>
+                    <input type="range" id="radius" min="0" max="32" step="2" value="16">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        内边距
+                        <span class="value-display" id="padding-val">24px</span>
+                    </label>
+                    <input type="range" id="padding" min="8" max="48" step="4" value="24">
+                </div>
+            </div>
+
+            <!-- Card Styling -->
+            <div class="control-group">
+                <h3>卡片样式</h3>
+
+                <div class="control-item">
+                    <label>主题色</label>
+                    <input type="color" id="accent-color" value="#3b82f6">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        光晕强度
+                        <span class="value-display" id="glow-opacity-val">0.1</span>
+                    </label>
+                    <input type="range" id="glow-opacity" min="0" max="1" step="0.05" value="0.1">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        光晕模糊
+                        <span class="value-display" id="glow-blur-val">40px</span>
+                    </label>
+                    <input type="range" id="glow-blur" min="0" max="80" step="5" value="40">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        数值字体大小
+                        <span class="value-display" id="value-size-val">1.8rem</span>
+                    </label>
+                    <input type="range" id="value-size" min="1" max="3" step="0.1" value="1.8">
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        文字阴影强度
+                        <span class="value-display" id="shadow-val">中等</span>
+                    </label>
+                    <select id="shadow">
+                        <option value="none">无</option>
+                        <option value="light">轻微</option>
+                        <option value="medium" selected>中等</option>
+                        <option value="strong">强烈</option>
+                    </select>
+                </div>
+
+                <div class="control-item">
+                    <label>
+                        副标题透明度
+                        <span class="value-display" id="subtitle-opacity-val">0.8</span>
+                    </label>
+                    <input type="range" id="subtitle-opacity" min="0" max="1" step="0.05" value="0.8">
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview">
+            <div class="preview-container">
+                <div class="demo-glass-panel">
+                    <div class="demo-content">
+                        <div class="demo-stat-card">
+                            <div class="demo-card-glow"></div>
+                            <div class="demo-card-info">
+                                <div class="demo-card-label">
+                                    <span style="color: var(--accent-color)">●</span> CPU
+                                </div>
+                                <div class="demo-card-value">45.2%</div>
+                                <div class="demo-card-sub">i9-13900K</div>
+                            </div>
+                            <div class="demo-card-chart">
+                                <canvas class="demo-chart-canvas" id="demo-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt Output -->
+        <div class="prompt-output">
+            <div class="prompt-text" id="prompt-text">
+                调整控制参数来自定义玻璃拟态设计。
+            </div>
+            <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">复制</button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            bgOpacity: 0.6,
+            blur: 16,
+            borderWidth: 1,
+            borderOpacity: 0.08,
+            radius: 16,
+            padding: 24,
+            accentColor: '#3b82f6',
+            glowOpacity: 0.1,
+            glowBlur: 40,
+            valueSize: 1.8,
+            shadow: 'medium',
+            subtitleOpacity: 0.8
+        };
+
+        const DEFAULTS = { ...state };
+
+        // Presets
+        const presets = {
+            default: {
+                bgOpacity: 0.6,
+                blur: 16,
+                borderWidth: 1,
+                borderOpacity: 0.08,
+                radius: 16,
+                padding: 24,
+                accentColor: '#3b82f6',
+                glowOpacity: 0.1,
+                glowBlur: 40,
+                valueSize: 1.8,
+                shadow: 'medium',
+                subtitleOpacity: 0.8
+            },
+            subtle: {
+                bgOpacity: 0.4,
+                blur: 24,
+                borderWidth: 0.5,
+                borderOpacity: 0.05,
+                radius: 20,
+                padding: 32,
+                accentColor: '#3b82f6',
+                glowOpacity: 0.15,
+                glowBlur: 60,
+                valueSize: 1.6,
+                shadow: 'light',
+                subtitleOpacity: 0.6
+            },
+            bold: {
+                bgOpacity: 0.8,
+                blur: 8,
+                borderWidth: 2,
+                borderOpacity: 0.15,
+                radius: 12,
+                padding: 20,
+                accentColor: '#f43f5e',
+                glowOpacity: 0.4,
+                glowBlur: 30,
+                valueSize: 2.2,
+                shadow: 'strong',
+                subtitleOpacity: 0.9
+            },
+            minimal: {
+                bgOpacity: 0.3,
+                blur: 32,
+                borderWidth: 0,
+                borderOpacity: 0,
+                radius: 24,
+                padding: 28,
+                accentColor: '#10b981',
+                glowOpacity: 0.1,
+                glowBlur: 50,
+                valueSize: 1.5,
+                shadow: 'none',
+                subtitleOpacity: 0.7
+            }
+        };
+
+        function applyPreset(name) {
+            const preset = presets[name];
+            Object.assign(state, preset);
+
+            // Update all controls
+            document.getElementById('bg-opacity').value = preset.bgOpacity;
+            document.getElementById('blur').value = preset.blur;
+            document.getElementById('border-width').value = preset.borderWidth;
+            document.getElementById('border-opacity').value = preset.borderOpacity;
+            document.getElementById('radius').value = preset.radius;
+            document.getElementById('padding').value = preset.padding;
+            document.getElementById('accent-color').value = preset.accentColor;
+            document.getElementById('glow-opacity').value = preset.glowOpacity;
+            document.getElementById('glow-blur').value = preset.glowBlur;
+            document.getElementById('value-size').value = preset.valueSize;
+            document.getElementById('shadow').value = preset.shadow;
+            document.getElementById('subtitle-opacity').value = preset.subtitleOpacity;
+
+            updateAll();
+        }
+
+        // Chart simulation
+        const chartData = new Array(40).fill(0).map(() => Math.random() * 100);
+
+        function drawChart() {
+            const canvas = document.getElementById('demo-chart');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const { width, height } = canvas;
+            const stepX = width / (chartData.length - 1);
+            const padding = 15;
+            const drawHeight = height - padding * 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw line
+            ctx.beginPath();
+            ctx.strokeStyle = state.accentColor;
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            chartData.forEach((val, i) => {
+                const x = i * stepX;
+                const y = padding + drawHeight - (val / 100) * drawHeight;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Fill gradient
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            const rgb = hexToRgb(state.accentColor);
+            gradient.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.35)`);
+            gradient.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Fade left 50%
+            ctx.globalCompositeOperation = 'destination-out';
+            const fadeGradient = ctx.createLinearGradient(0, 0, width * 0.5, 0);
+            fadeGradient.addColorStop(0, 'rgba(0,0,0,1)');
+            fadeGradient.addColorStop(0.6, 'rgba(0,0,0,0.5)');
+            fadeGradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = fadeGradient;
+            ctx.fillRect(0, 0, width * 0.5, height);
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function updatePreview() {
+            const panel = document.querySelector('.demo-glass-panel');
+            const rgb = hexToRgb(state.accentColor);
+
+            panel.style.setProperty('--glass-bg', `rgba(30, 41, 59, ${state.bgOpacity})`);
+            panel.style.setProperty('--blur-amount', `${state.blur}px`);
+            panel.style.setProperty('--border-width', `${state.borderWidth}px`);
+            panel.style.setProperty('--glass-border', `rgba(255, 255, 255, ${state.borderOpacity})`);
+            panel.style.setProperty('--border-radius', `${state.radius}px`);
+            panel.style.setProperty('--padding', `${state.padding}px`);
+            panel.style.setProperty('--accent-color', state.accentColor);
+            panel.style.setProperty('--glow-opacity', state.glowOpacity);
+            panel.style.setProperty('--glow-blur', `${state.glowBlur}px`);
+            panel.style.setProperty('--value-font-size', `${state.valueSize}rem`);
+            panel.style.setProperty('--subtitle-opacity', state.subtitleOpacity);
+
+            const shadows = {
+                none: 'none',
+                light: '0 1px 4px rgba(0,0,0,0.4)',
+                medium: '0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.8)',
+                strong: '0 4px 20px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.9)'
+            };
+            panel.style.setProperty('--text-shadow', shadows[state.shadow]);
+
+            drawChart();
+        }
+
+        function updatePrompt() {
+            const parts = [];
+
+            // Glass effect
+            if (state.bgOpacity !== DEFAULTS.bgOpacity) {
+                parts.push(`背景透明度 ${(state.bgOpacity * 100).toFixed(0)}%`);
+            }
+            if (state.blur !== DEFAULTS.blur) {
+                const desc = state.blur > 24 ? '重度' : state.blur > 12 ? '中度' : '轻度';
+                parts.push(`${desc}模糊 (${state.blur}px)`);
+            }
+            if (state.borderWidth !== DEFAULTS.borderWidth) {
+                parts.push(`${state.borderWidth}px 边框`);
+            }
+
+            // Layout
+            if (state.radius !== DEFAULTS.radius) {
+                const desc = state.radius > 20 ? '大圆角' : state.radius > 12 ? '圆角' : '小圆角';
+                parts.push(`${desc} (${state.radius}px)`);
+            }
+            if (state.padding !== DEFAULTS.padding) {
+                const desc = state.padding > 32 ? '宽松' : state.padding < 20 ? '紧凑' : '适中';
+                parts.push(`${desc}内边距 (${state.padding}px)`);
+            }
+
+            // Card styling
+            if (state.accentColor !== DEFAULTS.accentColor) {
+                parts.push(`主题色 ${state.accentColor}`);
+            }
+            if (state.glowOpacity !== DEFAULTS.glowOpacity) {
+                const desc = state.glowOpacity > 0.3 ? '明显' : state.glowOpacity > 0.15 ? '适中' : '微弱';
+                parts.push(`${desc}光晕效果`);
+            }
+            if (state.valueSize !== DEFAULTS.valueSize) {
+                const desc = state.valueSize > 2 ? '大号' : state.valueSize < 1.5 ? '小号' : '中号';
+                parts.push(`${desc}数值文字 (${state.valueSize}rem)`);
+            }
+            if (state.shadow !== DEFAULTS.shadow) {
+                const shadowMap = {
+                    'none': '无',
+                    'light': '轻微',
+                    'medium': '中等',
+                    'strong': '强烈'
+                };
+                parts.push(`${shadowMap[state.shadow]}文字阴影`);
+            }
+
+            const prompt = parts.length > 0
+                ? `将玻璃拟态卡片更新为使用 ${parts.join('、')}。`
+                : '使用默认玻璃拟态设计，具有平衡的透明度、模糊和间距。';
+
+            document.getElementById('prompt-text').textContent = prompt;
+        }
+
+        function updateAll() {
+            // Update value displays
+            document.getElementById('bg-opacity-val').textContent = state.bgOpacity.toFixed(2);
+            document.getElementById('blur-val').textContent = state.blur + 'px';
+            document.getElementById('border-width-val').textContent = state.borderWidth + 'px';
+            document.getElementById('border-opacity-val').textContent = state.borderOpacity.toFixed(2);
+            document.getElementById('radius-val').textContent = state.radius + 'px';
+            document.getElementById('padding-val').textContent = state.padding + 'px';
+            document.getElementById('glow-opacity-val').textContent = state.glowOpacity.toFixed(2);
+            document.getElementById('glow-blur-val').textContent = state.glowBlur + 'px';
+            document.getElementById('value-size-val').textContent = state.valueSize.toFixed(1) + 'rem';
+            const shadowMap = {
+                'none': '无',
+                'light': '轻微',
+                'medium': '中等',
+                'strong': '强烈'
+            };
+            document.getElementById('shadow-val').textContent = shadowMap[state.shadow];
+            document.getElementById('subtitle-opacity-val').textContent = state.subtitleOpacity.toFixed(2);
+
+            updatePreview();
+            updatePrompt();
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('prompt-text').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.textContent = '已复制！';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Event listeners
+        document.getElementById('bg-opacity').addEventListener('input', e => {
+            state.bgOpacity = parseFloat(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('blur').addEventListener('input', e => {
+            state.blur = parseInt(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('border-width').addEventListener('input', e => {
+            state.borderWidth = parseFloat(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('border-opacity').addEventListener('input', e => {
+            state.borderOpacity = parseFloat(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('radius').addEventListener('input', e => {
+            state.radius = parseInt(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('padding').addEventListener('input', e => {
+            state.padding = parseInt(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('accent-color').addEventListener('input', e => {
+            state.accentColor = e.target.value;
+            updateAll();
+        });
+
+        document.getElementById('glow-opacity').addEventListener('input', e => {
+            state.glowOpacity = parseFloat(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('glow-blur').addEventListener('input', e => {
+            state.glowBlur = parseInt(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('value-size').addEventListener('input', e => {
+            state.valueSize = parseFloat(e.target.value);
+            updateAll();
+        });
+
+        document.getElementById('shadow').addEventListener('change', e => {
+            state.shadow = e.target.value;
+            updateAll();
+        });
+
+        document.getElementById('subtitle-opacity').addEventListener('input', e => {
+            state.subtitleOpacity = parseFloat(e.target.value);
+            updateAll();
+        });
+
+        // Animate chart data
+        setInterval(() => {
+            chartData.shift();
+            chartData.push(Math.random() * 100);
+            drawChart();
+        }, 1000);
+
+        // Initialize
+        updateAll();
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            drawChart();
+        });
+    </script>
+</body>
+</html>
