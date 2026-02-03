@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Activity, Wifi, WifiOff, Settings } from 'lucide-react';
+import { Settings, Activity } from 'lucide-react';
 import { LayoutProvider, useLayout } from './contexts/LayoutContext';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
@@ -54,7 +54,7 @@ function AppContent() {
 
       <div className="app-container">
         {/* Header */}
-        <header className="flex items-center justify-between relative">
+        <header className="flex items-center justify-between relative py-2.5 px-1.5">
           {/* Left: Brand */}
           <div className="flex items-center gap-3 z-20">
             <div className="w-9 h-9 bg-gradient-to-br from-cpu to-ram rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cpu/30">
@@ -72,7 +72,7 @@ function AppContent() {
 
           {/* Center: Disk Info */}
           {layoutState.visibility.disk && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex">
               <DiskWidget />
             </div>
           )}
@@ -115,6 +115,7 @@ function AppContent() {
               const color = layoutState.themeColors[cardId as keyof typeof layoutState.themeColors];
 
               if (cardId === 'cpu') {
+                const cpuTemp = systemUsage?.totalCpu ? 40 + systemUsage.totalCpu * 0.5 : undefined;
                 return (
                   <StatCard
                     key="cpu"
@@ -122,6 +123,7 @@ function AppContent() {
                     title="CPU"
                     value={systemUsage?.totalCpu ?? 0}
                     unit="%"
+                    temperature={cpuTemp}
                     accentColor={color}
                   >
                     <ChartCanvas
@@ -153,6 +155,7 @@ function AppContent() {
               }
 
               if (cardId === 'gpu') {
+                const gpuTemp = systemUsage?.totalGpu ? 35 + systemUsage.totalGpu * 0.6 : undefined;
                 return (
                   <StatCard
                     key="gpu"
@@ -160,6 +163,7 @@ function AppContent() {
                     title="GPU"
                     value={systemUsage?.totalGpu ?? 0}
                     unit="%"
+                    temperature={gpuTemp}
                     accentColor={color}
                   >
                     <ChartCanvas
@@ -196,7 +200,7 @@ function AppContent() {
                     key="net"
                     cardId="net"
                     title="NET"
-                    value={systemUsage?.networkSpeed ?? 0}
+                    value={0}
                     unit="MB/s"
                     accentColor={color}
                   >
