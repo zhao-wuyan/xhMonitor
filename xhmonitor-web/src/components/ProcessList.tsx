@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { ArrowUpDown } from 'lucide-react';
 import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
 import { t } from '../i18n';
@@ -41,6 +40,10 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
           : b.processName.localeCompare(a.processName);
       }
 
+      if (sortField === 'processId') {
+        return sortOrder === 'asc' ? a.processId - b.processId : b.processId - a.processId;
+      }
+
       const aValue = a.metrics[sortField] ?? 0;
       const bValue = b.metrics[sortField] ?? 0;
 
@@ -60,19 +63,6 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
     }
   };
 
-  const renderMetricBar = (value: number, metricId: string, max: number = 100) => {
-    const percentage = Math.min((value / max) * 100, 100);
-    const color = colorMap[metricId] || '#6b7280';
-
-    return (
-      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-        <div
-          className="metric-bar"
-          style={{ width: `${percentage}%`, backgroundColor: color }}
-        />
-      </div>
-    );
-  };
 
   return (
     <div className="process-panel xh-glass-panel">
@@ -91,68 +81,71 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
       </div>
 
       <div className="table-scroll">
-        <table className="w-full">
+        <table>
           <thead>
-            <tr className="border-b border-gray-700">
-              <th className="text-left py-3 px-4">
-                <button
-                  onClick={() => handleSort('processName')}
-                  className="flex items-center gap-2 hover:text-cpu transition-colors"
-                >
-                  {t('Process')}
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
+            <tr>
+              <th
+                onClick={() => handleSort('processName')}
+                className={sortField === 'processName' ? 'active-sort' : ''}
+              >
+                {t('Process')} {sortField === 'processName' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
               </th>
-              <th className="text-left py-3 px-4">{t('PID')}</th>
+              <th
+                onClick={() => handleSort('processId')}
+                className={sortField === 'processId' ? 'active-sort' : ''}
+              >
+                {t('PID')} {sortField === 'processId' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+              </th>
               {metricMetadata.map((metric) => (
-                <th key={metric.metricId} className="text-left py-3 px-4">
-                  <button
-                    onClick={() => handleSort(metric.metricId)}
-                    className="flex items-center gap-2 hover:opacity-80 transition-colors"
-                    style={{ color: colorMap[metric.metricId] }}
-                  >
-                    {t(metric.displayName)}
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
+                <th
+                  key={metric.metricId}
+                  onClick={() => handleSort(metric.metricId)}
+                  className={sortField === metric.metricId ? 'active-sort' : ''}
+                >
+                  {t(metric.displayName)} {sortField === metric.metricId && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sortedAndFilteredProcesses.map((process) => (
-              <tr
-                key={process.processId}
-                className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
-              >
-                <td className="py-3 px-4">
-                  <div className="font-medium">{process.processName}</div>
-                  <div
-                    className="text-xs text-gray-400 truncate max-w-xs cursor-help"
-                    title={process.commandLine ?? ''}
-                  >
-                    {process.commandLine ?? ''}
+              <tr key={process.processId}>
+                <td>
+                  <div className="proc-name-cell">
+                    <div className="proc-icon">
+                      {process.processName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="proc-info">
+                      <div className="proc-name">{process.processName}</div>
+                      <div className="proc-cmd" title={process.commandLine ?? ''}>
+                        {process.commandLine ?? ''}
+                      </div>
+                    </div>
                   </div>
                 </td>
-                <td className="py-3 px-4 font-mono text-sm">
-                  {process.processId}
-                </td>
+                <td className="pid-cell">{process.processId}</td>
                 {metricMetadata.map((metric) => {
                   const metricValue = process.metrics[metric.metricId];
+                  const color = colorMap[metric.metricId] || '#6b7280';
                   return (
-                    <td key={metric.metricId} className="py-3 px-4">
+                    <td key={metric.metricId}>
                       {metricValue !== undefined ? (
-                        <div className="space-y-1">
-                          <div className="text-sm font-mono">
+                        <div className="metric-cell">
+                          <span className="metric-val" style={{ color }}>
                             {formatValue(metricValue, metric.unit)}
+                          </span>
+                          <div className="progress-bg">
+                            <div
+                              className="progress-fill"
+                              style={{
+                                width: `${Math.min((metricValue / (metric.unit === '%' ? 100 : 1024)) * 100, 100)}%`,
+                                backgroundColor: color
+                              }}
+                            />
                           </div>
-                          {renderMetricBar(
-                            metricValue,
-                            metric.metricId,
-                            metric.unit === '%' ? 100 : 1024
-                          )}
                         </div>
                       ) : (
-                        <span className="text-gray-500">-</span>
+                        <span style={{ color: 'var(--xh-color-text-secondary)', opacity: 0.5 }}>-</span>
                       )}
                     </td>
                   );
@@ -164,7 +157,7 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
       </div>
 
       {sortedAndFilteredProcesses.length === 0 && (
-        <div className="text-center py-8 text-gray-400">
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--xh-color-text-secondary)' }}>
           {t('No processes found matching')} "{searchTerm}"
         </div>
       )}

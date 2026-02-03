@@ -380,6 +380,80 @@
   overflow: hidden;
 }
 
+.proc-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 200px;
+}
+
+.proc-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.proc-cmd {
+  font-size: 0.75rem;
+  color: var(--xh-color-text-secondary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+.proc-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.pid-cell {
+  font-family: 'Consolas', 'Monaco', monospace;
+  color: var(--xh-color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.metric-val {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.progress-bg {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
 .panel-title {
   display: flex;
   align-items: center;
@@ -451,11 +525,19 @@
   color: var(--xh-color-text-primary);
 }
 
+.table-scroll th.active-sort {
+  color: var(--xh-color-cpu);
+}
+
 .table-scroll td {
   padding: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.02);
   color: var(--xh-color-text-primary);
   vertical-align: middle;
+}
+
+.table-scroll tr:last-child td {
+  border-bottom: none;
 }
 
 .table-scroll tr:hover {
