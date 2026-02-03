@@ -7,6 +7,78 @@
   --xh-bg-blur-opacity: 0.3;
 }
 
+/* --- Header Styles --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 5px;
+  gap: 20px;
+  position: relative;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  z-index: 20;
+}
+
+.version-tag {
+  font-size: 0.75rem;
+  color: var(--xh-color-text-secondary);
+  font-weight: 400;
+  margin-left: 4px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.logo-box {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--xh-color-cpu), var(--xh-color-ram));
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--xh-color-gpu);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+  z-index: 20;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(var(--xh-grid-columns-effective), minmax(0, 1fr));
