@@ -1,0 +1,71 @@
+{
+  "task_description": "根据 xhmonitor-web/design/ui-preview-v2.html 的 UI 设计利用 xhmonitor-web/components 组件重构 web 端",
+  "relevant_files": [
+    "xhmonitor-web/design/ui-preview-v2.html",
+    "xhmonitor-web/components/core/design-tokens.css",
+    "xhmonitor-web/components/core/glass-panel.css",
+    "xhmonitor-web/components/core/stat-card.css",
+    "xhmonitor-web/components/charts/MiniChart.js",
+    "xhmonitor-web/components/charts/DynamicScaler.js",
+    "xhmonitor-web/components/examples/layout-playground.html",
+    "xhmonitor-web/src/hooks/useMetricsHub.ts",
+    "XhMonitor.Service/Hubs/MetricsHub.cs",
+    "XhMonitor.Service/Worker.cs"
+  ],
+  "detected_patterns": {
+    "design_system": {
+      "style": "Glassmorphism (玻璃拟态)",
+      "theme": "Dark mode",
+      "tokens": "Complete design tokens system in design-tokens.css",
+      "components": ["GlassPanel", "StatCard", "MiniChart", "DynamicScaler"]
+    },
+    "data_flow": {
+      "backend": "SignalR Hub (http://localhost:35179/hubs/metrics)",
+      "events": [
+        "ReceiveProcessMetrics",
+        "ReceiveProcessMetadata",
+        "ReceiveSystemUsage",
+        "ReceiveHardwareLimits"
+      ],
+      "frontend_hook": "useMetricsHub.ts - React hook for SignalR connection"
+    },
+    "layout_system": {
+      "grid": "CSS Grid with responsive breakpoints (3→2→1 columns)",
+      "card_height": "140px (--xh-card-height)",
+      "responsive": "Mobile-first design with @media queries",
+      "drag_drop": "Sortable.js for card reordering (layout-playground.html)"
+    },
+    "chart_engine": {
+      "renderer": "Canvas 2D",
+      "features": ["Real-time data visualization", "Peak/valley markers", "Left-side fade effect", "Dynamic scaling"],
+      "classes": ["MiniChart", "DynamicScaler"]
+    }
+  },
+  "architecture_insights": {
+    "current_stack": "React 19 + TypeScript + Vite",
+    "component_library": "Extracted from ui-preview-v2.html, pure HTML/CSS/JS",
+    "integration_point": "Need to bridge React components with existing component library",
+    "data_source": "SignalR real-time push from XhMonitor.Service"
+  },
+  "enhancement_requirements": [
+    "右上角修改按钮 + 右侧弹出菜单",
+    "修改 grid 列数控制",
+    "控制监控卡片维度显示/隐藏",
+    "拖动卡片排序 (修改模式)",
+    "更换背景 + 背景模糊蒙版参数",
+    "更换监控卡片主题色",
+    "选择硬盘信息位置 (左侧/右侧)",
+    "H5 适配 (硬盘信息在 CPU/GPU 下方)"
+  ],
+  "keywords": [
+    "glassmorphism",
+    "grid layout",
+    "drag and drop",
+    "SignalR",
+    "real-time data",
+    "responsive design",
+    "theme customization",
+    "card sorting",
+    "background blur"
+  ]
+}

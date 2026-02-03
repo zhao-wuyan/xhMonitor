@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @import "tailwindcss";
+@import "../components/core/design-tokens.css";
+@import "../components/core/glass-panel.css";
+@import "../components/core/stat-card.css";
+@import "./styles/responsive.css";
 
 @layer base {
   body {

@@ -89,6 +89,11 @@
   --xh-card-height: 140px;
   --xh-max-width: 1400px;
   --xh-grid-gap: 16px;
+  --xh-grid-columns: 3;
+  --xh-grid-columns-effective: 3;
+  --xh-grid-min-col-width: 260px;
+  --xh-grid-row-height: var(--xh-card-height);
+  --xh-bg-blur-opacity: 0.3;
 
   /* ========== 断点 ========== */
 
@@ -133,6 +138,10 @@
 body {
   background-color: var(--xh-color-bg);
   background-image:
+    linear-gradient(
+      rgba(15, 23, 42, var(--xh-bg-blur-opacity)),
+      rgba(15, 23, 42, var(--xh-bg-blur-opacity))
+    ),
     radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
   color: var(--xh-color-text-primary);
@@ -141,4 +150,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+body.no-gradient {
+  background-image: linear-gradient(
+    rgba(15, 23, 42, var(--xh-bg-blur-opacity)),
+    rgba(15, 23, 42, var(--xh-bg-blur-opacity))
+  );
 }
