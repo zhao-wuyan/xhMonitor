@@ -60,6 +60,12 @@
   opacity: 0.9;
 }
 
+.xh-stat-card__label-temp {
+  font-weight: var(--xh-font-weight-normal);
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
 /* 数值 */
 .xh-stat-card__value {
   font-size: var(--xh-font-size-xl);

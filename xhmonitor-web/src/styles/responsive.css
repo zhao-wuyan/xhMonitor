@@ -7,6 +7,11 @@
   --xh-bg-blur-opacity: 0.3;
 }
 
+.xh-app-shell {
+  container-type: inline-size;
+  container-name: xh-app;
+}
+
 /* --- Header Styles --- */
 .header {
   display: flex;
@@ -64,6 +69,12 @@
   z-index: 20;
 }
 
+.status-badge--offline {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.3);
+  color: var(--xh-color-error);
+}
+
 .status-dot {
   width: 6px;
   height: 6px;
@@ -71,6 +82,11 @@
   border-radius: 50%;
   box-shadow: 0 0 8px currentColor;
   animation: pulse 2s infinite;
+}
+
+.status-dot--offline {
+  box-shadow: none;
+  animation: none;
 }
 
 @keyframes pulse {
@@ -95,6 +111,35 @@
 @media (max-width: 768px) {
   .stats-grid {
     --xh-grid-columns-effective: 1;
+  }
+}
+
+@container xh-app (max-width: 1200px) {
+  .stats-grid {
+    --xh-grid-columns-effective: 2;
+  }
+}
+
+@container xh-app (max-width: 768px) {
+  .stats-grid {
+    --xh-grid-columns-effective: 1;
+  }
+
+  .app-container {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .mobile-nav {
+    display: flex;
+  }
+
+  .proc-info {
+    max-width: 140px;
+  }
+
+  .table-scroll table {
+    min-width: 520px;
   }
 }
 
@@ -343,7 +388,7 @@
 }
 
 .disk-widget {
-  width: 100%;
+  width: fit-content;
 }
 
 .disk-widget--left {
@@ -356,6 +401,7 @@
 
 .disk-widget--mobile {
   order: 3;
+  width: 100%;
 }
 
 .disk-info-container {
@@ -630,7 +676,7 @@
   color: var(--xh-color-text-primary);
   font-family: inherit;
   font-size: 0.9rem;
-  width: 180px;
+  width: min(180px, 44vw);
   transition: all 0.2s;
 }
 
@@ -638,7 +684,7 @@
   background: rgba(0, 0, 0, 0.4);
   border-color: var(--xh-color-cpu);
   outline: none;
-  width: 220px;
+  width: min(220px, 58vw);
 }
 
 .search-icon {

@@ -78,6 +78,7 @@
 
   /* App Container - 统一布局容器 */
   .app-container {
+    width: 100%;
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;

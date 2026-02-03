@@ -9,6 +9,7 @@ interface StatCardProps {
   subtitle?: string;
   trend?: string;
   subtitles?: string[];
+  temperature?: number;
   accentColor: string;
   valueSize?: 'normal' | 'small';
   className?: string;
@@ -24,6 +25,7 @@ const StatCardBase = ({
   subtitle,
   trend,
   subtitles,
+  temperature,
   accentColor,
   valueSize = 'normal',
   className,
@@ -69,6 +71,11 @@ const StatCardBase = ({
             ●
           </span>
           {title}
+          {temperature !== undefined && (
+            <span className="xh-stat-card__label-temp">
+              · {temperature}°C
+            </span>
+          )}
         </div>
         <div
           className={`xh-stat-card__value ${
@@ -97,6 +104,7 @@ const areEqual = (prev: StatCardProps, next: StatCardProps) => {
     prev.unit === next.unit &&
     prev.subtitle === next.subtitle &&
     prev.trend === next.trend &&
+    prev.temperature === next.temperature &&
     prev.accentColor === next.accentColor &&
     prev.valueSize === next.valueSize &&
     prev.className === next.className &&

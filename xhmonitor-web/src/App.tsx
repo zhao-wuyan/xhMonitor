@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Settings, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { LayoutProvider, useLayout } from './contexts/LayoutContext';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { t } from './i18n';
+import type { SystemUsage } from './types';
 
 // New components
 import { StatCard } from './components/StatCard';
@@ -45,68 +46,47 @@ function AppContent() {
   }
 
   // Get visible cards based on layoutState.visibility
-  const visibleCards = layoutState.cardOrder.filter(_cardId => layoutState.visibility.cards);
+  const visibleCards = layoutState.visibility.cards ? layoutState.cardOrder : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 xh-app-shell">
       {/* Mobile Navigation */}
       <MobileNav />
 
       <div className="app-container">
         {/* Header */}
-        <header className="flex items-center justify-between relative py-2.5 px-1.5">
-          {/* Left: Brand */}
-          <div className="flex items-center gap-3 z-20">
-            <div className="w-9 h-9 bg-gradient-to-br from-cpu to-ram rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cpu/30">
-              XM
-            </div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-white">
+        {layoutState.visibility.header && (
+          <header className="header">
+            {/* Left: Brand */}
+            <div className="brand">
+              <div className="logo-box">XM</div>
+              <div>
                 {t('appTitle')}
-              </h1>
-              <span className="text-xs text-gray-400 font-normal px-2 py-0.5 bg-white/10 rounded">
-                {t('appVersion')}
-              </span>
-            </div>
-          </div>
-
-          {/* Center: Disk Info */}
-          {layoutState.visibility.disk && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex">
-              <DiskWidget />
-            </div>
-          )}
-
-          {/* Right: Status */}
-          <div className="flex items-center gap-3 z-20">
-            {/* Settings Button - Hidden to match design */}
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors opacity-0 pointer-events-none"
-              aria-label="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-
-            {/* Connection Status */}
-            {isConnected ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-memory/15 border border-memory/30">
-                <div className="w-1.5 h-1.5 bg-memory rounded-full shadow-[0_0_8px_currentColor] animate-pulse" />
-                <span className="text-sm font-semibold text-memory">{t('online')}</span>
+                <span className="version-tag">{t('appVersion')}</span>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/15 border border-red-500/30">
-                <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                <span className="text-sm font-semibold text-red-500">
-                  {error ? t(error) : t('offline')}
-                </span>
+            </div>
+
+            {/* Center: Disk Info */}
+            {layoutState.visibility.disk && (
+              <div className="disk-info-container">
+                <DiskWidget />
               </div>
             )}
-          </div>
-        </header>
 
-        {/* Disk Widget */}
-        {layoutState.visibility.disk && <DiskWidget />}
+            {/* Right: Status */}
+            {isConnected ? (
+              <div className="status-badge">
+                <div className="status-dot" />
+                <span>{t('online')}</span>
+              </div>
+            ) : (
+              <div className="status-badge status-badge--offline">
+                <div className="status-dot status-dot--offline" />
+                <span>{error ? t(error) : t('offline')}</span>
+              </div>
+            )}
+          </header>
+        )}
 
         {/* Draggable Grid of Cards */}
         {layoutState.visibility.cards && (
@@ -264,11 +244,11 @@ function App() {
     () => ({
       maxLength: 60,
       selectors: {
-        cpu: (usage: any) => usage.totalCpu,
-        ram: (usage: any) => usage.totalMemory,
-        gpu: (usage: any) => usage.totalGpu,
-        vram: (usage: any) => usage.totalVram,
-        net: (usage: any) => usage.totalMemory * 0, // Placeholder
+        cpu: (usage: SystemUsage) => usage.totalCpu,
+        ram: (usage: SystemUsage) => usage.totalMemory,
+        gpu: (usage: SystemUsage) => usage.totalGpu,
+        vram: (usage: SystemUsage) => usage.totalVram,
+        net: (_usage: SystemUsage) => 0, // Placeholder
         pwr: () => 0, // No power data available yet
       },
     }),
