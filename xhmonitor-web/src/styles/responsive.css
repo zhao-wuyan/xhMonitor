@@ -374,6 +374,94 @@
   text-align: right;
 }
 
+/* Process Panel */
+.process-panel {
+  padding: 20px;
+  overflow: hidden;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.search-box {
+  margin-left: auto;
+  position: relative;
+}
+
+.search-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--xh-color-glass-border);
+  border-radius: 8px;
+  padding: 6px 12px 6px 32px;
+  color: var(--xh-color-text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  width: 180px;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: var(--xh-color-cpu);
+  outline: none;
+  width: 220px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 600px;
+}
+
+.table-scroll th {
+  text-align: left;
+  padding: 12px;
+  color: var(--xh-color-text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--xh-color-glass-border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.table-scroll th:hover {
+  color: var(--xh-color-text-primary);
+}
+
+.table-scroll td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  color: var(--xh-color-text-primary);
+  vertical-align: middle;
+}
+
+.table-scroll tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 @supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
   .mobile-nav,
   .settings-drawer,

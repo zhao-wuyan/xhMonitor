@@ -1,38 +1,27 @@
-import { useState, useEffect } from 'react';
-import { Activity, Wifi, WifiOff } from 'lucide-react';
-import { SystemSummary } from './components/SystemSummary';
-import { ProcessList } from './components/ProcessList';
-import { MetricChart } from './components/MetricChart';
+import { useState, useMemo } from 'react';
+import { Activity, Wifi, WifiOff, Settings } from 'lucide-react';
+import { LayoutProvider, useLayout } from './contexts/LayoutContext';
+import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
-import { calculateSystemSummary, formatTimestamp } from './utils';
 import { t } from './i18n';
-import type { ChartDataPoint } from './types';
 
-function App() {
+// New components
+import { StatCard } from './components/StatCard';
+import { ChartCanvas } from './components/ChartCanvas';
+import { SettingsDrawer } from './components/SettingsDrawer';
+import { DiskWidget } from './components/DiskWidget';
+import { DraggableGrid } from './components/DraggableGrid';
+import { MobileNav } from './components/MobileNav';
+import { ProcessList } from './components/ProcessList';
+
+function AppContent() {
   const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
   const { config, loading: configLoading } = useMetricConfig();
-  const [metricHistory, setMetricHistory] = useState<Record<string, ChartDataPoint[]>>({});
+  const { layoutState } = useLayout();
 
-  useEffect(() => {
-    if (!metricsData || !config) return;
-
-    const summary = calculateSystemSummary(metricsData.processes, systemUsage);
-    const baseTimestamp = systemUsage?.timestamp ?? metricsData.timestamp;
-    const timestamp = formatTimestamp(baseTimestamp);
-
-    setMetricHistory((prev) => {
-      const newHistory = { ...prev };
-
-      config.metadata.forEach((metric) => {
-        const value = summary[metric.metricId] || 0;
-        const history = prev[metric.metricId] || [];
-        newHistory[metric.metricId] = [...history, { timestamp, value }].slice(-30);
-      });
-
-      return newHistory;
-    });
-  }, [metricsData, config, systemUsage]);
+  // Settings drawer state
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (configLoading) {
     return (
@@ -55,86 +44,228 @@ function App() {
     );
   }
 
-  const summary = metricsData
-    ? calculateSystemSummary(metricsData.processes, systemUsage)
-    : ({ processCount: 0 } as Record<string, number> & { processCount: number });
-
-  const primaryMetrics = config.metadata.slice(0, 2);
+  // Get visible cards based on layoutState.visibility
+  const visibleCards = layoutState.cardOrder.filter(_cardId => layoutState.visibility.cards);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="container mx-auto px-4 py-6">
-        <header className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Activity className="w-10 h-10 text-cpu" />
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-cpu to-gpu bg-clip-text text-transparent">
-                  {t('appTitle')}
-                </h1>
-                <p className="text-gray-400 text-sm">
-                  {t('appSubtitle')}
-                </p>
-              </div>
-            </div>
+      {/* Mobile Navigation */}
+      <MobileNav />
 
-            <div className="flex items-center gap-3">
-              {isConnected ? (
-                <div className="flex items-center gap-2 text-memory">
-                  <Wifi className="w-5 h-5" />
-                  <span className="text-sm font-medium">{t('connected')}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-red-500">
-                  <WifiOff className="w-5 h-5" />
-                  <span className="text-sm font-medium">
-                    {error ? t(error) : t('disconnected')}
-                  </span>
-                </div>
-              )}
+      <div className="app-container">
+        {/* Header */}
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Activity className="w-10 h-10 text-cpu" />
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-cpu to-gpu bg-clip-text text-transparent">
+                {t('appTitle')}
+              </h1>
+              <p className="text-gray-400 text-sm">
+                {t('appSubtitle')}
+              </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Settings Button */}
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+
+            {/* Connection Status */}
+            {isConnected ? (
+              <div className="flex items-center gap-2 text-memory">
+                <Wifi className="w-5 h-5" />
+                <span className="text-sm font-medium">{t('connected')}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-red-500">
+                <WifiOff className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  {error ? t(error) : t('disconnected')}
+                </span>
+              </div>
+            )}
           </div>
         </header>
 
-        <SystemSummary
-          summary={summary}
-          metricMetadata={config.metadata}
-          colorMap={config.colorMap}
-          iconMap={config.iconMap}
-        />
+        {/* Disk Widget */}
+        {layoutState.visibility.disk && <DiskWidget />}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {primaryMetrics.map((metric) => (
-            <div key={metric.metricId} className="glass rounded-xl p-6">
-              <MetricChart
-                data={metricHistory[metric.metricId] || []}
-                metricId={metric.metricId}
-                title={metric.displayName}
-                unit={metric.unit}
-                color={config.colorMap[metric.metricId]}
-              />
-            </div>
-          ))}
-        </div>
+        {/* Draggable Grid of Cards */}
+        {layoutState.visibility.cards && (
+          <DraggableGrid>
+            {visibleCards.map((cardId) => {
+              const color = layoutState.themeColors[cardId as keyof typeof layoutState.themeColors];
 
-        {metricsData && (
+              if (cardId === 'cpu') {
+                return (
+                  <StatCard
+                    key="cpu"
+                    cardId="cpu"
+                    title="CPU"
+                    value={systemUsage?.totalCpu ?? 0}
+                    unit="%"
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="cpu"
+                      color={color}
+                      formatFn={(v) => v.toFixed(1) + '%'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'ram') {
+                return (
+                  <StatCard
+                    key="ram"
+                    cardId="ram"
+                    title="RAM"
+                    value={systemUsage?.totalMemory ?? 0}
+                    unit="GB"
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="ram"
+                      color={color}
+                      formatFn={(v) => (v / 100 * 32).toFixed(1) + ' GB'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'gpu') {
+                return (
+                  <StatCard
+                    key="gpu"
+                    cardId="gpu"
+                    title="GPU"
+                    value={systemUsage?.totalGpu ?? 0}
+                    unit="%"
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="gpu"
+                      color={color}
+                      formatFn={(v) => v.toFixed(1) + '%'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'vram') {
+                return (
+                  <StatCard
+                    key="vram"
+                    cardId="vram"
+                    title="VRAM"
+                    value={systemUsage?.totalVram ?? 0}
+                    unit="GB"
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="vram"
+                      color={color}
+                      formatFn={(v) => (v / 100 * 24).toFixed(1) + ' GB'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'net') {
+                return (
+                  <StatCard
+                    key="net"
+                    cardId="net"
+                    title="NET"
+                    value={systemUsage?.totalMemory ?? 0}
+                    unit="MB/s"
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="net"
+                      color={color}
+                      formatFn={(v) => (v > 1024 ? (v / 1024).toFixed(1) + ' GB' : v.toFixed(0) + ' MB')}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'pwr') {
+                return (
+                  <StatCard
+                    key="pwr"
+                    cardId="pwr"
+                    title="PWR"
+                    value={0}
+                    unit="W"
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="pwr"
+                      color={color}
+                      formatFn={(v) => v.toFixed(0) + ' W'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              return null;
+            })}
+          </DraggableGrid>
+        )}
+
+        {/* Process List */}
+        {layoutState.visibility.process && metricsData && (
           <ProcessList
             processes={metricsData.processes}
             metricMetadata={config.metadata}
             colorMap={config.colorMap}
           />
         )}
-
-        {!metricsData && isConnected && (
-          <div className="glass rounded-xl p-12 text-center">
-            <div className="animate-pulse-slow">
-              <Activity className="w-16 h-16 mx-auto mb-4 text-cpu" />
-              <p className="text-gray-400">{t('Waiting for metrics data...')}</p>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Settings Drawer */}
+      <SettingsDrawer
+        open={settingsOpen}
+        onOpenChange={(open) => setSettingsOpen(open)}
+      />
+
+      {/* Mobile Nav Bottom Spacing */}
+      <div className="h-16 md:hidden" />
     </div>
+  );
+}
+
+function App() {
+  const timeSeriesOptions = useMemo(
+    () => ({
+      maxLength: 60,
+      selectors: {
+        cpu: (usage: any) => usage.totalCpu,
+        ram: (usage: any) => usage.totalMemory,
+        gpu: (usage: any) => usage.totalGpu,
+        vram: (usage: any) => usage.totalVram,
+        net: (usage: any) => usage.totalMemory * 0, // Placeholder
+        pwr: () => 0, // No power data available yet
+      },
+    }),
+    []
+  );
+
+  return (
+    <LayoutProvider>
+      <TimeSeriesProvider options={timeSeriesOptions}>
+        <AppContent />
+      </TimeSeriesProvider>
+    </LayoutProvider>
   );
 }
 

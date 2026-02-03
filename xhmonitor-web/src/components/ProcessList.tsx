@@ -75,19 +75,22 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
   };
 
   return (
-    <div className="glass rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">{t('Process Monitor')}</h2>
-        <input
-          type="text"
-          placeholder={t('Search processes...')}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-cpu"
-        />
+    <div className="process-panel xh-glass-panel">
+      <div className="panel-title">
+        {t('Process Monitor')}
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder={t('Search processes...')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="table-scroll">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-700">

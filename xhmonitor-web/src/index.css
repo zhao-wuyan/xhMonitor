@@ -75,4 +75,21 @@
     background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
   }
+
+  /* App Container - 统一布局容器 */
+  .app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .app-container {
+      padding: 16px;
+      gap: 16px;
+    }
+  }
 }

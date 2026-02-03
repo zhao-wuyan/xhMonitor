@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useMemo, useRef } from 'react';
-import { useTimeSeries } from '../hooks/useTimeSeries';
+import { useTimeSeries } from '../contexts/TimeSeriesContext';
 import MiniChartModule from '../../components/charts/MiniChart.js';
 
 export type ChartFormatFn = (value: number) => string;
