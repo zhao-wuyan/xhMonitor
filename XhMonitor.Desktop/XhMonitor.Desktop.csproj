@@ -51,7 +51,7 @@
   </ItemGroup>
 
   <!-- Build web assets before Desktop compilation -->
-  <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild">
+  <Target Name="BuildWebAssets" BeforeTargets="BeforeBuild;BeforePublish">
     <!-- Install npm dependencies if node_modules doesn't exist -->
     <Exec Command="npm install" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" Condition="!Exists('$(ProjectDir)..\xhmonitor-web\node_modules')" />
 
@@ -63,6 +63,36 @@
       <WebAssets Include="$(ProjectDir)..\xhmonitor-web\dist\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(WebAssets)" DestinationFiles="@(WebAssets->'$(ProjectDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!-- Ensure runtime output always contains latest web assets (avoid stale/empty wwwroot in bin) -->
+  <Target Name="CopyWebAssetsToOutput" AfterTargets="BuildWebAssets">
+    <ItemGroup>
+      <WebAssetsToOutput Include="$(ProjectDir)..\xhmonitor-web\dist\**\*" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(OutDir)wwwroot" Condition="Exists('$(OutDir)wwwroot')" />
+    <MakeDir Directories="$(OutDir)wwwroot" />
+
+    <Copy
+      SourceFiles="@(WebAssetsToOutput)"
+      DestinationFiles="@(WebAssetsToOutput->'$(OutDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
+  </Target>
+
+  <!-- Ensure published output always contains latest web assets -->
+  <Target Name="CopyWebAssetsToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <WebAssetsToPublish Include="$(ProjectDir)..\xhmonitor-web\dist\**\*" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(PublishDir)wwwroot" Condition="Exists('$(PublishDir)wwwroot')" />
+    <MakeDir Directories="$(PublishDir)wwwroot" />
+
+    <Copy
+      SourceFiles="@(WebAssetsToPublish)"
+      DestinationFiles="@(WebAssetsToPublish->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
   </Target>
 
 </Project>

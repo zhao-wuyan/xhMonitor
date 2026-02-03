@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { LayoutProvider, useLayout } from './contexts/LayoutContext';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
+import { useAdaptiveScroll } from './hooks/useAdaptiveScroll';
 import { t } from './i18n';
+import { formatMegabytesParts, formatMegabytesLabel, formatNetworkRateLabel, formatNetworkRateParts } from './utils';
 import type { SystemUsage } from './types';
 
 // New components
@@ -20,9 +22,34 @@ function AppContent() {
   const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
   const { config, loading: configLoading } = useMetricConfig();
   const { layoutState } = useLayout();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const processPanelRef = useRef<HTMLDivElement>(null);
 
   // Settings drawer state
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isCompactWidth, setIsCompactWidth] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 1023px)').matches;
+  });
+
+  const adaptiveScroll = useAdaptiveScroll({
+    enabled: !configLoading && Boolean(config) && layoutState.visibility.process && Boolean(metricsData),
+    shellRef,
+    processPanelRef,
+  });
+
+  const shellClassName = `min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 xh-app-shell${adaptiveScroll.mode === 'process' ? ' xh-app-shell--process-scroll' : ''}`;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const media = window.matchMedia('(max-width: 1023px)');
+    const handler = (event: MediaQueryListEvent) => setIsCompactWidth(event.matches);
+
+    setIsCompactWidth(media.matches);
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
+  }, []);
 
   if (configLoading) {
     return (
@@ -47,9 +74,9 @@ function AppContent() {
 
   // Get visible cards based on layoutState.visibility
   const visibleCards = layoutState.visibility.cards ? layoutState.cardOrder : [];
-
+ 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 xh-app-shell">
+    <div ref={shellRef} className={shellClassName}>
       {/* Mobile Navigation */}
       <MobileNav />
 
@@ -67,8 +94,8 @@ function AppContent() {
             </div>
 
             {/* Center: Disk Info */}
-            {layoutState.visibility.disk && (
-              <div className="disk-info-container">
+            {!isCompactWidth && layoutState.visibility.disk && (
+              <div className="disk-header-slot">
                 <DiskWidget />
               </div>
             )}
@@ -116,19 +143,23 @@ function AppContent() {
               }
 
               if (cardId === 'ram') {
+                const ramParts = formatMegabytesParts(systemUsage?.totalMemory ?? 0);
+                const ramMaxMb = systemUsage?.maxMemory ?? 0;
                 return (
                   <StatCard
                     key="ram"
                     cardId="ram"
                     title="RAM"
-                    value={systemUsage?.totalMemory ?? 0}
-                    unit="GB"
+                    value={ramParts.value}
+                    unit={ramParts.unit}
+                    subtitles={ramMaxMb > 0 ? [`/ ${formatMegabytesLabel(ramMaxMb)}`] : undefined}
                     accentColor={color}
                   >
                     <ChartCanvas
                       seriesKey="ram"
                       color={color}
-                      formatFn={(v) => (v / 100 * 32).toFixed(1) + ' GB'}
+                      maxValue={ramMaxMb > 0 ? ramMaxMb : undefined}
+                      formatFn={(v) => formatMegabytesLabel(v)}
                     />
                   </StatCard>
                 );
@@ -156,56 +187,70 @@ function AppContent() {
               }
 
               if (cardId === 'vram') {
+                const vramParts = formatMegabytesParts(systemUsage?.totalVram ?? 0);
+                const vramMaxMb = systemUsage?.maxVram ?? 0;
                 return (
                   <StatCard
                     key="vram"
                     cardId="vram"
                     title="VRAM"
-                    value={systemUsage?.totalVram ?? 0}
-                    unit="GB"
+                    value={vramParts.value}
+                    unit={vramParts.unit}
+                    subtitles={vramMaxMb > 0 ? [`/ ${formatMegabytesLabel(vramMaxMb)}`] : undefined}
                     accentColor={color}
                   >
                     <ChartCanvas
                       seriesKey="vram"
                       color={color}
-                      formatFn={(v) => (v / 100 * 24).toFixed(1) + ' GB'}
+                      maxValue={vramMaxMb > 0 ? vramMaxMb : undefined}
+                      formatFn={(v) => formatMegabytesLabel(v)}
                     />
                   </StatCard>
                 );
               }
 
               if (cardId === 'net') {
+                const upload = systemUsage?.uploadSpeed ?? 0;
+                const download = systemUsage?.downloadSpeed ?? 0;
+                const downloadParts = formatNetworkRateParts(download);
+                const subline = `↑ ${formatNetworkRateParts(upload).compact}   ↓ ${downloadParts.compact}`;
                 return (
                   <StatCard
                     key="net"
                     cardId="net"
                     title="NET"
-                    value={0}
-                    unit="MB/s"
+                    value={downloadParts.value}
+                    unit={downloadParts.unit}
+                    subtitles={[subline]}
                     accentColor={color}
                   >
                     <ChartCanvas
                       seriesKey="net"
                       color={color}
-                      formatFn={(v) => (v > 1024 ? (v / 1024).toFixed(1) + ' GB' : v.toFixed(0) + ' MB')}
+                      formatFn={(v) => formatNetworkRateLabel(v)}
                     />
                   </StatCard>
                 );
               }
 
               if (cardId === 'pwr') {
+                const totalPower = systemUsage?.totalPower ?? 0;
+                const maxPower = systemUsage?.maxPower ?? 0;
+                const powerAvailable = Boolean(systemUsage?.powerAvailable) || totalPower > 0 || maxPower > 0;
                 return (
                   <StatCard
                     key="pwr"
                     cardId="pwr"
                     title="PWR"
-                    value={0}
+                    value={powerAvailable ? totalPower.toFixed(0) : '--'}
                     unit="W"
+                    subtitles={powerAvailable && maxPower > 0 ? [`/ ${maxPower.toFixed(0)} W`] : undefined}
                     accentColor={color}
                   >
                     <ChartCanvas
                       seriesKey="pwr"
                       color={color}
+                      maxValue={powerAvailable && maxPower > 0 ? maxPower : undefined}
                       formatFn={(v) => v.toFixed(0) + ' W'}
                     />
                   </StatCard>
@@ -217,12 +262,22 @@ function AppContent() {
           </DraggableGrid>
         )}
 
+        {/* Disk Info (Stacked on Compact Width) */}
+        {isCompactWidth && layoutState.visibility.disk && (
+          <div className="disk-stack-slot">
+            <DiskWidget />
+          </div>
+        )}
+
         {/* Process List */}
         {layoutState.visibility.process && metricsData && (
           <ProcessList
+            ref={processPanelRef}
             processes={metricsData.processes}
             metricMetadata={config.metadata}
             colorMap={config.colorMap}
+            scrollMode={adaptiveScroll.mode}
+            processTableMaxHeight={adaptiveScroll.processTableMaxHeight}
           />
         )}
       </div>
@@ -232,9 +287,6 @@ function AppContent() {
         open={settingsOpen}
         onOpenChange={(open) => setSettingsOpen(open)}
       />
-
-      {/* Mobile Nav Bottom Spacing */}
-      <div className="h-16 md:hidden" />
     </div>
   );
 }
@@ -248,8 +300,8 @@ function App() {
         ram: (usage: SystemUsage) => usage.totalMemory,
         gpu: (usage: SystemUsage) => usage.totalGpu,
         vram: (usage: SystemUsage) => usage.totalVram,
-        net: (_usage: SystemUsage) => 0, // Placeholder
-        pwr: () => 0, // No power data available yet
+        net: (usage: SystemUsage) => usage.downloadSpeed,
+        pwr: (usage: SystemUsage) => usage.totalPower ?? 0,
       },
     }),
     []

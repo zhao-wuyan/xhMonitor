@@ -10,6 +10,15 @@
 .xh-app-shell {
   container-type: inline-size;
   container-name: xh-app;
+  min-height: 100vh;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.xh-app-shell--process-scroll {
+  overflow-y: hidden;
 }
 
 /* --- Header Styles --- */
@@ -20,6 +29,19 @@
   padding: 10px 5px;
   gap: 20px;
   position: relative;
+}
+
+.disk-header-slot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  max-width: min(820px, 64vw);
+}
+
+.disk-stack-slot {
+  width: 100%;
 }
 
 .brand {
@@ -97,6 +119,7 @@
 
 .stats-grid {
   display: grid;
+  --xh-grid-columns-effective: var(--xh-grid-columns);
   grid-template-columns: repeat(var(--xh-grid-columns-effective), minmax(0, 1fr));
   gap: var(--xh-grid-gap);
   grid-auto-rows: var(--xh-grid-row-height);
@@ -413,6 +436,8 @@
 .disk-widget--mobile .disk-info-container {
   flex-direction: column;
   align-items: stretch;
+  width: 100%;
+  gap: 10px;
 }
 
 .disk-item {
@@ -427,6 +452,20 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
   min-width: 200px;
   max-width: 240px;
+}
+
+.disk-widget--mobile .disk-item {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.disk-widget--mobile .disk-label {
+  font-size: 0.8rem;
 }
 
 .disk-label {
@@ -448,11 +487,23 @@
   line-height: 1.2;
 }
 
+.disk-widget--mobile .disk-details-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  column-gap: 10px;
+  row-gap: 6px;
+  justify-content: unset;
+}
+
 .disk-bar-container {
   display: flex;
   align-items: center;
   width: 40px;
   flex-shrink: 0;
+}
+
+.disk-widget--mobile .disk-bar-container {
+  width: 56px;
 }
 
 .disk-bar-bg {
@@ -476,6 +527,10 @@
   white-space: nowrap;
 }
 
+.disk-widget--mobile .disk-info-text {
+  justify-self: start;
+}
+
 .disk-speed-group {
   display: flex;
   gap: 6px;
@@ -484,6 +539,24 @@
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   padding-left: 8px;
   margin-left: auto;
+}
+
+.disk-widget--mobile .disk-speed-group {
+  margin-left: 0;
+  justify-self: end;
+}
+
+@container xh-app (max-width: 420px) {
+  .disk-widget--mobile .disk-details-row {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .disk-widget--mobile .disk-speed-group {
+    grid-column: 1 / -1;
+    justify-self: end;
+    border-left: none;
+    padding-left: 0;
+  }
 }
 
 .speed-val {
@@ -496,6 +569,28 @@
 .process-panel {
   padding: 20px;
   overflow: hidden;
+}
+
+.process-panel--scroll .table-scroll {
+  max-height: var(--xh-process-scroll-max-height);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.process-panel--scroll .table-scroll table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.process-panel--scroll .table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* Opaque header background to avoid content bleed-through while keeping close to glass panel tone */
+  background: rgb(25, 34, 51);
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 var(--xh-color-glass-border);
 }
 
 .proc-name-cell {
@@ -700,6 +795,12 @@
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .xh-app-shell {
+    padding-bottom: 76px;
+  }
 }
 
 .table-scroll table {

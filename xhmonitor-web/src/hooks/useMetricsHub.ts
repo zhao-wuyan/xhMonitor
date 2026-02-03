@@ -79,6 +79,7 @@ export const useMetricsHub = () => {
     });
 
     connection.on('ReceiveSystemUsage', (data: Record<string, unknown>) => {
+      const powerSchemeRaw = data.powerSchemeIndex ?? data.PowerSchemeIndex;
       const usage: SystemUsage = {
         timestamp: (data.timestamp ?? data.Timestamp ?? new Date().toISOString()) as string,
         totalCpu: Number(data.totalCpu ?? data.TotalCpu ?? 0),
@@ -86,7 +87,13 @@ export const useMetricsHub = () => {
         totalMemory: Number(data.totalMemory ?? data.TotalMemory ?? 0),
         totalVram: Number(data.totalVram ?? data.TotalVram ?? 0),
         maxMemory: Number(data.maxMemory ?? data.MaxMemory ?? 0),
-        maxVram: Number(data.maxVram ?? data.MaxVram ?? 0)
+        maxVram: Number(data.maxVram ?? data.MaxVram ?? 0),
+        uploadSpeed: Number(data.uploadSpeed ?? data.UploadSpeed ?? 0),
+        downloadSpeed: Number(data.downloadSpeed ?? data.DownloadSpeed ?? 0),
+        powerAvailable: Boolean(data.powerAvailable ?? data.PowerAvailable ?? false),
+        totalPower: Number(data.totalPower ?? data.TotalPower ?? 0),
+        maxPower: Number(data.maxPower ?? data.MaxPower ?? 0),
+        powerSchemeIndex: powerSchemeRaw == null ? null : Number(powerSchemeRaw),
       };
       setSystemUsage(usage);
     });

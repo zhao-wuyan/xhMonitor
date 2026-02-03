@@ -44,12 +44,12 @@ export const DiskWidget = () => {
   const [disks, setDisks] = useState<DiskInfo[]>(DEFAULT_DISKS);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.matchMedia('(max-width: 767px)').matches;
+    return window.matchMedia('(max-width: 1023px)').matches;
   });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const media = window.matchMedia('(max-width: 767px)');
+    const media = window.matchMedia('(max-width: 1023px)');
     const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches);
     media.addEventListener('change', handler);
     return () => media.removeEventListener('change', handler);

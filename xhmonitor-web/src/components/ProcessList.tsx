@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { forwardRef, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
 import { t } from '../i18n';
@@ -12,7 +13,13 @@ interface ProcessListProps {
 type SortField = 'processName' | string;
 type SortOrder = 'asc' | 'desc';
 
-export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessListProps) => {
+interface ProcessListScrollProps {
+  scrollMode?: 'page' | 'process';
+  processTableMaxHeight?: number;
+}
+
+export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & ProcessListScrollProps>(
+  ({ processes, metricMetadata, colorMap, scrollMode = 'page', processTableMaxHeight = 0 }, ref) => {
   const [sortField, setSortField] = useState<SortField>('processName');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +34,7 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
   };
 
   const sortedAndFilteredProcesses = useMemo(() => {
-    let filtered = processes.filter(
+    const filtered = processes.filter(
       (p) =>
         p.processName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.commandLine ?? '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -64,8 +71,15 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
   };
 
 
+  const processOnlyScrollEnabled = scrollMode === 'process' && processTableMaxHeight > 0;
+  const processPanelClassName = `process-panel xh-glass-panel${processOnlyScrollEnabled ? ' process-panel--scroll' : ''}`;
+  const processPanelStyle: (CSSProperties & { ['--xh-process-scroll-max-height']?: string }) | undefined =
+    processOnlyScrollEnabled
+      ? { ['--xh-process-scroll-max-height']: `${processTableMaxHeight}px` }
+      : undefined;
+
   return (
-    <div className="process-panel xh-glass-panel">
+    <div ref={ref} className={processPanelClassName} style={processPanelStyle}>
       <div className="panel-title">
         {t('Process Monitor')}
         <div className="search-box">
@@ -163,4 +177,7 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
       )}
     </div>
   );
-};
+  }
+);
+
+ProcessList.displayName = 'ProcessList';

@@ -22,7 +22,6 @@ export const DraggableGrid = ({ children, className, enableDrag = true }: Dragga
     () =>
       ({
         '--xh-grid-columns': layoutState.gridColumns,
-        '--xh-grid-columns-effective': layoutState.gridColumns,
         '--xh-grid-gap': `${layoutState.gaps.grid}px`,
       }) as CSSProperties,
     [layoutState.gridColumns, layoutState.gaps.grid]

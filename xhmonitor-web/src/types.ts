@@ -24,6 +24,12 @@ export interface SystemUsage {
   totalVram: number;
   maxMemory: number;
   maxVram: number;
+  uploadSpeed: number;
+  downloadSpeed: number;
+  powerAvailable?: boolean;
+  totalPower?: number;
+  maxPower?: number;
+  powerSchemeIndex?: number | null;
 }
 
 export interface ProcessMetaInfo {
