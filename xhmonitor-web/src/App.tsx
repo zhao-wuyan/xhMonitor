@@ -36,9 +36,17 @@ function AppContent() {
     enabled: !configLoading && Boolean(config) && layoutState.visibility.process && Boolean(metricsData),
     shellRef,
     processPanelRef,
+    recomputeKey: [
+      layoutState.gridColumns,
+      layoutState.gaps.grid,
+      layoutState.visibility.header,
+      layoutState.visibility.disk,
+      layoutState.visibility.cards,
+      layoutState.visibility.process,
+    ].join('|'),
   });
 
-  const shellClassName = `min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 xh-app-shell${adaptiveScroll.mode === 'process' ? ' xh-app-shell--process-scroll' : ''}`;
+  const shellClassName = `min-h-screen w-full xh-app-shell${adaptiveScroll.mode === 'process' ? ' xh-app-shell--process-scroll' : ''}`;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

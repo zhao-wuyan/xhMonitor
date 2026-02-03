@@ -18,6 +18,12 @@ interface ProcessListScrollProps {
   processTableMaxHeight?: number;
 }
 
+const getProcessDisplayName = (process: ProcessInfo): string => {
+  const displayName = (process.displayName ?? '').trim();
+  if (displayName) return displayName;
+  return process.processName;
+};
+
 export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & ProcessListScrollProps>(
   ({ processes, metricMetadata, colorMap, scrollMode = 'page', processTableMaxHeight = 0 }, ref) => {
   const [sortField, setSortField] = useState<SortField>('processName');
@@ -37,14 +43,17 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
     const filtered = processes.filter(
       (p) =>
         p.processName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getProcessDisplayName(p).toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.commandLine ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
       if (sortField === 'processName') {
+        const aName = getProcessDisplayName(a);
+        const bName = getProcessDisplayName(b);
         return sortOrder === 'asc'
-          ? a.processName.localeCompare(b.processName)
-          : b.processName.localeCompare(a.processName);
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
       }
 
       if (sortField === 'processId') {
@@ -130,7 +139,9 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                       {process.processName.charAt(0).toUpperCase()}
                     </div>
                     <div className="proc-info">
-                      <div className="proc-name">{process.processName}</div>
+                      <div className="proc-name" title={getProcessDisplayName(process)}>
+                        {getProcessDisplayName(process)}
+                      </div>
                       <div className="proc-cmd" title={process.commandLine ?? ''}>
                         {process.commandLine ?? ''}
                       </div>

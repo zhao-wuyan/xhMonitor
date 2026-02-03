@@ -6,6 +6,7 @@ import type { LayoutState, LayoutStateUpdate } from '../hooks/useLayoutState';
 interface LayoutContextValue {
   layoutState: LayoutState;
   updateLayout: (update: LayoutStateUpdate) => void;
+  resetLayout: () => void;
 }
 
 const LayoutContext = createContext<LayoutContextValue | undefined>(undefined);
@@ -15,14 +16,15 @@ interface LayoutProviderProps {
 }
 
 export const LayoutProvider = ({ children }: LayoutProviderProps) => {
-  const { layoutState, updateLayout } = useLayoutState();
+  const { layoutState, updateLayout, resetLayout } = useLayoutState();
 
   const value = useMemo(
     () => ({
       layoutState,
       updateLayout,
+      resetLayout,
     }),
-    [layoutState, updateLayout]
+    [layoutState, updateLayout, resetLayout]
   );
 
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;

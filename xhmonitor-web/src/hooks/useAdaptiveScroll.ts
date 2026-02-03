@@ -16,6 +16,7 @@ export interface UseAdaptiveScrollOptions {
   mobileBreakpointPx?: number;
   mobileBottomPaddingPx?: number;
   minProcessTableHeightPx?: number;
+  recomputeKey?: unknown;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -29,6 +30,7 @@ export const useAdaptiveScroll = ({
   mobileBreakpointPx = 768,
   mobileBottomPaddingPx = 76,
   minProcessTableHeightPx = 160,
+  recomputeKey,
 }: UseAdaptiveScrollOptions): AdaptiveScrollState => {
   const [state, setState] = useState<AdaptiveScrollState>({
     mode: 'page',
@@ -47,12 +49,6 @@ export const useAdaptiveScroll = ({
     const viewportHeight = window.innerHeight;
     if (viewportHeight <= 0) return;
 
-    const panelRect = panel.getBoundingClientRect();
-    const visibleTop = clamp(panelRect.top, 0, viewportHeight);
-    const visibleBottom = clamp(panelRect.bottom, 0, viewportHeight);
-    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-    const visibleRatio = visibleHeight / viewportHeight;
-
     const isMobile = window.matchMedia(`(max-width: ${mobileBreakpointPx}px)`).matches;
     const bottomPadding = isMobile ? mobileBottomPaddingPx : 0;
 
@@ -70,11 +66,29 @@ export const useAdaptiveScroll = ({
         };
       }
 
-      const shouldEnterProcessMode = panelRect.top >= 0 && visibleRatio >= processVisibleRatioThreshold;
-      const shouldExitProcessMode = panelRect.top < 0 || visibleRatio < processVisibleRatioRelease;
+      // 进入/退出判断必须稳定，避免“滚到列表后锁死外层滚动，回不去顶部”的陷阱。
+      // 只在页面顶部（scrollTop≈0）且布局稳定可见时允许进入 process 模式；比例使用“内容占页面结构的比例”而非当前可视占比。
+      const scrollTop = shell.scrollTop;
+      const isAtTop = scrollTop <= 1;
+
+      const safeTableTop = tableRect ? clamp(tableRect.top, 0, viewportHeight) : viewportHeight;
+      const availableHeight = Math.max(0, viewportHeight - safeTableTop - bottomPadding - 12);
+
+      const tableContentHeight = tableScroll ? tableScroll.scrollHeight : 0;
+      const totalEstimated = safeTableTop + bottomPadding + 12 + tableContentHeight;
+      const tableShare = totalEstimated > 0 ? tableContentHeight / totalEstimated : 0;
+
+      const canEnterProcessMode =
+        isAtTop &&
+        Boolean(tableRect) &&
+        tableRect!.top >= 0 &&
+        availableHeight >= minProcessTableHeightPx &&
+        tableShare >= processVisibleRatioThreshold;
+
+      const shouldExitProcessMode = tableShare < processVisibleRatioRelease || availableHeight < minProcessTableHeightPx;
 
       let nextMode: AdaptiveScrollMode = prev.mode;
-      if (prev.mode === 'page' && shouldEnterProcessMode) nextMode = 'process';
+      if (prev.mode === 'page' && canEnterProcessMode) nextMode = 'process';
       if (prev.mode === 'process' && shouldExitProcessMode) nextMode = 'page';
 
       if (nextMode === prev.mode && processTableMaxHeight === prev.processTableMaxHeight) {
@@ -108,7 +122,6 @@ export const useAdaptiveScroll = ({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!enabled) return;
 
     let cleanup: null | (() => void) = null;
     let canceled = false;
@@ -148,7 +161,11 @@ export const useAdaptiveScroll = ({
       canceled = true;
       cleanup?.();
     };
-  }, [enabled, processPanelRef, scheduleRecompute, shellRef]);
+  }, [processPanelRef, scheduleRecompute, shellRef]);
+
+  useEffect(() => {
+    scheduleRecompute();
+  }, [scheduleRecompute, enabled, recomputeKey]);
 
   if (!enabled) {
     return {

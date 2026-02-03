@@ -20,6 +20,7 @@ export const i18n = {
     Settings: '设置',
     'Open settings': '打开设置',
     'Close settings': '关闭设置',
+    'Restore Defaults': '恢复默认',
 
     // 指标名称
     CPU: 'CPU',
@@ -52,6 +53,10 @@ export const i18n = {
     Cards: '卡片',
     Background: '背景',
     Gradient: '渐变',
+    'Background Image': '背景图片',
+    'Choose Image': '选择图片',
+    'Remove Image': '移除图片',
+    Blur: '模糊',
     Mask: '遮罩',
     'Theme Colors': '主题颜色',
 
@@ -90,6 +95,7 @@ export const i18n = {
     Settings: 'Settings',
     'Open settings': 'Open settings',
     'Close settings': 'Close settings',
+    'Restore Defaults': 'Restore Defaults',
 
     // 指标名称
     CPU: 'CPU',
@@ -122,6 +128,10 @@ export const i18n = {
     Cards: 'Cards',
     Background: 'Background',
     Gradient: 'Gradient',
+    'Background Image': 'Background Image',
+    'Choose Image': 'Choose Image',
+    'Remove Image': 'Remove Image',
+    Blur: 'Blur',
     Mask: 'Mask',
     'Theme Colors': 'Theme Colors',
 

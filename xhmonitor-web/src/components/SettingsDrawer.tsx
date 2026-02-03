@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import type { ChangeEventHandler } from 'react';
 import { useLayout } from '../contexts/LayoutContext';
 import { useTheme } from '../hooks/useTheme';
 import { t } from '../i18n';
@@ -26,10 +27,11 @@ export const SettingsDrawer = ({
   className,
   showTrigger = false,
 }: SettingsDrawerProps) => {
-  const { layoutState, updateLayout } = useLayout();
+  const { layoutState, updateLayout, resetLayout } = useLayout();
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   useTheme();
 
@@ -63,6 +65,35 @@ export const SettingsDrawer = ({
     updateLayout({ background: { blurOpacity: value } });
   };
 
+  const handleBackgroundImageBlur = (value: number) => {
+    updateLayout({ background: { imageBlurPx: value } });
+  };
+
+  const handlePickBackgroundImage = () => {
+    imageInputRef.current?.click();
+  };
+
+  const handleBackgroundImageSelected = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : null;
+      if (!result) return;
+      updateLayout({ background: { imageDataUrl: result } });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleBackgroundImageChange: ChangeEventHandler<HTMLInputElement> = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    handleBackgroundImageSelected(file);
+    event.target.value = '';
+  };
+
+  const handleRemoveBackgroundImage = () => {
+    updateLayout({ background: { imageDataUrl: null } });
+  };
+
   const handleThemeColorChange = (key: (typeof THEME_COLOR_ITEMS)[number]['key'], value: string) => {
     updateLayout({ themeColors: { [key]: value } });
   };
@@ -89,14 +120,19 @@ export const SettingsDrawer = ({
       >
         <div className="settings-drawer__header">
           <span>{t('Layout Settings')}</span>
-          <button
-            type="button"
-            className="settings-close"
-            onClick={() => setOpen(false)}
-            aria-label={t('Close settings')}
-          >
-            ×
-          </button>
+          <div className="settings-drawer__header-actions">
+            <button type="button" className="settings-pill" onClick={resetLayout}>
+              {t('Restore Defaults')}
+            </button>
+            <button
+              type="button"
+              className="settings-close"
+              onClick={() => setOpen(false)}
+              aria-label={t('Close settings')}
+            >
+              ×
+            </button>
+          </div>
         </div>
         <div className="settings-drawer__content">
           <div className="settings-group">
@@ -202,6 +238,40 @@ export const SettingsDrawer = ({
             </div>
             <div className="settings-hint">
               {t('Mask')}: {(layoutState.background.blurOpacity * 100).toFixed(0)}%
+            </div>
+
+            <div className="settings-label">{t('Background Image')}</div>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleBackgroundImageChange}
+              style={{ display: 'none' }}
+            />
+            <div className="settings-row settings-pills">
+              <button type="button" className="settings-pill" onClick={handlePickBackgroundImage}>
+                {t('Choose Image')}
+              </button>
+              {layoutState.background.imageDataUrl && (
+                <button type="button" className="settings-pill" onClick={handleRemoveBackgroundImage}>
+                  {t('Remove Image')}
+                </button>
+              )}
+            </div>
+            <div className="settings-row">
+              <input
+                type="range"
+                className="settings-range"
+                min={0}
+                max={48}
+                step={1}
+                value={layoutState.background.imageBlurPx}
+                disabled={!layoutState.background.imageDataUrl}
+                onChange={(event) => handleBackgroundImageBlur(Number(event.target.value))}
+              />
+            </div>
+            <div className="settings-hint">
+              {t('Blur')}: {layoutState.background.imageBlurPx}px
             </div>
           </div>
 

@@ -14,6 +14,8 @@ export interface LayoutVisibility {
 export interface LayoutBackground {
   gradient: boolean;
   blurOpacity: number;
+  imageDataUrl: string | null;
+  imageBlurPx: number;
 }
 
 export interface ThemeColors {
@@ -67,6 +69,8 @@ const DEFAULT_LAYOUT_STATE: LayoutState = {
   background: {
     gradient: true,
     blurOpacity: 0.3,
+    imageDataUrl: null,
+    imageBlurPx: 18,
   },
   themeColors: {
     cpu: '#3b82f6',
@@ -102,6 +106,17 @@ const toOpacityValue = (value: unknown, fallback: number): number => {
   return Math.min(1, Math.max(0, value));
 };
 
+const toBlurPxValue = (value: unknown, fallback: number): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.min(48, Math.max(0, value));
+};
+
+const toNullableStringValue = (value: unknown, fallback: string | null): string | null => {
+  if (value === null) return null;
+  if (typeof value === 'string') return value;
+  return fallback;
+};
+
 const toDiskPosition = (value: unknown, fallback: DiskPosition): DiskPosition =>
   value === 'right' ? 'right' : fallback;
 
@@ -131,6 +146,11 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
         state.background.blurOpacity,
         DEFAULT_LAYOUT_STATE.background.blurOpacity
       ),
+      imageDataUrl: toNullableStringValue(
+        state.background.imageDataUrl,
+        DEFAULT_LAYOUT_STATE.background.imageDataUrl
+      ),
+      imageBlurPx: toBlurPxValue(state.background.imageBlurPx, DEFAULT_LAYOUT_STATE.background.imageBlurPx),
     },
     themeColors: {
       cpu: toStringValue(state.themeColors.cpu, DEFAULT_LAYOUT_STATE.themeColors.cpu),
@@ -199,6 +219,11 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
         backgroundValue.blurOpacity,
         DEFAULT_LAYOUT_STATE.background.blurOpacity
       ),
+      imageDataUrl: toNullableStringValue(
+        backgroundValue.imageDataUrl,
+        DEFAULT_LAYOUT_STATE.background.imageDataUrl
+      ),
+      imageBlurPx: toBlurPxValue(backgroundValue.imageBlurPx, DEFAULT_LAYOUT_STATE.background.imageBlurPx),
     },
     themeColors: {
       cpu: toStringValue(themeColorsValue.cpu, DEFAULT_LAYOUT_STATE.themeColors.cpu),
@@ -245,6 +270,20 @@ const persistLayoutState = (state: LayoutState) => {
 export const useLayoutState = () => {
   const [layoutState, setLayoutState] = useState<LayoutState>(() => loadLayoutState());
 
+  const resetLayout = useCallback(() => {
+    setLayoutState(() =>
+      normalizeLayoutState({
+        gridColumns: DEFAULT_LAYOUT_STATE.gridColumns,
+        gaps: { ...DEFAULT_LAYOUT_STATE.gaps },
+        cardOrder: [...DEFAULT_LAYOUT_STATE.cardOrder],
+        visibility: { ...DEFAULT_LAYOUT_STATE.visibility },
+        background: { ...DEFAULT_LAYOUT_STATE.background },
+        themeColors: { ...DEFAULT_LAYOUT_STATE.themeColors },
+        diskPosition: DEFAULT_LAYOUT_STATE.diskPosition,
+      })
+    );
+  }, []);
+
   const updateLayout = useCallback((update: LayoutStateUpdate) => {
     setLayoutState((prev) => {
       if (typeof update === 'function') {
@@ -261,5 +300,6 @@ export const useLayoutState = () => {
   return {
     layoutState,
     updateLayout,
+    resetLayout,
   };
 };
