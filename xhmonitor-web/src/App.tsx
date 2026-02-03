@@ -54,24 +54,35 @@ function AppContent() {
 
       <div className="app-container">
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="w-10 h-10 text-cpu" />
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-cpu to-gpu bg-clip-text text-transparent">
+        <header className="flex items-center justify-between relative">
+          {/* Left: Brand */}
+          <div className="flex items-center gap-3 z-20">
+            <div className="w-9 h-9 bg-gradient-to-br from-cpu to-ram rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cpu/30">
+              XM
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-white">
                 {t('appTitle')}
               </h1>
-              <p className="text-gray-400 text-sm">
-                {t('appSubtitle')}
-              </p>
+              <span className="text-xs text-gray-400 font-normal px-2 py-0.5 bg-white/10 rounded">
+                {t('appVersion')}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Settings Button */}
+          {/* Center: Disk Info */}
+          {layoutState.visibility.disk && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
+              <DiskWidget />
+            </div>
+          )}
+
+          {/* Right: Status */}
+          <div className="flex items-center gap-3 z-20">
+            {/* Settings Button - Hidden to match design */}
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors opacity-0 pointer-events-none"
               aria-label="Settings"
             >
               <Settings className="w-5 h-5" />
@@ -79,15 +90,15 @@ function AppContent() {
 
             {/* Connection Status */}
             {isConnected ? (
-              <div className="flex items-center gap-2 text-memory">
-                <Wifi className="w-5 h-5" />
-                <span className="text-sm font-medium">{t('connected')}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-memory/15 border border-memory/30">
+                <div className="w-1.5 h-1.5 bg-memory rounded-full shadow-[0_0_8px_currentColor] animate-pulse" />
+                <span className="text-sm font-semibold text-memory">{t('online')}</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-red-500">
-                <WifiOff className="w-5 h-5" />
-                <span className="text-sm font-medium">
-                  {error ? t(error) : t('disconnected')}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/15 border border-red-500/30">
+                <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                <span className="text-sm font-semibold text-red-500">
+                  {error ? t(error) : t('offline')}
                 </span>
               </div>
             )}
@@ -185,7 +196,7 @@ function AppContent() {
                     key="net"
                     cardId="net"
                     title="NET"
-                    value={systemUsage?.totalMemory ?? 0}
+                    value={systemUsage?.networkSpeed ?? 0}
                     unit="MB/s"
                     accentColor={color}
                   >

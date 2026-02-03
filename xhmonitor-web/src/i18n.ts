@@ -4,10 +4,13 @@ export const i18n = {
     // 页面标题
     appTitle: 'XhMonitor',
     appSubtitle: 'Windows 资源监控器',
+    appVersion: 'v0.2.4',
 
     // 连接状态
     connected: '已连接',
     disconnected: '未连接',
+    online: 'Online',
+    offline: 'Offline',
     reconnecting: '重新连接中...',
     connectionClosed: '连接已关闭',
 
@@ -43,10 +46,13 @@ export const i18n = {
     // 页面标题
     appTitle: 'XhMonitor',
     appSubtitle: 'Windows Resource Monitor',
+    appVersion: 'v0.2.4',
 
     // 连接状态
     connected: 'Connected',
     disconnected: 'Disconnected',
+    online: 'Online',
+    offline: 'Offline',
     reconnecting: 'Reconnecting...',
     connectionClosed: 'Connection closed',
 
