@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { t } from '../i18n';
 
 interface StatCardProps {
   cardId: string;
@@ -58,8 +59,8 @@ const StatCardBase = ({
         <button
           className="drag-handle"
           type="button"
-          aria-label="Drag to reorder"
-          title="Drag to reorder"
+          aria-label={t('Drag to reorder')}
+          title={t('Drag to reorder')}
         />
       )}
       <div className="xh-stat-card__info">

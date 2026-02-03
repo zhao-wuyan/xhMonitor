@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Settings } from 'lucide-react';
 import { LayoutProvider, useLayout } from './contexts/LayoutContext';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
@@ -101,17 +101,28 @@ function AppContent() {
             )}
 
             {/* Right: Status */}
-            {isConnected ? (
-              <div className="status-badge">
-                <div className="status-dot" />
-                <span>{t('online')}</span>
-              </div>
-            ) : (
-              <div className="status-badge status-badge--offline">
-                <div className="status-dot status-dot--offline" />
-                <span>{error ? t(error) : t('offline')}</span>
-              </div>
-            )}
+            <div className="header-actions">
+              <button
+                type="button"
+                className="header-icon-button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label={t('Open settings')}
+                title={t('Settings')}
+              >
+                <Settings size={18} aria-hidden="true" />
+              </button>
+              {isConnected ? (
+                <div className="status-badge">
+                  <div className="status-dot" />
+                  <span>{t('online')}</span>
+                </div>
+              ) : (
+                <div className="status-badge status-badge--offline">
+                  <div className="status-dot status-dot--offline" />
+                  <span>{error ? t(error) : t('offline')}</span>
+                </div>
+              )}
+            </div>
           </header>
         )}
 
@@ -127,7 +138,7 @@ function AppContent() {
                   <StatCard
                     key="cpu"
                     cardId="cpu"
-                    title="CPU"
+                    title={t('CPU')}
                     value={systemUsage?.totalCpu ?? 0}
                     unit="%"
                     temperature={cpuTemp}
@@ -149,7 +160,7 @@ function AppContent() {
                   <StatCard
                     key="ram"
                     cardId="ram"
-                    title="RAM"
+                    title={t('RAM')}
                     value={ramParts.value}
                     unit={ramParts.unit}
                     subtitles={ramMaxMb > 0 ? [`/ ${formatMegabytesLabel(ramMaxMb)}`] : undefined}
@@ -171,7 +182,7 @@ function AppContent() {
                   <StatCard
                     key="gpu"
                     cardId="gpu"
-                    title="GPU"
+                    title={t('GPU')}
                     value={systemUsage?.totalGpu ?? 0}
                     unit="%"
                     temperature={gpuTemp}
@@ -193,7 +204,7 @@ function AppContent() {
                   <StatCard
                     key="vram"
                     cardId="vram"
-                    title="VRAM"
+                    title={t('VRAM')}
                     value={vramParts.value}
                     unit={vramParts.unit}
                     subtitles={vramMaxMb > 0 ? [`/ ${formatMegabytesLabel(vramMaxMb)}`] : undefined}
@@ -218,7 +229,7 @@ function AppContent() {
                   <StatCard
                     key="net"
                     cardId="net"
-                    title="NET"
+                    title={t('NET')}
                     value={downloadParts.value}
                     unit={downloadParts.unit}
                     subtitles={[subline]}
@@ -241,7 +252,7 @@ function AppContent() {
                   <StatCard
                     key="pwr"
                     cardId="pwr"
-                    title="PWR"
+                    title={t('PWR')}
                     value={powerAvailable ? totalPower.toFixed(0) : '--'}
                     unit="W"
                     subtitles={powerAvailable && maxPower > 0 ? [`/ ${maxPower.toFixed(0)} W`] : undefined}
@@ -286,6 +297,7 @@ function AppContent() {
       <SettingsDrawer
         open={settingsOpen}
         onOpenChange={(open) => setSettingsOpen(open)}
+        showTrigger={false}
       />
     </div>
   );

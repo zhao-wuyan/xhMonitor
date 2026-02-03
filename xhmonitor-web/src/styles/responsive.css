@@ -97,6 +97,39 @@
   color: var(--xh-color-error);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 20;
+}
+
+.header-icon-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--xh-color-text-secondary);
+  cursor: pointer;
+}
+
+.header-icon-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.header-icon-button:active {
+  transform: translateY(1px);
+}
+
+.header-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 .status-dot {
   width: 6px;
   height: 6px;

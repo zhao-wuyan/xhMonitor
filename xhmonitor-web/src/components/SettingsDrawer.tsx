@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLayout } from '../contexts/LayoutContext';
 import { useTheme } from '../hooks/useTheme';
+import { t } from '../i18n';
 
 interface SettingsDrawerProps {
   open?: boolean;
@@ -23,7 +24,7 @@ export const SettingsDrawer = ({
   open,
   onOpenChange,
   className,
-  showTrigger = true,
+  showTrigger = false,
 }: SettingsDrawerProps) => {
   const { layoutState, updateLayout } = useLayout();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -66,10 +67,6 @@ export const SettingsDrawer = ({
     updateLayout({ themeColors: { [key]: value } });
   };
 
-  const handleDiskPosition = (value: 'left' | 'right') => {
-    updateLayout({ diskPosition: value });
-  };
-
   return (
     <>
       {showTrigger && (
@@ -78,7 +75,7 @@ export const SettingsDrawer = ({
           className="settings-trigger"
           onClick={() => setOpen(true)}
         >
-          Settings
+          {t('Settings')}
         </button>
       )}
       <div
@@ -91,19 +88,19 @@ export const SettingsDrawer = ({
         aria-hidden={!isOpen}
       >
         <div className="settings-drawer__header">
-          <span>Layout Settings</span>
+          <span>{t('Layout Settings')}</span>
           <button
             type="button"
             className="settings-close"
             onClick={() => setOpen(false)}
-            aria-label="Close settings"
+            aria-label={t('Close settings')}
           >
             ×
           </button>
         </div>
         <div className="settings-drawer__content">
           <div className="settings-group">
-            <div className="settings-label">Grid Columns</div>
+            <div className="settings-label">{t('Grid Columns')}</div>
             <div className="settings-row settings-pills">
               {GRID_PRESETS.map((value) => (
                 <button
@@ -129,7 +126,7 @@ export const SettingsDrawer = ({
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">Grid Gap</div>
+            <div className="settings-label">{t('Grid Gap')}</div>
             <input
               type="range"
               className="settings-range"
@@ -139,11 +136,13 @@ export const SettingsDrawer = ({
               value={gridGap}
               onChange={(event) => handleGridGap(Number(event.target.value))}
             />
-            <div className="settings-hint">Current: {gridGap}px</div>
+            <div className="settings-hint">
+              {t('Current')}: {gridGap}px
+            </div>
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">Visibility</div>
+            <div className="settings-label">{t('Visibility')}</div>
             <div className="settings-toggle-list">
               <label className="settings-toggle">
                 <input
@@ -151,7 +150,7 @@ export const SettingsDrawer = ({
                   checked={layoutState.visibility.header}
                   onChange={(event) => handleVisibilityChange('header', event.target.checked)}
                 />
-                <span>Header</span>
+                <span>{t('Header')}</span>
               </label>
               <label className="settings-toggle">
                 <input
@@ -159,7 +158,7 @@ export const SettingsDrawer = ({
                   checked={layoutState.visibility.disk}
                   onChange={(event) => handleVisibilityChange('disk', event.target.checked)}
                 />
-                <span>Disk</span>
+                <span>{t('Disk')}</span>
               </label>
               <label className="settings-toggle">
                 <input
@@ -167,7 +166,7 @@ export const SettingsDrawer = ({
                   checked={layoutState.visibility.cards}
                   onChange={(event) => handleVisibilityChange('cards', event.target.checked)}
                 />
-                <span>Cards</span>
+                <span>{t('Cards')}</span>
               </label>
               <label className="settings-toggle">
                 <input
@@ -175,20 +174,20 @@ export const SettingsDrawer = ({
                   checked={layoutState.visibility.process}
                   onChange={(event) => handleVisibilityChange('process', event.target.checked)}
                 />
-                <span>Process</span>
+                <span>{t('Process')}</span>
               </label>
             </div>
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">Background</div>
+            <div className="settings-label">{t('Background')}</div>
             <label className="settings-toggle">
               <input
                 type="checkbox"
                 checked={layoutState.background.gradient}
                 onChange={(event) => handleGradientToggle(event.target.checked)}
               />
-              <span>Gradient</span>
+              <span>{t('Gradient')}</span>
             </label>
             <div className="settings-row">
               <input
@@ -202,40 +201,16 @@ export const SettingsDrawer = ({
               />
             </div>
             <div className="settings-hint">
-              Mask: {(layoutState.background.blurOpacity * 100).toFixed(0)}%
+              {t('Mask')}: {(layoutState.background.blurOpacity * 100).toFixed(0)}%
             </div>
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">Disk Position</div>
-            <div className="settings-row settings-radio-group">
-              <label className="settings-radio">
-                <input
-                  type="radio"
-                  name="disk-position"
-                  checked={layoutState.diskPosition === 'left'}
-                  onChange={() => handleDiskPosition('left')}
-                />
-                <span>Left</span>
-              </label>
-              <label className="settings-radio">
-                <input
-                  type="radio"
-                  name="disk-position"
-                  checked={layoutState.diskPosition === 'right'}
-                  onChange={() => handleDiskPosition('right')}
-                />
-                <span>Right</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="settings-group">
-            <div className="settings-label">Theme Colors</div>
+            <div className="settings-label">{t('Theme Colors')}</div>
             <div className="settings-color-grid">
               {THEME_COLOR_ITEMS.map((item) => (
                 <label key={item.key} className="settings-color-item">
-                  <span>{item.label}</span>
+                  <span>{t(item.label)}</span>
                   <input
                     type="color"
                     value={layoutState.themeColors[item.key]}
