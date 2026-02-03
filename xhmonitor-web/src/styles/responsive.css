@@ -463,6 +463,88 @@
   font-weight: 600;
 }
 
+.table-scroll th.active-sort {
+  color: var(--xh-color-cpu);
+}
+
+.table-scroll tr:last-child td {
+  border-bottom: none;
+}
+
+.proc-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 200px;
+}
+
+.proc-name {
+  font-weight: var(--xh-font-weight-medium);
+  font-size: 0.9rem;
+}
+
+.proc-cmd {
+  font-size: 0.75rem;
+  color: var(--xh-color-text-secondary);
+  font-family: var(--xh-font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+  font-weight: var(--xh-font-weight-normal);
+}
+
+.proc-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.pid-cell {
+  font-family: var(--xh-font-mono);
+  color: var(--xh-color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.metric-val {
+  font-family: var(--xh-font-mono);
+  font-size: 0.9rem;
+  font-weight: var(--xh-font-weight-semibold);
+  letter-spacing: 0.5px;
+}
+
+.progress-bg {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
 .search-box {
   margin-left: auto;
   position: relative;
