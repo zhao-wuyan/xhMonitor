@@ -13,7 +13,8 @@
   --xh-color-text-secondary: #94a3b8;
 
   /* 玻璃拟态 */
-  --xh-color-glass-bg: rgba(30, 41, 59, 0.6);
+  --xh-glass-opacity: 0.6;
+  --xh-color-glass-bg: rgba(30, 41, 59, var(--xh-glass-opacity, 0.6));
   --xh-color-glass-border: rgba(255, 255, 255, 0.08);
   --xh-color-glass-highlight: rgba(255, 255, 255, 0.05);
 

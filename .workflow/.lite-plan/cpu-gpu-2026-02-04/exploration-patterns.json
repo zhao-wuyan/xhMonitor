@@ -1,0 +1,69 @@
+{
+  "angle": "patterns",
+  "project_structure": [
+    "xhmonitor-web/src/hooks/useLayoutState.ts（布局/外观配置：默认值、归一化、localStorage 持久化）",
+    "xhmonitor-web/src/contexts/LayoutContext.tsx（提供 layoutState/updateLayout）",
+    "xhmonitor-web/src/hooks/useTheme.ts（把 layoutState 映射为 CSS 变量）",
+    "xhmonitor-web/src/components/SettingsDrawer.tsx（设置 UI：range/checkbox/select → updateLayout patch）",
+    "xhmonitor-web/components/core/design-tokens.css（全局设计变量：包含玻璃拟态颜色 token）",
+    "xhmonitor-web/components/core/glass-panel.css（.xh-glass-panel 外观依赖 --xh-color-glass-bg）"
+  ],
+  "relevant_files": [
+    "xhmonitor-web/src/hooks/useLayoutState.ts",
+    "xhmonitor-web/src/hooks/useTheme.ts",
+    "xhmonitor-web/src/components/SettingsDrawer.tsx",
+    "xhmonitor-web/src/components/StatCard.tsx",
+    "xhmonitor-web/src/components/ProcessList.tsx",
+    "xhmonitor-web/components/core/design-tokens.css",
+    "xhmonitor-web/components/core/glass-panel.css",
+    "xhmonitor-web/src/i18n.ts",
+    "xhmonitor-web/src/index.css"
+  ],
+  "patterns": [
+    "布局/外观配置集中在 LayoutState，并通过 LayoutContext 暴露给 UI 组件。",
+    "SettingsDrawer 通过 updateLayout 传入部分 patch（支持嵌套对象，如 background/themeColors/visibility）。",
+    "useLayoutState 负责：DEFAULT_LAYOUT_STATE 默认值、normalizeLayoutState 归一化、parseStoredLayoutState 读取并兜底缺失字段。",
+    "opacity 类参数已有先例：background.blurOpacity，使用 toOpacityValue 做 0..1 裁剪，并在 useTheme 写入 CSS 变量 --xh-bg-blur-opacity。",
+    "i18n 使用 t(key)；新增设置项文本需同时补齐 zh/en 字典。"
+  ],
+  "dependencies": [
+    "Web 端为 Vite + React（xhmonitor-web），样式包含 Tailwind 与自研 design-tokens.css。",
+    "玻璃面板视觉由 CSS 变量驱动（design-tokens.css + glass-panel.css）。",
+    "LayoutState 使用 localStorage 持久化（key: xhmonitor.layoutState，version: 1.0）。"
+  ],
+  "integration_points": [
+    "新增“面板/卡片透明度”应作为 LayoutState 的新字段（建议归入 background 或新增 panels 分组），并在 normalize/parse/persist/update patch 链路里贯通。",
+    "useTheme 负责把新字段写入 CSS 变量（例如 --xh-glass-opacity），从而影响 .xh-glass-panel 背景。",
+    "SettingsDrawer 在“Background”附近新增 range slider，按现有 blurOpacity 模式实现。"
+  ],
+  "constraints": [
+    "LayoutState 版本字段存在严格校验，但增加新字段不必升级版本：只要 parseStoredLayoutState 对缺失字段做 fallback 即可。",
+    "范围建议使用 0..1 的 number，与现有 blurOpacity 一致，减少额外转换与边界处理。"
+  ],
+  "clarification_needs": [
+    {
+      "question": "透明度调节的作用范围需要多大？",
+      "context": "目前 .xh-glass-panel 会同时用于 StatCard（CPU/RAM/GPU/VRAM/NET/PWR）与 ProcessList。若通过 --xh-color-glass-bg 或其 alpha 统一控制，会影响所有玻璃面板。",
+      "options": [
+        "仅影响 StatCard + ProcessList（全局 glass-panel 不变，需额外 class 或容器限定）",
+        "影响所有 .xh-glass-panel（最简单，改 design token 或全局 CSS 变量即可）"
+      ],
+      "recommended": 1
+    },
+    {
+      "question": "透明度的默认值与范围希望是多少？",
+      "context": "design-tokens.css 当前玻璃背景 alpha 为 0.6。SettingsDrawer 里 blurOpacity 的范围为 0..0.6（step 0.05）。",
+      "options": [
+        "默认 0.6，范围 0.1..1.0，step 0.05",
+        "默认 0.6，范围 0..1.0，step 0.05",
+        "默认 0.6，范围 0.2..0.9，step 0.05"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "exploration_angle": "patterns",
+    "exploration_index": 1,
+    "timestamp": "2026-02-04T13:59:13.497Z"
+  }
+}

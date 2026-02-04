@@ -61,6 +61,7 @@ export const i18n = {
     'Remove Image': '移除图片',
     Blur: '模糊',
     Mask: '遮罩',
+    'Panel Opacity': '面板透明度',
     'Theme Colors': '主题颜色',
 
     // 进程监控
@@ -139,6 +140,7 @@ export const i18n = {
     'Remove Image': 'Remove Image',
     Blur: 'Blur',
     Mask: 'Mask',
+    'Panel Opacity': 'Panel Opacity',
     'Theme Colors': 'Theme Colors',
 
     // 进程监控

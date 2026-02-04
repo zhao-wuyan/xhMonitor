@@ -1,0 +1,46 @@
+{
+  "angle": "testing",
+  "project_structure": [
+    "xhmonitor-web/package.json（scripts: dev/build/lint/preview，无 test runner）",
+    "xhmonitor-web/src/hooks/useLayoutState.ts（纯函数/归一化逻辑可单测，但当前缺少测试框架）"
+  ],
+  "relevant_files": [
+    "xhmonitor-web/package.json",
+    "xhmonitor-web/src/hooks/useLayoutState.ts",
+    "xhmonitor-web/src/hooks/useTheme.ts",
+    "xhmonitor-web/src/components/SettingsDrawer.tsx",
+    "xhmonitor-web/components/core/design-tokens.css",
+    "xhmonitor-web/components/core/glass-panel.css"
+  ],
+  "patterns": [
+    "当前 web 子项目未配置 Vitest/Jest，也未发现 *.test.ts(x)/ *.spec.ts(x)。",
+    "验证方式偏向：TypeScript 构建（tsc -b）+ Vite build + 手动 UI 检查（设置滑块 → 卡片/进程面板透明度即时变化，刷新后持久化生效）。"
+  ],
+  "dependencies": [
+    "如需自动化单测：需要引入 Vitest（以及 jsdom/tsx 配置），这会扩大变更面。",
+    "现阶段可用 lint/build 作为 CI 基线（package.json 已提供）。"
+  ],
+  "integration_points": [
+    "最小验证：`npm run build`（或在仓库脚本中等价命令）确保 TS 类型与 CSS 导入无误。",
+    "手动验收：打开 Settings，调整“面板透明度”，观察 CPU/GPU 等卡片与进程列表背景透明度变化，并刷新页面验证持久化。"
+  ],
+  "constraints": [
+    "若你要求 80%+ 覆盖率，需要先补齐测试基础设施；建议单独任务处理，避免本次功能变更过度膨胀。"
+  ],
+  "clarification_needs": [
+    {
+      "question": "这次是否需要同时引入 web 端测试框架（Vitest）？",
+      "context": "当前没有 test 脚本与测试依赖；如果你希望对 useLayoutState 的新字段做单测，需先落地测试基础设施。",
+      "options": [
+        "不需要（本次仅做 build + 手动验证）",
+        "需要（本次一并加 Vitest，并为新字段补单测）"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "exploration_angle": "testing",
+    "exploration_index": 3,
+    "timestamp": "2026-02-04T13:59:13.497Z"
+  }
+}

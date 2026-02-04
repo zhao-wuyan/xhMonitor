@@ -79,6 +79,31 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
     }
   };
 
+  const tableHeaderRow = (
+    <tr>
+      <th
+        onClick={() => handleSort('processName')}
+        className={sortField === 'processName' ? 'active-sort' : ''}
+      >
+        {t('Process')} {sortField === 'processName' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+      </th>
+      <th
+        onClick={() => handleSort('processId')}
+        className={sortField === 'processId' ? 'active-sort' : ''}
+      >
+        {t('PID')} {sortField === 'processId' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+      </th>
+      {metricMetadata.map((metric) => (
+        <th
+          key={metric.metricId}
+          onClick={() => handleSort(metric.metricId)}
+          className={sortField === metric.metricId ? 'active-sort' : ''}
+        >
+          {t(metric.displayName)} {sortField === metric.metricId && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+        </th>
+      ))}
+    </tr>
+  );
 
   const processOnlyScrollEnabled = scrollMode === 'process' && processTableMaxHeight > 0;
   const processPanelClassName = `process-panel xh-glass-panel${processOnlyScrollEnabled ? ' process-panel--scroll' : ''}`;
@@ -106,30 +131,11 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
       <div className="table-scroll">
         <table>
           <thead>
-            <tr>
-              <th
-                onClick={() => handleSort('processName')}
-                className={sortField === 'processName' ? 'active-sort' : ''}
-              >
-                {t('Process')} {sortField === 'processName' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
-              </th>
-              <th
-                onClick={() => handleSort('processId')}
-                className={sortField === 'processId' ? 'active-sort' : ''}
-              >
-                {t('PID')} {sortField === 'processId' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
-              </th>
-              {metricMetadata.map((metric) => (
-                <th
-                  key={metric.metricId}
-                  onClick={() => handleSort(metric.metricId)}
-                  className={sortField === metric.metricId ? 'active-sort' : ''}
-                >
-                  {t(metric.displayName)} {sortField === metric.metricId && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
-                </th>
-              ))}
-            </tr>
+            {tableHeaderRow}
           </thead>
+        </table>
+        <div className="table-body-scroll">
+          <table>
           <tbody>
             {sortedAndFilteredProcesses.map((process) => (
               <tr key={process.processId}>
@@ -178,7 +184,8 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {sortedAndFilteredProcesses.length === 0 && (

@@ -71,6 +71,10 @@ export const SettingsDrawer = ({
     updateLayout({ background: { blurOpacity: value } });
   };
 
+  const handleGlassOpacity = (value: number) => {
+    updateLayout({ background: { glassOpacity: value } });
+  };
+
   const handleBackgroundImageBlur = (value: number) => {
     updateLayout({ background: { imageBlurPx: value } });
   };
@@ -257,6 +261,22 @@ export const SettingsDrawer = ({
             </div>
             <div className="settings-hint">
               {t('Mask')}: {(layoutState.background.blurOpacity * 100).toFixed(0)}%
+            </div>
+
+            <div className="settings-label">{t('Panel Opacity')}</div>
+            <div className="settings-row">
+              <input
+                type="range"
+                className="settings-range"
+                min={0.1}
+                max={1}
+                step={0.05}
+                value={layoutState.background.glassOpacity}
+                onChange={(event) => handleGlassOpacity(Number(event.target.value))}
+              />
+            </div>
+            <div className="settings-hint">
+              {t('Panel Opacity')}: {(layoutState.background.glassOpacity * 100).toFixed(0)}%
             </div>
 
             <div className="settings-label">{t('Background Image')}</div>

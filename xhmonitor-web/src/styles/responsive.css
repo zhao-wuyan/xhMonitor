@@ -712,9 +712,8 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
 }
 
 .process-panel--scroll .table-scroll {
-  max-height: var(--xh-process-scroll-max-height);
-  overflow: auto;
-  overscroll-behavior: contain;
+  overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -723,14 +722,12 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   border-spacing: 0;
 }
 
-.process-panel--scroll .table-scroll thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  /* Opaque header background to avoid content bleed-through while keeping close to glass panel tone */
-  background: rgb(25, 34, 51);
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 var(--xh-color-glass-border);
+.process-panel--scroll .table-body-scroll {
+  max-height: var(--xh-process-scroll-max-height);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Process table cell styles (kept below once to avoid cascade confusion) */

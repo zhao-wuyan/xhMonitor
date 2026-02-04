@@ -12,6 +12,7 @@ const applyTheme = (state: LayoutState) => {
   root.style.setProperty('--xh-grid-columns-effective', String(state.gridColumns));
   root.style.setProperty('--xh-grid-gap', `${state.gaps.grid}px`);
   root.style.setProperty('--xh-bg-blur-opacity', String(state.background.blurOpacity));
+  root.style.setProperty('--xh-glass-opacity', String(state.background.glassOpacity));
   root.style.setProperty('--xh-bg-image', state.background.imageDataUrl ? `url("${state.background.imageDataUrl}")` : 'none');
   root.style.setProperty('--xh-bg-image-blur', `${state.background.imageBlurPx}px`);
 

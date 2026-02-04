@@ -1,0 +1,209 @@
+{
+  "summary": "在设置面板新增“面板透明度”滑块（独立于 Background 的 Mask/blurOpacity），用于统一调节所有使用 `.xh-glass-panel` 的面板背景透明度（当前源码仅 StatCard 与 ProcessList）。设置值持久化到 LayoutState，刷新后保持一致。",
+  "approach": "沿用现有配置链路（SettingsDrawer → updateLayout → useLayoutState 持久化/归一化 → useTheme 写入 CSS 变量 → design-tokens/glass-panel 生效）。新增 LayoutState.background.glassOpacity（0.1..1.0，默认 0.6），在 design-tokens.css 用该变量改写 --xh-color-glass-bg 的 alpha，从而影响 `.xh-glass-panel`。保持与背景 Mask/blurOpacity 分离：blurOpacity 继续控制背景遮罩，glassOpacity 仅控制面板玻璃背景透明度。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Update design tokens for configurable glass opacity",
+      "scope": "xhmonitor-web/components/core/",
+      "action": "Update",
+      "description": "新增 CSS 变量 --xh-glass-opacity，并将 --xh-color-glass-bg 改为使用该变量作为 rgba alpha（默认回退 0.6），使 `.xh-glass-panel` 的背景透明度可配置。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/components/core/design-tokens.css",
+          "target": ":root glass tokens",
+          "change": "新增 --xh-glass-opacity，改写 --xh-color-glass-bg 为 rgba(..., var(--xh-glass-opacity, 0.6))，保证无设置时外观不变。"
+        }
+      ],
+      "implementation": [
+        "在 `design-tokens.css` 的玻璃拟态 token 区新增 `--xh-glass-opacity: 0.6;`。",
+        "将 `--xh-color-glass-bg` 改为使用 `var(--xh-glass-opacity, 0.6)` 作为 alpha，并保留原 RGB 值不变。",
+        "确认 `xhmonitor-web/src/index.css` 已引入 design-tokens.css（已存在），无需额外导入。"
+      ],
+      "reference": {
+        "pattern": "CSS variables drive theme",
+        "files": [
+          "xhmonitor-web/components/core/design-tokens.css",
+          "xhmonitor-web/components/core/glass-panel.css",
+          "xhmonitor-web/src/index.css"
+        ],
+        "examples": "参考当前 `--xh-bg-blur-opacity` 的变量模式与 `glass-panel.css` 对 `--xh-color-glass-bg` 的使用。"
+      },
+      "acceptance": [
+        "未设置 `--xh-glass-opacity` 时，`.xh-glass-panel` 的背景外观保持现状（alpha 仍为 0.6）。",
+        "手动在 devtools 设置 `--xh-glass-opacity` 后，StatCard 与 ProcessList 背景透明度即时变化。"
+      ],
+      "cli_execution_id": "session-T1",
+      "cli_execution": {
+        "strategy": "new"
+      },
+      "rationale": {
+        "chosen_approach": "用 design-tokens.css 改写 token（而非在 TS 里硬编码 rgba），保持颜色来源集中、可维护，并兼容现有 `.xh-glass-panel` 样式。",
+        "alternatives_considered": [
+          "在 useTheme 中直接 setProperty('--xh-color-glass-bg', `rgba(...)`)",
+          "新增独立 class 只影响部分面板"
+        ],
+        "decision_factors": [
+          "可维护性（避免 TS 硬编码 RGB）",
+          "最小侵入（只扩展 token）",
+          "向后兼容（fallback 0.6）"
+        ],
+        "tradeoffs": "如果未来 `.xh-glass-panel` 被更多组件复用，本设置会影响所有玻璃面板（符合当前选择 Q1:2）。"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "打开页面，观察默认玻璃背景无变化。",
+          "在浏览器 devtools 给 `:root` 设置 `--xh-glass-opacity: 0.3`，确认卡片/进程面板背景变更。"
+        ],
+        "success_metrics": [
+          "默认外观保持一致（无回归）"
+        ]
+      }
+    },
+    {
+      "id": "T2",
+      "title": "Add glassOpacity to LayoutState and theme application",
+      "scope": "xhmonitor-web/src/hooks/",
+      "action": "Update",
+      "description": "在 LayoutState.background 增加 glassOpacity（默认 0.6，范围 0.1..1.0），并在 useTheme 写入 CSS 变量 --xh-glass-opacity。确保与背景 Mask/blurOpacity 分离。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/hooks/useLayoutState.ts",
+          "target": "LayoutBackground + DEFAULT_LAYOUT_STATE + normalizeLayoutState + parseStoredLayoutState",
+          "change": "新增 background.glassOpacity，并对缺失/非法值使用 fallback 与裁剪（0.1..1.0）。"
+        },
+        {
+          "file": "xhmonitor-web/src/hooks/useTheme.ts",
+          "target": "applyTheme",
+          "change": "新增 `root.style.setProperty('--xh-glass-opacity', String(state.background.glassOpacity))`。"
+        }
+      ],
+      "implementation": [
+        "在 `LayoutBackground` interface 中新增 `glassOpacity: number;`。",
+        "在 `DEFAULT_LAYOUT_STATE.background` 中设置 `glassOpacity: 0.6`。",
+        "在归一化逻辑中为 `glassOpacity` 增加数值校验与范围裁剪（0.1..1.0）。",
+        "在 parseStoredLayoutState 中对存量数据缺失字段做 fallback，保证升级不破坏旧存储。",
+        "在 `useTheme.applyTheme` 增加写入 `--xh-glass-opacity`。"
+      ],
+      "reference": {
+        "pattern": "LayoutState persisted + theme CSS variables",
+        "files": [
+          "xhmonitor-web/src/hooks/useLayoutState.ts",
+          "xhmonitor-web/src/hooks/useTheme.ts",
+          "xhmonitor-web/src/components/SettingsDrawer.tsx"
+        ],
+        "examples": "严格对齐 `background.blurOpacity` 的字段定义、归一化与 setProperty 写法。"
+      },
+      "acceptance": [
+        "调整 glassOpacity 后，页面中的 `.xh-glass-panel` 背景透明度随之变化。",
+        "刷新页面后 glassOpacity 仍保持（localStorage 持久化）。",
+        "glassOpacity 不影响 `Mask/blurOpacity` 的行为（两者独立生效）。"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "session-T2",
+      "cli_execution": {
+        "strategy": "resume",
+        "resume_from": "session-T1"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "打开设置前后对比：更改 glassOpacity 后，卡片与进程面板背景透明度变化。",
+          "刷新页面，确认值与显示一致。",
+          "调整 Mask（blurOpacity），确认仅影响背景遮罩，不改变面板透明度。"
+        ],
+        "success_metrics": [
+          "glassOpacity 值裁剪：<0.1 变为 0.1，>1 变为 1（可通过手工改 localStorage 验证）。"
+        ]
+      }
+    },
+    {
+      "id": "T3",
+      "title": "Expose panel opacity control in SettingsDrawer",
+      "scope": "xhmonitor-web/src/components/",
+      "action": "Add",
+      "description": "在 SettingsDrawer 的 Background 分组新增“面板透明度”range slider（0.1..1.0 step 0.05），显示百分比提示，并补齐 i18n 文案（zh/en）。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/components/SettingsDrawer.tsx",
+          "target": "Background settings group",
+          "change": "新增 handler（updateLayout({ background: { glassOpacity } })) 与 range 控件，位置与现有 Mask 控件相邻但语义独立。"
+        },
+        {
+          "file": "xhmonitor-web/src/i18n.ts",
+          "target": "settings strings (zh/en)",
+          "change": "新增 key（例如 'Panel Opacity'）并补齐中英文。"
+        }
+      ],
+      "implementation": [
+        "在 `SettingsDrawer` 中添加 `handleGlassOpacity(value: number)`，调用 `updateLayout({ background: { glassOpacity: value } })`。",
+        "在 Background 分组中，Mask(range) 下方新增 Panel Opacity(range) 控件：min 0.1 max 1 step 0.05，value 绑定 `layoutState.background.glassOpacity`。",
+        "新增 hint 文案：显示百分比（value * 100）。",
+        "在 `i18n.ts` 的 zh/en 增加对应 key。",
+        "确认 UI 表述明确区分：Mask（背景遮罩） vs Panel Opacity（面板透明度）。"
+      ],
+      "reference": {
+        "pattern": "SettingsDrawer range + updateLayout patch",
+        "files": [
+          "xhmonitor-web/src/components/SettingsDrawer.tsx",
+          "xhmonitor-web/src/hooks/useLayoutState.ts",
+          "xhmonitor-web/src/i18n.ts"
+        ],
+        "examples": "复用现有 `handleBlurOpacity` 与 range/hint 的结构。"
+      },
+      "acceptance": [
+        "设置面板中可见并可调整“面板透明度”，卡片/进程面板即时变化。",
+        "Mask 与面板透明度两个滑块互不影响。",
+        "中英文界面下文案均正常显示（缺失 key 时不回退到裸 key）。"
+      ],
+      "depends_on": ["T2"],
+      "cli_execution_id": "session-T3",
+      "cli_execution": {
+        "strategy": "resume",
+        "resume_from": "session-T2"
+      },
+      "verification": {
+        "unit_tests": [],
+        "integration_tests": [],
+        "manual_checks": [
+          "在设置中分别调整 Mask 与 面板透明度，观察两类视觉效果分别变化。",
+          "刷新页面确认持久化。",
+          "运行 `cd xhmonitor-web && npm run build` 确认 TypeScript 与构建通过。"
+        ],
+        "success_metrics": [
+          "build 通过（tsc -b + vite build）"
+        ]
+      }
+    }
+  ],
+  "focus_paths": [
+    "xhmonitor-web/components/core/design-tokens.css",
+    "xhmonitor-web/components/core/glass-panel.css",
+    "xhmonitor-web/src/hooks/useLayoutState.ts",
+    "xhmonitor-web/src/hooks/useTheme.ts",
+    "xhmonitor-web/src/components/SettingsDrawer.tsx",
+    "xhmonitor-web/src/components/StatCard.tsx",
+    "xhmonitor-web/src/components/ProcessList.tsx",
+    "xhmonitor-web/src/i18n.ts"
+  ],
+  "estimated_time": "45-75 minutes",
+  "recommended_execution": "Codex",
+  "complexity": "Medium",
+  "_metadata": {
+    "timestamp": "2026-02-04T14:07:06.006Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "exploration_angles": ["patterns", "integration-points", "testing"],
+    "session_folder": ".workflow/.lite-plan/cpu-gpu-2026-02-04",
+    "clarifications": {
+      "Q1_scope": "影响所有 .xh-glass-panel（源码当前仅 StatCard + ProcessList）",
+      "Q2_default_and_range": "默认 0.6，范围 0.1..1.0，step 0.05",
+      "Q3_ui_location": "放在 Background 分组（与 Mask 相邻但独立）",
+      "Q4_testing": "不引入 Vitest（本次 build + 手动验收）",
+      "note": "用户更正：背景模糊(Mask/blurOpacity) 与 面板透明度(glassOpacity) 为两个独立设置。"
+    }
+  }
+}

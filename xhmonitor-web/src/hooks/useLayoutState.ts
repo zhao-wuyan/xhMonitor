@@ -15,6 +15,7 @@ export interface LayoutVisibility {
 export interface LayoutBackground {
   gradient: boolean;
   blurOpacity: number;
+  glassOpacity: number;
   imageDataUrl: string | null;
   imageBlurPx: number;
   imageStored: boolean;
@@ -73,6 +74,7 @@ const DEFAULT_LAYOUT_STATE: LayoutState = {
   background: {
     gradient: true,
     blurOpacity: 0.3,
+    glassOpacity: 0.6,
     imageDataUrl: null,
     imageBlurPx: 18,
     imageStored: false,
@@ -110,6 +112,11 @@ const toBooleanValue = (value: unknown, fallback: boolean): boolean =>
 const toOpacityValue = (value: unknown, fallback: number): number => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.min(1, Math.max(0, value));
+};
+
+const toGlassOpacityValue = (value: unknown, fallback: number): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.min(1, Math.max(0.1, value));
 };
 
 const toBlurPxValue = (value: unknown, fallback: number): number => {
@@ -155,6 +162,10 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
       blurOpacity: toOpacityValue(
         state.background.blurOpacity,
         DEFAULT_LAYOUT_STATE.background.blurOpacity
+      ),
+      glassOpacity: toGlassOpacityValue(
+        state.background.glassOpacity,
+        DEFAULT_LAYOUT_STATE.background.glassOpacity
       ),
       imageDataUrl: toNullableStringValue(
         state.background.imageDataUrl,
@@ -231,6 +242,10 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
       blurOpacity: toOpacityValue(
         backgroundValue.blurOpacity,
         DEFAULT_LAYOUT_STATE.background.blurOpacity
+      ),
+      glassOpacity: toGlassOpacityValue(
+        backgroundValue.glassOpacity,
+        DEFAULT_LAYOUT_STATE.background.glassOpacity
       ),
       imageDataUrl: toNullableStringValue(
         backgroundValue.imageDataUrl,
