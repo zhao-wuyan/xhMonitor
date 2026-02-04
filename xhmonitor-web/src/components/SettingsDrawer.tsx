@@ -3,6 +3,7 @@ import type { ChangeEventHandler } from 'react';
 import { useLayout } from '../contexts/LayoutContext';
 import { useTheme } from '../hooks/useTheme';
 import { t } from '../i18n';
+import { clearBackgroundImage, saveBackgroundImageBlob } from '../utils/backgroundImageStore';
 
 interface SettingsDrawerProps {
   open?: boolean;
@@ -74,13 +75,10 @@ export const SettingsDrawer = ({
   };
 
   const handleBackgroundImageSelected = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : null;
-      if (!result) return;
-      updateLayout({ background: { imageDataUrl: result } });
-    };
-    reader.readAsDataURL(file);
+    void saveBackgroundImageBlob(file).then(() => {
+      const url = URL.createObjectURL(file);
+      updateLayout({ background: { imageDataUrl: url, imageStored: true } });
+    });
   };
 
   const handleBackgroundImageChange: ChangeEventHandler<HTMLInputElement> = (event) => {
@@ -91,7 +89,9 @@ export const SettingsDrawer = ({
   };
 
   const handleRemoveBackgroundImage = () => {
-    updateLayout({ background: { imageDataUrl: null } });
+    void clearBackgroundImage().finally(() => {
+      updateLayout({ background: { imageDataUrl: null, imageStored: false } });
+    });
   };
 
   const handleThemeColorChange = (key: (typeof THEME_COLOR_ITEMS)[number]['key'], value: string) => {

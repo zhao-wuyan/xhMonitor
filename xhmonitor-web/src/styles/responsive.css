@@ -46,6 +46,12 @@
     linear-gradient(rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)), rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)));
 }
 
+body.has-bg-image .xh-app-shell::after {
+  background-image:
+    linear-gradient(135deg, rgba(17, 24, 39, 0.68), rgba(31, 41, 55, 0.62)),
+    linear-gradient(rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)), rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)));
+}
+
 body.no-gradient .xh-app-shell::after {
   background-image: linear-gradient(rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)), rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)));
 }

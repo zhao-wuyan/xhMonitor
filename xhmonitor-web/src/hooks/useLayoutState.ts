@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { clearBackgroundImage, loadBackgroundImageBlob } from '../utils/backgroundImageStore';
 
 export interface LayoutGaps {
   grid: number;
@@ -16,6 +17,7 @@ export interface LayoutBackground {
   blurOpacity: number;
   imageDataUrl: string | null;
   imageBlurPx: number;
+  imageStored: boolean;
 }
 
 export interface ThemeColors {
@@ -71,6 +73,7 @@ const DEFAULT_LAYOUT_STATE: LayoutState = {
     blurOpacity: 0.3,
     imageDataUrl: null,
     imageBlurPx: 18,
+    imageStored: false,
   },
   themeColors: {
     cpu: '#3b82f6',
@@ -151,6 +154,7 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
         DEFAULT_LAYOUT_STATE.background.imageDataUrl
       ),
       imageBlurPx: toBlurPxValue(state.background.imageBlurPx, DEFAULT_LAYOUT_STATE.background.imageBlurPx),
+      imageStored: toBooleanValue(state.background.imageStored, DEFAULT_LAYOUT_STATE.background.imageStored),
     },
     themeColors: {
       cpu: toStringValue(state.themeColors.cpu, DEFAULT_LAYOUT_STATE.themeColors.cpu),
@@ -224,6 +228,7 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
         DEFAULT_LAYOUT_STATE.background.imageDataUrl
       ),
       imageBlurPx: toBlurPxValue(backgroundValue.imageBlurPx, DEFAULT_LAYOUT_STATE.background.imageBlurPx),
+      imageStored: toBooleanValue(backgroundValue.imageStored, DEFAULT_LAYOUT_STATE.background.imageStored),
     },
     themeColors: {
       cpu: toStringValue(themeColorsValue.cpu, DEFAULT_LAYOUT_STATE.themeColors.cpu),
@@ -257,9 +262,21 @@ const persistLayoutState = (state: LayoutState) => {
   if (!canUseStorage()) return;
 
   try {
+    // Do not persist large background images in localStorage (quota). The blob is stored in IndexedDB.
+    const safeState =
+      state.background.imageDataUrl != null
+        ? {
+            ...state,
+            background: {
+              ...state.background,
+              imageDataUrl: null,
+              imageStored: true,
+            },
+          }
+        : state;
     const payload = {
       version: LAYOUT_STATE_VERSION,
-      state,
+      state: safeState,
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
@@ -269,8 +286,15 @@ const persistLayoutState = (state: LayoutState) => {
 
 export const useLayoutState = () => {
   const [layoutState, setLayoutState] = useState<LayoutState>(() => loadLayoutState());
+  const backgroundUrlRef = useRef<string | null>(null);
+  const prevBgUrlRef = useRef<string | null>(null);
 
   const resetLayout = useCallback(() => {
+    if (backgroundUrlRef.current) {
+      URL.revokeObjectURL(backgroundUrlRef.current);
+      backgroundUrlRef.current = null;
+    }
+    void clearBackgroundImage();
     setLayoutState(() =>
       normalizeLayoutState({
         gridColumns: DEFAULT_LAYOUT_STATE.gridColumns,
@@ -296,6 +320,84 @@ export const useLayoutState = () => {
   useEffect(() => {
     persistLayoutState(layoutState);
   }, [layoutState]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const shouldLoad = layoutState.background.imageStored && !layoutState.background.imageDataUrl;
+    if (!shouldLoad) return;
+
+    let canceled = false;
+
+    loadBackgroundImageBlob()
+      .then((blob) => {
+        if (canceled) return;
+        if (!blob) {
+          setLayoutState((prev) =>
+            normalizeLayoutState({
+              ...prev,
+              background: {
+                ...prev.background,
+                imageStored: false,
+              },
+            })
+          );
+          return;
+        }
+
+        if (backgroundUrlRef.current) {
+          URL.revokeObjectURL(backgroundUrlRef.current);
+          backgroundUrlRef.current = null;
+        }
+
+        const url = URL.createObjectURL(blob);
+        backgroundUrlRef.current = url;
+        setLayoutState((prev) =>
+          normalizeLayoutState({
+            ...prev,
+            background: {
+              ...prev.background,
+              imageDataUrl: url,
+              imageStored: true,
+            },
+          })
+        );
+      })
+      .catch(() => {
+        // ignore load errors; user can re-select
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [layoutState.background.imageDataUrl, layoutState.background.imageStored]);
+
+  useEffect(() => {
+    const nextUrl = layoutState.background.imageDataUrl;
+    const prevUrl = prevBgUrlRef.current;
+    prevBgUrlRef.current = nextUrl;
+
+    if (prevUrl && prevUrl !== nextUrl && prevUrl.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(prevUrl);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (nextUrl && nextUrl.startsWith('blob:')) {
+      backgroundUrlRef.current = nextUrl;
+    }
+  }, [layoutState.background.imageDataUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (backgroundUrlRef.current) {
+        URL.revokeObjectURL(backgroundUrlRef.current);
+        backgroundUrlRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     layoutState,
