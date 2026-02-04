@@ -152,7 +152,7 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
     },
     cardOrder: cardOrder.length > 0 ? cardOrder : DEFAULT_LAYOUT_STATE.cardOrder,
     visibility: {
-      header: toBooleanValue(state.visibility.header, DEFAULT_LAYOUT_STATE.visibility.header),
+      header: DEFAULT_LAYOUT_STATE.visibility.header,
       disk: toBooleanValue(state.visibility.disk, DEFAULT_LAYOUT_STATE.visibility.disk),
       cards: toBooleanValue(state.visibility.cards, DEFAULT_LAYOUT_STATE.visibility.cards),
       process: toBooleanValue(state.visibility.process, DEFAULT_LAYOUT_STATE.visibility.process),
@@ -232,7 +232,7 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
       ? stateValue.cardOrder.filter((id) => typeof id === 'string')
       : DEFAULT_LAYOUT_STATE.cardOrder,
     visibility: {
-      header: toBooleanValue(visibilityValue.header, DEFAULT_LAYOUT_STATE.visibility.header),
+      header: DEFAULT_LAYOUT_STATE.visibility.header,
       disk: toBooleanValue(visibilityValue.disk, DEFAULT_LAYOUT_STATE.visibility.disk),
       cards: toBooleanValue(visibilityValue.cards, DEFAULT_LAYOUT_STATE.visibility.cards),
       process: toBooleanValue(visibilityValue.process, DEFAULT_LAYOUT_STATE.visibility.process),

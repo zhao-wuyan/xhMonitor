@@ -145,7 +145,7 @@ export const SettingsDrawer = ({
         </div>
         <div className="settings-drawer__content">
           <div className="settings-group">
-            <div className="settings-label">{t('Grid Columns')}</div>
+            <div className="settings-group-title">{t('Grid Columns')}</div>
             <div className="settings-row settings-pills">
               {GRID_PRESETS.map((value) => (
                 <button
@@ -171,23 +171,24 @@ export const SettingsDrawer = ({
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">{t('Grid Gap')}</div>
-            <input
-              type="range"
-              className="settings-range"
-              min={8}
-              max={32}
-              step={1}
-              value={gridGap}
-              onChange={(event) => handleGridGap(Number(event.target.value))}
-            />
-            <div className="settings-hint">
-              {t('Current')}: {gridGap}px
+            <div className="settings-group-title">{t('Grid Gap')}</div>
+            <div className="settings-inline-row">
+              <div className="settings-inline-label">{t('Current')}</div>
+              <input
+                type="range"
+                className="settings-range"
+                min={8}
+                max={32}
+                step={1}
+                value={gridGap}
+                onChange={(event) => handleGridGap(Number(event.target.value))}
+              />
+              <div className="settings-inline-value">{gridGap}px</div>
             </div>
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">{t('Card Drag Mode')}</div>
+            <div className="settings-group-title">{t('Card Drag Mode')}</div>
             <div className="settings-row">
               <select
                 className="settings-input"
@@ -201,16 +202,8 @@ export const SettingsDrawer = ({
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">{t('Visibility')}</div>
+            <div className="settings-group-title">{t('Visibility')}</div>
             <div className="settings-toggle-list">
-              <label className="settings-toggle">
-                <input
-                  type="checkbox"
-                  checked={layoutState.visibility.header}
-                  onChange={(event) => handleVisibilityChange('header', event.target.checked)}
-                />
-                <span>{t('Header')}</span>
-              </label>
               <label className="settings-toggle">
                 <input
                   type="checkbox"
@@ -239,16 +232,20 @@ export const SettingsDrawer = ({
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">{t('Background')}</div>
-            <label className="settings-toggle">
-              <input
-                type="checkbox"
-                checked={layoutState.background.gradient}
-                onChange={(event) => handleGradientToggle(event.target.checked)}
-              />
-              <span>{t('Gradient')}</span>
-            </label>
-            <div className="settings-row">
+            <div className="settings-group-title">{t('Background')}</div>
+            <div className="settings-inline-row settings-inline-row--actions">
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={layoutState.background.gradient}
+                  onChange={(event) => handleGradientToggle(event.target.checked)}
+                />
+                <span>{t('Gradient')}</span>
+              </label>
+            </div>
+
+            <div className="settings-inline-row">
+              <div className="settings-inline-label">{t('Mask')}</div>
               <input
                 type="range"
                 className="settings-range"
@@ -258,13 +255,14 @@ export const SettingsDrawer = ({
                 value={layoutState.background.blurOpacity}
                 onChange={(event) => handleBlurOpacity(Number(event.target.value))}
               />
-            </div>
-            <div className="settings-hint">
-              {t('Mask')}: {(layoutState.background.blurOpacity * 100).toFixed(0)}%
+              <div className="settings-inline-value">
+                {(layoutState.background.blurOpacity * 100).toFixed(0)}%
+              </div>
             </div>
 
-            <div className="settings-label">{t('Panel Opacity')}</div>
-            <div className="settings-row">
+            <div className="settings-subsection-title">{t('Panel Opacity')}</div>
+            <div className="settings-inline-row">
+              <div className="settings-inline-label">{t('Opacity')}</div>
               <input
                 type="range"
                 className="settings-range"
@@ -274,12 +272,24 @@ export const SettingsDrawer = ({
                 value={layoutState.background.glassOpacity}
                 onChange={(event) => handleGlassOpacity(Number(event.target.value))}
               />
-            </div>
-            <div className="settings-hint">
-              {t('Panel Opacity')}: {(layoutState.background.glassOpacity * 100).toFixed(0)}%
+              <div className="settings-inline-value">
+                {(layoutState.background.glassOpacity * 100).toFixed(0)}%
+              </div>
             </div>
 
-            <div className="settings-label">{t('Background Image')}</div>
+            <div className="settings-inline-row settings-inline-row--actions">
+              <div className="settings-inline-label settings-inline-label--title">{t('Background Image')}</div>
+              <div className="settings-inline-actions settings-pills">
+                <button type="button" className="settings-pill" onClick={handlePickBackgroundImage}>
+                  {t('Choose Image')}
+                </button>
+                {layoutState.background.imageDataUrl && (
+                  <button type="button" className="settings-pill" onClick={handleRemoveBackgroundImage}>
+                    {t('Remove Image')}
+                  </button>
+                )}
+              </div>
+            </div>
             <input
               ref={imageInputRef}
               type="file"
@@ -287,17 +297,9 @@ export const SettingsDrawer = ({
               onChange={handleBackgroundImageChange}
               style={{ display: 'none' }}
             />
-            <div className="settings-row settings-pills">
-              <button type="button" className="settings-pill" onClick={handlePickBackgroundImage}>
-                {t('Choose Image')}
-              </button>
-              {layoutState.background.imageDataUrl && (
-                <button type="button" className="settings-pill" onClick={handleRemoveBackgroundImage}>
-                  {t('Remove Image')}
-                </button>
-              )}
-            </div>
-            <div className="settings-row">
+
+            <div className="settings-inline-row">
+              <div className="settings-inline-label">{t('Blur')}</div>
               <input
                 type="range"
                 className="settings-range"
@@ -308,14 +310,14 @@ export const SettingsDrawer = ({
                 disabled={!layoutState.background.imageDataUrl}
                 onChange={(event) => handleBackgroundImageBlur(Number(event.target.value))}
               />
-            </div>
-            <div className="settings-hint">
-              {t('Blur')}: {layoutState.background.imageBlurPx}px
+              <div className="settings-inline-value">
+                {layoutState.background.imageBlurPx}px
+              </div>
             </div>
           </div>
 
           <div className="settings-group">
-            <div className="settings-label">{t('Theme Colors')}</div>
+            <div className="settings-group-title">{t('Theme Colors')}</div>
             <div className="settings-color-grid">
               {THEME_COLOR_ITEMS.map((item) => (
                 <label key={item.key} className="settings-color-item">

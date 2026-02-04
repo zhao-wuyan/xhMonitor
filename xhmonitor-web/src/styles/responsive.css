@@ -382,6 +382,45 @@ body.no-gradient .xh-app-shell::after {
   color: var(--xh-color-text-secondary);
 }
 
+.settings-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--xh-color-text-primary);
+  letter-spacing: 0.02em;
+}
+
+.settings-group-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--xh-color-glass-border);
+}
+
+.settings-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--xh-color-text-primary);
+  letter-spacing: 0.02em;
+}
+
+.settings-subsection-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--xh-color-glass-border);
+}
+
 .settings-row {
   display: flex;
   gap: 8px;
@@ -427,7 +466,8 @@ body.no-gradient .xh-app-shell::after {
 
 .settings-toggle-list {
   display: grid;
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 10px;
 }
 
 .settings-toggle,
@@ -437,6 +477,64 @@ body.no-gradient .xh-app-shell::after {
   gap: 8px;
   font-size: 0.75rem;
   color: var(--xh-color-text-primary);
+}
+
+.settings-inline-row {
+  display: grid;
+  grid-template-columns: minmax(58px, auto) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-inline-row--actions {
+  grid-template-columns: 1fr auto;
+}
+
+.settings-inline-label {
+  font-size: 0.75rem;
+  color: var(--xh-color-text-secondary);
+  white-space: nowrap;
+}
+
+.settings-inline-label--title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--xh-color-text-primary);
+  letter-spacing: 0.02em;
+}
+
+.settings-inline-label--title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--xh-color-glass-border);
+}
+
+.settings-inline-value {
+  font-size: 0.75rem;
+  color: var(--xh-color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.settings-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 360px) {
+  .settings-toggle-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .settings-radio-group {
