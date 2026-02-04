@@ -1,0 +1,56 @@
+{
+  "angle": "integration-points",
+  "project_structure": [
+    "系统使用率采集与推送：XhMonitor.Core/Providers/SystemMetricProvider.cs → XhMonitor.Service/Worker.cs → SignalR(IMetricsClient.ReceiveSystemUsage)。",
+    "Web 消息解析：xhmonitor-web/src/hooks/useMetricsHub.ts 将 ReceiveSystemUsage payload 解析为 SystemUsage 类型。",
+    "磁盘 UI：xhmonitor-web/src/components/DiskWidget.tsx 在 App.tsx 中被渲染（header slot + compact stack slot）。"
+  ],
+  "relevant_files": [
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "XhMonitor.Core/Services/LibreHardwareManager.cs",
+    "XhMonitor.Core/Interfaces/ISystemMetricProvider.cs",
+    "XhMonitor.Service/Worker.cs",
+    "XhMonitor.Core/Interfaces/IMetricsClient.cs",
+    "xhmonitor-web/src/hooks/useMetricsHub.ts",
+    "xhmonitor-web/src/types.ts",
+    "xhmonitor-web/src/App.tsx",
+    "xhmonitor-web/src/components/DiskWidget.tsx"
+  ],
+  "patterns": [
+    "Worker.SendSystemUsageAsync 通过匿名对象推送字段（Timestamp/TotalCpu/.../PowerSchemeIndex），Web 端已做大小写兼容。",
+    "SystemUsage 在 Web 端是独立 state（useMetricsHub），App.tsx 里已经拿到 systemUsage，可作为 DiskWidget 的唯一数据源。",
+    "SystemMetricProvider 对 LHM 的使用是可选依赖（ILibreHardwareManager?），需要保证在 LHM 不可用时仍能优雅返回默认值。"
+  ],
+  "dependencies": [
+    "SignalR Hub：XhMonitor.Service/Hubs/MetricsHub.cs",
+    "Hub 契约：XhMonitor.Core/Interfaces/IMetricsClient.cs"
+  ],
+  "integration_points": [
+    "后端：在 SystemMetricProvider 新增磁盘采集方法（例如 GetDiskMetricsAsync），并在 GetSystemUsageAsync 返回的 SystemUsage 中携带 disks。",
+    "后端：在 Worker.SendSystemUsageAsync 推送 payload 时加入 Disks 字段（并保持既有字段不变）。",
+    "前端：在 xhmonitor-web/src/types.ts 扩展 SystemUsage 类型包含 disks 字段；在 useMetricsHub.ts 解析 ReceiveSystemUsage 时映射 disks。",
+    "前端：将 DiskWidget 改为接收 props（例如 disks?: DiskInfo[]），并由 App.tsx 把 systemUsage.disks 传入，移除随机模拟逻辑。"
+  ],
+  "constraints": [
+    "尽量避免引入新的 SignalR event；复用 ReceiveSystemUsage 可减少协议面与状态同步成本。",
+    "字段兼容性：服务端字段 PascalCase vs 前端 camelCase；若新增 Disks，应同样兼容 Disks/disks。",
+    "如果需要扩展 IMetricsClient 文档注释（以及 .mcai/docs 接口文档），要同步更新以免接口漂移。"
+  ],
+  "clarification_needs": [
+    {
+      "question": "磁盘数据希望通过哪种通道推送到 Web？",
+      "context": "当前最顺滑的方式是在 ReceiveSystemUsage 内新增 Disks 字段；另一种是新增独立事件（例如 ReceiveDiskUsage），但需要前后端都新增监听与状态。",
+      "options": [
+        "复用 ReceiveSystemUsage：新增 Disks 字段（推荐，改动最小）",
+        "新增独立 SignalR 事件：ReceiveDiskUsage",
+        "走 HTTP API：Web 定时拉取磁盘数据（与实时流分离）"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "exploration_angle": "integration-points",
+    "exploration_index": 2,
+    "timestamp": "2026-02-04T15:22:55.8957115Z"
+  }
+}

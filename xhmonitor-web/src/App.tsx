@@ -104,7 +104,7 @@ function AppContent() {
             {/* Center: Disk Info */}
             {!isCompactWidth && layoutState.visibility.disk && (
               <div className="disk-header-slot">
-                <DiskWidget />
+                <DiskWidget disks={systemUsage?.disks} />
               </div>
             )}
 
@@ -284,7 +284,7 @@ function AppContent() {
         {/* Disk Info (Stacked on Compact Width) */}
         {isCompactWidth && layoutState.visibility.disk && (
           <div className="disk-stack-slot">
-            <DiskWidget />
+            <DiskWidget disks={systemUsage?.disks} />
           </div>
         )}
 

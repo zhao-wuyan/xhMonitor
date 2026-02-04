@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { MetricMetadata, MetricConfig } from '../types';
 
-const API_BASE = 'http://localhost:35179/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:35179';
+const API_BASE = `${String(API_BASE_URL).replace(/\/$/, '')}/api/v1`;
 
 const DEFAULT_COLORS: Record<string, string> = {
   cpu: '#3b82f6',

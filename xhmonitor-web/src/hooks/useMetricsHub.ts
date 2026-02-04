@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import * as signalR from '@microsoft/signalr';
-import type { MetricsData, ProcessMetaData, ProcessInfo, SystemUsage } from '../types';
+import type { DiskUsage, MetricsData, ProcessMetaData, ProcessInfo, SystemUsage } from '../types';
 
-const HUB_URL = 'http://localhost:35179/hubs/metrics';
+const DEFAULT_API_BASE_URL = 'http://localhost:35179';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? DEFAULT_API_BASE_URL;
+const HUB_URL =
+  (import.meta.env.VITE_METRICS_HUB_URL as string | undefined) ?? `${API_BASE_URL.replace(/\/$/, '')}/hubs/metrics`;
 
 export const useMetricsHub = () => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
@@ -79,6 +83,30 @@ export const useMetricsHub = () => {
     });
 
     connection.on('ReceiveSystemUsage', (data: Record<string, unknown>) => {
+      const toNullableNumber = (value: unknown): number | null => {
+        if (value === null || value === undefined) return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const rawDisks = (data.disks ?? data.Disks) as unknown;
+      const disks: DiskUsage[] | undefined = Array.isArray(rawDisks)
+        ? rawDisks
+            .map((item) => {
+              const d = item as Record<string, unknown>;
+              const name = String(d.name ?? d.Name ?? '').trim();
+              if (!name) return null;
+              return {
+                name,
+                totalBytes: toNullableNumber(d.totalBytes ?? d.TotalBytes),
+                usedBytes: toNullableNumber(d.usedBytes ?? d.UsedBytes),
+                readSpeed: toNullableNumber(d.readSpeed ?? d.ReadSpeed),
+                writeSpeed: toNullableNumber(d.writeSpeed ?? d.WriteSpeed),
+              } satisfies DiskUsage;
+            })
+            .filter((d): d is DiskUsage => Boolean(d))
+        : undefined;
+
       const powerSchemeRaw = data.powerSchemeIndex ?? data.PowerSchemeIndex;
       const usage: SystemUsage = {
         timestamp: (data.timestamp ?? data.Timestamp ?? new Date().toISOString()) as string,
@@ -86,6 +114,7 @@ export const useMetricsHub = () => {
         totalGpu: Number(data.totalGpu ?? data.TotalGpu ?? 0),
         totalMemory: Number(data.totalMemory ?? data.TotalMemory ?? 0),
         totalVram: Number(data.totalVram ?? data.TotalVram ?? 0),
+        disks,
         maxMemory: Number(data.maxMemory ?? data.MaxMemory ?? 0),
         maxVram: Number(data.maxVram ?? data.MaxVram ?? 0),
         uploadSpeed: Number(data.uploadSpeed ?? data.UploadSpeed ?? 0),
@@ -100,7 +129,7 @@ export const useMetricsHub = () => {
 
     connection.onreconnecting(() => {
       setIsConnected(false);
-      setError('Reconnecting...');
+      setError('reconnecting');
     });
 
     connection.onreconnected(() => {
@@ -110,7 +139,7 @@ export const useMetricsHub = () => {
 
     connection.onclose(() => {
       setIsConnected(false);
-      setError('Connection closed');
+      setError('connectionClosed');
     });
 
     startConnection();

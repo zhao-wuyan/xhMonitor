@@ -73,7 +73,7 @@ export const i18n = {
 
     // 加载状态
     'Loading configuration...': '正在加载配置...',
-    'Failed to load metric configuration': '加载指标配置失败',
+    'Failed to load metric configuration': '加载指标配置失败，请检查后端是否运行',
     'Waiting for metrics data...': '等待指标数据...',
 
     // 搜索结果

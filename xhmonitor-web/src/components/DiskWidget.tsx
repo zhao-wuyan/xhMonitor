@@ -1,37 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLayout } from '../contexts/LayoutContext';
+import type { DiskUsage } from '../types';
 
-interface DiskInfo {
-  name: string;
-  total: number;
-  used: number;
-  color: string;
-  readSpeed: number;
-  writeSpeed: number;
+interface DiskWidgetProps {
+  disks?: DiskUsage[];
 }
 
-const DEFAULT_DISKS: DiskInfo[] = [
-  {
-    name: 'Samsung SSD 980 PRO 1TB',
-    total: 1024,
-    used: 45,
-    color: '#3b82f6',
-    readSpeed: 0,
-    writeSpeed: 0,
-  },
-  {
-    name: 'WDC WD40EZAZ-00SF3B0',
-    total: 4096,
-    used: 85,
-    color: '#10b981',
-    readSpeed: 0,
-    writeSpeed: 0,
-  },
-];
+interface DiskViewModel extends DiskUsage {
+  color: string;
+}
 
-const formatSize = (gb: number) => {
-  if (gb >= 1000) return `${(gb / 1024).toFixed(1)}T`;
-  return `${gb.toFixed(0)}G`;
+const DISK_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#22c55e'];
+
+const formatSize = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '-';
+  const gib = bytes / (1024 * 1024 * 1024);
+  if (gib >= 1024) return `${(gib / 1024).toFixed(1)}T`;
+  return `${gib.toFixed(0)}G`;
 };
 
 const formatSpeed = (value: number) => {
@@ -39,9 +24,8 @@ const formatSpeed = (value: number) => {
   return formatted.padStart(4, '\u00A0');
 };
 
-export const DiskWidget = () => {
+export const DiskWidget = ({ disks }: DiskWidgetProps) => {
   const { layoutState } = useLayout();
-  const [disks, setDisks] = useState<DiskInfo[]>(DEFAULT_DISKS);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 1023px)').matches;
@@ -55,19 +39,21 @@ export const DiskWidget = () => {
     return () => media.removeEventListener('change', handler);
   }, []);
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setDisks((prev) =>
-        prev.map((disk) => ({
-          ...disk,
-          readSpeed: Math.random() > 0.7 ? Math.random() * 200 : 0,
-          writeSpeed: Math.random() > 0.8 ? Math.random() * 100 : 0,
-        }))
-      );
-    }, 1000);
+  const validDisks = useMemo(() => {
+    if (!disks || disks.length === 0) return [];
+    return disks.filter((d) => {
+      const name = d.name?.trim();
+      if (!name) return false;
+      return d.totalBytes != null || d.usedBytes != null || d.readSpeed != null || d.writeSpeed != null;
+    });
+  }, [disks]);
 
-    return () => window.clearInterval(interval);
-  }, []);
+  const viewModels = useMemo(() => {
+    return validDisks.map((d, index) => ({
+      ...d,
+      color: DISK_COLORS[index % DISK_COLORS.length],
+    })) satisfies DiskViewModel[];
+  }, [validDisks]);
 
   const containerClass = useMemo(() => {
     const positionClass = layoutState.diskPosition === 'right' ? 'disk-widget--right' : 'disk-widget--left';
@@ -76,6 +62,7 @@ export const DiskWidget = () => {
   }, [layoutState.diskPosition, isMobile]);
 
   if (!layoutState.visibility.disk) return null;
+  if (viewModels.length === 0) return null;
 
   const mobileOrder = isMobile ? (layoutState.diskPosition === 'right' ? 2 : 1) : undefined;
 
@@ -87,10 +74,20 @@ export const DiskWidget = () => {
       style={mobileOrder ? { order: mobileOrder } : undefined}
     >
       <div className="disk-info-container">
-        {disks.map((disk, index) => {
-          const usedGB = disk.total * (disk.used / 100);
-          const totalStr = formatSize(disk.total);
-          const usedStr = formatSize(usedGB);
+        {viewModels.map((disk, index) => {
+          const totalBytes = disk.totalBytes;
+          const usedBytes = disk.usedBytes;
+          const hasTotalBytes = typeof totalBytes === 'number' && Number.isFinite(totalBytes) && totalBytes > 0;
+          const hasUsedBytes = typeof usedBytes === 'number' && Number.isFinite(usedBytes) && usedBytes >= 0;
+          const hasBytes = hasTotalBytes && hasUsedBytes;
+
+          const usedPercent = hasBytes ? Math.min(100, Math.max(0, (usedBytes / totalBytes) * 100)) : null;
+          const totalStr = hasTotalBytes ? formatSize(totalBytes) : '-';
+          const usedStr = hasUsedBytes ? formatSize(usedBytes) : '-';
+          const sizeText = hasTotalBytes && !hasUsedBytes ? totalStr : `${usedStr}/${totalStr}`;
+
+          const readSpeedText = disk.readSpeed == null ? '-' : `${formatSpeed(disk.readSpeed)}M`;
+          const writeSpeedText = disk.writeSpeed == null ? '-' : `${formatSpeed(disk.writeSpeed)}M`;
 
           return (
             <div key={`${disk.name}-${index}`} className="disk-item">
@@ -98,21 +95,21 @@ export const DiskWidget = () => {
                 {disk.name}
               </div>
               <div className="disk-details-row">
-                <div className="disk-bar-container" title={`Usage: ${disk.used}%`}>
+                <div className="disk-bar-container" title={usedPercent == null ? 'Usage: -' : `Usage: ${usedPercent.toFixed(0)}%`}>
                   <div className="disk-bar-bg">
                     <div
                       className="disk-bar-fill"
-                      style={{ width: `${disk.used}%`, backgroundColor: disk.color }}
+                      style={{ width: `${usedPercent ?? 0}%`, backgroundColor: disk.color }}
                     />
                   </div>
                 </div>
-                <span className="disk-info-text">{usedStr}/{totalStr}</span>
+                <span className="disk-info-text">{sizeText}</span>
                 <div className="disk-speed-group">
                   <span className="speed-r">
-                    R:<span className="speed-val">{formatSpeed(disk.readSpeed)}M</span>
+                    R:<span className="speed-val">{readSpeedText}</span>
                   </span>
                   <span className="speed-w">
-                    W:<span className="speed-val">{formatSpeed(disk.writeSpeed)}M</span>
+                    W:<span className="speed-val">{writeSpeedText}</span>
                   </span>
                 </div>
               </div>

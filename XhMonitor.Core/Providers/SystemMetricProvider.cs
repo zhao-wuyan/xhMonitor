@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using System.Threading;
 using LibreHardwareMonitor.Hardware;
 using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Enums;
@@ -19,6 +21,8 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     private readonly ILogger<SystemMetricProvider>? _logger;
     private readonly ILibreHardwareManager? _hardwareManager;
     private readonly IPowerProvider? _powerProvider;
+    private int _hardwareManagerInitAttempted;
+    private int _storageSensorsMissingLogged;
     private static readonly string[] VirtualAdapterKeywords =
     [
         "vEthernet",
@@ -38,6 +42,20 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         "TeamViewer",
         "AnyDesk",
         "Kernel"
+    ];
+
+    private static readonly string[] DiskReadSensorNamePatterns =
+    [
+        "Read",
+        "Read Rate",
+        "Read Speed"
+    ];
+
+    private static readonly string[] DiskWriteSensorNamePatterns =
+    [
+        "Write",
+        "Write Rate",
+        "Write Speed"
     ];
     private readonly HashSet<string> _verifiedPhysicalAdapters = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _verificationLock = new(1, 1);
@@ -205,6 +223,7 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         var totalVram = await vramTask;
         var powerStatus = await powerTask;
         var (uploadSpeed, downloadSpeed) = GetNetworkSpeed();
+        var disks = GetDiskUsages();
 
         return new SystemUsage
         {
@@ -214,6 +233,7 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             TotalVram = totalVram,
             UploadSpeed = uploadSpeed,
             DownloadSpeed = downloadSpeed,
+            Disks = disks,
             PowerAvailable = powerStatus != null,
             TotalPower = powerStatus?.CurrentWatts ?? 0.0,
             MaxPower = powerStatus?.LimitWatts ?? 0.0,
@@ -378,8 +398,31 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         }
     }
 
+    private void EnsureHardwareManagerInitialized()
+    {
+        if (_hardwareManager == null || _hardwareManager.IsAvailable)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _hardwareManagerInitAttempted, 1) == 1)
+        {
+            return;
+        }
+
+        try
+        {
+            _hardwareManager.Initialize();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "[SystemMetricProvider] Failed to initialize LibreHardwareManager");
+        }
+    }
+
     private (double UploadSpeed, double DownloadSpeed) GetNetworkSpeed()
     {
+        EnsureHardwareManagerInitialized();
         if (_hardwareManager == null || !_hardwareManager.IsAvailable)
         {
             return (0.0, 0.0);
@@ -440,6 +483,227 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             _logger?.LogError(ex, "[SystemMetricProvider] Failed to read network throughput via LibreHardwareMonitor");
             return (0.0, 0.0);
         }
+    }
+
+    private IReadOnlyList<DiskUsage> GetDiskUsages()
+    {
+        try
+        {
+            EnsureHardwareManagerInitialized();
+            if (_hardwareManager == null || !_hardwareManager.IsAvailable)
+            {
+                return [];
+            }
+
+            var throughputSensors = _hardwareManager.GetSensorValues(
+                new[] { HardwareType.Storage },
+                SensorType.Throughput) ?? Array.Empty<SensorReading>();
+            var dataSensors = _hardwareManager.GetSensorValues(
+                new[] { HardwareType.Storage },
+                SensorType.Data) ?? Array.Empty<SensorReading>();
+            var smallDataSensors = _hardwareManager.GetSensorValues(
+                new[] { HardwareType.Storage },
+                SensorType.SmallData) ?? Array.Empty<SensorReading>();
+
+            var diskNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddHardwareNames(diskNames, throughputSensors);
+            AddHardwareNames(diskNames, dataSensors);
+            AddHardwareNames(diskNames, smallDataSensors);
+
+            if (diskNames.Count == 0)
+            {
+                if (Interlocked.Exchange(ref _storageSensorsMissingLogged, 1) == 0)
+                {
+                    _logger?.LogWarning(
+                        "[SystemMetricProvider] No storage sensors detected via LibreHardwareMonitor (HardwareType.Storage). " +
+                        "throughput={ThroughputCount}, data={DataCount}, smallData={SmallDataCount}. " +
+                        "If LibreHardwareMonitor GUI can see disks but this process cannot, try running the service as Administrator.",
+                        throughputSensors.Count,
+                        dataSensors.Count,
+                        smallDataSensors.Count);
+                }
+                return [];
+            }
+
+            var results = new List<DiskUsage>(diskNames.Count);
+            foreach (var diskName in diskNames)
+            {
+                var (readSpeed, writeSpeed) = GetDiskThroughput(throughputSensors, diskName);
+                var (totalBytes, usedBytes) = GetDiskCapacityFromLhm(dataSensors, smallDataSensors, diskName);
+
+                if (totalBytes == null && usedBytes == null && readSpeed == null && writeSpeed == null)
+                {
+                    continue;
+                }
+
+                results.Add(new DiskUsage
+                {
+                    Name = diskName,
+                    TotalBytes = totalBytes,
+                    UsedBytes = usedBytes,
+                    ReadSpeed = readSpeed,
+                    WriteSpeed = writeSpeed
+                });
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "[SystemMetricProvider] Failed to read disk metrics");
+            return [];
+        }
+    }
+
+    private static void AddHardwareNames(HashSet<string> diskNames, IReadOnlyList<SensorReading> sensors)
+    {
+        if (sensors == null || sensors.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var sensor in sensors)
+        {
+            if (string.IsNullOrWhiteSpace(sensor.HardwareName))
+            {
+                continue;
+            }
+
+            diskNames.Add(sensor.HardwareName);
+        }
+    }
+
+    private static (double? ReadSpeed, double? WriteSpeed) GetDiskThroughput(IReadOnlyList<SensorReading> sensors, string diskName)
+    {
+        if (sensors == null || sensors.Count == 0 || string.IsNullOrWhiteSpace(diskName))
+        {
+            return (null, null);
+        }
+
+        double readBytesPerSecond = 0.0;
+        double writeBytesPerSecond = 0.0;
+        var readFound = false;
+        var writeFound = false;
+
+        foreach (var sensor in sensors)
+        {
+            if (!string.Equals(sensor.HardwareName, diskName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (sensor.Value < 0)
+            {
+                continue;
+            }
+
+            if (ContainsAny(sensor.Name, DiskReadSensorNamePatterns) &&
+                !ContainsAny(sensor.Name, DiskWriteSensorNamePatterns))
+            {
+                readFound = true;
+                readBytesPerSecond += sensor.Value;
+            }
+            else if (ContainsAny(sensor.Name, DiskWriteSensorNamePatterns))
+            {
+                writeFound = true;
+                writeBytesPerSecond += sensor.Value;
+            }
+        }
+
+        var readSpeed = readFound ? ConvertThroughputToMbps(readBytesPerSecond) : (double?)null;
+        var writeSpeed = writeFound ? ConvertThroughputToMbps(writeBytesPerSecond) : (double?)null;
+        return (readSpeed, writeSpeed);
+    }
+
+    private static (long? TotalBytes, long? UsedBytes) GetDiskCapacityFromLhm(
+        IReadOnlyList<SensorReading> dataSensors,
+        IReadOnlyList<SensorReading> smallDataSensors,
+        string diskName)
+    {
+        if (string.IsNullOrWhiteSpace(diskName))
+        {
+            return (null, null);
+        }
+
+        var totalSpaceGb = FindDiskSensorValue(
+            [.. dataSensors, .. smallDataSensors],
+            diskName,
+            ["Total Space", "Total Size", "Total Capacity"],
+            requirePositive: true);
+
+        var freeSpaceGb = FindDiskSensorValue(
+            [.. dataSensors, .. smallDataSensors],
+            diskName,
+            ["Free Space", "Available Space", "Available", "Free"],
+            requirePositive: false);
+
+        long? totalBytes = null;
+        if (totalSpaceGb.HasValue && totalSpaceGb.Value > 0)
+        {
+            totalBytes = ConvertGbToBytes(totalSpaceGb.Value);
+        }
+
+        long? usedBytes = null;
+        if (totalBytes.HasValue && freeSpaceGb.HasValue && freeSpaceGb.Value >= 0)
+        {
+            var freeBytes = ConvertGbToBytes(freeSpaceGb.Value);
+            usedBytes = totalBytes.Value - freeBytes;
+        }
+
+        if (totalBytes.HasValue && usedBytes.HasValue && usedBytes.Value > totalBytes.Value)
+        {
+            usedBytes = totalBytes;
+        }
+        else if (usedBytes.HasValue && usedBytes.Value < 0)
+        {
+            usedBytes = 0;
+        }
+
+        return (totalBytes, usedBytes);
+    }
+
+    private static float? FindDiskSensorValue(
+        IReadOnlyList<SensorReading> sensors,
+        string diskName,
+        string[] namePatterns,
+        bool requirePositive)
+    {
+        if (sensors == null || sensors.Count == 0)
+        {
+            return null;
+        }
+
+        float? best = null;
+        foreach (var sensor in sensors)
+        {
+            if (!string.Equals(sensor.HardwareName, diskName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!ContainsAny(sensor.Name, namePatterns))
+            {
+                continue;
+            }
+
+            if (requirePositive && sensor.Value <= 0)
+            {
+                continue;
+            }
+
+            if (best == null || sensor.Value > best.Value)
+            {
+                best = sensor.Value;
+            }
+        }
+
+        return best;
+    }
+
+    private static long ConvertGbToBytes(float gb)
+    {
+        // LibreHardwareMonitor 对存储容量的展示通常为 GB（接近 GiB 语义）。这里按 1024^3 换算为 bytes。
+        return (long)Math.Round(gb * 1024.0 * 1024.0 * 1024.0);
     }
 
     private static bool ContainsAny(string name, string[] patterns)
@@ -541,9 +805,22 @@ public class SystemUsage
     public double TotalVram { get; set; }
     public double UploadSpeed { get; set; }
     public double DownloadSpeed { get; set; }
+    public IReadOnlyList<DiskUsage> Disks { get; set; } = [];
     public bool PowerAvailable { get; set; }
     public double TotalPower { get; set; }
     public double MaxPower { get; set; }
     public int? PowerSchemeIndex { get; set; }
     public DateTime Timestamp { get; set; }
+}
+
+/// <summary>
+/// 物理硬盘使用情况（用于前端磁盘卡片）
+/// </summary>
+public class DiskUsage
+{
+    public string Name { get; set; } = string.Empty;
+    public long? TotalBytes { get; set; }
+    public long? UsedBytes { get; set; }
+    public double? ReadSpeed { get; set; }
+    public double? WriteSpeed { get; set; }
 }

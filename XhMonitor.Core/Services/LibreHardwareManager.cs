@@ -37,8 +37,8 @@ public class LibreHardwareManager : ILibreHardwareManager, IAsyncDisposable
                     IsMemoryEnabled = true,           // 启用内存监控 - Enable memory monitoring
                     IsMotherboardEnabled = false,     // 禁用主板监控 - Disable motherboard monitoring
                     IsControllerEnabled = false,      // 禁用控制器监控 - Disable controller monitoring
-                    IsNetworkEnabled = true,         // 禁用网络监控 - Disable network monitoring
-                    IsStorageEnabled = false          // 禁用存储监控 - Disable storage monitoring
+                    IsNetworkEnabled = true,          // 启用网络监控 - Enable network monitoring
+                    IsStorageEnabled = true           // 启用存储监控 - Enable storage monitoring
                 };
 
                 computer.Open();

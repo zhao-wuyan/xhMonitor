@@ -33,6 +33,7 @@ public interface IMetricsClient
     /// <item><description><c>DownloadSpeed</c>: 下载速度（MB/s）</description></item>
     /// <item><description><c>MaxMemory</c>: 最大内存（MB）</description></item>
     /// <item><description><c>MaxVram</c>: 最大显存（MB）</description></item>
+    /// <item><description><c>Disks</c>: 物理硬盘列表（包含 <c>Name</c> / <c>TotalBytes</c> / <c>UsedBytes</c> / <c>ReadSpeed</c> / <c>WriteSpeed</c>，其中容量单位为 Bytes，速度单位为 MB/s，字段可能为 null）</description></item>
     /// </list>
     /// </param>
     Task ReceiveSystemUsage(object data);
