@@ -1,0 +1,36 @@
+{
+  "file_types": {
+    "css": {
+      "count": 0,
+      "files": []
+    },
+    "scss": {
+      "count": 0,
+      "files": []
+    },
+    "js": {
+      "count": 0,
+      "files": []
+    },
+    "ts": {
+      "count": 0,
+      "files": []
+    },
+    "html": {
+      "count": 1,
+      "files": ["ui-preview-v2.html"]
+    }
+  },
+  "counts": {
+    "total": 1,
+    "by_type": {
+      "css": 0,
+      "scss": 0,
+      "js": 0,
+      "ts": 0,
+      "html": 1
+    }
+  },
+  "discovery_time": "2026-01-31T12:00:00Z",
+  "source_dir": "xhmonitor-web/design"
+}

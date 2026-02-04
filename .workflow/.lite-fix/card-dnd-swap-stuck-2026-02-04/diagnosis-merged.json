@@ -1,0 +1,76 @@
+{
+  "bug": {
+    "title": "拖拽交换卡片后，部分卡片无法再交换（拖动悬停无响应，首卡更易触发）",
+    "area": "xhmonitor-web Drag & Drop / Layout",
+    "severity": "medium",
+    "hotfix_mode": false
+  },
+  "repro_steps": [
+    "在 Web 端主页面（含顶部 DiskWidget 的 Header）中，对卡片使用右上角拖拽手柄（.drag-handle）进行拖拽交换。",
+    "将某张卡片拖到第一行（尤其接近页面顶部/中部区域）后，尝试再次拖拽该卡片或拖拽其他卡片到其位置。",
+    "现象：鼠标拖动悬停到目标卡片位置时不触发排序/交换，表现为“没反应”。"
+  ],
+  "suspected_root_cause": {
+    "summary": "SortableJS 在 fallbackOnBody 模式下会生成跟随鼠标的拖拽元素（带 .sortable-fallback/.sortable-drag，且 z-index 很高）。当前样式未禁用该拖拽元素的 pointer-events，导致命中检测时常“点到自己”而非下方卡片，从而出现拖拽悬停不触发交换/排序的随机现象（与卡片位置无强绑定，表现为任意卡片随机触发）。",
+    "mechanism": [
+      "xhmonitor-web/src/hooks/useSortable.ts：forceFallback: true + fallbackOnBody: true，会把拖拽元素挂到 body 上并跟随鼠标移动。",
+      "xhmonitor-web/src/styles/responsive.css：.sortable-drag 设置 z-index: 9999，但未设置 pointer-events: none。",
+      "在某些鼠标位置/偏移组合下，拖拽元素位于光标下方，命中检测优先返回拖拽元素自身，Sortable 无法正确定位下方目标卡片，于是“悬停无反应”。"
+    ],
+    "confidence": 0.7
+  },
+  "evidence": [
+    {
+      "type": "code",
+      "details": "xhmonitor-web/src/styles/responsive.css：.sortable-drag 具有极高 z-index，但未禁用 pointer-events；而项目其他 overlay（如背景层、峰谷标记）均显式设置 pointer-events: none，形成对比。",
+      "files": [
+        "xhmonitor-web/src/styles/responsive.css",
+        "xhmonitor-web/src/hooks/useSortable.ts"
+      ]
+    },
+    {
+      "type": "behavior",
+      "details": "用户确认：通过 .drag-handle 拖拽；Disk 关闭也复现；且任意卡片均可能随机触发，符合“拖拽元素命中自身导致目标识别失败”的随机性特征。"
+    }
+  ],
+  "affected_files_ranked": [
+    {
+      "path": "xhmonitor-web/src/styles/responsive.css",
+      "relevance": 0.9,
+      "reason": "定义 .sortable-drag 样式；缺少 pointer-events: none 可能导致目标命中失败。"
+    },
+    {
+      "path": "xhmonitor-web/src/hooks/useSortable.ts",
+      "relevance": 0.8,
+      "reason": "启用 forceFallback/fallbackOnBody；拖拽元素位于 body，配合 CSS 命中行为可能导致随机失效。"
+    }
+  ],
+  "clarification_needs": [
+    {
+      "question": "问题出现时，拖拽的卡片是否能“跟随鼠标移动”，但下方卡片不发生交换/预览？还是根本拖不起来？",
+      "context": "若能跟随但不交换，更符合“拖拽元素拦截命中导致目标识别失败”；若拖不起来则需要排查 handle/pointer-events 或 Sortable 实例状态。",
+      "options": ["能跟随但不交换", "根本拖不起来", "两种都遇到过"],
+      "recommended": 0
+    },
+    {
+      "question": "是否在 DevTools Console 看到 Sortable 的 debug 日志里出现大量 cleanup/removeOrphans，且拖拽开始后没有对应的 onEnd？",
+      "context": "如果 onEnd 丢失，可能是拖拽过程中被异常中断（例如实例被销毁或拖拽元素被清理）。当前判断以“命中失败”为主，但仍保留该分支作为备选。",
+      "options": ["有看到", "没有看到", "没开 debug"],
+      "recommended": 2
+    }
+  ],
+  "candidate_fixes": [
+    {
+      "title": "禁用拖拽 overlay 的 pointer-events（最小改动）",
+      "description": "为 .sortable-drag（必要时加上 .sortable-fallback）添加 pointer-events: none，避免拖拽元素拦截命中，让 Sortable 能稳定识别下方目标卡片。",
+      "risk": "low",
+      "notes": "拖拽过程中鼠标事件会“穿透”到下方元素；本项目卡片无 click 交互，风险较低。现有 `.sortable-drag .drag-handle { pointer-events: auto; }` 将不再生效，可保留或移除。"
+    },
+    {
+      "title": "降低 React 与 Sortable 的并发改动（结构性修复）",
+      "description": "减少拖拽期间 React 对 children 顺序的干预（例如停用 previewOrder 或仅在 onEnd 更新 order），避免与 Sortable 的 DOM 重排冲突，提升稳定性。",
+      "risk": "medium",
+      "notes": "会改变拖拽时“即时预览交换”的体验（更接近“松手后才提交”）。需要回归验证拖拽动画与顺序更新。"
+    }
+  ]
+}

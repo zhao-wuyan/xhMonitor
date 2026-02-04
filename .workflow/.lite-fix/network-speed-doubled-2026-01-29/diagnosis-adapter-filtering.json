@@ -1,0 +1,124 @@
+{
+  "symptom": {
+    "description": "网络速度统计值异常偏高（通常翻倍），因为系统同时计算了物理网卡和虚拟网卡（如 VMware、Hyper-V、VPN 适配器）的流量，导致同一份流量被重复统计",
+    "error_message": null,
+    "stack_trace": null,
+    "frequency": "always",
+    "user_impact": "用户看到的上传/下载速度数值是实际值的 2 倍或更多，导致监控数据不准确，无法反映真实网络使用情况"
+  },
+  "root_cause": {
+    "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+    "line_range": "215-223",
+    "function": "AddSensorReadings",
+    "issue": "在构建 SensorReading 对象时仅传递了 HardwareType，未保留 hardware.Name（硬件名称），导致上层无法区分物理网卡和虚拟网卡。当前数据结构将层级化的硬件-传感器结构展平后丢失了硬件名称上下文，使得 SystemMetricProvider 无法识别并过滤虚拟适配器",
+    "confidence": 0.95,
+    "introduced_by": "初始设计时未考虑虚拟网卡场景",
+    "category": "logic_error"
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Core/Models/SensorReading.cs",
+      "relevance": 1.0,
+      "rationale": "数据模型需要新增 HardwareName 字段以传递硬件名称上下文",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+      "relevance": 1.0,
+      "rationale": "AddSensorReadings 方法需要注入 hardware.Name 参数到 SensorReading 构造函数",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+      "relevance": 1.0,
+      "rationale": "GetNetworkSpeed 方法需要实现虚拟网卡过滤逻辑，使用黑名单策略排除虚拟适配器",
+      "change_type": "fix_target"
+    },
+    {
+      "path": "XhMonitor.Tests/Providers/SystemMetricProviderTests.cs",
+      "relevance": 0.8,
+      "rationale": "需要更新测试用例以验证虚拟网卡过滤功能",
+      "change_type": "test_coverage"
+    }
+  ],
+  "reproduction_steps": [
+    "在 Windows 系统上安装虚拟机软件（VMware、VirtualBox）或启用 Hyper-V",
+    "启动虚拟机或创建 Hyper-V 虚拟交换机，确保虚拟网卡处于活动状态",
+    "在物理网卡上产生网络流量（如下载文件）",
+    "观察 xhMonitor 显示的网络速度，会发现数值是实际速度的 2 倍或更多",
+    "使用 Windows 任务管理器或 Resource Monitor 对比，确认实际网速与 xhMonitor 显示不符"
+  ],
+  "fix_hints": [
+    {
+      "description": "修改 SensorReading 数据模型，新增 HardwareName 字段",
+      "approach": "在 SensorReading record 定义中添加 string HardwareName 参数，位于 HardwareType 之后。修改所有构造 SensorReading 的地方传入 hardware.Name",
+      "code_example": "public sealed record SensorReading(HardwareType HardwareType, string HardwareName, SensorType SensorType, string Name, float Value);",
+      "risk": "low"
+    },
+    {
+      "description": "更新 LibreHardwareManager.AddSensorReadings 方法注入硬件名称",
+      "approach": "在 AddSensorReadings 方法中构造 SensorReading 时，传入 hardware.Name 作为第二个参数",
+      "code_example": "results.Add(new SensorReading(hardware.HardwareType, hardware.Name, sensor.SensorType, sensor.Name, sensor.Value.Value));",
+      "risk": "low"
+    },
+    {
+      "description": "在 SystemMetricProvider 中实现虚拟网卡黑名单过滤",
+      "approach": "定义虚拟适配器关键字数组（vEthernet, Hyper-V, VirtualBox, VMware, TAP-, VPN, Radmin, Loopback, Pseudo, WireGuard, OpenVPN, Tun, Fortinet, Cisco AnyConnect, TeamViewer, AnyDesk, Kernel），在 GetNetworkSpeed 方法中遍历 sensors 时检查 sensor.HardwareName 是否包含这些关键字（不区分大小写），如果匹配则跳过该传感器",
+      "code_example": "private static readonly string[] VirtualAdapterKeywords = [\"vEthernet\", \"Hyper-V\", \"VirtualBox\", \"VMware\", \"TAP-\", \"VPN\", \"Radmin\", \"Loopback\", \"Pseudo\", \"WireGuard\", \"OpenVPN\", \"Tun\", \"Fortinet\", \"Cisco AnyConnect\", \"TeamViewer\", \"AnyDesk\", \"Kernel\"];\n\nprivate static bool IsVirtualAdapter(string hardwareName)\n{\n    if (string.IsNullOrWhiteSpace(hardwareName)) return false;\n    foreach (var keyword in VirtualAdapterKeywords)\n    {\n        if (hardwareName.Contains(keyword, StringComparison.OrdinalIgnoreCase))\n            return true;\n    }\n    return false;\n}\n\n// In GetNetworkSpeed:\nforeach (var sensor in sensors)\n{\n    if (sensor.Value <= 0 || IsVirtualAdapter(sensor.HardwareName))\n    {\n        continue;\n    }\n    // ... 原有累加逻辑 ...\n}",
+      "risk": "low"
+    },
+    {
+      "description": "添加日志记录被过滤的虚拟网卡",
+      "approach": "在过滤虚拟网卡时记录 Debug 级别日志，便于排查问题和了解哪些适配器被过滤",
+      "code_example": "if (IsVirtualAdapter(sensor.HardwareName))\n{\n    _logger?.LogDebug(\"[SystemMetricProvider] Filtered virtual adapter: {HardwareName}\", sensor.HardwareName);\n    continue;\n}",
+      "risk": "low"
+    }
+  ],
+  "dependencies": "LibreHardwareMonitor.Hardware (IHardware.Name 属性提供硬件名称)",
+  "constraints": "必须使用黑名单策略而非白名单，以避免误杀小众品牌物理网卡（如 USB 网卡）；过滤逻辑需要不区分大小写；需要保持性能，避免复杂的正则表达式匹配",
+  "related_issues": [
+    {
+      "type": "tech_debt",
+      "reference": "SensorReading 数据模型设计",
+      "description": "当前 SensorReading 将层级化的硬件-传感器结构展平，丢失了硬件上下文信息，未来可能需要更完整的硬件元数据"
+    }
+  ],
+  "clarification_needs": [
+    {
+      "question": "是否需要提供用户配置选项来自定义虚拟网卡黑名单？",
+      "context": "当前方案使用硬编码的黑名单关键字数组。如果用户有特殊的虚拟网卡（如企业自定义 VPN 适配器）未被覆盖，或者用户希望监控某些虚拟网卡流量，可能需要配置化",
+      "options": [
+        "使用硬编码黑名单，覆盖常见虚拟网卡（推荐，简单高效）",
+        "提供配置文件或数据库设置，允许用户添加/删除黑名单关键字",
+        "同时提供默认黑名单和用户自定义黑名单，合并使用"
+      ]
+    },
+    {
+      "question": "如果过滤后所有网卡流量为 0，是否需要回退到未过滤状态？",
+      "context": "在极少数情况下（如用户手动创建网桥，物理网卡不再直接暴露流量），过滤虚拟网卡可能导致读数为 0。是否需要检测这种情况并回退",
+      "options": [
+        "不回退，保持过滤逻辑一致性（推荐，桥接场景极少见）",
+        "检测过滤后流量为 0 但未过滤前有值，则回退到未过滤值",
+        "提供用户开关，允许禁用虚拟网卡过滤"
+      ]
+    },
+    {
+      "question": "是否需要区分 Wi-Fi 和有线网卡，分别显示速度？",
+      "context": "当前方案将所有物理网卡流量累加。如果用户同时使用 Wi-Fi 和有线连接，可能希望分别查看各自速度",
+      "options": [
+        "保持当前累加逻辑，显示总网速（推荐，简单直观）",
+        "分别显示 Wi-Fi 和有线网速（需要额外的 UI 和数据模型支持）",
+        "提供详细视图，列出每个物理网卡的速度"
+      ]
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-29T07:40:00Z",
+    "bug_description": "需要区分虚拟网卡和物理网卡，避免重复计算网速",
+    "source": "cli-explore-agent",
+    "diagnosis_angle": "adapter-filtering",
+    "diagnosis_index": 2,
+    "total_diagnoses": 2,
+    "duration_seconds": 120
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "iteration": 3,
+  "timestamp": "2026-02-04T10:20:00+08:00",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "description": "fallback 模式下 .sortable-chosen（原卡片）仍可见，导致拖拽时出现“残留/重叠卡片”的视觉问题",
+      "testable_condition": "拖拽开始后同时出现 .sortable-drag（跟随鼠标）与 .sortable-chosen（原位置）且两者都可见",
+      "logging_point": "xhmonitor-web/src/styles/responsive.css + xhmonitor-web/src/hooks/useSortable.ts:onStart/onEnd",
+      "evidence_criteria": {
+        "confirm": "拖拽时可见两张卡片重叠",
+        "reject": "拖拽时仅可见一张卡片（drag 可见、原位隐藏）"
+      },
+      "likelihood": 2,
+      "status": "inconclusive_after_fix",
+      "verdict_reason": "出现过“拖拽卡片也消失”，更像 chosen/drag 样式冲突而非重叠本身；已用 :not(.sortable-drag) 修正，待回归确认"
+    },
+    {
+      "id": "H2",
+      "description": "拖拽结束后偶发残留卡片：body 上存在 orphan `.sortable-*` 未清理",
+      "testable_condition": "拖拽结束后 DOM 仍存在不在 container 内的 `.sortable-*`",
+      "logging_point": "xhmonitor-web/src/hooks/useSortable.ts:cleanup",
+      "evidence_criteria": {
+        "confirm": "orphan count > 0 且残影可见",
+        "reject": "orphan count == 0 且无残影"
+      },
+      "likelihood": 3,
+      "status": "rejected_by_evidence",
+      "verdict_reason": "本次日志中 orphan count 一直为 0，未支持“残影来自 orphan 未清理”",
+      "evidence": {
+        "orphan_count_observed": 0
+      }
+    },
+    {
+      "id": "H3",
+      "description": "拖拽中即时排序导致“不松手就交换”，需要改为 drop 时一次性提交顺序",
+      "testable_condition": "拖拽过程中列表顺序不变化（不交换），松手后才更新 cardOrder",
+      "logging_point": "xhmonitor-web/src/hooks/useSortable.ts:onEnd (sort:false)",
+      "evidence_criteria": {
+        "confirm": "拖拽中不交换，松手后交换",
+        "reject": "拖拽中仍交换"
+      },
+      "likelihood": 2,
+      "status": "fix_applied_pending_verification"
+    },
+    {
+      "id": "H4",
+      "description": "拖拽中途脱离：useSortable 初始化 effect 依赖 onOrderChange，导致频繁 destroy/recreate Sortable，拖拽被打断",
+      "testable_condition": "拖拽进行中出现 'Sortable destroy (effect cleanup)' 或频繁 'Sortable init'，且与拖拽脱离时间点接近",
+      "logging_point": "xhmonitor-web/src/hooks/useSortable.ts (SYS 日志 + 依赖移除)",
+      "evidence_criteria": {
+        "confirm": "日志显示拖拽期间发生 destroy/init，与脱离同步",
+        "reject": "拖拽期间无 destroy/init，仍脱离"
+      },
+      "likelihood": 1,
+      "status": "confirmed_root_cause",
+      "verdict_reason": "日志显示多次 onStart 但几乎没有 onEnd，且出现大量非拖拽结束的 cleanup；结合代码依赖关系，符合 effect cleanup 打断拖拽特征。已用 ref 固定 onOrderChange 并移出依赖。"
+    }
+  ],
+  "corrections": [
+    {
+      "wrong_assumption": "残影/脱离主要来自 body orphan 清理误删",
+      "corrected_to": "脱离主要来自 Sortable 实例被重渲染销毁（effect cleanup）",
+      "reason": "onStart 多次但 onEnd 极少，且存在大量 isDragging=false 的 cleanup；与依赖 onOrderChange 导致反复重建一致"
+    }
+  ]
+}

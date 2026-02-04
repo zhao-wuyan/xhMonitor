@@ -64,6 +64,12 @@ Thumbs.db
 *.swp
 *.swo
 
+## Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
 ## Generated web assets (built from xhmonitor-web/dist)
 XhMonitor.Desktop/wwwroot/
 
@@ -72,7 +78,6 @@ XhMonitor.Desktop/wwwroot/
 
 xhmonitor.db
 .ace-tool/
-.workflow
 .gemini-clipboard
 .ccw
 .claude/

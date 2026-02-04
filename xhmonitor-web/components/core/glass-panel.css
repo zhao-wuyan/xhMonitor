@@ -1,0 +1,33 @@
+/**
+ * GlassPanel - 玻璃拟态面板组件
+ * 提供半透明背景和毛玻璃效果的容器
+ */
+
+.xh-glass-panel {
+  background: var(--xh-color-glass-bg);
+  backdrop-filter: blur(var(--xh-blur));
+  -webkit-backdrop-filter: blur(var(--xh-blur));
+  border: 1px solid var(--xh-color-glass-border);
+  border-radius: var(--xh-radius-lg);
+  box-shadow: var(--xh-shadow-sm);
+}
+
+/* 变体：无边框 */
+.xh-glass-panel--borderless {
+  border: none;
+}
+
+/* 变体：高亮边框 */
+.xh-glass-panel--highlight {
+  border-color: var(--xh-color-glass-highlight);
+}
+
+/* 变体：带内边距 */
+.xh-glass-panel--padded {
+  padding: var(--xh-spacing-2xl);
+}
+
+/* 变体：紧凑内边距 */
+.xh-glass-panel--compact {
+  padding: var(--xh-spacing-lg);
+}

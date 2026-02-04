@@ -1,0 +1,123 @@
+{
+  "project_structure": "Multi-project solution with 4 C# projects (Core, Service, Desktop, Tests) and 1 web project (xhmonitor-web). Version information flows from source code through build pipeline to installer:\n\n1. Source Layer: .csproj files define <Version> property\n2. Build Layer: MSBuild processes version, publish.ps1 orchestrates builds\n3. Packaging Layer: Inno Setup installer.iss consumes version\n4. Runtime Layer: AboutWindow.xaml displays hardcoded version\n\nNo centralized version management exists - each layer maintains independent version strings.",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+      "relevance": 0.95,
+      "rationale": "Desktop project version definition (<Version>0.1.0</Version> line 10), primary integration point for MSBuild version propagation"
+    },
+    {
+      "path": "XhMonitor.Service/XhMonitor.Service.csproj",
+      "relevance": 0.95,
+      "rationale": "Service project version definition (<Version>0.1.0</Version> line 8), must synchronize with Desktop version"
+    },
+    {
+      "path": "XhMonitor.Core/XhMonitor.Core.csproj",
+      "relevance": 0.95,
+      "rationale": "Core library version definition (<Version>0.1.0</Version> line 7), shared dependency requiring version alignment"
+    },
+    {
+      "path": "xhmonitor-web/package.json",
+      "relevance": 0.85,
+      "rationale": "Web frontend version (\"version\": \"0.1.0\" line 4), npm build integration point, embedded in Desktop wwwroot"
+    },
+    {
+      "path": "XhMonitor.Desktop/Windows/AboutWindow.xaml",
+      "relevance": 0.90,
+      "rationale": "Hardcoded version display (line 57: \"版本：0.1.0\"), primary runtime version presentation, requires dynamic binding"
+    },
+    {
+      "path": "XhMonitor.Desktop/Windows/AboutWindow.xaml.cs",
+      "relevance": 0.75,
+      "rationale": "AboutWindow code-behind, integration point for runtime version retrieval via Assembly.GetName().Version"
+    },
+    {
+      "path": "publish.ps1",
+      "relevance": 0.90,
+      "rationale": "Build orchestration script with version parameter (line 6: $Version = \"0.1.0\"), controls output directory naming and README generation"
+    },
+    {
+      "path": "build-installer.ps1",
+      "relevance": 0.85,
+      "rationale": "Installer build script with version parameter (line 5: $Version = \"0.0.0\"), passes version to Inno Setup via /DMyAppVersion"
+    },
+    {
+      "path": "installer/XhMonitor.iss",
+      "relevance": 0.90,
+      "rationale": "Inno Setup script with version definition (line 9: #define MyAppVersion \"0.2.1\"), final packaging integration point"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "relevance": 0.70,
+      "rationale": "Version history documentation, should be updated with version bumps, potential source for automated version extraction"
+    },
+    {
+      "path": "README.md",
+      "relevance": 0.60,
+      "rationale": "Documentation with version references (line 13: v0.2.0), requires synchronization with actual version"
+    },
+    {
+      "path": "scripts/启动服务.bat",
+      "relevance": 0.50,
+      "rationale": "Startup script with hardcoded version display (v0.1.0), minor integration point for user-facing version info"
+    }
+  ],
+  "patterns": "Current version management patterns:\n\n1. **Manual Synchronization Pattern**: Each project/file maintains independent version string, requires manual updates across 12+ locations\n\n2. **Build Script Parameter Pattern**: publish.ps1 and build-installer.ps1 accept -Version parameter but default to hardcoded values\n   - publish.ps1:6: `[string]$Version = \"0.1.0\"`\n   - build-installer.ps1:5: `[string]$Version = \"0.0.0\"`\n\n3. **MSBuild Version Property Pattern**: .csproj files use <Version> element for assembly versioning\n   - Desktop.csproj:10, Service.csproj:8, Core.csproj:7\n   - Generates AssemblyVersion, FileVersion, InformationalVersion attributes\n\n4. **Inno Setup Preprocessor Pattern**: installer.iss uses #define for version with command-line override\n   - Line 8-9: `#ifndef MyAppVersion` / `#define MyAppVersion \"0.2.1\"`\n   - build-installer.ps1:163: `& $isccPath \"/DMyAppVersion=$Version\" $IssFile`\n\n5. **Hardcoded UI Pattern**: AboutWindow.xaml embeds version string directly in XAML\n   - Line 57: `<TextBlock Text=\"版本：0.1.0\" .../>`\n   - No data binding or runtime retrieval\n\n6. **npm Package Version Pattern**: package.json follows semantic versioning\n   - Line 4: `\"version\": \"0.1.0\"`\n   - Integrated via Desktop.csproj BuildWebAssets target\n\nRecommended centralization approach:\n- Create Directory.Build.props at solution root with <Version> property\n- All .csproj files inherit version automatically\n- Build scripts read version from .props file\n- AboutWindow retrieves version via Assembly.GetName().Version reflection\n- npm version synced via pre-build script or manual alignment",
+  "dependencies": "Version management dependencies:\n\n**Build-Time Dependencies**:\n1. MSBuild SDK: Processes <Version> property in .csproj files, generates assembly attributes\n2. dotnet CLI: Executes publish commands with version metadata\n3. npm: Manages package.json version, builds web assets\n4. Inno Setup Compiler (ISCC.exe): Consumes version via preprocessor directive\n5. PowerShell: Orchestrates multi-stage build with version parameter passing\n\n**Runtime Dependencies**:\n1. System.Reflection: Assembly.GetName().Version for runtime version retrieval\n2. WPF Data Binding: Potential mechanism for dynamic version display in XAML\n3. IConfiguration: Could load version from appsettings.json if needed\n\n**Cross-Project Dependencies**:\n1. Desktop → Core: ProjectReference, version alignment required\n2. Service → Core: ProjectReference, version alignment required\n3. Desktop → xhmonitor-web: Build-time integration via BuildWebAssets target\n4. publish.ps1 → Desktop/Service: Invokes dotnet publish with version metadata\n5. build-installer.ps1 → publish.ps1: Chains version parameter\n6. installer.iss → publish.ps1 output: Consumes versioned release directory\n\n**External Tool Dependencies**:\n1. LibreHardwareMonitorLib 0.9.*: NuGet package version constraint\n2. .NET 8 SDK: Required for MSBuild version property support\n3. Inno Setup 6.x: Required for installer compilation",
+  "integration_points": "Version information integration points (file:line references):\n\n**Source Code Integration Points**:\n1. XhMonitor.Desktop/XhMonitor.Desktop.csproj:10\n   - `<Version>0.1.0</Version>`\n   - MSBuild property, generates AssemblyInformationalVersionAttribute\n   - Integration: Read by MSBuild, accessible via Assembly.GetName().Version at runtime\n\n2. XhMonitor.Service/XhMonitor.Service.csproj:8\n   - `<Version>0.1.0</Version>`\n   - Must synchronize with Desktop version for consistency\n\n3. XhMonitor.Core/XhMonitor.Core.csproj:7\n   - `<Version>0.1.0</Version>`\n   - Shared library version, impacts dependent projects\n\n4. xhmonitor-web/package.json:4\n   - `\"version\": \"0.1.0\"`\n   - npm package version, embedded in Desktop via BuildWebAssets target\n   - Integration: Desktop.csproj:55-67 BuildWebAssets target copies dist to wwwroot\n\n**Runtime Display Integration Points**:\n5. XhMonitor.Desktop/Windows/AboutWindow.xaml:57\n   - `<TextBlock Text=\"版本：0.1.0\" .../>`\n   - Hardcoded version string, requires replacement with data binding\n   - Recommended: Bind to ViewModel property that reads Assembly.GetName().Version\n\n6. XhMonitor.Desktop/Windows/AboutWindow.xaml.cs:7-16\n   - Code-behind class, integration point for version retrieval logic\n   - Add: `var version = Assembly.GetExecutingAssembly().GetName().Version;`\n   - Expose via property or pass to XAML via DataContext\n\n**Build Pipeline Integration Points**:\n7. publish.ps1:6\n   - `[string]$Version = \"0.1.0\"`\n   - Script parameter default, controls output directory naming\n   - Integration: Line 107 `$OutputDir = Join-Path $RootDir \"release\\XhMonitor-v$Version\"`\n   - Integration: Line 296-375 README generation with version interpolation\n\n8. publish.ps1:169-193 (Service publish)\n   - Invokes `dotnet publish` with version from .csproj\n   - No explicit version override, relies on project file\n\n9. publish.ps1:211-236 (Desktop publish)\n   - Invokes `dotnet publish` with version from .csproj\n   - BuildWebAssets target (Desktop.csproj:55) runs before publish\n\n10. build-installer.ps1:5\n    - `[string]$Version = \"0.0.0\"`\n    - Installer script version parameter\n    - Integration: Line 134/136 passes to publish.ps1\n\n11. build-installer.ps1:163\n    - `& $isccPath \"/DMyAppVersion=$Version\" $IssFile`\n    - Passes version to Inno Setup via preprocessor define\n\n**Packaging Integration Points**:\n12. installer/XhMonitor.iss:8-10\n    - `#ifndef MyAppVersion` / `#define MyAppVersion \"0.2.1\"`\n    - Inno Setup version definition with command-line override support\n    - Integration: Line 20 `AppVersion={#MyAppVersion}`\n    - Integration: Line 34 `OutputBaseFilename=XhMonitor-v{#MyAppVersion}-Setup`\n    - Integration: Line 88-96 Source paths reference versioned release directory\n\n**Documentation Integration Points**:\n13. CHANGELOG.md:10\n    - `## [0.2.0] - 2026-01-27`\n    - Version history, should be updated with version bumps\n\n14. README.md:13\n    - `### 最新版本 v0.2.0 (2026-01-27)`\n    - User-facing version documentation\n\n15. scripts/启动服务.bat:3\n    - `echo ... v0.1.0 ...`\n    - Console output version display\n\n**Recommended Single Source of Truth**:\nCreate `Directory.Build.props` at solution root:\n```xml\n<Project>\n  <PropertyGroup>\n    <Version>0.2.5</Version>\n  </PropertyGroup>\n</Project>\n```\n\nAll .csproj files automatically inherit <Version>, eliminating manual synchronization. Build scripts read version via:\n```powershell\n$version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version\n```",
+  "constraints": "Integration-specific constraints:\n\n1. **Multi-Project Synchronization Constraint**: Three C# projects (Desktop, Service, Core) must maintain identical version numbers for consistency. Mismatched versions cause confusion in logs and diagnostics.\n\n2. **Build Order Constraint**: Web assets (xhmonitor-web) must build before Desktop project due to BuildWebAssets target dependency (Desktop.csproj:55-67). Version changes require npm build completion.\n\n3. **MSBuild Property Inheritance Constraint**: .csproj files can inherit <Version> from Directory.Build.props, but existing explicit <Version> elements override inheritance. Must remove explicit versions to enable centralization.\n\n4. **Inno Setup Preprocessor Constraint**: installer.iss requires version as preprocessor define (#define MyAppVersion). Command-line override via /DMyAppVersion works only if #ifndef guard exists (line 8).\n\n5. **PowerShell Parameter Passing Constraint**: Version must flow through two-stage build (publish.ps1 → build-installer.ps1 → ISCC.exe). Each stage requires explicit parameter passing.\n\n6. **XAML Static Content Constraint**: AboutWindow.xaml line 57 uses static TextBlock.Text. Requires refactoring to data binding or code-behind property for dynamic version display.\n\n7. **Assembly Version Format Constraint**: .NET assembly versions follow Major.Minor.Build.Revision format (e.g., 0.1.0.0). Semantic versioning (0.1.0) auto-expands to 0.1.0.0.\n\n8. **npm Semantic Versioning Constraint**: package.json requires semantic versioning (major.minor.patch). Must align with .NET version scheme or maintain separate versioning.\n\n9. **Release Directory Naming Constraint**: publish.ps1 line 107 creates output directory as \"XhMonitor-v{Version}\". Installer.iss line 88-96 references this path. Version change requires coordinated path updates.\n\n10. **Backward Compatibility Constraint**: Existing release artifacts (release/XhMonitor-v0.1.0, v0.2.0, etc.) follow current naming convention. Version management changes must preserve this pattern.\n\n11. **No Breaking Changes Constraint**: Per project guidelines, existing functionality is sacred. Version management system must not break current build/publish workflows.\n\n12. **Configuration Layering Constraint**: Per project-guidelines.json, infrastructure config (ports) lives in appsettings.json, user preferences in database. Version is infrastructure metadata, should not be in database.\n\n13. **Windows Platform Constraint**: Build scripts use PowerShell and Windows-specific paths (C:\\, backslashes). Version management must work in Windows environment.",
+  "clarification_needs": [
+    {
+      "question": "Should web frontend (package.json) version be synchronized with C# projects or maintain independent versioning?",
+      "context": "Currently xhmonitor-web/package.json has version 0.1.0 while installer uses 0.2.1. Web assets are embedded in Desktop via BuildWebAssets target, creating tight coupling. Independent versioning allows frontend iteration without backend releases, but synchronized versioning ensures consistency.",
+      "options": [
+        "Synchronized versioning - package.json version matches C# projects, updated together",
+        "Independent versioning - package.json follows own semantic versioning, decoupled from backend",
+        "Hybrid approach - major.minor synchronized, patch versions independent"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "Where should the single source of truth for version be located?",
+      "context": "Multiple options exist for centralizing version: Directory.Build.props (MSBuild standard), version.json (custom file), CHANGELOG.md (documentation-driven), or Git tags (VCS-driven). Directory.Build.props integrates natively with MSBuild and requires no custom tooling.",
+      "options": [
+        "Directory.Build.props at solution root - MSBuild native, auto-inherited by all .csproj files",
+        "version.json at solution root - Custom format, requires build script parsing",
+        "CHANGELOG.md - Documentation-driven versioning, extract from ## [x.x.x] headers",
+        "Git tags - VCS-driven versioning, extract from git describe or latest tag"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "How should AboutWindow display version at runtime?",
+      "context": "Current implementation hardcodes version in XAML (line 57: \"版本：0.1.0\"). Options include: Assembly reflection (reads from .csproj <Version>), ViewModel property with data binding, or configuration file. Assembly reflection is zero-maintenance after setup.",
+      "options": [
+        "Assembly reflection - AboutWindow.xaml.cs reads Assembly.GetName().Version, binds to TextBlock",
+        "ViewModel property - Create AboutViewModel with Version property, bind in XAML",
+        "Configuration file - Store version in appsettings.json, load via IConfiguration",
+        "Hybrid - Assembly reflection with fallback to configuration"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "Should version bumping be automated or manual?",
+      "context": "Current workflow requires manual version updates across 12+ files. Automation options include: pre-commit hooks, CI/CD pipeline scripts, or dedicated version bump tool. Manual control ensures intentional versioning but is error-prone.",
+      "options": [
+        "Manual with checklist - Provide version bump checklist/script, developer runs manually",
+        "Semi-automated - Script updates all files, developer reviews and commits",
+        "Fully automated - CI/CD pipeline auto-increments version on merge to main",
+        "Git tag driven - Version derived from git tags, no manual file updates"
+      ],
+      "recommended": 1
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-29T00:00:00.000Z",
+    "task_description": "引入版本管理体系，目前打包纯靠手传版本号，且关于页面的版本号是写死的。",
+    "source": "cli-explore-agent",
+    "exploration_angle": "integration-points",
+    "exploration_index": 2,
+    "total_explorations": 3,
+    "duration_seconds": 180
+  }
+}

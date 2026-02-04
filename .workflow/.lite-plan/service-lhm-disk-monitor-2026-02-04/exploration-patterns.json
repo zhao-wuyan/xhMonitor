@@ -1,0 +1,77 @@
+{
+  "angle": "patterns",
+  "project_structure": [
+    "XhMonitor.Core/Services/LibreHardwareManager.cs：对 LibreHardwareMonitor 的 Computer 做单例封装，并用 snapshot 缓存传感器读数。",
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs：系统级指标采集入口，已存在基于 LHM 的网络吞吐采集逻辑（Throughput + 名称匹配）。",
+    "XhMonitor.Service/Worker.cs：后台采集循环，使用 SignalR 推送 ReceiveSystemUsage 等消息。",
+    "xhmonitor-web/src/hooks/useMetricsHub.ts：Web 端 SignalR 客户端，ReceiveSystemUsage 以 Record 形式兼容 PascalCase/camelCase。",
+    "xhmonitor-web/src/components/DiskWidget.tsx：磁盘卡片组件，目前为静态 mock + 随机读写速度模拟。"
+  ],
+  "relevant_files": [
+    "XhMonitor.Core/Services/LibreHardwareManager.cs",
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "XhMonitor.Core/Interfaces/IMetricsClient.cs",
+    "XhMonitor.Service/Worker.cs",
+    "xhmonitor-web/src/hooks/useMetricsHub.ts",
+    "xhmonitor-web/src/types.ts",
+    "xhmonitor-web/src/App.tsx",
+    "xhmonitor-web/src/components/DiskWidget.tsx"
+  ],
+  "patterns": [
+    "LHM 采集模式：SystemMetricProvider 通过 ILibreHardwareManager.GetSensorValues(hardwareTypes, SensorType.Throughput) 批量获取传感器，再用名称 pattern 区分 Upload/Download。",
+    "SignalR 消息兼容：服务端推送对象字段为 PascalCase（例如 TotalCpu），Web 端对同一字段兼容 data.totalCpu 与 data.TotalCpu。",
+    "UI 数据形状：DiskWidget 的 DiskInfo 需要 name、total(GB)、used(%)、readSpeed(MB/s)、writeSpeed(MB/s)，并在组件内做单位格式化。"
+  ],
+  "dependencies": [
+    "LibreHardwareMonitor.Hardware（后端 LHM 传感器与 HardwareType/SensorType 枚举）",
+    "@microsoft/signalr（Web 端 SignalR 客户端）"
+  ],
+  "integration_points": [
+    "LibreHardwareManager 当前 IsStorageEnabled=false，需要开启 Storage 才能拿到 Storage 传感器。",
+    "SystemMetricProvider 可复用“Throughput + 名称匹配”的模式实现 Storage 的 Read/Write 速度（若 LHM 提供）。",
+    "Worker.SendSystemUsageAsync 是把系统总量推到 Web 的唯一入口之一，扩展该 payload 可最小化改动。",
+    "Web 端应避免在 DiskWidget 内再次调用 useMetricsHub（会重复创建 SignalR 连接）；建议由 App.tsx 将解析后的磁盘数据下发到 DiskWidget。"
+  ],
+  "constraints": [
+    "尽量保持向后兼容：新增字段不应影响现有 Desktop/WPF 客户端（System.Text.Json 默认忽略未知字段）。",
+    "性能约束：开启 Storage 采集可能增加 LHM Update 的开销，需要评估采样间隔与 snapshotLifetime。",
+    "命名与单位需明确：SystemUsage 目前以 MB/MBps 为主；DiskWidget 当前以 GB + MB/s 展示。"
+  ],
+  "clarification_needs": [
+    {
+      "question": "磁盘卡片需要按“逻辑盘符（C:, D:）”还是“物理硬盘型号（LHM storage hardware name）”展示？",
+      "context": "DiskWidget 当前 mock 是硬盘型号（如 Samsung SSD...）。服务端如果用 DriveInfo 更容易拿到容量/使用率（按盘符），但与 LHM 的 storage hardware 之间未必能稳定映射。",
+      "options": [
+        "按盘符/卷（DriveInfo：C:, D:）",
+        "按物理硬盘型号（LHM storage hardware.Name）",
+        "两者结合：按盘符展示，但 label 附带硬盘型号/序列（若可取）"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "读写速度（R/W）是否必须从 LHM 采集？如果 LHM 未提供对应传感器，允许降级为 0 或隐藏吗？",
+      "context": "SystemMetricProvider 已通过 LHM 读取 Network Throughput；DiskWidget 有 R/W 字段但目前是随机模拟。Storage 的 Throughput 传感器是否包含 Read/Write 需要实现后验证。",
+      "options": [
+        "必须：优先用 LHM Storage Throughput（按名称匹配 Read/Write），失败则 0",
+        "不必：先只接入容量/使用率（读写速度先不做）",
+        "先过渡：继续前端模拟/0，后端只提供容量/使用率"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "容量字段希望采用什么单位/字段形态？",
+      "context": "DiskWidget 现有接口是 total=GB、used=百分比；但后端其他系统字段以 MB 为主。为了避免精度与换算分歧，也可直接传 bytes。",
+      "options": [
+        "保持与 DiskWidget 一致：totalGb + usedPercent（read/write 仍为 MB/s）",
+        "后端统一用 MB：totalMb + usedPercent（前端换算）",
+        "传原始值：totalBytes + usedBytes（前端自行计算百分比与展示）"
+      ],
+      "recommended": 2
+    }
+  ],
+  "_metadata": {
+    "exploration_angle": "patterns",
+    "exploration_index": 1,
+    "timestamp": "2026-02-04T15:22:55.8957115Z"
+  }
+}

@@ -1,38 +1,63 @@
-import { useState, useEffect } from 'react';
-import { Activity, Wifi, WifiOff } from 'lucide-react';
-import { SystemSummary } from './components/SystemSummary';
-import { ProcessList } from './components/ProcessList';
-import { MetricChart } from './components/MetricChart';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, Settings } from 'lucide-react';
+import { LayoutProvider, useLayout } from './contexts/LayoutContext';
+import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
-import { calculateSystemSummary, formatTimestamp } from './utils';
+import { useAdaptiveScroll } from './hooks/useAdaptiveScroll';
 import { t } from './i18n';
-import type { ChartDataPoint } from './types';
+import { formatMegabytesParts, formatMegabytesLabel, formatNetworkRateLabel, formatNetworkRateParts } from './utils';
+import type { SystemUsage } from './types';
 
-function App() {
+// New components
+import { StatCard } from './components/StatCard';
+import { ChartCanvas } from './components/ChartCanvas';
+import { SettingsDrawer } from './components/SettingsDrawer';
+import { DiskWidget } from './components/DiskWidget';
+import { DraggableGrid } from './components/DraggableGrid';
+import { MobileNav } from './components/MobileNav';
+import { ProcessList } from './components/ProcessList';
+
+function AppContent() {
   const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
   const { config, loading: configLoading } = useMetricConfig();
-  const [metricHistory, setMetricHistory] = useState<Record<string, ChartDataPoint[]>>({});
+  const { layoutState } = useLayout();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const processPanelRef = useRef<HTMLDivElement>(null);
+
+  // Settings drawer state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isCompactWidth, setIsCompactWidth] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 1023px)').matches;
+  });
+
+  const adaptiveScroll = useAdaptiveScroll({
+    enabled: !configLoading && Boolean(config) && layoutState.visibility.process && Boolean(metricsData),
+    shellRef,
+    processPanelRef,
+    recomputeKey: [
+      layoutState.gridColumns,
+      layoutState.gaps.grid,
+      layoutState.visibility.header,
+      layoutState.visibility.disk,
+      layoutState.visibility.cards,
+      layoutState.visibility.process,
+    ].join('|'),
+  });
+
+  const shellClassName = `min-h-screen w-full xh-app-shell${adaptiveScroll.mode === 'process' ? ' xh-app-shell--process-scroll' : ''}`;
 
   useEffect(() => {
-    if (!metricsData || !config) return;
+    if (typeof window === 'undefined') return;
 
-    const summary = calculateSystemSummary(metricsData.processes, systemUsage);
-    const baseTimestamp = systemUsage?.timestamp ?? metricsData.timestamp;
-    const timestamp = formatTimestamp(baseTimestamp);
+    const media = window.matchMedia('(max-width: 1023px)');
+    const handler = (event: MediaQueryListEvent) => setIsCompactWidth(event.matches);
 
-    setMetricHistory((prev) => {
-      const newHistory = { ...prev };
-
-      config.metadata.forEach((metric) => {
-        const value = summary[metric.metricId] || 0;
-        const history = prev[metric.metricId] || [];
-        newHistory[metric.metricId] = [...history, { timestamp, value }].slice(-30);
-      });
-
-      return newHistory;
-    });
-  }, [metricsData, config, systemUsage]);
+    setIsCompactWidth(media.matches);
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
+  }, []);
 
   if (configLoading) {
     return (
@@ -55,86 +80,259 @@ function App() {
     );
   }
 
-  const summary = metricsData
-    ? calculateSystemSummary(metricsData.processes, systemUsage)
-    : ({ processCount: 0 } as Record<string, number> & { processCount: number });
-
-  const primaryMetrics = config.metadata.slice(0, 2);
-
+  // Get visible cards based on layoutState.visibility
+  const visibleCards = layoutState.visibility.cards ? layoutState.cardOrder : [];
+ 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="container mx-auto px-4 py-6">
-        <header className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Activity className="w-10 h-10 text-cpu" />
+    <div ref={shellRef} className={shellClassName}>
+      {/* Mobile Navigation */}
+      <MobileNav />
+
+      <div className="app-container">
+        {/* Header */}
+        {layoutState.visibility.header && (
+          <header className="header">
+            {/* Left: Brand */}
+            <div className="brand">
+              <div className="logo-box">XM</div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-cpu to-gpu bg-clip-text text-transparent">
-                  {t('appTitle')}
-                </h1>
-                <p className="text-gray-400 text-sm">
-                  {t('appSubtitle')}
-                </p>
+                {t('appTitle')}
+                <span className="version-tag">{t('appVersion')}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Center: Disk Info */}
+            {!isCompactWidth && layoutState.visibility.disk && (
+              <div className="disk-header-slot">
+                <DiskWidget disks={systemUsage?.disks} />
+              </div>
+            )}
+
+            {/* Right: Status */}
+            <div className="header-actions">
+              <button
+                type="button"
+                className="header-icon-button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label={t('Open settings')}
+                title={t('Settings')}
+              >
+                <Settings size={18} aria-hidden="true" />
+              </button>
               {isConnected ? (
-                <div className="flex items-center gap-2 text-memory">
-                  <Wifi className="w-5 h-5" />
-                  <span className="text-sm font-medium">{t('connected')}</span>
+                <div className="status-badge">
+                  <div className="status-dot" />
+                  <span>{t('online')}</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-red-500">
-                  <WifiOff className="w-5 h-5" />
-                  <span className="text-sm font-medium">
-                    {error ? t(error) : t('disconnected')}
-                  </span>
+                <div className="status-badge status-badge--offline">
+                  <div className="status-dot status-dot--offline" />
+                  <span>{error ? t(error) : t('offline')}</span>
                 </div>
               )}
             </div>
+          </header>
+        )}
+
+        {/* Draggable Grid of Cards */}
+        {layoutState.visibility.cards && (
+          <DraggableGrid>
+            {visibleCards.map((cardId) => {
+              const color = layoutState.themeColors[cardId as keyof typeof layoutState.themeColors];
+
+              if (cardId === 'cpu') {
+                const cpuTemp = systemUsage?.totalCpu ? 40 + systemUsage.totalCpu * 0.5 : undefined;
+                return (
+                  <StatCard
+                    key="cpu"
+                    cardId="cpu"
+                    title={t('CPU')}
+                    value={systemUsage?.totalCpu ?? 0}
+                    unit="%"
+                    temperature={cpuTemp}
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="cpu"
+                      color={color}
+                      formatFn={(v) => v.toFixed(1) + '%'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'ram') {
+                const ramParts = formatMegabytesParts(systemUsage?.totalMemory ?? 0);
+                const ramMaxMb = systemUsage?.maxMemory ?? 0;
+                return (
+                  <StatCard
+                    key="ram"
+                    cardId="ram"
+                    title={t('RAM')}
+                    value={ramParts.value}
+                    unit={ramParts.unit}
+                    subtitles={ramMaxMb > 0 ? [`/ ${formatMegabytesLabel(ramMaxMb)}`] : undefined}
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="ram"
+                      color={color}
+                      maxValue={ramMaxMb > 0 ? ramMaxMb : undefined}
+                      formatFn={(v) => formatMegabytesLabel(v)}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'gpu') {
+                const gpuTemp = systemUsage?.totalGpu ? 35 + systemUsage.totalGpu * 0.6 : undefined;
+                return (
+                  <StatCard
+                    key="gpu"
+                    cardId="gpu"
+                    title={t('GPU')}
+                    value={systemUsage?.totalGpu ?? 0}
+                    unit="%"
+                    temperature={gpuTemp}
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="gpu"
+                      color={color}
+                      formatFn={(v) => v.toFixed(1) + '%'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'vram') {
+                const vramParts = formatMegabytesParts(systemUsage?.totalVram ?? 0);
+                const vramMaxMb = systemUsage?.maxVram ?? 0;
+                return (
+                  <StatCard
+                    key="vram"
+                    cardId="vram"
+                    title={t('VRAM')}
+                    value={vramParts.value}
+                    unit={vramParts.unit}
+                    subtitles={vramMaxMb > 0 ? [`/ ${formatMegabytesLabel(vramMaxMb)}`] : undefined}
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="vram"
+                      color={color}
+                      maxValue={vramMaxMb > 0 ? vramMaxMb : undefined}
+                      formatFn={(v) => formatMegabytesLabel(v)}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'net') {
+                const upload = systemUsage?.uploadSpeed ?? 0;
+                const download = systemUsage?.downloadSpeed ?? 0;
+                const downloadParts = formatNetworkRateParts(download);
+                const subline = `↑ ${formatNetworkRateParts(upload).compact}   ↓ ${downloadParts.compact}`;
+                return (
+                  <StatCard
+                    key="net"
+                    cardId="net"
+                    title={t('NET')}
+                    value={downloadParts.value}
+                    unit={downloadParts.unit}
+                    subtitles={[subline]}
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="net"
+                      color={color}
+                      formatFn={(v) => formatNetworkRateLabel(v)}
+                    />
+                  </StatCard>
+                );
+              }
+
+              if (cardId === 'pwr') {
+                const totalPower = systemUsage?.totalPower ?? 0;
+                const maxPower = systemUsage?.maxPower ?? 0;
+                const powerAvailable = Boolean(systemUsage?.powerAvailable) || totalPower > 0 || maxPower > 0;
+                return (
+                  <StatCard
+                    key="pwr"
+                    cardId="pwr"
+                    title={t('PWR')}
+                    value={powerAvailable ? totalPower.toFixed(0) : '--'}
+                    unit="W"
+                    subtitles={powerAvailable && maxPower > 0 ? [`/ ${maxPower.toFixed(0)} W`] : undefined}
+                    accentColor={color}
+                  >
+                    <ChartCanvas
+                      seriesKey="pwr"
+                      color={color}
+                      maxValue={powerAvailable && maxPower > 0 ? maxPower : undefined}
+                      formatFn={(v) => v.toFixed(0) + ' W'}
+                    />
+                  </StatCard>
+                );
+              }
+
+              return null;
+            })}
+          </DraggableGrid>
+        )}
+
+        {/* Disk Info (Stacked on Compact Width) */}
+        {isCompactWidth && layoutState.visibility.disk && (
+          <div className="disk-stack-slot">
+            <DiskWidget disks={systemUsage?.disks} />
           </div>
-        </header>
+        )}
 
-        <SystemSummary
-          summary={summary}
-          metricMetadata={config.metadata}
-          colorMap={config.colorMap}
-          iconMap={config.iconMap}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {primaryMetrics.map((metric) => (
-            <div key={metric.metricId} className="glass rounded-xl p-6">
-              <MetricChart
-                data={metricHistory[metric.metricId] || []}
-                metricId={metric.metricId}
-                title={metric.displayName}
-                unit={metric.unit}
-                color={config.colorMap[metric.metricId]}
-              />
-            </div>
-          ))}
-        </div>
-
-        {metricsData && (
+        {/* Process List */}
+        {layoutState.visibility.process && metricsData && (
           <ProcessList
+            ref={processPanelRef}
             processes={metricsData.processes}
             metricMetadata={config.metadata}
             colorMap={config.colorMap}
+            scrollMode={adaptiveScroll.mode}
+            processTableMaxHeight={adaptiveScroll.processTableMaxHeight}
           />
         )}
-
-        {!metricsData && isConnected && (
-          <div className="glass rounded-xl p-12 text-center">
-            <div className="animate-pulse-slow">
-              <Activity className="w-16 h-16 mx-auto mb-4 text-cpu" />
-              <p className="text-gray-400">{t('Waiting for metrics data...')}</p>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Settings Drawer */}
+      <SettingsDrawer
+        open={settingsOpen}
+        onOpenChange={(open) => setSettingsOpen(open)}
+        showTrigger={false}
+      />
     </div>
+  );
+}
+
+function App() {
+  const timeSeriesOptions = useMemo(
+    () => ({
+      maxLength: 60,
+      selectors: {
+        cpu: (usage: SystemUsage) => usage.totalCpu,
+        ram: (usage: SystemUsage) => usage.totalMemory,
+        gpu: (usage: SystemUsage) => usage.totalGpu,
+        vram: (usage: SystemUsage) => usage.totalVram,
+        net: (usage: SystemUsage) => usage.downloadSpeed,
+        pwr: (usage: SystemUsage) => usage.totalPower ?? 0,
+      },
+    }),
+    []
+  );
+
+  return (
+    <LayoutProvider>
+      <TimeSeriesProvider options={timeSeriesOptions}>
+        <AppContent />
+      </TimeSeriesProvider>
+    </LayoutProvider>
   );
 }
 

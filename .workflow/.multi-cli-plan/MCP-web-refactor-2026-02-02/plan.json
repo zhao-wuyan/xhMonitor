@@ -1,0 +1,489 @@
+{
+  "summary": "将 layout-playground.html 的完整功能逻辑迁移到 React 组件架构，使用 Context API 管理全局布局状态，复用现有组件库（GlassPanel、StatCard、MiniChart）实现响应式监控面板。采用 MVVM 架构，通过 useMetricsHub 提供实时数据，创建 useTimeSeries hook 维护图表循环缓冲区，集成 SortableJS 实现拖拽排序功能。",
+  "approach": "采用 MVVM 架构，将 vanilla JS 的 layoutState 对象转换为 React Context，使用 localStorage 持久化配置。组件层面复用现有 CSS 类（.xh-glass-panel、.xh-stat-card），通过 props 驱动样式变量。数据层使用 useMetricsHub 提供实时数据，创建 useTimeSeries hook 维护图表所需的循环缓冲区。集成 SortableJS 实现拖拽排序，使用 CSS Grid 的 3→2→1 列响应式断点实现 H5 适配。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "创建 LayoutContext 和状态管理",
+      "scope": "xhmonitor-web/src/contexts/",
+      "action": "Create",
+      "description": "从 layout-playground.html 提取 layoutState 结构（gridColumns、gaps、cardOrder、visibility、background、themeColors），创建 React Context 和自定义 hook，添加版本号字段防止 localStorage 兼容性问题。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/contexts/LayoutContext.tsx",
+          "target": "LayoutContext",
+          "change": "创建 Context 定义，包含 layoutState 和 updateLayout 方法"
+        },
+        {
+          "file": "xhmonitor-web/src/hooks/useLayoutState.ts",
+          "target": "useLayoutState",
+          "change": "实现状态管理 hook，包含 localStorage 持久化逻辑和版本控制"
+        }
+      ],
+      "implementation": [
+        "分析 layout-playground.html:707 的 layoutState 结构，提取所有配置字段",
+        "创建 TypeScript 接口定义 LayoutState 类型（gridColumns、gaps、cardOrder、visibility、background、themeColors）",
+        "实现 LayoutContext.tsx，提供 Provider 组件和 useLayout hook",
+        "实现 useLayoutState.ts，包含 localStorage 读写逻辑，添加版本号字段（version: '1.0'）",
+        "添加默认值和序列化验证，防止 localStorage 数据损坏导致的错误"
+      ],
+      "reference": {
+        "pattern": "React Context + Custom Hook",
+        "files": [
+          "xhmonitor-web/design/layout-playground.html"
+        ],
+        "examples": "参考 layout-playground.html:707 的 layoutState 对象结构，确保所有配置项完整迁移"
+      },
+      "acceptance": [
+        "LayoutContext 提供完整的 layoutState 和 updateLayout 方法",
+        "localStorage 持久化正常工作，页面刷新后配置保持",
+        "版本号字段存在，支持未来配置升级",
+        "TypeScript 类型定义完整，无 any 类型"
+      ],
+      "depends_on": [],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T1",
+      "cli_execution": {
+        "strategy": "new"
+      }
+    },
+    {
+      "id": "T2",
+      "title": "封装 useTimeSeries hook 用于图表数据缓冲",
+      "scope": "xhmonitor-web/src/hooks/",
+      "action": "Create",
+      "description": "参考 layout-playground.html DataStream 类实现固定容量循环缓冲区，消费 useMetricsHub 的 systemUsage 数据，转换为 MiniChart 所需的数组格式。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/hooks/useTimeSeries.ts",
+          "target": "useTimeSeries",
+          "change": "创建循环缓冲区 hook，支持固定容量和自动滚动"
+        }
+      ],
+      "implementation": [
+        "分析 layout-playground.html:528 DataStream 类的循环缓冲区实现",
+        "创建 useTimeSeries hook，接收 maxLength 参数（默认 60）",
+        "实现 addDataPoint 方法，当数组长度超过 maxLength 时自动移除最旧数据",
+        "集成 useMetricsHub，订阅 systemUsage 事件，自动更新缓冲区",
+        "提供 getSeriesData 方法，返回 MiniChart 所需的数组格式"
+      ],
+      "reference": {
+        "pattern": "Custom Hook + Circular Buffer",
+        "files": [
+          "xhmonitor-web/design/layout-playground.html",
+          "xhmonitor-web/src/hooks/useMetricsHub.ts"
+        ],
+        "examples": "参考 layout-playground.html:528 DataStream 类的 push 方法实现循环缓冲逻辑"
+      },
+      "acceptance": [
+        "useTimeSeries hook 正确实现循环缓冲区，数组长度不超过 maxLength",
+        "集成 useMetricsHub，自动消费 systemUsage 数据",
+        "返回的数据格式符合 MiniChart 要求（数组格式）",
+        "内存占用稳定，无内存泄漏"
+      ],
+      "depends_on": [],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T2",
+      "cli_execution": {
+        "strategy": "new"
+      }
+    },
+    {
+      "id": "T3",
+      "title": "创建可视化组件 (StatCard, ChartCanvas)",
+      "scope": "xhmonitor-web/src/components/",
+      "action": "Create",
+      "description": "创建 StatCard 和 ChartCanvas 组件，复用现有 CSS 类（.xh-stat-card、.xh-glass-panel），封装 MiniChart 类（ui-preview-v2.html 高级版本带峰谷标记）。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/components/StatCard.tsx",
+          "target": "StatCard",
+          "change": "创建统计卡片组件，复用 .xh-stat-card CSS 类"
+        },
+        {
+          "file": "xhmonitor-web/src/components/ChartCanvas.tsx",
+          "target": "ChartCanvas",
+          "change": "封装 MiniChart 类为 React 组件，支持峰谷标记"
+        }
+      ],
+      "implementation": [
+        "创建 StatCard.tsx，接收 title、value、unit、trend 等 props，复用 .xh-stat-card CSS 类",
+        "创建 ChartCanvas.tsx，使用 useRef 获取 canvas 元素，封装 MiniChart 类（参考 ui-preview-v2.html:535-649）",
+        "在 ChartCanvas 的 useEffect 中初始化 MiniChart 实例，组件卸载时调用 destroy 方法"
+      ],
+      "reference": {
+        "pattern": "React Component Wrapper",
+        "files": [
+          "xhmonitor-web/design/ui-preview-v2.html",
+          "xhmonitor-web/components/core/stat-card.css",
+          "xhmonitor-web/components/core/glass-panel.css"
+        ],
+        "examples": "参考 ui-preview-v2.html:535-649 的 MiniChart 高级版本实现"
+      },
+      "acceptance": [
+        "StatCard 组件正确渲染，样式与 layout-playground.html 一致",
+        "ChartCanvas 组件正确封装 MiniChart，支持峰谷标记",
+        "组件卸载时正确清理资源，无内存泄漏"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T3",
+      "cli_execution": {
+        "strategy": "resume",
+        "resume_from": "MCP-web-refactor-2026-02-02-T1"
+      }
+    },
+    {
+      "id": "T4",
+      "title": "集成 SortableJS 拖拽功能",
+      "scope": "xhmonitor-web/src/hooks/ 和 xhmonitor-web/src/components/",
+      "action": "Implement",
+      "description": "参考 layout-playground.html SortableJS 初始化，使用 ref 绑定容器，onEnd 事件更新 LayoutContext 的 cardOrder，组件卸载时调用 sortable.destroy() 防止内存泄漏。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/hooks/useSortable.ts",
+          "target": "useSortable",
+          "change": "创建 SortableJS 集成 hook，处理拖拽事件"
+        },
+        {
+          "file": "xhmonitor-web/src/components/DraggableGrid.tsx",
+          "target": "DraggableGrid",
+          "change": "创建可拖拽网格容器组件"
+        }
+      ],
+      "implementation": [
+        "安装 sortablejs 依赖：npm install sortablejs @types/sortablejs",
+        "创建 useSortable.ts hook，接收 containerRef 和 onOrderChange 回调",
+        "在 useEffect 中初始化 Sortable 实例（参考 layout-playground.html:815）",
+        "配置 SortableJS 选项：animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost'",
+        "在 onEnd 事件中调用 onOrderChange，更新 LayoutContext 的 cardOrder",
+        "组件卸载时调用 sortable.destroy() 清理实例",
+        "创建 DraggableGrid.tsx，使用 useSortable hook，渲染子组件"
+      ],
+      "reference": {
+        "pattern": "Third-party Library Integration",
+        "files": [
+          "xhmonitor-web/design/layout-playground.html"
+        ],
+        "examples": "参考 layout-playground.html:815 的 SortableJS 初始化代码，确保配置选项一致"
+      },
+      "acceptance": [
+        "拖拽功能正常工作，卡片可以重新排序",
+        "拖拽结束后 cardOrder 状态正确更新",
+        "拖拽动画流畅，无卡顿",
+        "组件卸载时正确清理 Sortable 实例，无内存泄漏"
+      ],
+      "depends_on": ["T1", "T3"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T4",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "MCP-web-refactor-2026-02-02-T3"
+      }
+    },
+    {
+      "id": "T5",
+      "title": "实现响应式布局和 H5 适配",
+      "scope": "xhmonitor-web/src/components/ 和 xhmonitor-web/src/styles/",
+      "action": "Implement",
+      "description": "迁移 ui-preview-v2.html 的 .mobile-nav 结构，使用 CSS Grid 的 3→2→1 列响应式断点，为 backdrop-filter 提供 @supports 降级方案（iOS Safari 兼容性）。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/components/MobileNav.tsx",
+          "target": "MobileNav",
+          "change": "创建移动端导航组件"
+        },
+        {
+          "file": "xhmonitor-web/src/styles/responsive.css",
+          "target": "responsive styles",
+          "change": "添加响应式断点和降级方案"
+        }
+      ],
+      "implementation": [
+        "创建 MobileNav.tsx，迁移 ui-preview-v2.html:435 的 .mobile-nav 结构",
+        "创建 responsive.css，定义 CSS Grid 响应式断点：>1200px: 3列，768-1200px: 2列，<768px: 1列",
+        "参考 layout-playground.html:298-302 的响应式逻辑",
+        "添加 @supports (backdrop-filter: blur(10px)) 检测，提供降级方案（iOS Safari）",
+        "降级方案：使用 background-color: rgba(0,0,0,0.8) 替代 backdrop-filter",
+        "测试不同屏幕尺寸下的布局效果"
+      ],
+      "reference": {
+        "pattern": "Responsive Design + Progressive Enhancement",
+        "files": [
+          "xhmonitor-web/design/ui-preview-v2.html",
+          "xhmonitor-web/design/layout-playground.html"
+        ],
+        "examples": "参考 layout-playground.html:298-302 的响应式断点设置和 ui-preview-v2.html:435 的移动端导航结构"
+      },
+      "acceptance": [
+        "桌面端（>1200px）显示 3 列布局",
+        "平板端（768-1200px）显示 2 列布局",
+        "移动端（<768px）显示 1 列布局，显示 MobileNav",
+        "iOS Safari 上 backdrop-filter 降级方案正常工作"
+      ],
+      "depends_on": ["T3"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T5",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "MCP-web-refactor-2026-02-02-T3"
+      }
+    },
+    {
+      "id": "T6",
+      "title": "实现背景和主题色定制功能",
+      "scope": "xhmonitor-web/src/hooks/ 和 xhmonitor-web/components/core/",
+      "action": "Implement",
+      "description": "参考 layout-playground.html updateGradient 和 CSS 变量定义，通过 CSS 变量注入实现主题色切换，添加背景模糊蒙版参数（--xh-bg-blur-opacity）防止图片颜色影响文字清晰度。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/hooks/useTheme.ts",
+          "target": "useTheme",
+          "change": "创建主题管理 hook，支持背景和主题色切换"
+        },
+        {
+          "file": "xhmonitor-web/components/core/design-tokens.css",
+          "target": "CSS variables",
+          "change": "添加主题色和背景相关 CSS 变量"
+        }
+      ],
+      "implementation": [
+        "创建 useTheme.ts hook，读取 LayoutContext 的 background 和 themeColors 配置",
+        "实现 updateTheme 方法，通过 document.documentElement.style.setProperty 注入 CSS 变量",
+        "参考 layout-playground.html:736 updateGradient 方法，支持渐变背景",
+        "在 design-tokens.css 中添加 CSS 变量定义（参考 layout-playground.html:13）",
+        "添加 --xh-bg-blur-opacity 变量，控制背景模糊蒙版透明度（默认 0.3）",
+        "在 SettingsDrawer 中添加背景和主题色选择器"
+      ],
+      "reference": {
+        "pattern": "CSS Variables + Theme System",
+        "files": [
+          "xhmonitor-web/design/layout-playground.html",
+          "xhmonitor-web/components/core/design-tokens.css"
+        ],
+        "examples": "参考 layout-playground.html:736 的 updateGradient 方法和 line:13 的 CSS 变量定义"
+      },
+      "acceptance": [
+        "主题色切换正常工作，所有组件颜色同步更新",
+        "背景图片/渐变切换正常工作",
+        "背景模糊蒙版参数可调节，文字清晰度良好",
+        "CSS 变量注入无性能问题"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T6",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "MCP-web-refactor-2026-02-02-T1"
+      }
+    },
+    {
+      "id": "T7",
+      "title": "实现硬盘信息位置控制",
+      "scope": "xhmonitor-web/src/components/",
+      "action": "Create",
+      "description": "参考 layout-playground.html renderDisks 和布局逻辑，创建独立组件支持左侧/右侧位置切换，H5 模式下自动放置在对应维度卡片下方。注意：useMetricsHub 当前缺少磁盘 IO 数据，需使用模拟数据。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/components/DiskWidget.tsx",
+          "target": "DiskWidget",
+          "change": "创建硬盘信息组件，支持位置切换和模拟数据"
+        }
+      ],
+      "implementation": [
+        "创建 DiskWidget.tsx，参考 layout-playground.html:619 renderDisks 方法",
+        "从 LayoutContext 读取 diskPosition 配置（'left' | 'right'）",
+        "实现位置切换逻辑，参考 layout-playground.html:229 的布局逻辑",
+        "H5 模式下，根据 diskPosition 自动放置在对应维度卡片下方",
+        "由于 useMetricsHub 缺少磁盘 IO 数据，创建模拟数据生成器",
+        "模拟数据格式：{ name: 'C:', total: 500, used: 300, readSpeed: 50, writeSpeed: 30 }",
+        "在 SettingsDrawer 中添加硬盘位置选择器"
+      ],
+      "reference": {
+        "pattern": "Conditional Rendering + Mock Data",
+        "files": [
+          "xhmonitor-web/design/layout-playground.html"
+        ],
+        "examples": "参考 layout-playground.html:619 renderDisks 和 line:229 布局逻辑"
+      },
+      "acceptance": [
+        "DiskWidget 组件正确渲染，显示硬盘信息",
+        "左侧/右侧位置切换正常工作",
+        "H5 模式下自动放置在对应维度卡片下方",
+        "模拟数据格式正确，UI 显示正常"
+      ],
+      "depends_on": ["T1", "T3"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T7",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "MCP-web-refactor-2026-02-02-T3"
+      }
+    },
+    {
+      "id": "T8",
+      "title": "性能优化和测试",
+      "scope": "xhmonitor-web/src/components/",
+      "action": "Refactor",
+      "description": "使用 React.memo 包装 StatCard 和 ChartCanvas，MiniChart 绘制使用 requestAnimationFrame 节流，降低图表刷新频率（2-5Hz），进程表考虑虚拟列表（react-window）应对 1Hz 高频更新。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/components/StatCard.tsx",
+          "target": "StatCard",
+          "change": "使用 React.memo 优化渲染性能"
+        },
+        {
+          "file": "xhmonitor-web/src/components/ChartCanvas.tsx",
+          "target": "ChartCanvas",
+          "change": "添加 requestAnimationFrame 节流，降低刷新频率"
+        }
+      ],
+      "implementation": [
+        "使用 React.memo 包装 StatCard 组件，添加自定义 areEqual 比较函数",
+        "使用 React.memo 包装 ChartCanvas 组件，避免不必要的重渲染",
+        "在 ChartCanvas 中实现 requestAnimationFrame 节流，限制图表刷新频率为 2-5Hz",
+        "评估进程表性能，如果 1Hz 更新导致卡顿，集成 react-window 实现虚拟列表",
+        "使用 Chrome DevTools Performance 面板测试性能，确保 6 个图表 + 进程表流畅运行",
+        "测试内存占用，确保长时间运行无内存泄漏"
+      ],
+      "reference": {
+        "pattern": "React Performance Optimization",
+        "files": [
+          "xhmonitor-web/src/components/StatCard.tsx",
+          "xhmonitor-web/src/components/ChartCanvas.tsx"
+        ],
+        "examples": "使用 React.memo 和 requestAnimationFrame 优化渲染性能"
+      },
+      "acceptance": [
+        "StatCard 和 ChartCanvas 使用 React.memo 包装",
+        "图表刷新频率降低到 2-5Hz，无明显卡顿",
+        "进程表 1Hz 更新流畅，无性能问题",
+        "Chrome DevTools Performance 面板显示主线程压力正常（<50%）",
+        "长时间运行无内存泄漏"
+      ],
+      "depends_on": ["T2", "T3", "T4"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T8",
+      "cli_execution": {
+        "strategy": "merge_fork",
+        "merge_from": [
+          "MCP-web-refactor-2026-02-02-T2",
+          "MCP-web-refactor-2026-02-02-T3",
+          "MCP-web-refactor-2026-02-02-T4"
+        ]
+      }
+    },
+    {
+      "id": "T9",
+      "title": "创建 SettingsDrawer 组件",
+      "scope": "xhmonitor-web/src/components/",
+      "action": "Create",
+      "description": "创建 SettingsDrawer 组件，迁移 layout-playground.html 的表单结构，绑定 LayoutContext 状态。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/components/SettingsDrawer.tsx",
+          "target": "SettingsDrawer",
+          "change": "迁移设置面板表单结构，支持布局配置"
+        }
+      ],
+      "implementation": [
+        "创建 SettingsDrawer.tsx，迁移 layout-playground.html:476 的表单结构（gridColumns、gaps、background 等）",
+        "集成 SettingsDrawer 与 LayoutContext，使用 useLayout hook 读取和更新配置",
+        "实现抽屉（Drawer）的开关动画和交互逻辑"
+      ],
+      "reference": {
+        "pattern": "Form Migration",
+        "files": [
+          "xhmonitor-web/design/layout-playground.html"
+        ],
+        "examples": "参考 layout-playground.html:476 的表单结构"
+      },
+      "acceptance": [
+        "SettingsDrawer 表单功能完整，可修改所有布局配置",
+        "配置更改实时反映在 LayoutContext 中"
+      ],
+      "depends_on": ["T1"],
+      "cli_execution_id": "MCP-web-refactor-2026-02-02-T9",
+      "cli_execution": {
+        "strategy": "fork",
+        "resume_from": "MCP-web-refactor-2026-02-02-T1"
+      }
+    }
+  ],
+  "flow_control": {
+    "execution_order": [
+      {
+        "phase": "parallel-1",
+        "tasks": ["T1", "T2"],
+        "type": "parallel"
+      },
+      {
+        "phase": "sequential-1",
+        "tasks": ["T3", "T9"],
+        "type": "sequential"
+      },
+      {
+        "phase": "parallel-2",
+        "tasks": ["T4", "T5", "T6", "T7"],
+        "type": "parallel"
+      },
+      {
+        "phase": "sequential-2",
+        "tasks": ["T8"],
+        "type": "sequential"
+      }
+    ],
+    "exit_conditions": {
+      "success": "所有任务完成，6 个图表 + 进程表流畅运行，响应式布局正常工作",
+      "failure": "关键任务失败（T1、T2、T3），导致核心功能无法实现"
+    }
+  },
+  "focus_paths": [
+    "xhmonitor-web/src/contexts/LayoutContext.tsx",
+    "xhmonitor-web/src/hooks/useLayoutState.ts",
+    "xhmonitor-web/src/hooks/useTimeSeries.ts",
+    "xhmonitor-web/src/hooks/useSortable.ts",
+    "xhmonitor-web/src/hooks/useTheme.ts",
+    "xhmonitor-web/src/components/StatCard.tsx",
+    "xhmonitor-web/src/components/ChartCanvas.tsx",
+    "xhmonitor-web/src/components/SettingsDrawer.tsx",
+    "xhmonitor-web/src/components/DraggableGrid.tsx",
+    "xhmonitor-web/src/components/MobileNav.tsx",
+    "xhmonitor-web/src/components/DiskWidget.tsx",
+    "xhmonitor-web/src/styles/responsive.css",
+    "xhmonitor-web/components/core/design-tokens.css"
+  ],
+  "estimated_time": "4-6 小时",
+  "recommended_execution": "Codex",
+  "complexity": "Medium",
+  "_metadata": {
+    "timestamp": "2026-02-02T00:00:00.000Z",
+    "source": "cli-lite-planning-agent",
+    "planning_mode": "agent-based",
+    "context_angles": [
+      "solution",
+      "implementation_plan",
+      "dependencies",
+      "technical_concerns",
+      "consensus"
+    ],
+    "duration_seconds": 0,
+    "quality_check": {
+      "executed_at": "2026-02-02T11:10:23.611Z",
+      "cli_session_id": "1770030485436-gemini",
+      "recommendation": "AUTO_FIX",
+      "status": "fixed",
+      "dimensions": {
+        "completeness": "PASS",
+        "granularity": "FIXED",
+        "dependencies": "PASS",
+        "acceptance": "PASS",
+        "implementation": "PASS",
+        "constraints": "PASS"
+      },
+      "fixes_applied": [
+        "拆分 T3 任务：将 SettingsDrawer 组件创建分离为独立的 T9 任务",
+        "更新 T3 标题为'创建可视化组件 (StatCard, ChartCanvas)'，移除 SettingsDrawer 相关内容",
+        "新增 T9 任务'创建 SettingsDrawer 组件'，专注于表单迁移和配置管理",
+        "更新 flow_control.execution_order[1].tasks 为 ['T3', 'T9']，确保顺序执行",
+        "T9 依赖 T1，使用 fork 策略从 T1 分支"
+      ],
+      "issues_resolved": [
+        "T3 任务粒度过大（>60分钟）：拆分为可视化组件（T3）和配置组件（T9）",
+        "隐式依赖问题：T6、T7 修改 SettingsDrawer，现在明确依赖关系通过执行阶段控制"
+      ]
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "symptom": "用户在设置页面添加进程关键字后,新添加的关键字不生效,进程扫描器仍然使用旧的关键字列表",
+  "root_cause": {
+    "file": "XhMonitor.Service/Core/ProcessScanner.cs",
+    "line_range": "16-26",
+    "issue": "ProcessScanner 从 IConfiguration (appsettings.json) 读取关键字,而不是从数据库 ApplicationSettings 读取。用户在设置页面保存的关键字只写入了数据库,两个数据源完全不同步。",
+    "confidence": 0.95
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Service/Core/ProcessScanner.cs",
+      "relevance": 0.95,
+      "rationale": "ProcessScanner 构造函数从 IConfiguration 读取 Monitor:Keywords,这是问题的核心"
+    },
+    {
+      "path": "XhMonitor.Service/appsettings.json",
+      "relevance": 0.90,
+      "rationale": "实际被使用的关键字配置来源,包含硬编码的关键字列表"
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+      "relevance": 0.85,
+      "rationale": "SaveSettingsAsync 方法将关键字保存到数据库,但这个数据库值没有被 ProcessScanner 使用"
+    },
+    {
+      "path": "XhMonitor.Service/Controllers/ConfigController.cs",
+      "relevance": 0.80,
+      "rationale": "UpdateSettings API 端点处理设置保存,但只更新数据库,不更新 IConfiguration"
+    },
+    {
+      "path": "XhMonitor.Core/Entities/ApplicationSettings.cs",
+      "relevance": 0.75,
+      "rationale": "数据库实体,存储用户设置的关键字,但与实际使用的配置脱节"
+    }
+  ],
+  "reproduction_steps": [
+    "1. 启动 XhMonitor 服务,ProcessScanner 从 appsettings.json 读取 Monitor:Keywords (例如: llama-server, whisper, indextts 等)",
+    "2. 打开设置窗口,在进程关键字列表中添加新关键字 (例如: 'chrome')",
+    "3. 点击保存按钮,SettingsViewModel.SaveSettingsAsync() 将新关键字保存到数据库 ApplicationSettings 表",
+    "4. 数据库更新成功,但 ProcessScanner 仍然使用启动时从 appsettings.json 读取的旧关键字列表",
+    "5. 新添加的关键字不会被用于进程过滤,因为 ProcessScanner 从未读取数据库"
+  ],
+  "fix_hints": [
+    "方案1 (推荐): 让 ProcessScanner 支持动态重载关键字",
+    "  - 在 ProcessScanner 中添加 ReloadKeywords() 方法,从数据库读取最新关键字",
+    "  - 在 ConfigController.UpdateSettings() 保存成功后,通知 ProcessScanner 重载关键字",
+    "  - 可以通过依赖注入 IDbContextFactory 来访问数据库",
+    "",
+    "方案2: 统一配置源",
+    "  - 移除 appsettings.json 中的 Monitor:Keywords 配置",
+    "  - 让 ProcessScanner 启动时直接从数据库读取关键字",
+    "  - 需要修改 ProcessScanner 构造函数,注入 IDbContextFactory",
+    "",
+    "方案3: 双向同步",
+    "  - 在保存设置时,同时更新 appsettings.json 文件",
+    "  - 需要重启服务才能生效 (不推荐,用户体验差)"
+  ],
+  "dependencies": [
+    "XhMonitor.Service.Core.ProcessScanner",
+    "XhMonitor.Service.Controllers.ConfigController",
+    "XhMonitor.Core.Entities.ApplicationSettings",
+    "Microsoft.Extensions.Configuration.IConfiguration",
+    "Microsoft.EntityFrameworkCore.IDbContextFactory"
+  ],
+  "constraints": [
+    "ProcessScanner 是单例服务,在服务启动时初始化",
+    "关键字更新需要立即生效,不能要求重启服务",
+    "需要保持向后兼容,appsettings.json 中的配置仍应作为默认值",
+    "数据库访问需要异步操作,但 ProcessScanner.ScanProcesses() 是同步方法"
+  ],
+  "clarification_needs": [
+    {
+      "question": "你希望关键字更新后立即生效,还是可以接受重启服务后生效?",
+      "context": "立即生效需要实现动态重载机制,重启生效实现更简单但用户体验较差",
+      "options": [
+        "立即生效 (推荐,需要实现动态重载)",
+        "重启服务后生效 (简单实现,用户体验差)",
+        "下次采集周期生效 (折中方案)"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "是否保留 appsettings.json 中的 Monitor:Keywords 作为默认配置?",
+      "context": "保留可以作为初始默认值,删除则完全依赖数据库",
+      "options": [
+        "保留作为默认值,数据库为空时使用 (推荐)",
+        "完全移除,只使用数据库配置",
+        "保留但不使用,仅作为文档说明"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "diagnosis_angle": "configuration-mismatch",
+    "diagnosis_index": 1,
+    "timestamp": "2026-01-28T00:00:00Z",
+    "analyzer": "claude-sonnet-4-5",
+    "confidence_level": "high"
+  }
+}

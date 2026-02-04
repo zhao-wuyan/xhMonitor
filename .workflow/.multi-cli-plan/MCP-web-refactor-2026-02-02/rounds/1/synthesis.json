@@ -1,0 +1,391 @@
+{
+  "round": 1,
+  "solutions": [
+    {
+      "name": "React 组件化重构 + 状态管理方案",
+      "source_cli": ["gemini", "codex"],
+      "feasibility": 0.95,
+      "effort": "medium",
+      "risk": "low",
+      "summary": "将 layout-playground.html 的完整功能逻辑迁移到 React 组件架构，使用 Context API 管理全局布局状态（layoutState），复用现有组件库（GlassPanel、StatCard、MiniChart）。Gemini 确认原型逻辑完备（feasibility 0.95），Codex 验证组件可复用性并识别关键风险点（性能、状态持久化、CSS 冲突）。",
+      "implementation_plan": {
+        "approach": "采用 MVVM 架构，将 vanilla JS 的 layoutState 对象（707 行）转换为 React Context，使用 localStorage 持久化配置。组件层面复用现有 CSS 类（.xh-glass-panel、.xh-stat-card），通过 props 驱动样式变量。数据层使用 useMetricsHub 提供实时数据，创建 useTimeSeries hook 维护图表所需的循环缓冲区（参考 DataStream 类 528 行）。",
+        "tasks": [
+          {
+            "id": "T1",
+            "name": "创建 LayoutContext 和状态管理",
+            "depends_on": [],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/contexts/LayoutContext.tsx",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/hooks/useLayoutState.ts",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "从 layout-playground.html:707 提取 layoutState 结构（gridColumns、gaps、cardOrder、visibility、background、themeColors），添加版本号字段防止 localStorage 兼容性问题"
+          },
+          {
+            "id": "T2",
+            "name": "封装 useTimeSeries hook 用于图表数据缓冲",
+            "depends_on": [],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/hooks/useTimeSeries.ts",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "参考 layout-playground.html:528 DataStream 类实现固定容量循环缓冲区，消费 useMetricsHub 的 systemUsage 数据，转换为 MiniChart 所需的数组格式"
+          },
+          {
+            "id": "T3",
+            "name": "创建 React 组件包装器",
+            "depends_on": ["T1"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/components/StatCard.tsx",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/components/ChartCanvas.tsx",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/components/SettingsDrawer.tsx",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "StatCard 复用 .xh-stat-card CSS 类，ChartCanvas 封装 MiniChart 类（ui-preview-v2.html:535-649 高级版本带峰谷标记），SettingsDrawer 迁移 layout-playground.html:476 的表单结构"
+          },
+          {
+            "id": "T4",
+            "name": "集成 SortableJS 拖拽功能",
+            "depends_on": ["T1", "T3"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/hooks/useSortable.ts",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/components/DraggableGrid.tsx",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "参考 layout-playground.html:815 SortableJS 初始化，使用 ref 绑定容器，onEnd 事件更新 LayoutContext 的 cardOrder，组件卸载时调用 sortable.destroy() 防止内存泄漏"
+          },
+          {
+            "id": "T5",
+            "name": "实现响应式布局和 H5 适配",
+            "depends_on": ["T3"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/components/MobileNav.tsx",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/styles/responsive.css",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "迁移 ui-preview-v2.html:435 的 .mobile-nav 结构，使用 CSS Grid 的 3→2→1 列响应式断点（layout-playground.html:298-302），为 backdrop-filter 提供 @supports 降级方案（iOS Safari 兼容性）"
+          },
+          {
+            "id": "T6",
+            "name": "实现背景和主题色定制功能",
+            "depends_on": ["T1"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/hooks/useTheme.ts",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/components/core/design-tokens.css",
+                "line": 1,
+                "action": "modify"
+              }
+            ],
+            "key_point": "参考 layout-playground.html:736 updateGradient 和 line:13 CSS 变量定义，通过 CSS 变量注入实现主题色切换，添加背景模糊蒙版参数（--xh-bg-blur-opacity）防止图片颜色影响文字清晰度"
+          },
+          {
+            "id": "T7",
+            "name": "实现硬盘信息位置控制",
+            "depends_on": ["T1", "T3"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/components/DiskWidget.tsx",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "参考 layout-playground.html:619 renderDisks 和 line:229 布局逻辑，创建独立组件支持左侧/右侧位置切换，H5 模式下自动放置在对应维度卡片下方。注意：useMetricsHub 当前缺少磁盘 IO 数据，需使用模拟数据或后端补充"
+          },
+          {
+            "id": "T8",
+            "name": "性能优化和测试",
+            "depends_on": ["T2", "T3", "T4"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/components/StatCard.tsx",
+                "line": 1,
+                "action": "modify"
+              },
+              {
+                "file": "xhmonitor-web/src/components/ChartCanvas.tsx",
+                "line": 1,
+                "action": "modify"
+              }
+            ],
+            "key_point": "使用 React.memo 包装 StatCard 和 ChartCanvas，MiniChart 绘制使用 requestAnimationFrame 节流，降低图表刷新频率（2-5Hz），进程表考虑虚拟列表（react-window）应对 1Hz 高频更新"
+          }
+        ],
+        "execution_flow": "T1,T2 并行 → T3 → T4,T5,T6,T7 并行（依赖 T1,T3）→ T8（最终优化）",
+        "milestones": [
+          "LayoutContext 和状态持久化完成",
+          "核心组件（StatCard、ChartCanvas、SettingsDrawer）可用",
+          "拖拽排序和响应式布局工作正常",
+          "性能优化完成，6 个图表 + 进程表流畅运行"
+        ]
+      },
+      "dependencies": {
+        "internal": [
+          "@/hooks/useMetricsHub",
+          "@/components/core/design-tokens.css",
+          "@/components/core/glass-panel.css",
+          "@/components/core/stat-card.css",
+          "@/components/charts/MiniChart.js",
+          "@/components/charts/DynamicScaler.js"
+        ],
+        "external": [
+          "npm:sortablejs@^1.15.0",
+          "npm:react@^19.0.0",
+          "npm:@microsoft/signalr@^8.0.0"
+        ]
+      },
+      "technical_concerns": [
+        "性能风险（medium）：6 个 canvas 图表 + SortableJS + 1Hz 进程表更新可能导致主线程压力，需使用 requestAnimationFrame 节流和虚拟列表优化",
+        "数据缺失（medium）：useMetricsHub 当前不提供磁盘 IO 数据（仅 systemUsage 和 processes），需后端补充 ReceiveDiskUsage 事件或使用模拟数据",
+        "状态持久化（medium）：layoutState 复杂对象存储到 localStorage 需添加版本号和序列化验证，防止兼容性问题",
+        "CSS 冲突（low）：背景渐变与 glassmorphism 透明层可能对比度不足，需统一 design-tokens.css 变量并提供 fallback",
+        "浏览器兼容性（medium）：iOS Safari 对 backdrop-filter 和 position:sticky 支持需使用 @supports 检测并提供降级样式"
+      ]
+    },
+    {
+      "name": "渐进式迁移 + 混合架构方案",
+      "source_cli": ["gemini"],
+      "feasibility": 0.85,
+      "effort": "low",
+      "risk": "medium",
+      "summary": "保留 layout-playground.html 的核心逻辑，通过 iframe 或 Web Components 方式嵌入 React 应用，减少重写工作量。适合快速原型验证，但存在跨框架通信复杂度和性能损耗。",
+      "implementation_plan": {
+        "approach": "将 layout-playground.html 封装为独立模块，通过 postMessage 或 Custom Events 与 React 主应用通信。React 负责数据获取（useMetricsHub）和设置面板，vanilla JS 负责布局渲染和拖拽交互。",
+        "tasks": [
+          {
+            "id": "T1",
+            "name": "封装 layout-playground 为独立模块",
+            "depends_on": [],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/modules/LayoutPlayground.html",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "提取 layout-playground.html 的核心逻辑，暴露 init()、updateData()、updateSettings() 等 API"
+          },
+          {
+            "id": "T2",
+            "name": "创建 React 包装组件",
+            "depends_on": ["T1"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/components/LayoutPlaygroundWrapper.tsx",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "使用 iframe 或 ref 加载 LayoutPlayground.html，通过 postMessage 传递数据和配置"
+          },
+          {
+            "id": "T3",
+            "name": "实现跨框架数据桥接",
+            "depends_on": ["T2"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/hooks/usePlaygroundBridge.ts",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "监听 useMetricsHub 数据变化，通过 postMessage 发送到 iframe，处理双向事件通信"
+          }
+        ],
+        "execution_flow": "T1 → T2 → T3（串行）",
+        "milestones": [
+          "layout-playground 模块化完成",
+          "React 包装组件可加载并显示",
+          "数据桥接正常工作"
+        ]
+      },
+      "dependencies": {
+        "internal": [
+          "@/hooks/useMetricsHub",
+          "xhmonitor-web/components/examples/layout-playground.html"
+        ],
+        "external": []
+      },
+      "technical_concerns": [
+        "跨框架通信复杂度（high）：postMessage 序列化开销和事件同步可能影响性能",
+        "维护成本（medium）：混合架构增加调试难度，长期维护需要同时理解 React 和 vanilla JS",
+        "功能扩展受限（medium）：iframe 隔离导致某些 React 生态工具（如 DevTools、状态管理）无法直接使用"
+      ]
+    },
+    {
+      "name": "组件库升级 + TypeScript 重构方案",
+      "source_cli": ["codex"],
+      "feasibility": 0.80,
+      "effort": "high",
+      "risk": "medium",
+      "summary": "将现有组件库（GlassPanel、StatCard、MiniChart）从纯 CSS/JS 升级为 TypeScript React 组件，提供完整的类型定义和 props 接口。适合长期维护和团队协作，但初期投入较大。",
+      "implementation_plan": {
+        "approach": "重写组件库为 TypeScript + React，定义严格的 props 接口和类型系统。使用 Storybook 构建组件文档，确保设计系统一致性。",
+        "tasks": [
+          {
+            "id": "T1",
+            "name": "定义 TypeScript 类型系统",
+            "depends_on": [],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/types/components.ts",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/types/layout.ts",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "定义 GlassPanelProps、StatCardProps、MiniChartProps、LayoutState 等核心类型"
+          },
+          {
+            "id": "T2",
+            "name": "重写核心组件为 TypeScript",
+            "depends_on": ["T1"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/components/GlassPanel.tsx",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/components/StatCard.tsx",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/components/MiniChart.tsx",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "保持 CSS 类名和设计 tokens 不变，仅升级为 React 组件并添加类型约束"
+          },
+          {
+            "id": "T3",
+            "name": "构建 Storybook 文档",
+            "depends_on": ["T2"],
+            "files": [
+              {
+                "file": "xhmonitor-web/.storybook/main.ts",
+                "line": 1,
+                "action": "create"
+              },
+              {
+                "file": "xhmonitor-web/src/components/GlassPanel.stories.tsx",
+                "line": 1,
+                "action": "create"
+              }
+            ],
+            "key_point": "为每个组件创建 stories，展示不同 props 组合和使用场景"
+          },
+          {
+            "id": "T4",
+            "name": "迁移应用逻辑",
+            "depends_on": ["T2"],
+            "files": [
+              {
+                "file": "xhmonitor-web/src/App.tsx",
+                "line": 1,
+                "action": "modify"
+              }
+            ],
+            "key_point": "使用新组件库重构主应用，集成 7 个增强功能"
+          }
+        ],
+        "execution_flow": "T1 → T2 → T3,T4 并行",
+        "milestones": [
+          "类型系统定义完成",
+          "核心组件 TypeScript 化",
+          "Storybook 文档可用",
+          "主应用迁移完成"
+        ]
+      },
+      "dependencies": {
+        "internal": [
+          "@/hooks/useMetricsHub",
+          "@/components/core/design-tokens.css"
+        ],
+        "external": [
+          "npm:@storybook/react@^8.0.0",
+          "npm:typescript@^5.0.0",
+          "npm:sortablejs@^1.15.0"
+        ]
+      },
+      "technical_concerns": [
+        "开发成本（high）：完全重写组件库需要大量时间，可能延迟项目交付",
+        "兼容性风险（medium）：TypeScript 严格模式可能暴露现有代码的类型问题",
+        "学习曲线（medium）：团队需要熟悉 TypeScript 和 Storybook 工具链"
+      ]
+    }
+  ],
+  "convergence": {
+    "score": 0.82,
+    "new_insights": true,
+    "recommendation": "continue",
+    "details": "Gemini 和 Codex 在核心可行性上达成共识（feasibility 0.95 vs 0.90），均识别出关键技术点（SortableJS 集成、状态持久化、性能优化）。主要分歧在于实现路径：Gemini 倾向完整 React 重构（方案 1），Codex 强调组件抽象和类型安全（方案 3）。建议进行第 2 轮讨论，重点澄清：1) 磁盘 IO 数据的后端支持计划，2) 性能优化的具体指标（目标 FPS、内存上限），3) 团队对 TypeScript 的熟悉程度。"
+  },
+  "cross_verification": {
+    "agreements": [
+      "layout-playground.html 的功能逻辑完备，可直接迁移（Gemini line:707 layoutState，Codex 确认结构可复用）",
+      "useMetricsHub 缺少磁盘 IO 数据，需后端补充或使用模拟数据（Gemini 和 Codex 均识别）",
+      "SortableJS 需要特殊处理以兼容 React 虚拟 DOM（Gemini line:815，Codex 提出 ref 绑定方案）",
+      "性能是关键风险点：6 个 canvas 图表 + 1Hz 进程表更新需优化（Gemini 和 Codex 均标记为 medium risk）",
+      "H5 适配需要 backdrop-filter 降级方案（Gemini ui-preview-v2.html:435，Codex 提出 @supports 检测）"
+    ],
+    "disagreements": [
+      "实现路径：Gemini 推荐完整 React 重构（effort: medium, risk: low），Codex 建议 TypeScript 组件库升级（effort: high, risk: medium）",
+      "组件复用策略：Gemini 认为可直接复用 CSS 类（.xh-glass-panel），Codex 强调需验证 props 接口和样式隔离（confidence: low）",
+      "状态管理：Gemini 推荐 Context API，Codex 未明确推荐但提到 Zustand 作为备选"
+    ],
+    "resolution": "采用方案 1（React 组件化重构）作为主推荐，因为：1) Gemini 提供了详细的 file:line 证据和实现路径，2) effort 评估更合理（medium vs high），3) 风险更低（low vs medium）。方案 3 作为长期优化方向，可在方案 1 稳定后逐步引入 TypeScript 和 Storybook。"
+  },
+  "clarification_questions": [
+    "后端是否计划支持磁盘 IO 数据推送（ReceiveDiskUsage 事件）？如果不支持，硬盘信息功能是否可以降级为静态展示或使用模拟数据？",
+    "性能优化的具体目标是什么？例如：目标帧率（60 FPS？30 FPS？）、最大内存占用、支持的最大进程数量？",
+    "团队对 TypeScript 的熟悉程度如何？是否需要在初期保持 JavaScript 实现，后续再逐步迁移到 TypeScript？",
+    "拖拽排序功能是否需要支持跨设备同步（例如桌面端修改布局后，移动端自动同步）？这会影响状态持久化的设计。"
+  ]
+}

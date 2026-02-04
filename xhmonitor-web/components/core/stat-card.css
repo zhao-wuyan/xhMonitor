@@ -1,0 +1,139 @@
+/**
+ * StatCard - 资源监控卡片组件
+ * 用于显示系统资源使用情况，信息叠加在图表上
+ */
+
+.xh-stat-card {
+  height: var(--xh-card-height);
+  padding: 0;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  transition: transform var(--xh-duration-fast);
+}
+
+.xh-stat-card:active {
+  transform: scale(0.98);
+}
+
+/* 左侧：数值区域 - 绝对定位叠在曲线上方 */
+.xh-stat-card__info {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 150px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  z-index: var(--xh-z-overlay);
+  background: transparent;
+}
+
+/* 右侧：图表区域 - 占满整个卡片 */
+.xh-stat-card__chart {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: var(--xh-z-base);
+}
+
+/* 标签 */
+.xh-stat-card__label {
+  font-size: var(--xh-font-size-md);
+  font-weight: var(--xh-font-weight-semibold);
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: var(--xh-shadow-text);
+}
+
+.xh-stat-card__label-indicator {
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+.xh-stat-card__label-temp {
+  font-weight: var(--xh-font-weight-normal);
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+/* 数值 */
+.xh-stat-card__value {
+  font-size: var(--xh-font-size-xl);
+  font-weight: var(--xh-font-weight-bold);
+  color: #fff;
+  line-height: var(--xh-line-height-tight);
+  text-shadow: var(--xh-shadow-text-strong);
+  white-space: nowrap;
+}
+
+.xh-stat-card__value--small {
+  font-size: 1.4rem;
+}
+
+/* 副标题 */
+.xh-stat-card__subtitle {
+  font-size: var(--xh-font-size-sm);
+  margin-top: 6px;
+  opacity: 0.8;
+  font-family: var(--xh-font-mono);
+  text-shadow: var(--xh-shadow-text);
+  white-space: nowrap;
+}
+
+/* 装饰性背景光晕 - 微弱效果 */
+.xh-stat-card__glow {
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  filter: blur(var(--xh-blur-glow));
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* 图表画布 */
+.xh-stat-card__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 峰谷值标记 */
+.xh-chart-peak-marker {
+  position: absolute;
+  font-size: var(--xh-font-size-xs);
+  font-weight: var(--xh-font-weight-semibold);
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: var(--xh-z-overlay);
+  transform: translate(-50%, -100%);
+  margin-top: -6px;
+  transition: left var(--xh-duration-normal) var(--xh-ease),
+              top var(--xh-duration-normal) var(--xh-ease),
+              opacity var(--xh-duration-normal) var(--xh-ease);
+}
+
+.xh-chart-peak-marker.min {
+  transform: translate(-50%, 0);
+  margin-top: 6px;
+}
+
+.xh-chart-peak-marker.hidden {
+  opacity: 0;
+}

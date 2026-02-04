@@ -1,0 +1,17 @@
+{
+  "design_id": "design-run-20260131-21900",
+  "timestamp": "2026-01-31T12:00:00Z",
+  "workflow": "ui-design:auto",
+  "architecture": "style-centric-batch-generation",
+  "parameters": {
+    "style_variants": 3,
+    "layout_variants": 3,
+    "targets": ["dashboard"],
+    "target_type": "page",
+    "input": "xhmonitor-web/design",
+    "device_type": "responsive",
+    "device_source": "user_confirmed"
+  },
+  "status": "complete",
+  "performance_mode": "optimized"
+}

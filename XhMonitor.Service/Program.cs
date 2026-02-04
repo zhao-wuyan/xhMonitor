@@ -280,6 +280,10 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     options.ListenLocalhost(port);
 });
 
+var serverHost = builder.Configuration["Server:Host"] ?? "localhost";
+var serverPort = builder.Configuration.GetValue<int>("Server:Port", 35179);
+var hubPath = builder.Configuration["Server:HubPath"] ?? "/hubs/metrics";
+
 var app = builder.Build();
 
 // 初始化设备验证服务（在服务解析前完成 HTTP 验证）
@@ -334,8 +338,13 @@ app.UseCors("AllowAll");
 app.UseRouting();
 
 app.MapControllers();
-var hubPath = builder.Configuration["Server:HubPath"] ?? "/hubs/metrics";
 app.MapHub<MetricsHub>(hubPath);
+
+Log.Information(
+    "SignalR Hub: http://{Host}:{Port}{HubPath}",
+    serverHost,
+    serverPort,
+    hubPath);
 
     Log.Information("XhMonitor 服务配置完成，开始运行");
     app.Run();

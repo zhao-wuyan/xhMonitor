@@ -1,0 +1,21 @@
+{
+  "session_id": "network-speed-doubled-2026-01-29",
+  "bug_description": "当前网速监控的逻辑时什么,好像速度被x2了,不会是所有网卡合计的速度吧,主要是我有虚拟网卡会重复的网速。可以区分虚拟网卡和物理网卡吗",
+  "timestamp": "2026-01-29T00:00:00Z",
+  "severity": "Medium",
+  "diagnosis_count": 2,
+  "diagnoses": [
+    {
+      "angle": "dataflow",
+      "file": "diagnosis-dataflow.json",
+      "path": ".workflow/.lite-fix/network-speed-doubled-2026-01-29/diagnosis-dataflow.json",
+      "index": 1
+    },
+    {
+      "angle": "adapter-filtering",
+      "file": "diagnosis-adapter-filtering.json",
+      "path": ".workflow/.lite-fix/network-speed-doubled-2026-01-29/diagnosis-adapter-filtering.json",
+      "index": 2
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "angle": "integration-points",
+  "project_structure": [
+    "xhmonitor-web/src/App.tsx（渲染 StatCard 网格与 ProcessList）",
+    "xhmonitor-web/src/components/StatCard.tsx（卡片容器 class: xh-stat-card xh-glass-panel）",
+    "xhmonitor-web/src/components/ProcessList.tsx（进程面板 class: process-panel xh-glass-panel）",
+    "xhmonitor-web/components/core/glass-panel.css（.xh-glass-panel background: var(--xh-color-glass-bg)）",
+    "xhmonitor-web/components/core/design-tokens.css（--xh-color-glass-bg: rgba(..., 0.6)）",
+    "xhmonitor-web/src/hooks/useTheme.ts（可扩展：写入 --xh-glass-opacity 或覆盖 --xh-color-glass-bg）"
+  ],
+  "relevant_files": [
+    "xhmonitor-web/src/App.tsx",
+    "xhmonitor-web/src/components/StatCard.tsx",
+    "xhmonitor-web/src/components/ProcessList.tsx",
+    "xhmonitor-web/components/core/glass-panel.css",
+    "xhmonitor-web/components/core/design-tokens.css",
+    "xhmonitor-web/src/hooks/useTheme.ts"
+  ],
+  "patterns": [
+    "卡片与进程面板共享 .xh-glass-panel，因此最优集成点是“让 glass-panel 背景色的 alpha 可由 CSS 变量控制”。",
+    "现有背景遮罩已走通：layoutState.background.blurOpacity → useTheme → CSS var --xh-bg-blur-opacity → responsive.css 使用。可复用同一链路。"
+  ],
+  "dependencies": [
+    "src/index.css 已 @import ../components/core/design-tokens.css 与 ../components/core/glass-panel.css，可直接修改 token/样式文件生效。"
+  ],
+  "integration_points": [
+    "方案 A（推荐）：design-tokens.css 新增 --xh-glass-opacity，改写 --xh-color-glass-bg 为 rgba(30, 41, 59, var(--xh-glass-opacity, 0.6))；useTheme 仅需 setProperty('--xh-glass-opacity', value)。",
+    "方案 B：useTheme 直接 setProperty('--xh-color-glass-bg', `rgba(30,41,59,${opacity})`)；实现简单但会把颜色值硬编码在 TS 中，后续 token 变更需要同步修改。",
+    "若需要仅影响卡片/进程，不影响其它 glass panel：可在 App 容器上设置 --xh-glass-opacity，并确保其它区域不继承（例如 SettingsDrawer 放在不同根节点或覆盖回默认）。"
+  ],
+  "constraints": [
+    "保持 CSS 变量命名风格（--xh- 前缀），与 useTheme 现有写法一致。",
+    "opacity 值建议限定在 0..1，以免生成无效 rgba。",
+    "不要在 node_modules/dist 内改动。"
+  ],
+  "clarification_needs": [
+    {
+      "question": "设置项展示位置希望放在哪里？",
+      "context": "SettingsDrawer 目前按分组：Grid/Visibility/Background/Theme Colors。透明度更接近 Background/Appearance。",
+      "options": [
+        "放在 Background 分组（紧接 Mask/blurOpacity 后）",
+        "新增分组：Panels（单独放“Panel Opacity”）"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "exploration_angle": "integration-points",
+    "exploration_index": 2,
+    "timestamp": "2026-02-04T13:59:13.497Z"
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "summary": "在 service 端基于 LibreHardwareMonitor (LHM) 增加物理硬盘监控，读写速度来自 LHM，容量/已用来自 Windows WMI 并按物理盘聚合为 bytes。通过现有 SignalR 事件 ReceiveSystemUsage 追加 Disks 字段推送到 Web 端，Web 的 DiskWidget 改为渲染实时数据，缺失字段显示短横杠（—）。",
+  "approach": "以 LHM 的 Storage hardware name 作为磁盘项主键输出；通过 LHM 读取 HardwareType.Storage + SensorType.Throughput 并按传感器名称聚合 Read/Write 速度，失败时置为 null。容量与已用通过 WMI 关联 Win32_DiskDrive -> Win32_DiskPartition -> Win32_LogicalDisk 汇总 totalBytes/usedBytes，并以“模糊匹配（包含/忽略大小写）”补齐到对应 LHM 磁盘项；任一采集失败都需要降级（null），并确保不影响现有系统指标采集与推送。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Enable LHM Storage and collect per-disk throughput",
+      "scope": "XhMonitor.Core (LibreHardwareManager + SystemMetricProvider)",
+      "action": "Implement",
+      "description": "启用 LHM 的 Storage 采集，并在 SystemMetricProvider 中实现物理盘维度的读/写速度聚合（MB/s），用于推送到前端磁盘卡片。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Services/LibreHardwareManager.cs",
+          "target": "Computer initialization (IsStorageEnabled flag)",
+          "change": "将 IsStorageEnabled 从 false 调整为 true，允许采集 Storage 相关传感器。"
+        },
+        {
+          "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+          "target": "System usage collection (new disk throughput helper)",
+          "change": "新增从 ILibreHardwareManager.GetSensorValues(HardwareType.Storage, SensorType.Throughput) 读取传感器并按名称 pattern 聚合 Read/Write MB/s，失败/无传感器返回 null。"
+        }
+      ],
+      "implementation": [
+        "开启 LibreHardwareManager 的 Storage 采集开关，并确认不会影响现有 CPU/GPU/Memory/Network 采集。",
+        "在 SystemMetricProvider 新增磁盘读写速度采集方法：获取 Storage Throughput sensors，按名称匹配 Read/Write（大小写不敏感），按物理盘名聚合。",
+        "为每个磁盘项输出 name/readSpeedMb/writeSpeedMb；当 LHM 不可用或无传感器时输出 null（而不是 0），以便前端显示短横杠。"
+      ],
+      "reference": {
+        "pattern": "LHM Throughput + name pattern classification",
+        "files": [
+          "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+          "XhMonitor.Core/Services/LibreHardwareManager.cs"
+        ],
+        "examples": "参考现有网络 Upload/Download 的 Throughput 读取与名称匹配逻辑（SensorType.Throughput）。"
+      },
+      "acceptance": [
+        "每块物理盘输出读写速度字段（单位 MB/s），缺失时为 null 且不抛异常。",
+        "LHM 不可用时系统仍能正常推送其他系统指标。"
+      ]
+    },
+    {
+      "id": "T2",
+      "title": "Collect physical disk capacity/usage via WMI (bytes)",
+      "scope": "XhMonitor.Core (SystemMetricProvider + WMI helper)",
+      "action": "Implement",
+      "description": "通过 WMI 按物理硬盘聚合 totalBytes/usedBytes，并与 LHM 的物理盘项做容错映射，供 Web 磁盘卡片计算百分比与显示容量。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+          "target": "System usage collection (new WMI disk capacity helper)",
+          "change": "新增 WMI 查询与聚合逻辑，产出 per physical disk 的 totalBytes/usedBytes，并与 LHM disk 名称容错匹配后合并到同一磁盘项。"
+        }
+      ],
+      "implementation": [
+        "实现 WMI 查询：Win32_DiskDrive 列出物理盘，关联 Win32_DiskPartition，再关联 Win32_LogicalDisk，汇总每个物理盘对应卷的 Size/FreeSpace 计算 usedBytes。",
+        "产出数据结构：diskName/totalBytes/usedBytes；查询失败时返回空或字段为 null（不影响整体系统采集）。",
+        "将 WMI 的容量数据与 LHM disk list 合并：优先使用包含/忽略大小写的名称匹配；匹配失败则该磁盘项的 totalBytes/usedBytes 置 null。"
+      ],
+      "reference": {
+        "pattern": "WMI usage patterns with System.Management",
+        "files": [
+          "XhMonitor.Core/Services/WmiGpuVendorDetector.cs",
+          "XhMonitor.Core/Providers/MemoryMetricProvider.cs"
+        ],
+        "examples": "沿用项目中已有的 ManagementObjectSearcher 使用方式与异常吞掉/日志降级策略。"
+      },
+      "acceptance": [
+        "SystemUsage 的磁盘项提供 totalBytes/usedBytes（bytes），缺失时为 null。",
+        "在 WMI 查询失败或无可用映射时不抛异常、不阻塞 SendSystemUsage。"
+      ]
+    },
+    {
+      "id": "T3",
+      "title": "Extend SystemUsage + push Disks via ReceiveSystemUsage",
+      "scope": "XhMonitor.Core + XhMonitor.Service (SystemUsage model + Worker payload)",
+      "action": "Update",
+      "description": "在 SystemUsage 中新增 Disks 列表字段，并在 Worker.SendSystemUsageAsync 中把 Disks 一并推送给 Web（复用 ReceiveSystemUsage）。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+          "target": "SystemUsage model definition",
+          "change": "为 SystemUsage 增加 Disks 字段（list），每项包含 name/totalBytes/usedBytes/readSpeedMb/writeSpeedMb（允许为 null）。"
+        },
+        {
+          "file": "XhMonitor.Service/Worker.cs",
+          "target": "SendSystemUsageAsync payload construction",
+          "change": "在 ReceiveSystemUsage 匿名对象中新增 Disks 字段，保持既有字段不变。"
+        },
+        {
+          "file": "XhMonitor.Core/Interfaces/IMetricsClient.cs",
+          "target": "ReceiveSystemUsage XML doc payload description",
+          "change": "补充 Disks 字段说明（名称、bytes、MB/s、nullable），便于接口契约同步。"
+        }
+      ],
+      "implementation": [
+        "扩展 SystemUsage 数据模型以承载磁盘列表。",
+        "在 ISystemMetricProvider.GetSystemUsageAsync 返回中填充 Disks。",
+        "Worker 推送时追加 Disks 字段，保证 Desktop/WPF 客户端仍可正常反序列化（未知字段忽略）。"
+      ],
+      "reference": {
+        "pattern": "SignalR payload (PascalCase) + Web camelCase compatibility",
+        "files": [
+          "XhMonitor.Service/Worker.cs",
+          "XhMonitor.Core/Interfaces/IMetricsClient.cs",
+          "xhmonitor-web/src/hooks/useMetricsHub.ts"
+        ],
+        "examples": "参考现有 TotalCpu/TotalGpu 等字段在 Web 端解析时兼容 PascalCase/camelCase 的处理方式。"
+      },
+      "acceptance": [
+        "ReceiveSystemUsage payload 中包含 Disks 字段且结构稳定。",
+        "旧字段与旧客户端行为不变。"
+      ],
+      "depends_on": ["T1", "T2"]
+    },
+    {
+      "id": "T4",
+      "title": "Wire Web DiskWidget to realtime disks and show em-dash on missing fields",
+      "scope": "xhmonitor-web (types + SignalR parsing + DiskWidget rendering)",
+      "action": "Refactor",
+      "description": "Web 端新增 SystemUsage.disks 类型与解析逻辑，将 DiskWidget 从 mock/随机改为 props 驱动渲染；当字段缺失/为 null 时显示短横杠（—）。",
+      "modification_points": [
+        {
+          "file": "xhmonitor-web/src/types.ts",
+          "target": "SystemUsage interface",
+          "change": "扩展 SystemUsage 增加 disks 字段，定义 Disk 类型：name + totalBytes/usedBytes/readSpeed/writeSpeed（允许 null）。"
+        },
+        {
+          "file": "xhmonitor-web/src/hooks/useMetricsHub.ts",
+          "target": "ReceiveSystemUsage handler",
+          "change": "解析 data.Disks/data.disks 并映射字段大小写（TotalBytes/totalBytes 等），填充到 systemUsage.disks。"
+        },
+        {
+          "file": "xhmonitor-web/src/components/DiskWidget.tsx",
+          "target": "DiskWidget component",
+          "change": "改为接收 disks props 并渲染；移除随机读写速度 interval；缺失字段显示 '—'。"
+        },
+        {
+          "file": "xhmonitor-web/src/App.tsx",
+          "target": "DiskWidget usage",
+          "change": "将 systemUsage?.disks 作为 props 传入 DiskWidget，避免 DiskWidget 内部创建连接或使用 mock。"
+        }
+      ],
+      "implementation": [
+        "更新 types.ts：新增 Disk 类型并扩展 SystemUsage。",
+        "更新 useMetricsHub：在 ReceiveSystemUsage 里解析 disks 并兼容 PascalCase/camelCase。",
+        "重构 DiskWidget：以 bytes 计算 usedPercent（usedBytes/totalBytes），速度与容量缺失时显示 '—'；保留样式与布局逻辑。",
+        "在 App.tsx 的 header slot 与 compact slot 处传入 disks 数据。"
+      ],
+      "reference": {
+        "pattern": "Single SignalR connection source of truth (App -> components)",
+        "files": [
+          "xhmonitor-web/src/App.tsx",
+          "xhmonitor-web/src/hooks/useMetricsHub.ts",
+          "xhmonitor-web/src/components/DiskWidget.tsx"
+        ],
+        "examples": "避免在 DiskWidget 内重复调用 useMetricsHub，统一由 App.tsx 分发状态。"
+      },
+      "acceptance": [
+        "DiskWidget 展示物理盘名称；容量/百分比/读写任一缺失时显示 '—'（不再显示 0 或随机）。",
+        "TypeScript 构建通过（不引入新的测试框架）。"
+      ],
+      "depends_on": ["T3"]
+    },
+    {
+      "id": "T5",
+      "title": "Add backend unit tests for disks field and degradation behavior",
+      "scope": "XhMonitor.Tests (Worker + provider tests)",
+      "action": "Test",
+      "description": "为新增 Disks 字段补齐后端单元测试：验证 Worker 推送包含 Disks；验证 provider 在缺失传感器/失败场景下输出 null 而非抛异常。",
+      "modification_points": [
+        {
+          "file": "XhMonitor.Tests/Services/WorkerTests.cs",
+          "target": "DoneWhen_SendSystemUsageAsync_PushesSystemUsageIncludingCachedLimits",
+          "change": "新增断言：ReceiveSystemUsage payload 包含 Disks 字段（可为空/可为 null 字段）。"
+        }
+      ],
+      "implementation": [
+        "扩展 WorkerTests：在 mock 的 SystemUsage 中包含 Disks（含 null 字段）并断言匿名对象 payload 透传。",
+        "新增/补充 provider 相关测试：Mock ILibreHardwareManager 返回伪造 storage throughput 传感器列表，验证 Read/Write 聚合与缺失返回 null。",
+        "运行测试确保全部通过，并保证不引入对真实硬件/WMI 的环境依赖（必要时将 WMI 查询封装为可注入以便 mock）。"
+      ],
+      "reference": {
+        "pattern": "Worker private method reflection tests + Moq payload assertions",
+        "files": [
+          "XhMonitor.Tests/Services/WorkerTests.cs"
+        ],
+        "examples": "沿用现有反射调用 private 方法与 GetAnonymousDouble/GetAnonymousDateTime 断言模式。"
+      },
+      "acceptance": [
+        "新增/更新测试通过：包含 Disks 字段的推送被验证。",
+        "provider 的降级路径被覆盖（缺失传感器/异常时返回 null，不抛异常）。"
+      ],
+      "depends_on": ["T3"]
+    }
+  ],
+  "estimated_time": "5–8 小时",
+  "recommended_execution": "Codex",
+  "complexity": "Medium",
+  "_metadata": {
+    "timestamp": "2026-02-04T15:22:55.8957115Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "exploration_angles": ["patterns", "integration-points", "testing"]
+  }
+}

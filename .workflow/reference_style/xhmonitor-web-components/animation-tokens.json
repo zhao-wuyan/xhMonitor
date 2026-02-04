@@ -1,0 +1,341 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "duration": {
+    "instant": {
+      "$type": "duration",
+      "$value": "0ms"
+    },
+    "fast": {
+      "$type": "duration",
+      "$value": "200ms"
+    },
+    "normal": {
+      "$type": "duration",
+      "$value": "300ms"
+    },
+    "slow": {
+      "$type": "duration",
+      "$value": "500ms"
+    },
+    "slower": {
+      "$type": "duration",
+      "$value": "1000ms"
+    },
+    "pulse": {
+      "$type": "duration",
+      "$value": "2000ms"
+    }
+  },
+  "easing": {
+    "linear": {
+      "$type": "cubicBezier",
+      "$value": "linear"
+    },
+    "ease": {
+      "$type": "cubicBezier",
+      "$value": "ease"
+    },
+    "ease-in": {
+      "$type": "cubicBezier",
+      "$value": "ease-in"
+    },
+    "ease-out": {
+      "$type": "cubicBezier",
+      "$value": "ease-out"
+    },
+    "ease-in-out": {
+      "$type": "cubicBezier",
+      "$value": "ease-in-out"
+    }
+  },
+  "keyframes": {
+    "pulse": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "opacity": 1 },
+        "50%": { "opacity": 0.4 },
+        "100%": { "opacity": 1 }
+      }
+    },
+    "fade-in": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "opacity": 0 },
+        "100%": { "opacity": 1 }
+      }
+    },
+    "fade-out": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "opacity": 1 },
+        "100%": { "opacity": 0 }
+      }
+    },
+    "slide-up": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "transform": "translateY(100%)", "opacity": 0 },
+        "100%": { "transform": "translateY(0)", "opacity": 1 }
+      }
+    },
+    "slide-down": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "transform": "translateY(-100%)", "opacity": 0 },
+        "100%": { "transform": "translateY(0)", "opacity": 1 }
+      }
+    },
+    "scale-in": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "transform": "scale(0.9)", "opacity": 0 },
+        "100%": { "transform": "scale(1)", "opacity": 1 }
+      }
+    },
+    "scale-out": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "transform": "scale(1)", "opacity": 1 },
+        "100%": { "transform": "scale(0.9)", "opacity": 0 }
+      }
+    },
+    "accordion-down": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "height": 0, "opacity": 0 },
+        "100%": { "height": "var(--radix-accordion-content-height)", "opacity": 1 }
+      }
+    },
+    "accordion-up": {
+      "$type": "keyframes",
+      "$value": {
+        "0%": { "height": "var(--radix-accordion-content-height)", "opacity": 1 },
+        "100%": { "height": 0, "opacity": 0 }
+      }
+    }
+  },
+  "interactions": {
+    "button-hover": {
+      "$type": "transition",
+      "property": "background-color",
+      "duration": "{duration.fast}",
+      "easing": "{easing.ease-out}"
+    },
+    "button-active": {
+      "$type": "transition",
+      "property": "transform",
+      "duration": "{duration.fast}",
+      "easing": "{easing.ease-out}"
+    },
+    "card-hover": {
+      "$type": "transition",
+      "property": "transform",
+      "duration": "{duration.fast}",
+      "easing": "{easing.ease-out}"
+    },
+    "card-active": {
+      "$type": "transition",
+      "property": "transform",
+      "duration": "{duration.instant}",
+      "easing": "{easing.ease-out}"
+    },
+    "input-focus": {
+      "$type": "transition",
+      "property": "all",
+      "duration": "{duration.fast}",
+      "easing": "{easing.ease}"
+    },
+    "chart-marker-position": {
+      "$type": "transition",
+      "property": "left, top, opacity",
+      "duration": "{duration.normal}",
+      "easing": "{easing.ease}"
+    },
+    "progress-bar": {
+      "$type": "transition",
+      "property": "width",
+      "duration": "{duration.normal}",
+      "easing": "{easing.ease}"
+    },
+    "table-header-hover": {
+      "$type": "transition",
+      "property": "color",
+      "duration": "{duration.fast}",
+      "easing": "{easing.ease}"
+    }
+  },
+  "transitions": {
+    "default": {
+      "$type": "transition",
+      "$value": "{duration.fast} {easing.ease}"
+    },
+    "colors": {
+      "$type": "transition",
+      "$value": "background-color {duration.fast} {easing.ease}, color {duration.fast} {easing.ease}, border-color {duration.fast} {easing.ease}"
+    },
+    "transform": {
+      "$type": "transition",
+      "$value": "transform {duration.fast} {easing.ease-out}"
+    },
+    "opacity": {
+      "$type": "transition",
+      "$value": "opacity {duration.normal} {easing.ease}"
+    },
+    "all-smooth": {
+      "$type": "transition",
+      "$value": "all {duration.fast} {easing.ease}"
+    }
+  },
+  "component_animations": {
+    "status-indicator": {
+      "idle": {
+        "animation": "pulse {duration.pulse} infinite",
+        "type": "keyframe"
+      }
+    },
+    "card": {
+      "hover": {
+        "transition": "transform {duration.fast} {easing.ease-out}",
+        "type": "transition"
+      },
+      "active": {
+        "transition": "transform {duration.instant} {easing.ease-out}",
+        "transform": "scale(0.98)",
+        "type": "transition"
+      }
+    },
+    "input": {
+      "focus": {
+        "transition": "all {duration.fast} {easing.ease}",
+        "type": "transition"
+      }
+    },
+    "chart-marker": {
+      "position-update": {
+        "transition": "left {duration.normal} {easing.ease}, top {duration.normal} {easing.ease}, opacity {duration.normal} {easing.ease}",
+        "type": "transition"
+      }
+    },
+    "progress-bar": {
+      "value-change": {
+        "transition": "width {duration.normal} {easing.ease}",
+        "type": "transition"
+      }
+    },
+    "table-header": {
+      "hover": {
+        "transition": "color {duration.fast} {easing.ease}",
+        "type": "transition"
+      }
+    },
+    "search-input": {
+      "focus": {
+        "transition": "all {duration.fast} {easing.ease}",
+        "type": "transition"
+      }
+    }
+  },
+  "accessibility": {
+    "prefers-reduced-motion": {
+      "$type": "mediaQuery",
+      "$value": "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }"
+    }
+  },
+  "_metadata": {
+    "version": "1.0.0",
+    "created": "2025-01-31T12:19:00Z",
+    "source": "code-import",
+    "framework_detected": "css-animations",
+    "files_analyzed": {
+      "html": ["ui-preview-v2.html"]
+    },
+    "completeness": {
+      "status": "partial",
+      "missing_items": [
+        "No explicit dialog/accordion/dropdown animations in source",
+        "No enter/exit animations for modal components",
+        "No spring or bounce easing functions"
+      ],
+      "recommendations": [
+        "Add dialog open/close animations for better UX",
+        "Consider adding toast notification enter/exit animations",
+        "Add hover states for interactive components with consistent timing"
+      ]
+    },
+    "code_snippets": [
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 570,
+        "line_end": 574,
+        "snippet": "@keyframes pulse {\n    0% { opacity: 1; }\n    50% { opacity: 0.4; }\n    100% { opacity: 1; }\n}",
+        "context_type": "css-keyframes"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 254,
+        "line_end": 256,
+        "snippet": "transition: transform 0.2s;",
+        "context_type": "css-transition"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 258,
+        "line_end": 260,
+        "snippet": ".stat-card:active {\n    transform: scale(0.98);\n}",
+        "context_type": "css-transition"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 307,
+        "line_end": 310,
+        "snippet": "transition: left 0.3s ease, top 0.3s ease, opacity 0.3s ease;",
+        "context_type": "css-transition"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 229,
+        "line_end": 229,
+        "snippet": "animation: pulse 2s infinite;",
+        "context_type": "css-animation"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 534,
+        "line_end": 534,
+        "snippet": "transition: width 0.3s ease;",
+        "context_type": "css-transition"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 488,
+        "line_end": 488,
+        "snippet": "transition: all 0.2s;",
+        "context_type": "css-transition"
+      },
+      {
+        "source_file": "C:/ProjectDev/project/xinghe/xhMonitor/xhmonitor-web/design/ui-preview-v2.html",
+        "line_start": 407,
+        "line_end": 407,
+        "snippet": "transition: color 0.2s;",
+        "context_type": "css-transition"
+      }
+    ],
+    "usage_summary": {
+      "total_animations": 1,
+      "total_transitions": 7,
+      "animation_types": {
+        "keyframes": ["pulse"],
+        "transitions": ["transform", "left", "top", "opacity", "width", "color", "all"]
+      },
+      "duration_values": {
+        "0.2s": "fast interactions (hover, active)",
+        "0.3s": "smooth transitions (position, width)",
+        "2s": "infinite loop (status indicator)"
+      },
+      "easing_functions": {
+        "ease": "most common",
+        "ease-out": "transform transitions"
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "angle": "testing",
+  "project_structure": [
+    "后端测试工程：XhMonitor.Tests（xUnit + Moq + FluentAssertions）。",
+    "已有覆盖点：XhMonitor.Tests/Services/WorkerTests.cs 已验证 ReceiveSystemUsage payload 包含缓存的 MaxMemory/MaxVram。",
+    "前端无内置测试脚本：xhmonitor-web/package.json 未提供 test/vitest/jest，当前更适合做 TypeScript 类型检查与手动验证。"
+  ],
+  "relevant_files": [
+    "XhMonitor.Tests/Services/WorkerTests.cs",
+    "XhMonitor.Service/Worker.cs",
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "xhmonitor-web/src/hooks/useMetricsHub.ts",
+    "xhmonitor-web/src/components/DiskWidget.tsx",
+    "xhmonitor-web/package.json"
+  ],
+  "patterns": [
+    "WorkerTests 通过反射调用 private 方法（SendSystemUsageAsync/SendMemoryLimitAsync），并用 It.Is<object> 验证匿名对象字段。",
+    "SystemMetricProvider 的外部依赖（ILibreHardwareManager、IPowerProvider）可通过 Mock 注入来做纯单元测试。",
+    "前端主要依赖 TypeScript 编译与 eslint 校验（当前 scripts: build/lint）。"
+  ],
+  "dependencies": [
+    "xUnit",
+    "Moq",
+    "FluentAssertions"
+  ],
+  "integration_points": [
+    "在 WorkerTests 增加断言：当 GetSystemUsageAsync 返回带 disks 的 SystemUsage 时，ReceiveSystemUsage payload 也包含 Disks。",
+    "为 SystemMetricProvider 的“磁盘传感器映射”新增单元测试：输入伪造 SensorReading 列表，验证 Read/Write 速度聚合、空数据降级行为。"
+  ],
+  "constraints": [
+    "磁盘采集涉及系统环境差异（不同机器传感器命名不同），测试应避免依赖真实硬件，优先 mock ILibreHardwareManager 输出。",
+    "若采用 DriveInfo/WMI 等系统调用，建议封装成可注入组件，便于测试与避免 CI/本机差异。"
+  ],
+  "clarification_needs": [
+    {
+      "question": "是否需要在本次改动中补齐后端单元测试（推荐）？",
+      "context": "仓库已有 WorkerTests 等单测体系；新增磁盘字段属于对外契约扩展，最好用测试锁定 payload 结构与降级逻辑。",
+      "options": [
+        "需要：补齐 WorkerTests + SystemMetricProvider 单测",
+        "只补 WorkerTests（最小保障）",
+        "暂不加测试（仅手动验证）"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "exploration_angle": "testing",
+    "exploration_index": 3,
+    "timestamp": "2026-02-04T15:22:55.8957115Z"
+  }
+}

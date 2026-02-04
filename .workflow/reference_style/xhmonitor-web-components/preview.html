@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XhMonitor Web Components - Design Reference</title>
+    <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+    <nav class="sticky-nav">
+        <div class="nav-container">
+            <h1 class="nav-title">XhMonitor Components</h1>
+            <div class="nav-links">
+                <a href="#colors">Colors</a>
+                <a href="#typography">Typography</a>
+                <a href="#components">Components</a>
+                <a href="#spacing">Spacing</a>
+                <a href="#animations">Animations</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Section 1: Colors -->
+        <section id="colors" class="section">
+            <h2 class="section-title">Colors</h2>
+
+            <div class="subsection">
+                <h3>Base Colors</h3>
+                <div class="color-grid">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #0f172a;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Background</div>
+                            <div class="color-value">#0f172a</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #f8fafc;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Foreground</div>
+                            <div class="color-value">#f8fafc</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #94a3b8;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Text Secondary</div>
+                            <div class="color-value">#94a3b8</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Glass Surface</h3>
+                <div class="color-grid">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: rgba(30, 41, 59, 0.6);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Glass Background</div>
+                            <div class="color-value">rgba(30, 41, 59, 0.6)</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: rgba(255, 255, 255, 0.08);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Glass Border</div>
+                            <div class="color-value">rgba(255, 255, 255, 0.08)</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: rgba(255, 255, 255, 0.05);"></div>
+                        <div class="color-info">
+                            <div class="color-name">Glass Highlight</div>
+                            <div class="color-value">rgba(255, 255, 255, 0.05)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Semantic Colors</h3>
+                <div class="color-grid">
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #3b82f6;"></div>
+                        <div class="color-info">
+                            <div class="color-name">CPU</div>
+                            <div class="color-value">#3b82f6</div>
+                            <div class="color-usage">Processing power metrics</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #8b5cf6;"></div>
+                        <div class="color-info">
+                            <div class="color-name">RAM</div>
+                            <div class="color-value">#8b5cf6</div>
+                            <div class="color-usage">Memory metrics</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #10b981;"></div>
+                        <div class="color-info">
+                            <div class="color-name">GPU</div>
+                            <div class="color-value">#10b981</div>
+                            <div class="color-usage">Graphics performance</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #f59e0b;"></div>
+                        <div class="color-info">
+                            <div class="color-name">VRAM</div>
+                            <div class="color-value">#f59e0b</div>
+                            <div class="color-usage">Video memory usage</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #0ea5e9;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Network</div>
+                            <div class="color-value">#0ea5e9</div>
+                            <div class="color-usage">Data flow metrics</div>
+                        </div>
+                    </div>
+                    <div class="color-card">
+                        <div class="color-swatch" style="background: #f43f5e;"></div>
+                        <div class="color-info">
+                            <div class="color-name">Power</div>
+                            <div class="color-value">#f43f5e</div>
+                            <div class="color-usage">Energy consumption</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Typography -->
+        <section id="typography" class="section">
+            <h2 class="section-title">Typography</h2>
+
+            <div class="subsection">
+                <h3>Font Families</h3>
+                <div class="typography-demo">
+                    <div class="font-sample" style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
+                        <div class="font-name">Sans-serif</div>
+                        <div class="font-value">'Segoe UI', system-ui, -apple-system, sans-serif</div>
+                        <div class="font-preview">The quick brown fox jumps over the lazy dog</div>
+                    </div>
+                    <div class="font-sample" style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace;">
+                        <div class="font-name">Monospace</div>
+                        <div class="font-value">'Consolas', 'Monaco', 'Courier New', monospace</div>
+                        <div class="font-preview">0123456789 PID CPU RAM GPU</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Font Sizes</h3>
+                <div class="size-scale">
+                    <div class="size-item" style="font-size: 0.65rem;">
+                        <span class="size-label">XS (0.65rem)</span>
+                        <span class="size-sample">Sample Text</span>
+                    </div>
+                    <div class="size-item" style="font-size: 0.75rem;">
+                        <span class="size-label">SM (0.75rem)</span>
+                        <span class="size-sample">Sample Text</span>
+                    </div>
+                    <div class="size-item" style="font-size: 0.9rem;">
+                        <span class="size-label">Base (0.9rem)</span>
+                        <span class="size-sample">Sample Text</span>
+                    </div>
+                    <div class="size-item" style="font-size: 1.25rem;">
+                        <span class="size-label">LG (1.25rem)</span>
+                        <span class="size-sample">Sample Text</span>
+                    </div>
+                    <div class="size-item" style="font-size: 1.8rem;">
+                        <span class="size-label">XL (1.8rem)</span>
+                        <span class="size-sample">Sample Text</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Font Weights</h3>
+                <div class="weight-scale">
+                    <div class="weight-item" style="font-weight: 400;">Normal (400)</div>
+                    <div class="weight-item" style="font-weight: 500;">Medium (500)</div>
+                    <div class="weight-item" style="font-weight: 600;">Semibold (600)</div>
+                    <div class="weight-item" style="font-weight: 700;">Bold (700)</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Components -->
+        <section id="components" class="section">
+            <h2 class="section-title">Components</h2>
+
+            <div class="subsection">
+                <h3>Universal Components</h3>
+                <p class="subsection-desc">Reusable components for common UI patterns</p>
+
+                <!-- Glass Panel -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Glass Panel</h4>
+                    <div class="component-demo">
+                        <div class="demo-glass-panel">
+                            <p>Glassmorphism container with backdrop blur</p>
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;div class="glass-panel"&gt;
+  &lt;p&gt;Content here&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+                    </details>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Status Badge</h4>
+                    <div class="component-demo">
+                        <div class="demo-status-badge">
+                            <div class="demo-status-dot"></div>
+                            <span>Online</span>
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;div class="status-badge"&gt;
+  &lt;div class="status-dot"&gt;&lt;/div&gt;
+  &lt;span&gt;Online&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+                    </details>
+                </div>
+
+                <!-- Search Box -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Search Box</h4>
+                    <div class="component-demo">
+                        <div class="demo-search-box">
+                            <span class="demo-search-icon">🔍</span>
+                            <input type="text" class="demo-search-input" placeholder="搜索进程...">
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;div class="search-box"&gt;
+  &lt;span class="search-icon"&gt;🔍&lt;/span&gt;
+  &lt;input type="text" class="search-input" placeholder="搜索进程..."&gt;
+&lt;/div&gt;</code></pre>
+                    </details>
+                </div>
+
+                <!-- Stat Card -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Stat Card</h4>
+                    <div class="component-demo">
+                        <div class="demo-stat-card">
+                            <div class="demo-card-glow" style="background: #3b82f6;"></div>
+                            <div class="demo-card-info">
+                                <div class="demo-card-label">
+                                    <span style="color: #3b82f6;">●</span> CPU
+                                </div>
+                                <div class="demo-card-value">45%</div>
+                                <div class="demo-card-sub">i9-13900K</div>
+                            </div>
+                            <div class="demo-card-chart">
+                                <svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
+                                    <polyline points="0,80 20,70 40,75 60,60 80,65 100,50 120,55 140,45 160,50 180,40 200,35"
+                                              fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.6"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;div class="stat-card glass-panel"&gt;
+  &lt;div class="card-glow"&gt;&lt;/div&gt;
+  &lt;div class="card-info-area"&gt;
+    &lt;div class="card-label"&gt;CPU&lt;/div&gt;
+    &lt;div class="card-value"&gt;45%&lt;/div&gt;
+    &lt;div class="card-sub"&gt;i9-13900K&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="card-chart-area"&gt;
+    &lt;canvas class="mini-chart-canvas"&gt;&lt;/canvas&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                    </details>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Stats Grid</h4>
+                    <p class="component-desc">Responsive grid: 3 columns → 2 columns → 1 column</p>
+                    <div class="component-demo">
+                        <div class="demo-stats-grid">
+                            <div class="demo-grid-item">Card 1</div>
+                            <div class="demo-grid-item">Card 2</div>
+                            <div class="demo-grid-item">Card 3</div>
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;section class="stats-grid"&gt;
+  &lt;div class="stat-card"&gt;...&lt;/div&gt;
+  &lt;div class="stat-card"&gt;...&lt;/div&gt;
+  &lt;div class="stat-card"&gt;...&lt;/div&gt;
+&lt;/section&gt;</code></pre>
+                    </details>
+                </div>
+
+                <!-- Mobile Nav -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Mobile Navigation</h4>
+                    <p class="component-desc">Bottom navigation bar (visible on mobile)</p>
+                    <div class="component-demo">
+                        <div class="demo-mobile-nav">
+                            <div class="demo-nav-icon active">
+                                <span>📊</span>
+                                <span>监控</span>
+                            </div>
+                            <div class="demo-nav-icon">
+                                <span>💻</span>
+                                <span>硬件</span>
+                            </div>
+                            <div class="demo-nav-icon">
+                                <span>⚙️</span>
+                                <span>设置</span>
+                            </div>
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;nav class="mobile-nav"&gt;
+  &lt;div class="nav-icon active"&gt;
+    &lt;svg&gt;...&lt;/svg&gt;
+    &lt;span&gt;监控&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/nav&gt;</code></pre>
+                    </details>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Specialized Components</h3>
+                <p class="subsection-desc">Module-specific components from XhMonitor</p>
+
+                <!-- Disk Item -->
+                <div class="component-showcase">
+                    <h4 class="component-name">Disk Item</h4>
+                    <div class="component-demo">
+                        <div class="demo-disk-item">
+                            <div class="demo-disk-label">C: 系统</div>
+                            <div class="demo-disk-details">
+                                <div class="demo-disk-bar-container">
+                                    <div class="demo-disk-bar-bg">
+                                        <div class="demo-disk-bar-fill" style="width: 65%; background: #3b82f6;"></div>
+                                    </div>
+                                </div>
+                                <span class="demo-disk-info">325GB/500GB</span>
+                                <div class="demo-disk-speed">
+                                    <span>R: 120M</span>
+                                    <span>W: 80M</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <details class="component-code">
+                        <summary>View Code</summary>
+                        <pre><code>&lt;div class="disk-item"&gt;
+  &lt;div class="disk-label"&gt;C: 系统&lt;/div&gt;
+  &lt;div class="disk-details-row"&gt;
+    &lt;div class="disk-bar-container"&gt;...&lt;/div&gt;
+    &lt;span class="disk-info-text"&gt;325GB/500GB&lt;/span&gt;
+    &lt;div class="disk-speed-group"&gt;...&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Spacing & Layout -->
+        <section id="spacing" class="section">
+            <h2 class="section-title">Spacing & Layout</h2>
+
+            <div class="subsection">
+                <h3>Spacing Scale</h3>
+                <div class="spacing-scale">
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 2px;"></div>
+                        <span>XS (2px)</span>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 4px;"></div>
+                        <span>SM (4px)</span>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 6px;"></div>
+                        <span>MD (6px)</span>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 10px;"></div>
+                        <span>LG (10px)</span>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 12px;"></div>
+                        <span>XL (12px)</span>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 16px;"></div>
+                        <span>2XL (16px)</span>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="width: 20px;"></div>
+                        <span>3XL (20px)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Border Radius</h3>
+                <div class="radius-scale">
+                    <div class="radius-item">
+                        <div class="radius-box" style="border-radius: 4px;"></div>
+                        <span>SM (4px)</span>
+                    </div>
+                    <div class="radius-item">
+                        <div class="radius-box" style="border-radius: 8px;"></div>
+                        <span>MD (8px)</span>
+                    </div>
+                    <div class="radius-item">
+                        <div class="radius-box" style="border-radius: 16px;"></div>
+                        <span>LG (16px)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Shadows</h3>
+                <div class="shadow-scale">
+                    <div class="shadow-item">
+                        <div class="shadow-box" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></div>
+                        <span>Small</span>
+                    </div>
+                    <div class="shadow-item">
+                        <div class="shadow-box" style="box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);"></div>
+                        <span>Glow</span>
+                    </div>
+                    <div class="shadow-item">
+                        <div class="shadow-box" style="box-shadow: 0 1px 4px rgba(0,0,0,0.8);"></div>
+                        <span>Text</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Layout Dimensions</h3>
+                <table class="dimension-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Value</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Card Height</td>
+                            <td>140px</td>
+                            <td>Standard stat card height</td>
+                        </tr>
+                        <tr>
+                            <td>Max Width</td>
+                            <td>1400px</td>
+                            <td>Container max width</td>
+                        </tr>
+                        <tr>
+                            <td>Grid Gap</td>
+                            <td>16px</td>
+                            <td>Gap between grid items</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 5: Animations -->
+        <section id="animations" class="section">
+            <h2 class="section-title">Animations</h2>
+
+            <div class="subsection">
+                <h3>Duration Scale</h3>
+                <table class="animation-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Duration</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Instant</td>
+                            <td>0ms</td>
+                            <td>Immediate changes</td>
+                        </tr>
+                        <tr>
+                            <td>Fast</td>
+                            <td>200ms</td>
+                            <td>Hover, active states</td>
+                        </tr>
+                        <tr>
+                            <td>Normal</td>
+                            <td>300ms</td>
+                            <td>Smooth transitions</td>
+                        </tr>
+                        <tr>
+                            <td>Slow</td>
+                            <td>500ms</td>
+                            <td>Emphasized transitions</td>
+                        </tr>
+                        <tr>
+                            <td>Slower</td>
+                            <td>1000ms</td>
+                            <td>Long animations</td>
+                        </tr>
+                        <tr>
+                            <td>Pulse</td>
+                            <td>2000ms</td>
+                            <td>Infinite loops</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h3>Easing Functions</h3>
+                <div class="easing-demo">
+                    <div class="easing-item">
+                        <div class="easing-name">Linear</div>
+                        <div class="easing-box easing-linear"></div>
+                    </div>
+                    <div class="easing-item">
+                        <div class="easing-name">Ease</div>
+                        <div class="easing-box easing-ease"></div>
+                    </div>
+                    <div class="easing-item">
+                        <div class="easing-name">Ease In</div>
+                        <div class="easing-box easing-ease-in"></div>
+                    </div>
+                    <div class="easing-item">
+                        <div class="easing-name">Ease Out</div>
+                        <div class="easing-box easing-ease-out"></div>
+                    </div>
+                    <div class="easing-item">
+                        <div class="easing-name">Ease In Out</div>
+                        <div class="easing-box easing-ease-in-out"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Keyframe Animations</h3>
+                <div class="keyframe-demo">
+                    <div class="keyframe-item">
+                        <div class="keyframe-name">Pulse</div>
+                        <div class="keyframe-box pulse-animation"></div>
+                    </div>
+                    <div class="keyframe-item">
+                        <div class="keyframe-name">Fade In</div>
+                        <div class="keyframe-box fade-in-animation"></div>
+                    </div>
+                    <div class="keyframe-item">
+                        <div class="keyframe-name">Slide Up</div>
+                        <div class="keyframe-box slide-up-animation"></div>
+                    </div>
+                    <div class="keyframe-item">
+                        <div class="keyframe-name">Scale In</div>
+                        <div class="keyframe-box scale-in-animation"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p><strong>Package:</strong> xhmonitor-web-components</p>
+            <p><strong>Version:</strong> 1.0.0</p>
+            <p><strong>Generated:</strong> 2026-01-31</p>
+            <p><strong>Components:</strong> 11 templates</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for navigation
+        document.querySelectorAll('.nav-links a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Restart animations on hover
+        document.querySelectorAll('.easing-box, .keyframe-box').forEach(box => {
+            box.addEventListener('mouseenter', function() {
+                this.style.animation = 'none';
+                setTimeout(() => {
+                    this.style.animation = '';
+                }, 10);
+            });
+        });
+    </script>
+</body>
+</html>

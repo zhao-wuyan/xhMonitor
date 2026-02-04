@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Threading.Channels;
+using System.Threading;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using XhMonitor.Core.Interfaces;
@@ -21,6 +22,7 @@ public class Worker : BackgroundService
     private readonly int _systemIntervalSeconds;
     private double _cachedMaxMemory;
     private double _cachedMaxVram;
+    private int _diskMetricsLogged;
     private readonly Channel<ProcessSnapshot> _processSnapshotChannel =
         Channel.CreateBounded<ProcessSnapshot>(new BoundedChannelOptions(1)
         {
@@ -243,6 +245,12 @@ public class Worker : BackgroundService
             usage.UploadSpeed,
             usage.DownloadSpeed);
 
+        if (usage.Disks.Count > 0 && Interlocked.Exchange(ref _diskMetricsLogged, 1) == 0)
+        {
+            var diskNames = string.Join(", ", usage.Disks.Select(d => d.Name));
+            _logger.LogInformation("Disk metrics detected via LHM: {DiskNames}", diskNames);
+        }
+
         await _hubContext.Clients.All.ReceiveSystemUsage(new
         {
             Timestamp = timestamp,
@@ -254,6 +262,14 @@ public class Worker : BackgroundService
             DownloadSpeed = Math.Max(0.0, usage.DownloadSpeed),
             MaxMemory = Math.Round(_cachedMaxMemory, 1),
             MaxVram = Math.Round(_cachedMaxVram, 1),
+            Disks = usage.Disks.Select(d => new
+            {
+                d.Name,
+                d.TotalBytes,
+                d.UsedBytes,
+                ReadSpeed = d.ReadSpeed.HasValue ? Math.Max(0.0, d.ReadSpeed.Value) : (double?)null,
+                WriteSpeed = d.WriteSpeed.HasValue ? Math.Max(0.0, d.WriteSpeed.Value) : (double?)null
+            }).ToList(),
             PowerAvailable = usage.PowerAvailable,
             TotalPower = Math.Round(usage.TotalPower, 1),
             MaxPower = Math.Round(usage.MaxPower, 1),

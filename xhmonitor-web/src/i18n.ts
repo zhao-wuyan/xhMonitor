@@ -4,14 +4,31 @@ export const i18n = {
     // 页面标题
     appTitle: 'XhMonitor',
     appSubtitle: 'Windows 资源监控器',
+    appVersion: 'v0.2.4',
 
     // 连接状态
     connected: '已连接',
     disconnected: '未连接',
+    online: '在线',
+    offline: '离线',
     reconnecting: '重新连接中...',
     connectionClosed: '连接已关闭',
 
+    // 导航/通用
+    Monitor: '监控',
+    Hardware: '硬件',
+    Settings: '设置',
+    'Open settings': '打开设置',
+    'Close settings': '关闭设置',
+    'Restore Defaults': '恢复默认',
+
     // 指标名称
+    CPU: 'CPU',
+    RAM: 'RAM',
+    GPU: 'GPU',
+    VRAM: 'VRAM',
+    NET: 'NET',
+    PWR: 'PWR',
     'CPU Usage': 'CPU 使用率',
     'Memory Usage': '内存使用',
     'GPU Usage': 'GPU 使用率',
@@ -19,10 +36,34 @@ export const i18n = {
 
     // 通用文本
     processes: '个进程',
+    'Drag to reorder': '拖拽排序',
     'Total CPU': 'CPU 总计',
     'Total Memory': '内存总计',
     'Total GPU': 'GPU 总计',
     'Total VRAM': '显存总计',
+
+    // 设置面板
+    'Layout Settings': '布局设置',
+    'Grid Columns': '网格列数',
+    'Grid Gap': '网格间距',
+    'Card Drag Mode': '拖拽模式',
+    'Sort (Reorder)': '排序（调整顺序）',
+    'Swap (Drop)': '交换（松开交换）',
+    Current: '当前',
+    Visibility: '显示',
+    Header: '顶部栏',
+    Disk: '磁盘',
+    Cards: '卡片',
+    Background: '背景',
+    Gradient: '渐变',
+    'Background Image': '背景图片',
+    'Choose Image': '选择图片',
+    'Remove Image': '移除图片',
+    Blur: '模糊',
+    Mask: '遮罩',
+    Opacity: '透明度',
+    'Panel Opacity': '面板透明度',
+    'Theme Colors': '主题颜色',
 
     // 进程监控
     'Process Monitor': '进程监控',
@@ -32,7 +73,7 @@ export const i18n = {
 
     // 加载状态
     'Loading configuration...': '正在加载配置...',
-    'Failed to load metric configuration': '加载指标配置失败',
+    'Failed to load metric configuration': '加载指标配置失败，请检查后端是否运行',
     'Waiting for metrics data...': '等待指标数据...',
 
     // 搜索结果
@@ -43,14 +84,31 @@ export const i18n = {
     // 页面标题
     appTitle: 'XhMonitor',
     appSubtitle: 'Windows Resource Monitor',
+    appVersion: 'v0.2.4',
 
     // 连接状态
     connected: 'Connected',
     disconnected: 'Disconnected',
+    online: 'Online',
+    offline: 'Offline',
     reconnecting: 'Reconnecting...',
     connectionClosed: 'Connection closed',
 
+    // 导航/通用
+    Monitor: 'Monitor',
+    Hardware: 'Hardware',
+    Settings: 'Settings',
+    'Open settings': 'Open settings',
+    'Close settings': 'Close settings',
+    'Restore Defaults': 'Restore Defaults',
+
     // 指标名称
+    CPU: 'CPU',
+    RAM: 'RAM',
+    GPU: 'GPU',
+    VRAM: 'VRAM',
+    NET: 'NET',
+    PWR: 'PWR',
     'CPU Usage': 'CPU Usage',
     'Memory Usage': 'Memory Usage',
     'GPU Usage': 'GPU Usage',
@@ -58,10 +116,34 @@ export const i18n = {
 
     // 通用文本
     processes: 'processes',
+    'Drag to reorder': 'Drag to reorder',
     'Total CPU': 'Total CPU',
     'Total Memory': 'Total Memory',
     'Total GPU': 'Total GPU',
     'Total VRAM': 'Total VRAM',
+
+    // 设置面板
+    'Layout Settings': 'Layout Settings',
+    'Grid Columns': 'Grid Columns',
+    'Grid Gap': 'Grid Gap',
+    'Card Drag Mode': 'Card Drag Mode',
+    'Sort (Reorder)': 'Sort (Reorder)',
+    'Swap (Drop)': 'Swap (Drop)',
+    Current: 'Current',
+    Visibility: 'Visibility',
+    Header: 'Header',
+    Disk: 'Disk',
+    Cards: 'Cards',
+    Background: 'Background',
+    Gradient: 'Gradient',
+    'Background Image': 'Background Image',
+    'Choose Image': 'Choose Image',
+    'Remove Image': 'Remove Image',
+    Blur: 'Blur',
+    Mask: 'Mask',
+    Opacity: 'Opacity',
+    'Panel Opacity': 'Panel Opacity',
+    'Theme Colors': 'Theme Colors',
 
     // 进程监控
     'Process Monitor': 'Process Monitor',

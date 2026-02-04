@@ -1,0 +1,36 @@
+{
+  "name": "@xhmonitor/components",
+  "version": "1.0.0",
+  "description": "XhMonitor 组件库 - 玻璃拟态设计的实时数据可视化组件",
+  "main": "index.js",
+  "keywords": [
+    "xhmonitor",
+    "components",
+    "glassmorphism",
+    "charts",
+    "monitoring",
+    "visualization",
+    "real-time"
+  ],
+  "author": "XhMonitor Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xhmonitor/components"
+  },
+  "files": [
+    "core/",
+    "charts/",
+    "layout/",
+    "docs/",
+    "examples/",
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "python -m http.server 8080",
+    "docs": "open examples/index.html"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}

@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @import "tailwindcss";
+@import "../components/core/design-tokens.css";
+@import "../components/core/glass-panel.css";
+@import "../components/core/stat-card.css";
+@import "./styles/responsive.css";
 
 @layer base {
   body {
@@ -70,5 +74,23 @@
   ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
+  }
+
+  /* App Container - 统一布局容器 */
+  .app-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .app-container {
+      padding: 16px;
+      gap: 16px;
+    }
   }
 }

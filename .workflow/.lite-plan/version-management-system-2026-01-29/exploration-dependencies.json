@@ -1,0 +1,109 @@
+{
+  "project_structure": "XhMonitor 采用多层架构：XhMonitor.Core（核心库，版本 0.1.0）、XhMonitor.Service（后端服务，版本 0.1.0）、XhMonitor.Desktop（WPF 桌面应用，版本 0.1.0）、xhmonitor-web（React 前端，版本 0.1.0）。构建流程分为两层：编译层（dotnet publish）和打包层（publish.ps1 + build-installer.ps1 + Inno Setup）。版本号在编译层和打包层之间存在断层，导致版本号不一致风险。",
+  "relevant_files": [
+    {
+      "path": "publish.ps1",
+      "relevance": 0.95,
+      "rationale": "打包脚本核心，接收 -Version 参数但未传递给 dotnet publish，导致版本号断层。控制输出目录命名和 README 生成。"
+    },
+    {
+      "path": "build-installer.ps1",
+      "relevance": 0.90,
+      "rationale": "安装程序构建脚本，接收 -Version 参数并正确传递给 Inno Setup 编译器（/DMyAppVersion），是唯一正确传播版本号的环节。"
+    },
+    {
+      "path": "installer/XhMonitor.iss",
+      "relevance": 0.85,
+      "rationale": "Inno Setup 脚本，通过 #define MyAppVersion 接收版本号，用于安装程序元数据、文件名、注册表项。"
+    },
+    {
+      "path": "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+      "relevance": 0.90,
+      "rationale": "桌面应用项目文件，<Version>0.1.0</Version> 硬编码，是编译层版本号的实际来源，未与打包脚本参数同步。"
+    },
+    {
+      "path": "XhMonitor.Service/XhMonitor.Service.csproj",
+      "relevance": 0.85,
+      "rationale": "后端服务项目文件，<Version>0.1.0</Version> 硬编码，与 Desktop 项目存在相同的版本号同步问题。"
+    },
+    {
+      "path": "XhMonitor.Core/XhMonitor.Core.csproj",
+      "relevance": 0.80,
+      "rationale": "核心库项目文件，<Version>0.1.0</Version> 硬编码，作为被引用的库，其版本号也需要统一管理。"
+    },
+    {
+      "path": "xhmonitor-web/package.json",
+      "relevance": 0.75,
+      "rationale": "前端项目配置，\"version\": \"0.1.0\" 硬编码，目前与后端版本号隔离，未在 UI 中显示但需要保持一致性。"
+    },
+    {
+      "path": "XhMonitor.Desktop/Windows/AboutWindow.xaml",
+      "relevance": 0.95,
+      "rationale": "关于窗口 UI，第 57 行硬编码 <TextBlock Text=\"版本：0.1.0\"/>，是用户可见的版本号显示位置，必须动态化。"
+    },
+    {
+      "path": "XhMonitor.Desktop/Windows/AboutWindow.xaml.cs",
+      "relevance": 0.70,
+      "rationale": "关于窗口代码后台，需要修改以动态获取程序集版本号（Assembly.GetExecutingAssembly().GetName().Version）。"
+    }
+  ],
+  "patterns": "当前版本号管理模式为「手动参数 + 多源硬编码」：\n\n1. **打包层传播模式**（部分有效）：\n   - build-installer.ps1:163 → `& $isccPath \"/DMyAppVersion=$Version\" $IssFile`\n   - 正确将版本号传递给 Inno Setup 编译器\n\n2. **编译层断层模式**（失效）：\n   - publish.ps1:168-193（Service）和 publish.ps1:211-236（Desktop）构建 dotnet publish 参数\n   - 缺少 `-p:Version=$Version` 或 `-p:AssemblyVersion=$Version`\n   - 导致二进制文件始终使用 .csproj 中的硬编码版本\n\n3. **UI 硬编码模式**（失效）：\n   - AboutWindow.xaml:57 → `<TextBlock Text=\"版本：0.1.0\"/>`\n   - 静态字符串，与程序集版本无关联\n\n4. **多源重复模式**（维护负担）：\n   - 3 个 .csproj 文件各自定义 <Version>0.1.0</Version>\n   - package.json 独立定义 \"version\": \"0.1.0\"\n   - 无自动同步机制",
+  "dependencies": "版本号依赖关系分析：\n\n**外部依赖**：\n- Inno Setup 6.x（ISCC.exe）：安装程序编译器，通过命令行参数接收版本号\n- .NET 8 SDK：dotnet publish 命令支持 -p:Version 参数注入版本号\n- npm/Vite：前端构建工具，可通过环境变量注入版本号到构建产物\n\n**内部依赖链**：\n1. **脚本参数依赖**：\n   - build-installer.ps1 → publish.ps1（通过 & $publishScript -Version $Version 调用）\n   - publish.ps1 → dotnet publish（当前未传递版本号，需要修复）\n\n2. **项目引用依赖**：\n   - XhMonitor.Desktop.csproj → XhMonitor.Core.csproj（ProjectReference）\n   - XhMonitor.Service.csproj → XhMonitor.Core.csproj（ProjectReference）\n   - 核心库版本变更会影响依赖项目\n\n3. **构建产物依赖**：\n   - Inno Setup 依赖 release/XhMonitor-v{Version}/ 目录结构\n   - README.txt 通过 publish.ps1:295-376 生成，包含版本号\n   - 安装程序文件名 XhMonitor-v{Version}-Setup.exe 依赖版本号\n\n4. **运行时依赖**：\n   - AboutWindow UI 需要显示版本号（当前硬编码，应改为读取 Assembly.Version）\n   - 日志系统可能需要记录启动版本（未在当前分析中发现，但为常见需求）",
+  "integration_points": "版本号集成点识别（需要修改的位置）：\n\n1. **publish.ps1:168-193（Service 发布参数）**\n   - 当前：构建 $publishArgs 数组，包含 -c、-o、-r、--self-contained 等参数\n   - 需要：添加 `-p:Version=$Version` 或 `-p:AssemblyVersion=$Version -p:FileVersion=$Version`\n   - 示例：`$publishArgs += \"-p:Version=$Version\"`\n\n2. **publish.ps1:211-236（Desktop 发布参数）**\n   - 当前：与 Service 相同的参数构建模式\n   - 需要：同样添加版本号注入参数\n\n3. **XhMonitor.Desktop/Windows/AboutWindow.xaml.cs:6-10（构造函数）**\n   - 当前：仅调用 InitializeComponent()\n   - 需要：动态设置版本号文本\n   - 示例代码：\n     ```csharp\n     public AboutWindow()\n     {\n         InitializeComponent();\n         var version = Assembly.GetExecutingAssembly().GetName().Version;\n         VersionText.Text = $\"版本：{version.Major}.{version.Minor}.{version.Build}\";\n     }\n     ```\n\n4. **XhMonitor.Desktop/Windows/AboutWindow.xaml:57（版本显示）**\n   - 当前：`<TextBlock Text=\"版本：0.1.0\" .../>`\n   - 需要：改为绑定或命名元素\n   - 示例：`<TextBlock x:Name=\"VersionText\" Text=\"版本：加载中...\" .../>`\n\n5. **xhmonitor-web/vite.config.ts（可选，如需前端显示版本）**\n   - 当前：未配置版本号注入\n   - 需要：通过 define 或 env 注入版本号\n   - 示例：`define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version) }`\n\n6. **XhMonitor.Desktop.csproj:10、XhMonitor.Service.csproj:8、XhMonitor.Core.csproj:7**\n   - 当前：`<Version>0.1.0</Version>` 硬编码\n   - 选项 A：保留作为默认值，通过 dotnet publish -p:Version 覆盖\n   - 选项 B：改为从外部文件读取（如 Directory.Build.props）\n   - 选项 C：使用 GitVersion 等工具自动生成",
+  "constraints": "版本号管理约束条件：\n\n1. **向后兼容性约束**：\n   - 现有发布流程依赖手动传参（publish.ps1 -Version \"x.y.z\"），不能破坏此接口\n   - 已发布的安装程序使用 Windows 注册表卸载键，版本号格式变更可能影响升级检测\n\n2. **构建工具约束**：\n   - Inno Setup 仅支持通过 /D 参数或 #define 传递版本号，不支持读取外部文件\n   - dotnet publish 的 -p:Version 参数会覆盖 .csproj 中的 <Version>，但不影响 AssemblyVersion（需要单独设置）\n\n3. **多项目同步约束**：\n   - 3 个 C# 项目（Core、Service、Desktop）+ 1 个前端项目（xhmonitor-web）需要保持版本号一致\n   - 项目引用关系要求核心库版本变更时，依赖项目也需要更新\n\n4. **UI 显示约束**：\n   - WPF XAML 不支持直接绑定到静态 Assembly 属性，需要通过代码后台或 ViewModel 桥接\n   - 版本号格式需要用户友好（如 \"1.0.0\" 而非 \"1.0.0.0\"）\n\n5. **打包流程约束**：\n   - publish.ps1 先构建 Web 前端（npm run build），再发布 .NET 项目\n   - 版本号注入必须在 dotnet publish 阶段完成，不能在编译后修改二进制文件\n\n6. **轻量级模式约束**（publish.ps1 -Lite）：\n   - 轻量级模式不包含 .NET 运行时，版本号管理方案不能依赖运行时特性\n   - 需要确保 framework-dependent 和 self-contained 两种发布模式都能正确注入版本号",
+  "clarification_needs": [
+    {
+      "question": "版本号的单一数据源应该是什么？",
+      "context": "当前版本号分散在多个文件中（3 个 .csproj + 1 个 package.json + 脚本参数），需要确定唯一的版本号来源以避免不一致。",
+      "options": [
+        "保持脚本参数为主源，通过 dotnet publish -p:Version 和构建时替换同步到所有文件",
+        "创建独立的 VERSION 文件或 Directory.Build.props，所有脚本和项目从此文件读取",
+        "使用 GitVersion 等工具从 Git 标签自动生成版本号，完全自动化",
+        "在主项目（XhMonitor.Desktop.csproj）中定义版本号，其他项目和脚本从此读取"
+      ],
+      "recommended": 0
+    },
+    {
+      "question": "关于页面的版本号显示应该如何实现？",
+      "context": "AboutWindow.xaml 当前硬编码版本号 \"0.1.0\"，需要改为动态获取。有多种实现方式，需要选择最符合项目架构的方案。",
+      "options": [
+        "在 AboutWindow.xaml.cs 构造函数中通过 Assembly.GetExecutingAssembly().GetName().Version 动态设置",
+        "创建 AboutViewModel 并绑定版本号属性，遵循 MVVM 模式（与 SettingsViewModel 一致）",
+        "通过依赖注入提供 IVersionService，从配置或 Assembly 读取版本号",
+        "在 App.xaml.cs 启动时将版本号存储为全局资源，XAML 通过 StaticResource 引用"
+      ],
+      "recommended": 1
+    },
+    {
+      "question": "前端（xhmonitor-web）的版本号是否需要与后端同步？",
+      "context": "package.json 中的版本号当前为 0.1.0，未在 UI 中显示。需要确定前端版本号的管理策略。",
+      "options": [
+        "前端版本号与后端完全同步，通过构建脚本自动更新 package.json",
+        "前端版本号独立管理，仅在前端 UI 需要显示时才同步",
+        "前端不显示版本号，package.json 版本号仅用于 npm 内部，不需要同步",
+        "前端通过 API 从后端获取版本号，不在构建时硬编码"
+      ],
+      "recommended": 2
+    },
+    {
+      "question": ".csproj 文件中的 <Version> 标签应该如何处理？",
+      "context": "3 个 .csproj 文件都定义了 <Version>0.1.0</Version>，在引入自动化版本管理后，这些标签的作用需要明确。",
+      "options": [
+        "保留作为默认值/回退值，通过 dotnet publish -p:Version 覆盖（不修改文件）",
+        "删除 <Version> 标签，完全依赖构建时注入（可能导致开发环境版本号缺失）",
+        "改为从 Directory.Build.props 统一读取，所有项目共享同一版本号定义",
+        "使用 MSBuild 条件属性，仅在未指定 -p:Version 时使用 .csproj 中的值"
+      ],
+      "recommended": 0
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-29T00:00:00.000Z",
+    "task_description": "引入版本管理体系，目前打包纯靠手传版本号，且关于页面的版本号是写死的。",
+    "source": "cli-explore-agent",
+    "exploration_angle": "dependencies",
+    "exploration_index": 3,
+    "total_explorations": 3,
+    "duration_seconds": 45
+  }
+}

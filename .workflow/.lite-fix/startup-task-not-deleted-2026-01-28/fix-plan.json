@@ -1,0 +1,66 @@
+{
+  "summary": "修复关闭开机自启动时计划任务未正确删除的问题，同时清理旧版本遗留的注册表项，并增加删除后验证机制确保操作成功",
+  "root_cause": "代码从注册表方式迁移到计划任务方式后，未清理旧的注册表项；同时 DeleteScheduledTask 方法缺少删除后验证，无法确认计划任务是否真的被删除",
+  "strategy": "comprehensive_fix",
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "添加旧注册表项清理逻辑",
+      "scope": "XhMonitor.Desktop/Services",
+      "action": "Update",
+      "description": "在 SetStartup(false) 时，除了删除计划任务外，还要清理旧版本可能遗留的注册表项",
+      "modification_points": [
+        "XhMonitor.Desktop/Services/StartupManager.cs"
+      ],
+      "implementation": [
+        "1. 添加 CleanupLegacyRegistryEntry 私有方法，用于清理旧的注册表项",
+        "2. 在 SetStartup(false) 分支中，先调用 DeleteScheduledTask，再调用 CleanupLegacyRegistryEntry",
+        "3. 使用 try-catch 包裹注册表操作，确保即使清理失败也不影响主流程"
+      ],
+      "acceptance": "关闭开机自启动后，注册表 HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run 中不存在 XhMonitor 项",
+      "depends_on": [],
+      "complexity": "Low"
+    },
+    {
+      "id": "task-2",
+      "title": "增加计划任务删除后验证",
+      "scope": "XhMonitor.Desktop/Services",
+      "action": "Update",
+      "description": "在 DeleteScheduledTask 方法中增加删除后验证，确保计划任务真的被删除",
+      "modification_points": [
+        "XhMonitor.Desktop/Services/StartupManager.cs"
+      ],
+      "implementation": [
+        "1. 在 DeleteScheduledTask 返回前，调用 IsStartupEnabled() 验证任务是否已删除",
+        "2. 如果验证失败（任务仍存在），返回 false 并记录日志",
+        "3. 这样可以捕获 UAC 提升后退出码不准确的情况"
+      ],
+      "acceptance": "DeleteScheduledTask 返回 true 时，IsStartupEnabled() 必须返回 false",
+      "depends_on": [],
+      "complexity": "Low"
+    }
+  ],
+  "estimated_time": "15-20 分钟",
+  "recommended_execution": "Agent",
+  "severity": "Medium",
+  "risk_level": "Low",
+  "design_decisions": [
+    {
+      "decision": "使用 comprehensive_fix 策略而非 immediate_patch",
+      "rationale": "需要同时处理迁移遗留问题和验证机制，确保彻底解决问题",
+      "tradeoff": "代码量稍多，但更加健壮"
+    },
+    {
+      "decision": "注册表清理失败不影响主流程",
+      "rationale": "注册表清理是兼容性处理，不应阻塞正常的计划任务删除",
+      "tradeoff": "可能存在极端情况下注册表项未清理，但不影响核心功能"
+    }
+  ],
+  "_metadata": {
+    "timestamp": "2026-01-28T00:00:00.000Z",
+    "source": "direct-planning",
+    "planning_mode": "direct",
+    "complexity": "Medium",
+    "diagnosis_angles": ["state-management"]
+  }
+}

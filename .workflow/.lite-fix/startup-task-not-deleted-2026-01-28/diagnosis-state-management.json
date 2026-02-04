@@ -1,0 +1,45 @@
+{
+  "symptom": "关闭开机自启动时计划任务未被正确删除，程序仍然会在开机时自动启动",
+  "root_cause": {
+    "file": "XhMonitor.Desktop/Services/StartupManager.cs",
+    "line_range": "103-121",
+    "issue": "两个问题：1) 从注册表迁移到计划任务后，未清理旧的注册表项；2) 使用 UseShellExecute=true + Verb=runas 时，无法正确获取 UAC 提升后子进程的退出码，导致删除失败时可能误判为成功",
+    "confidence": 0.9
+  },
+  "affected_files": [
+    {
+      "path": "XhMonitor.Desktop/Services/StartupManager.cs",
+      "relevance": 0.95,
+      "rationale": "包含 DeleteScheduledTask 方法和 RunSchtasks 方法，是问题的核心所在"
+    },
+    {
+      "path": "XhMonitor.Desktop/Services/IStartupManager.cs",
+      "relevance": 0.3,
+      "rationale": "接口定义，可能需要添加清理旧注册表的方法"
+    }
+  ],
+  "reproduction_steps": [
+    "1. 使用旧版本（注册表方式）启用开机自启动",
+    "2. 升级到新版本（计划任务方式）",
+    "3. 在设置中关闭开机自启动",
+    "4. 重启电脑，程序仍然会自动启动（因为旧注册表项还在）"
+  ],
+  "fix_hints": [
+    "在 SetStartup(false) 时，同时清理旧的注册表项",
+    "在 DeleteScheduledTask 后验证任务是否真的被删除（调用 IsStartupEnabled 检查）",
+    "考虑在 IsStartupEnabled 中同时检查注册表和计划任务"
+  ],
+  "dependencies": [
+    "Microsoft.Win32.Registry (需要重新引入用于清理旧注册表)"
+  ],
+  "constraints": [
+    "需要保持向后兼容，确保旧版本用户升级后能正常工作",
+    "UAC 提示不可避免，但需要确保操作结果正确"
+  ],
+  "clarification_needs": [],
+  "_metadata": {
+    "diagnosis_angle": "state-management",
+    "diagnosis_index": 1,
+    "timestamp": "2026-01-28T00:00:00.000Z"
+  }
+}

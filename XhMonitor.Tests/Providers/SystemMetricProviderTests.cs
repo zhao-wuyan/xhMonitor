@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using FluentAssertions;
 using LibreHardwareMonitor.Hardware;
@@ -234,6 +235,143 @@ public class SystemMetricProviderTests : IDisposable
 
         usage.DownloadSpeed.Should().Be(0.0);
         usage.UploadSpeed.Should().Be(0.0);
+    }
+
+    [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_IncludesPhysicalDiskThroughput_FromLibreHardwareMonitor()
+    {
+        var storageSensors = new List<SensorReading>
+        {
+            new(HardwareType.Storage, "Samsung SSD 980 PRO 1TB", SensorType.Throughput, "Read Rate", 10 * 1024 * 1024f),
+            new(HardwareType.Storage, "Samsung SSD 980 PRO 1TB", SensorType.Throughput, "Write Rate", 5 * 1024 * 1024f),
+            new(HardwareType.Storage, "WDC WD40EZAZ-00SF3B0", SensorType.Throughput, "Read Rate", 0f),
+        };
+
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager
+            .Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), It.IsAny<SensorType>()))
+            .Returns((IReadOnlyCollection<HardwareType> types, SensorType sensorType) =>
+            {
+                if (!types.Contains(HardwareType.Storage))
+                {
+                    return new List<SensorReading>();
+                }
+
+                return sensorType switch
+                {
+                    SensorType.Throughput => storageSensors,
+                    _ => new List<SensorReading>()
+                };
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object);
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.Disks.Should().NotBeNull();
+        usage.Disks.Should().HaveCount(2);
+
+        var samsung = usage.Disks.Single(d => d.Name == "Samsung SSD 980 PRO 1TB");
+        samsung.ReadSpeed.Should().BeApproximately(10.0, 0.0001);
+        samsung.WriteSpeed.Should().BeApproximately(5.0, 0.0001);
+
+        var wdc = usage.Disks.Single(d => d.Name == "WDC WD40EZAZ-00SF3B0");
+        wdc.ReadSpeed.Should().BeApproximately(0.0, 0.0001);
+        wdc.WriteSpeed.Should().BeNull("no write sensor should be treated as missing (null), not 0");
+    }
+
+    [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_ComputesDiskBytes_FromTotalSpaceAndFreeSpace()
+    {
+        const float totalSpaceGb = 1024.0f;
+        const float freeSpaceGb = 768.0f;
+        var expectedTotalBytes = (long)Math.Round(totalSpaceGb * 1024.0 * 1024.0 * 1024.0);
+        var expectedFreeBytes = (long)Math.Round(freeSpaceGb * 1024.0 * 1024.0 * 1024.0);
+        var expectedUsedBytes = expectedTotalBytes - expectedFreeBytes;
+
+        var dataSensors = new List<SensorReading>
+        {
+            new(HardwareType.Storage, "File SSD", SensorType.Data, "Total Space", totalSpaceGb),
+            new(HardwareType.Storage, "File SSD", SensorType.Data, "Free Space", freeSpaceGb),
+        };
+
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager
+            .Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), It.IsAny<SensorType>()))
+            .Returns((IReadOnlyCollection<HardwareType> types, SensorType sensorType) =>
+            {
+                if (!types.Contains(HardwareType.Storage))
+                {
+                    return new List<SensorReading>();
+                }
+
+                return sensorType switch
+                {
+                    SensorType.Data => dataSensors,
+                    _ => new List<SensorReading>()
+                };
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object);
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.Disks.Should().HaveCount(1);
+        var disk = usage.Disks.Single();
+        disk.Name.Should().Be("File SSD");
+        disk.TotalBytes.Should().Be(expectedTotalBytes);
+        disk.UsedBytes.Should().Be(expectedUsedBytes);
+    }
+
+    [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_OnlyReportsTotalBytes_WhenFreeSpaceMissing()
+    {
+        const float totalSpaceGb = 4096.0f;
+        var expectedTotalBytes = (long)Math.Round(totalSpaceGb * 1024.0 * 1024.0 * 1024.0);
+
+        var dataSensors = new List<SensorReading>
+        {
+            new(HardwareType.Storage, "Unpartitioned HDD", SensorType.Data, "Total Space", totalSpaceGb),
+        };
+
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager
+            .Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), It.IsAny<SensorType>()))
+            .Returns((IReadOnlyCollection<HardwareType> types, SensorType sensorType) =>
+            {
+                if (!types.Contains(HardwareType.Storage))
+                {
+                    return new List<SensorReading>();
+                }
+
+                return sensorType switch
+                {
+                    SensorType.Data => dataSensors,
+                    _ => new List<SensorReading>()
+                };
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object);
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.Disks.Should().HaveCount(1);
+        var disk = usage.Disks.Single();
+        disk.Name.Should().Be("Unpartitioned HDD");
+        disk.TotalBytes.Should().Be(expectedTotalBytes);
+        disk.UsedBytes.Should().BeNull();
     }
 
     [Fact]

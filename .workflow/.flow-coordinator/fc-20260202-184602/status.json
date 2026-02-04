@@ -1,0 +1,55 @@
+{
+  "id": "fc-20260202-184602",
+  "template": "multi-cli-plan",
+  "goal": "根据 xhmonitor-web/design/ui-preview-v2.html 的 UI 设计利用 xhmonitor-web/components 组件重构 web 端，硬盘数据先使用模拟数据，其他数据使用 service 推送。增强功能：1. 右上角增加修改按钮，点击后右侧弹出菜单 2. 能修改 grid 列数 3. 能控制 web 端显示的监控卡片维度，可以关闭隐藏 4. 修改模式下，可以拖动左侧的卡片排序 5. 可以更换背景，添加背景模糊等蒙版参数，防止图片颜色太乱影响文字清晰度 6. 可以更换监控卡片对应维度的主题色 7. 可以选择硬盘信息位置，左侧或右侧空间一行一个上下排列显示，H5 适配添加在 CPU、GPU 等维度类型的下方。代码执行使用 codex 工具",
+  "current": 1,
+  "complete": false,
+  "steps": [
+    {
+      "cmd": "/workflow:multi-cli-plan",
+      "args": "\"根据 xhmonitor-web/design/ui-preview-v2.html 的 UI 设计利用 xhmonitor-web/components 组件重构 web 端，硬盘数据先使用模拟数据，其他数据使用 service 推送。增强功能：1. 右上角增加修改按钮，点击后右侧弹出菜单 2. 能修改 grid 列数 3. 能控制 web 端显示的监控卡片维度，可以关闭隐藏 4. 修改模式下，可以拖动左侧的卡片排序 5. 可以更换背景，添加背景模糊等蒙版参数，防止图片颜色太乱影响文字清晰度 6. 可以更换监控卡片对应维度的主题色 7. 可以选择硬盘信息位置，左侧或右侧空间一行一个上下排列显示，H5 适配添加在 CPU、GPU 等维度类型的下方。代码执行使用 codex 工具\"",
+      "unit": "multi-cli-planning",
+      "execution": {
+        "type": "slash-command",
+        "mode": "mainprocess"
+      },
+      "contextHint": "Multi-perspective analysis comparing different implementation approaches with trade-off analysis",
+      "status": "done",
+      "session": "MCP-web-refactor-2026-02-02"
+    },
+    {
+      "cmd": "/workflow:lite-execute",
+      "args": "--in-memory",
+      "unit": "multi-cli-planning",
+      "execution": {
+        "type": "slash-command",
+        "mode": "async"
+      },
+      "contextHint": "Execute best approach selected from multi-perspective analysis",
+      "status": "running",
+      "taskId": "ba35e3c"
+    },
+    {
+      "cmd": "/workflow:test-fix-gen",
+      "unit": "test-validation",
+      "optional": true,
+      "execution": {
+        "type": "slash-command",
+        "mode": "mainprocess"
+      },
+      "contextHint": "Generate test tasks for the implementation",
+      "status": "pending"
+    },
+    {
+      "cmd": "/workflow:test-cycle-execute",
+      "unit": "test-validation",
+      "optional": true,
+      "execution": {
+        "type": "slash-command",
+        "mode": "async"
+      },
+      "contextHint": "Execute test-fix cycle until pass rate >= 95%",
+      "status": "pending"
+    }
+  ]
+}

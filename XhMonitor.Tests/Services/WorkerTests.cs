@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Linq;
 using System.Reflection;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
@@ -70,6 +72,17 @@ public class WorkerTests
                 TotalVram = 400.45,
                 UploadSpeed = 12.34,
                 DownloadSpeed = 56.78,
+                Disks =
+                [
+                    new DiskUsage
+                    {
+                        Name = "Test Disk 1",
+                        TotalBytes = 1000,
+                        UsedBytes = 500,
+                        ReadSpeed = 1.25,
+                        WriteSpeed = null
+                    }
+                ],
                 Timestamp = DateTime.UtcNow
             });
 
@@ -95,7 +108,14 @@ public class WorkerTests
             GetAnonymousDouble(o, "UploadSpeed") == expectedUploadSpeed &&
             GetAnonymousDouble(o, "DownloadSpeed") == expectedDownloadSpeed &&
             GetAnonymousDouble(o, "MaxMemory") == expectedMaxMemory &&
-            GetAnonymousDouble(o, "MaxVram") == expectedMaxVram)), Times.Once);
+            GetAnonymousDouble(o, "MaxVram") == expectedMaxVram &&
+            GetAnonymousObjectList(o, "Disks").Count == 1 &&
+            GetAnonymousString(GetAnonymousObjectList(o, "Disks")[0], "Name") == "Test Disk 1" &&
+            GetAnonymousNullableLong(GetAnonymousObjectList(o, "Disks")[0], "TotalBytes") == 1000 &&
+            GetAnonymousNullableLong(GetAnonymousObjectList(o, "Disks")[0], "UsedBytes") == 500 &&
+            Math.Abs((GetAnonymousNullableDouble(GetAnonymousObjectList(o, "Disks")[0], "ReadSpeed") ?? 0.0) - 1.25) < 1e-9 &&
+            GetAnonymousNullableDouble(GetAnonymousObjectList(o, "Disks")[0], "WriteSpeed") == null
+        )), Times.Once);
     }
 
     private static Worker CreateWorker(IHubContext<MetricsHub, IMetricsClient> hubContext, ISystemMetricProvider systemMetricProvider)
@@ -144,5 +164,37 @@ public class WorkerTests
         var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
         prop.Should().NotBeNull();
         return (DateTime)prop!.GetValue(obj)!;
+    }
+
+    private static List<object> GetAnonymousObjectList(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        prop.Should().NotBeNull();
+        var value = prop!.GetValue(obj);
+        value.Should().NotBeNull();
+
+        value.Should().BeAssignableTo<IEnumerable>();
+        return ((IEnumerable)value!).Cast<object>().ToList();
+    }
+
+    private static string GetAnonymousString(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        prop.Should().NotBeNull();
+        return (string)prop!.GetValue(obj)!;
+    }
+
+    private static long? GetAnonymousNullableLong(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        prop.Should().NotBeNull();
+        return (long?)prop!.GetValue(obj);
+    }
+
+    private static double? GetAnonymousNullableDouble(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        prop.Should().NotBeNull();
+        return (double?)prop!.GetValue(obj);
     }
 }

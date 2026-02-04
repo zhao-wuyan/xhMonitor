@@ -1,0 +1,15 @@
+{
+  "session_id": "startup-task-not-deleted-2026-01-28",
+  "bug_description": "当我关闭开机自启动的时候没有正确的删除计划任务",
+  "timestamp": "2026-01-28T00:00:00.000Z",
+  "severity": "Medium",
+  "diagnosis_count": 1,
+  "diagnoses": [
+    {
+      "angle": "state-management",
+      "file": "diagnosis-state-management.json",
+      "path": ".workflow/.lite-fix/startup-task-not-deleted-2026-01-28/diagnosis-state-management.json",
+      "index": 1
+    }
+  ]
+}

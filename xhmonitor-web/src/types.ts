@@ -16,14 +16,29 @@ export interface MetricsData {
   processes: ProcessInfo[];
 }
 
+export interface DiskUsage {
+  name: string;
+  totalBytes: number | null;
+  usedBytes: number | null;
+  readSpeed: number | null;
+  writeSpeed: number | null;
+}
+
 export interface SystemUsage {
   timestamp: string;
   totalCpu: number;
   totalGpu: number;
   totalMemory: number;
   totalVram: number;
+  disks?: DiskUsage[];
   maxMemory: number;
   maxVram: number;
+  uploadSpeed: number;
+  downloadSpeed: number;
+  powerAvailable?: boolean;
+  totalPower?: number;
+  maxPower?: number;
+  powerSchemeIndex?: number | null;
 }
 
 export interface ProcessMetaInfo {

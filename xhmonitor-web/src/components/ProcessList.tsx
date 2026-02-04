@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { ArrowUpDown } from 'lucide-react';
+import { forwardRef, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
 import { t } from '../i18n';
@@ -13,10 +13,41 @@ interface ProcessListProps {
 type SortField = 'processName' | string;
 type SortOrder = 'asc' | 'desc';
 
-export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessListProps) => {
-  const [sortField, setSortField] = useState<SortField>('processName');
+const DEFAULT_RESOURCE_SORT_FIELD = 'gpuVramMemoryTotal';
+
+interface ProcessListScrollProps {
+  scrollMode?: 'page' | 'process';
+  processTableMaxHeight?: number;
+}
+
+const getProcessDisplayName = (process: ProcessInfo): string => {
+  const displayName = (process.displayName ?? '').trim();
+  if (displayName) return displayName;
+  return process.processName;
+};
+
+export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & ProcessListScrollProps>(
+  ({ processes, metricMetadata, colorMap, scrollMode = 'page', processTableMaxHeight = 0 }, ref) => {
+  const [sortField, setSortField] = useState<SortField>(DEFAULT_RESOURCE_SORT_FIELD);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const orderedMetricMetadata = useMemo(() => {
+    const rank = (metricId: string) => {
+      const id = metricId.toLowerCase();
+      if (id === 'cpu') return 0;
+      if (id === 'memory' || id === 'ram') return 1;
+      if (id === 'gpu') return 2;
+      if (id === 'vram') return 3;
+      return 100;
+    };
+
+    return [...metricMetadata].sort((a, b) => {
+      const diff = rank(a.metricId) - rank(b.metricId);
+      if (diff !== 0) return diff;
+      return a.metricId.localeCompare(b.metricId);
+    });
+  }, [metricMetadata]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -28,23 +59,43 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
   };
 
   const sortedAndFilteredProcesses = useMemo(() => {
-    let filtered = processes.filter(
+    const filtered = processes.filter(
       (p) =>
         p.processName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getProcessDisplayName(p).toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.commandLine ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
       if (sortField === 'processName') {
+        const aName = getProcessDisplayName(a);
+        const bName = getProcessDisplayName(b);
         return sortOrder === 'asc'
-          ? a.processName.localeCompare(b.processName)
-          : b.processName.localeCompare(a.processName);
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
       }
 
-      const aValue = a.metrics[sortField] ?? 0;
-      const bValue = b.metrics[sortField] ?? 0;
+      if (sortField === 'processId') {
+        return sortOrder === 'asc' ? a.processId - b.processId : b.processId - a.processId;
+      }
 
-      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      const getSortValue = (p: ProcessInfo) => {
+        if (sortField === DEFAULT_RESOURCE_SORT_FIELD) {
+          const gpu = p.metrics.gpu ?? 0;
+          const vram = p.metrics.vram ?? 0;
+          const memory = p.metrics.memory ?? 0;
+          return gpu + vram + memory;
+        }
+
+        return p.metrics[sortField] ?? 0;
+      };
+
+      const aValue = getSortValue(a);
+      const bValue = getSortValue(b);
+
+      const diff = sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      if (diff !== 0) return diff;
+      return getProcessDisplayName(b).localeCompare(getProcessDisplayName(a));
     });
 
     return filtered;
@@ -60,96 +111,104 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
     }
   };
 
-  const renderMetricBar = (value: number, metricId: string, max: number = 100) => {
-    const percentage = Math.min((value / max) * 100, 100);
-    const color = colorMap[metricId] || '#6b7280';
+  const tableHeaderRow = (
+    <tr>
+      <th
+        onClick={() => handleSort('processName')}
+        className={sortField === 'processName' ? 'active-sort' : ''}
+      >
+        {t('Process')} {sortField === 'processName' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+      </th>
+      <th
+        onClick={() => handleSort('processId')}
+        className={sortField === 'processId' ? 'active-sort' : ''}
+      >
+        {t('PID')} {sortField === 'processId' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+      </th>
+      {orderedMetricMetadata.map((metric) => (
+        <th
+          key={metric.metricId}
+          onClick={() => handleSort(metric.metricId)}
+          className={sortField === metric.metricId ? 'active-sort' : ''}
+        >
+          {t(metric.displayName)} {sortField === metric.metricId && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
+        </th>
+      ))}
+    </tr>
+  );
 
-    return (
-      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-        <div
-          className="metric-bar"
-          style={{ width: `${percentage}%`, backgroundColor: color }}
-        />
-      </div>
-    );
-  };
+  const processOnlyScrollEnabled = scrollMode === 'process' && processTableMaxHeight > 0;
+  const processPanelClassName = `process-panel xh-glass-panel${processOnlyScrollEnabled ? ' process-panel--scroll' : ''}`;
+  const processPanelStyle: (CSSProperties & { ['--xh-process-scroll-max-height']?: string }) | undefined =
+    processOnlyScrollEnabled
+      ? { ['--xh-process-scroll-max-height']: `${processTableMaxHeight}px` }
+      : undefined;
 
   return (
-    <div className="glass rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">{t('Process Monitor')}</h2>
-        <input
-          type="text"
-          placeholder={t('Search processes...')}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-cpu"
-        />
+    <div ref={ref} className={processPanelClassName} style={processPanelStyle}>
+      <div className="panel-title">
+        {t('Process Monitor')}
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder={t('Search processes...')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="table-scroll">
+        <table>
           <thead>
-            <tr className="border-b border-gray-700">
-              <th className="text-left py-3 px-4">
-                <button
-                  onClick={() => handleSort('processName')}
-                  className="flex items-center gap-2 hover:text-cpu transition-colors"
-                >
-                  {t('Process')}
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
-              </th>
-              <th className="text-left py-3 px-4">{t('PID')}</th>
-              {metricMetadata.map((metric) => (
-                <th key={metric.metricId} className="text-left py-3 px-4">
-                  <button
-                    onClick={() => handleSort(metric.metricId)}
-                    className="flex items-center gap-2 hover:opacity-80 transition-colors"
-                    style={{ color: colorMap[metric.metricId] }}
-                  >
-                    {t(metric.displayName)}
-                    <ArrowUpDown className="w-4 h-4" />
-                  </button>
-                </th>
-              ))}
-            </tr>
+            {tableHeaderRow}
           </thead>
+        </table>
+        <div className="table-body-scroll">
+          <table>
           <tbody>
             {sortedAndFilteredProcesses.map((process) => (
-              <tr
-                key={process.processId}
-                className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
-              >
-                <td className="py-3 px-4">
-                  <div className="font-medium">{process.processName}</div>
-                  <div
-                    className="text-xs text-gray-400 truncate max-w-xs cursor-help"
-                    title={process.commandLine ?? ''}
-                  >
-                    {process.commandLine ?? ''}
+              <tr key={process.processId}>
+                <td>
+                  <div className="proc-name-cell">
+                    <div className="proc-icon">
+                      {process.processName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="proc-info">
+                      <div className="proc-name" title={getProcessDisplayName(process)}>
+                        {getProcessDisplayName(process)}
+                      </div>
+                      <div className="proc-cmd" title={process.commandLine ?? ''}>
+                        {process.commandLine ?? ''}
+                      </div>
+                    </div>
                   </div>
                 </td>
-                <td className="py-3 px-4 font-mono text-sm">
-                  {process.processId}
-                </td>
-                {metricMetadata.map((metric) => {
+                <td className="pid-cell">{process.processId}</td>
+                {orderedMetricMetadata.map((metric) => {
                   const metricValue = process.metrics[metric.metricId];
+                  const color = colorMap[metric.metricId] || '#6b7280';
                   return (
-                    <td key={metric.metricId} className="py-3 px-4">
+                    <td key={metric.metricId}>
                       {metricValue !== undefined ? (
-                        <div className="space-y-1">
-                          <div className="text-sm font-mono">
+                        <div className="metric-cell">
+                          <span className="metric-val" style={{ color }}>
                             {formatValue(metricValue, metric.unit)}
+                          </span>
+                          <div className="progress-bg">
+                            <div
+                              className="progress-fill"
+                              style={{
+                                width: `${Math.min((metricValue / (metric.unit === '%' ? 100 : 1024)) * 100, 100)}%`,
+                                backgroundColor: color
+                              }}
+                            />
                           </div>
-                          {renderMetricBar(
-                            metricValue,
-                            metric.metricId,
-                            metric.unit === '%' ? 100 : 1024
-                          )}
                         </div>
                       ) : (
-                        <span className="text-gray-500">-</span>
+                        <span style={{ color: 'var(--xh-color-text-secondary)', opacity: 0.5 }}>-</span>
                       )}
                     </td>
                   );
@@ -157,14 +216,18 @@ export const ProcessList = ({ processes, metricMetadata, colorMap }: ProcessList
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {sortedAndFilteredProcesses.length === 0 && (
-        <div className="text-center py-8 text-gray-400">
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--xh-color-text-secondary)' }}>
           {t('No processes found matching')} "{searchTerm}"
         </div>
       )}
     </div>
   );
-};
+  }
+);
+
+ProcessList.displayName = 'ProcessList';
