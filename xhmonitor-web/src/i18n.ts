@@ -2,9 +2,9 @@
 export const i18n = {
   zh: {
     // 页面标题
-    appTitle: 'XhMonitor',
+    appTitle: '星核监视器',
     appSubtitle: 'Windows 资源监控器',
-    appVersion: 'v0.2.4',
+    appVersion: 'v0.2.5',
 
     // 连接状态
     connected: '已连接',
