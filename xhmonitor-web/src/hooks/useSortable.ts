@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 
 interface UseSortableOptions {
   onOrderChange?: (order: string[]) => void;
+  onPreviewOrderChange?: (order: string[]) => void;
   handle?: string;
   disabled?: boolean;
 }
@@ -13,12 +14,18 @@ export const useSortable = (
   options: UseSortableOptions = {}
 ) => {
   const sortableRef = useRef<Sortable | null>(null);
-  const { onOrderChange, handle = '.drag-handle', disabled } = options;
+  const { onOrderChange, onPreviewOrderChange, handle = '.drag-handle', disabled } = options;
   const onOrderChangeRef = useRef<UseSortableOptions['onOrderChange']>(onOrderChange);
+  const onPreviewOrderChangeRef =
+    useRef<UseSortableOptions['onPreviewOrderChange']>(onPreviewOrderChange);
 
   useEffect(() => {
     onOrderChangeRef.current = onOrderChange;
   }, [onOrderChange]);
+
+  useEffect(() => {
+    onPreviewOrderChangeRef.current = onPreviewOrderChange;
+  }, [onPreviewOrderChange]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -181,12 +188,18 @@ export const useSortable = (
       return null;
     };
 
-    const moveItem = (order: string[], from: number, to: number) => {
-      if (from === to) return order;
-      const next = order.slice();
-      const [removed] = next.splice(from, 1);
-      next.splice(to, 0, removed);
-      return next;
+    const getOrderFromContainer = () =>
+      Array.from(container.children)
+        .map((child) => (child as HTMLElement).dataset.cardId)
+        .filter((id): id is string => Boolean(id));
+
+    const applyOrderToContainer = (order: string[]) => {
+      order.forEach((id) => {
+        const card = container.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
+        if (card) {
+          container.appendChild(card);
+        }
+      });
     };
 
     let dragStartOrder: string[] | null = null;
@@ -206,19 +219,22 @@ export const useSortable = (
     const sortable = new Sortable(container, {
       animation: 200,
       handle,
-      sort: false,
+      sort: true,
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',
       forceFallback: true,
       fallbackOnBody: true,
       fallbackTolerance: 8,
+      onSort: () => {
+        const order = getOrderFromContainer();
+        onPreviewOrderChangeRef.current?.(order);
+      },
       onStart: (evt) => {
         isDragging = true;
-        dragStartOrder = Array.from(container.children)
-          .map((child) => (child as HTMLElement).dataset.cardId)
-          .filter((id): id is string => Boolean(id));
+        dragStartOrder = getOrderFromContainer();
         draggedCardId = (evt.item as HTMLElement | undefined)?.dataset.cardId ?? null;
+        onPreviewOrderChangeRef.current?.(dragStartOrder ?? []);
 
         appendDebugLog({
           sid: debugSid,
@@ -237,11 +253,7 @@ export const useSortable = (
         }
       },
       onEnd: (evt) => {
-        const startOrder = dragStartOrder ??
-          Array.from(container.children)
-            .map((child) => (child as HTMLElement).dataset.cardId)
-            .filter((id): id is string => Boolean(id));
-
+        const startOrder = dragStartOrder ?? getOrderFromContainer();
         const stableOrder = Array.from(new Set(startOrder));
         const activeId = draggedCardId;
 
@@ -268,6 +280,10 @@ export const useSortable = (
         });
 
         if (!pointer || !activeId) {
+          if (getOrderFromContainer().join('|') !== stableOrder.join('|')) {
+            applyOrderToContainer(stableOrder);
+          }
+          onPreviewOrderChangeRef.current?.(stableOrder);
           onOrderChangeRef.current?.(stableOrder);
           window.setTimeout(() => cleanup({ removeOrphans: true }), 0);
           return;
@@ -281,45 +297,26 @@ export const useSortable = (
           pointer.clientY <= rect.bottom;
 
         if (!inSwapZone) {
+          if (getOrderFromContainer().join('|') !== stableOrder.join('|')) {
+            applyOrderToContainer(stableOrder);
+          }
+          onPreviewOrderChangeRef.current?.(stableOrder);
           onOrderChangeRef.current?.(stableOrder);
           window.setTimeout(() => cleanup({ removeOrphans: true }), 0);
           return;
         }
 
-        const fromIndex = stableOrder.indexOf(activeId);
-        if (fromIndex === -1) {
+        const currentOrder = getOrderFromContainer();
+        const normalizedOrder = Array.from(new Set(currentOrder));
+        if (normalizedOrder.join('|') === stableOrder.join('|')) {
+          onPreviewOrderChangeRef.current?.(stableOrder);
           onOrderChangeRef.current?.(stableOrder);
           window.setTimeout(() => cleanup({ removeOrphans: true }), 0);
           return;
         }
 
-        let targetIndex: number | null = null;
-        const elAtPoint = document.elementFromPoint(pointer.clientX, pointer.clientY);
-        const cardEl = elAtPoint?.closest?.('[data-card-id]') as HTMLElement | null;
-        if (cardEl && container.contains(cardEl)) {
-          targetIndex = Array.from(container.children).indexOf(cardEl);
-        } else {
-          const children = Array.from(container.children) as HTMLElement[];
-          const closest = children
-            .map((child, index) => {
-              const childRect = child.getBoundingClientRect();
-              const centerX = (childRect.left + childRect.right) / 2;
-              const centerY = (childRect.top + childRect.bottom) / 2;
-              const dx = pointer.clientX - centerX;
-              const dy = pointer.clientY - centerY;
-              return { index, dist: dx * dx + dy * dy };
-            })
-            .sort((a, b) => a.dist - b.dist)[0];
-          targetIndex = closest ? closest.index : null;
-        }
-
-        if (targetIndex == null || targetIndex < 0 || targetIndex >= stableOrder.length) {
-          onOrderChangeRef.current?.(stableOrder);
-          window.setTimeout(() => cleanup({ removeOrphans: true }), 0);
-          return;
-        }
-
-        onOrderChangeRef.current?.(moveItem(stableOrder, fromIndex, targetIndex));
+        onPreviewOrderChangeRef.current?.(normalizedOrder);
+        onOrderChangeRef.current?.(normalizedOrder);
         window.setTimeout(() => cleanup({ removeOrphans: true }), 0);
       },
       onUnchoose: () => {
