@@ -1,0 +1,70 @@
+{
+  "summary": "卡片拖拽交换“有时无反应”更可能来自 SortableJS 的 fallbackOnBody 拖拽元素（.sortable-drag/.sortable-fallback）拦截命中，导致悬停目标识别失败。先做最小 CSS 修复：让拖拽元素 pointer-events 穿透；如仍复现，再降低拖拽期间 React 对 DOM 顺序的干预，避免与 Sortable 重排冲突。",
+  "root_cause": "在 forceFallback + fallbackOnBody 场景下，Sortable 会把拖拽元素挂在 body 上并跟随鼠标移动；当前样式为 .sortable-drag 设置了极高 z-index，但未禁用 pointer-events，可能导致命中检测经常返回拖拽元素自身而不是下方卡片，从而随机出现“拖上去没反应/不交换”。",
+  "strategy": "immediate_patch",
+  "severity": "medium",
+  "risk_level": "low",
+  "estimated_time": "20-40 minutes",
+  "tasks": [
+    {
+      "title": "拖拽 overlay 穿透命中（CSS）",
+      "description": "为 Sortable fallback 拖拽元素禁用 pointer-events，避免拖拽元素拦截命中，提升交换/排序稳定性。",
+      "scope": [
+        "xhmonitor-web/src/styles/responsive.css"
+      ],
+      "action": [
+        "在 .sortable-drag（必要时连同 .sortable-fallback）增加 pointer-events: none;",
+        "保留现有 z-index / opacity / box-shadow 行为不变，确保视觉效果一致。"
+      ],
+      "verification": [
+        "启动 Web（vite dev），连续拖拽交换 50+ 次，确认不再出现“拖上去没反应”。",
+        "特别验证：快速拖动、拖动到卡片边缘、拖动跨多张卡片，交换均可触发。"
+      ],
+      "risks": [
+        "拖拽过程中鼠标事件会穿透到下方卡片，可能触发 hover 状态（目前卡片无点击交互，风险低）。"
+      ],
+      "depends_on": []
+    },
+    {
+      "title": "拖拽期间减少 React/Sortable 冲突（可选兜底）",
+      "description": "若 CSS 修复后仍能复现，则进一步减少拖拽期间 React 对 children 重排的干预，避免与 Sortable 的 DOM 重排在高频渲染下冲突。",
+      "scope": [
+        "xhmonitor-web/src/components/DraggableGrid.tsx",
+        "xhmonitor-web/src/hooks/useSortable.ts"
+      ],
+      "action": [
+        "评估是否在拖拽过程中暂停 previewOrder 驱动的重排（或仅 onEnd 后提交）。",
+        "必要时在 useSortable 中增加更明确的“拖拽中”状态回调，供 DraggableGrid 决定是否渲染预览顺序。"
+      ],
+      "verification": [
+        "复现用例下不再随机失效。",
+        "拖拽体验可接受，松手后顺序与 layoutState.cardOrder 一致。"
+      ],
+      "risks": [
+        "可能改变拖拽过程的即时预览体验（更偏向松手后提交）。"
+      ],
+      "depends_on": [
+        "拖拽 overlay 穿透命中（CSS）"
+      ]
+    },
+    {
+      "title": "构建与回归验证",
+      "description": "确保改动不引入构建/类型问题，并提供可复现的调试信息。",
+      "scope": [
+        "xhmonitor-web"
+      ],
+      "action": [
+        "运行 npm run build（必要时 npm run lint）。",
+        "如仍偶发：开启 localStorage xh.debug.sortable=1 导出 debug log 进一步定位。"
+      ],
+      "verification": [
+        "npm run build 通过。",
+        "手工验证拖拽交换稳定。"
+      ],
+      "risks": [],
+      "depends_on": [
+        "拖拽 overlay 穿透命中（CSS）"
+      ]
+    }
+  ]
+}

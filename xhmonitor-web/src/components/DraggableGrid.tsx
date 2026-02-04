@@ -16,6 +16,7 @@ export const DraggableGrid = ({ children, className, enableDrag = true }: Dragga
 
   useSortable(containerRef, {
     disabled: !enableDrag,
+    mode: layoutState.dragMode,
     onOrderChange: (order) => updateLayout({ cardOrder: order }),
     onPreviewOrderChange: (order) => setPreviewOrder(order),
   });

@@ -526,18 +526,28 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   opacity: 0 !important;
 }
 
+.xh-sortable-hover-target {
+  outline: 1px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: 4px;
+}
+
 .sortable-drag {
   opacity: 1 !important;
   scale: 1.02;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
   z-index: 9999 !important;
+  pointer-events: none;
   transition: none !important;
   will-change: transform;
 }
 
 .sortable-drag .drag-handle {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: none;
+}
+
+.sortable-drag * {
+  pointer-events: none !important;
 }
 
 .disk-widget {

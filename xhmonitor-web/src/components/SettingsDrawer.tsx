@@ -54,6 +54,11 @@ export const SettingsDrawer = ({
     updateLayout({ gaps: { grid: value } });
   };
 
+  const handleDragModeChange: ChangeEventHandler<HTMLSelectElement> = (event) => {
+    const value = event.target.value;
+    updateLayout({ dragMode: value === 'swap' ? 'swap' : 'sort' });
+  };
+
   const handleVisibilityChange = (key: keyof typeof layoutState.visibility, value: boolean) => {
     updateLayout({ visibility: { [key]: value } });
   };
@@ -174,6 +179,20 @@ export const SettingsDrawer = ({
             />
             <div className="settings-hint">
               {t('Current')}: {gridGap}px
+            </div>
+          </div>
+
+          <div className="settings-group">
+            <div className="settings-label">{t('Card Drag Mode')}</div>
+            <div className="settings-row">
+              <select
+                className="settings-input"
+                value={layoutState.dragMode}
+                onChange={handleDragModeChange}
+              >
+                <option value="sort">{t('Sort (Reorder)')}</option>
+                <option value="swap">{t('Swap (Drop)')}</option>
+              </select>
             </div>
           </div>
 

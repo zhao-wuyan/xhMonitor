@@ -30,6 +30,7 @@ export interface ThemeColors {
 }
 
 export type DiskPosition = 'left' | 'right';
+export type DragMode = 'sort' | 'swap';
 
 export interface LayoutState {
   gridColumns: number;
@@ -39,6 +40,7 @@ export interface LayoutState {
   background: LayoutBackground;
   themeColors: ThemeColors;
   diskPosition: DiskPosition;
+  dragMode: DragMode;
 }
 
 export type LayoutStatePatch = Omit<
@@ -84,6 +86,7 @@ const DEFAULT_LAYOUT_STATE: LayoutState = {
     pwr: '#f43f5e',
   },
   diskPosition: 'left',
+  dragMode: 'sort',
 };
 
 const canUseStorage = () =>
@@ -123,6 +126,9 @@ const toNullableStringValue = (value: unknown, fallback: string | null): string 
 const toDiskPosition = (value: unknown, fallback: DiskPosition): DiskPosition =>
   value === 'right' ? 'right' : fallback;
 
+const toDragMode = (value: unknown, fallback: DragMode): DragMode =>
+  value === 'swap' ? 'swap' : fallback;
+
 const normalizeLayoutState = (state: LayoutState): LayoutState => {
   const gridColumns = Math.max(1, Math.round(state.gridColumns));
   const cardOrder =
@@ -130,6 +136,7 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
       ? state.cardOrder
       : DEFAULT_LAYOUT_STATE.cardOrder;
   const diskPosition = toDiskPosition(state.diskPosition, DEFAULT_LAYOUT_STATE.diskPosition);
+  const dragMode = toDragMode(state.dragMode, DEFAULT_LAYOUT_STATE.dragMode);
 
   return {
     gridColumns,
@@ -165,6 +172,7 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
       pwr: toStringValue(state.themeColors.pwr, DEFAULT_LAYOUT_STATE.themeColors.pwr),
     },
     diskPosition,
+    dragMode,
   };
 };
 
@@ -189,6 +197,7 @@ const mergeLayoutState = (state: LayoutState, patch: LayoutStatePatch): LayoutSt
       ...patch.themeColors,
     },
     diskPosition: patch.diskPosition ?? state.diskPosition,
+    dragMode: patch.dragMode ?? state.dragMode,
   });
 };
 
@@ -239,6 +248,7 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
       pwr: toStringValue(themeColorsValue.pwr, DEFAULT_LAYOUT_STATE.themeColors.pwr),
     },
     diskPosition: toDiskPosition(stateValue.diskPosition, DEFAULT_LAYOUT_STATE.diskPosition),
+    dragMode: toDragMode(stateValue.dragMode, DEFAULT_LAYOUT_STATE.dragMode),
   };
 
   return normalizeLayoutState(candidate);
@@ -304,6 +314,7 @@ export const useLayoutState = () => {
         background: { ...DEFAULT_LAYOUT_STATE.background },
         themeColors: { ...DEFAULT_LAYOUT_STATE.themeColors },
         diskPosition: DEFAULT_LAYOUT_STATE.diskPosition,
+        dragMode: DEFAULT_LAYOUT_STATE.dragMode,
       })
     );
   }, []);
