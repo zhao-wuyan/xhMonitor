@@ -470,28 +470,74 @@ body.no-gradient .xh-app-shell::after {
   position: absolute;
   top: 10px;
   right: 10px;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.10);
   cursor: grab;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.65);
+  z-index: var(--xh-z-overlay);
+  touch-action: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.xh-stat-card:hover .drag-handle,
+.xh-stat-card:focus-within .drag-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .drag-handle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.drag-handle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .drag-handle:active {
   cursor: grabbing;
 }
 
+body.is-sorting {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .sortable-ghost {
-  opacity: 0.4;
+  opacity: 0.18;
+  filter: saturate(0.9);
 }
 
 .sortable-chosen {
-  transform: scale(1.01);
+  opacity: 0.85;
+}
+
+body.is-sorting .sortable-chosen:not(.sortable-drag) {
+  opacity: 0 !important;
 }
 
 .sortable-drag {
-  opacity: 0.9;
+  opacity: 1 !important;
+  scale: 1.02;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  z-index: 9999 !important;
+  transition: none !important;
+  will-change: transform;
+}
+
+.sortable-drag .drag-handle {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .disk-widget {
