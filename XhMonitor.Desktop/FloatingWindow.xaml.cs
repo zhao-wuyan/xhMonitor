@@ -940,21 +940,8 @@ public partial class FloatingWindow : Window
     {
         if (!_allowClose)
         {
-            var result = System.Windows.MessageBox.Show(
-                "是否退出 XhMonitor?",
-                "确认退出",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                System.Windows.Application.Current.Shutdown();
-            }
-            else
-            {
-                e.Cancel = true;
-                Hide();
-            }
+            e.Cancel = true;
+            Hide();
             return;
         }
 

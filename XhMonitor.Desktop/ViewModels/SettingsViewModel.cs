@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
@@ -37,6 +40,12 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     // 系统设置
     private bool _startWithWindows = ConfigurationDefaults.System.StartWithWindows;
+    private bool _enableLanAccess = ConfigurationDefaults.System.EnableLanAccess;
+    private bool _originalEnableLanAccess = ConfigurationDefaults.System.EnableLanAccess;
+    private bool _enableAccessKey = ConfigurationDefaults.System.EnableAccessKey;
+    private string _accessKey = ConfigurationDefaults.System.AccessKey;
+    private string _ipWhitelist = ConfigurationDefaults.System.IpWhitelist;
+    private string _localIpAddress = "正在获取...";
 
     // Service 状态
     private bool _serviceIsAdmin = false;
@@ -136,10 +145,53 @@ public class SettingsViewModel : INotifyPropertyChanged
         _originalAdminMode = AdminMode;
     }
 
+    /// <summary>
+    /// 获取加载时的原始 EnableLanAccess 值，用于检测变更。
+    /// </summary>
+    public bool OriginalEnableLanAccess => _originalEnableLanAccess;
+
+    /// <summary>
+    /// 更新原始 EnableLanAccess 值（保存成功后调用）。
+    /// </summary>
+    public void UpdateOriginalEnableLanAccess()
+    {
+        _originalEnableLanAccess = EnableLanAccess;
+    }
+
     public bool StartWithWindows
     {
         get => _startWithWindows;
         set => SetProperty(ref _startWithWindows, value);
+    }
+
+    public bool EnableLanAccess
+    {
+        get => _enableLanAccess;
+        set => SetProperty(ref _enableLanAccess, value);
+    }
+
+    public bool EnableAccessKey
+    {
+        get => _enableAccessKey;
+        set => SetProperty(ref _enableAccessKey, value);
+    }
+
+    public string AccessKey
+    {
+        get => _accessKey;
+        set => SetProperty(ref _accessKey, value);
+    }
+
+    public string IpWhitelist
+    {
+        get => _ipWhitelist;
+        set => SetProperty(ref _ipWhitelist, value);
+    }
+
+    public string LocalIpAddress
+    {
+        get => _localIpAddress;
+        set => SetProperty(ref _localIpAddress, value);
     }
 
     /// <summary>
@@ -214,7 +266,27 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.System, out var system))
             {
                 StartWithWindows = bool.Parse(system[ConfigurationDefaults.Keys.System.StartWithWindows]);
+                if (system.TryGetValue(ConfigurationDefaults.Keys.System.EnableLanAccess, out var enableLanAccessValue))
+                {
+                    EnableLanAccess = bool.Parse(enableLanAccessValue);
+                    _originalEnableLanAccess = EnableLanAccess; // 保存原始值用于变更检测
+                }
+                if (system.TryGetValue(ConfigurationDefaults.Keys.System.EnableAccessKey, out var enableAccessKeyValue))
+                {
+                    EnableAccessKey = bool.Parse(enableAccessKeyValue);
+                }
+                if (system.TryGetValue(ConfigurationDefaults.Keys.System.AccessKey, out var accessKeyValue))
+                {
+                    AccessKey = accessKeyValue;
+                }
+                if (system.TryGetValue(ConfigurationDefaults.Keys.System.IpWhitelist, out var ipWhitelistValue))
+                {
+                    IpWhitelist = ipWhitelistValue;
+                }
             }
+
+            // 加载本机IP地址
+            LoadLocalIpAddress();
 
             // 加载 Service 管理员状态
             await LoadAdminStatusAsync();
@@ -258,7 +330,11 @@ public class SettingsViewModel : INotifyPropertyChanged
                 },
                 [ConfigurationDefaults.Keys.Categories.System] = new()
                 {
-                    [ConfigurationDefaults.Keys.System.StartWithWindows] = StartWithWindows.ToString().ToLower()
+                    [ConfigurationDefaults.Keys.System.StartWithWindows] = StartWithWindows.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.System.EnableLanAccess] = EnableLanAccess.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.System.EnableAccessKey] = EnableAccessKey.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.System.AccessKey] = AccessKey,
+                    [ConfigurationDefaults.Keys.System.IpWhitelist] = IpWhitelist
                 }
             };
 
@@ -300,6 +376,74 @@ public class SettingsViewModel : INotifyPropertyChanged
             ServiceIsAdmin = false;
             ServiceAdminMessage = "无法连接到 Service";
         }
+    }
+
+    /// <summary>
+    /// 加载本机IP地址
+    /// </summary>
+    private void LoadLocalIpAddress()
+    {
+        try
+        {
+            var candidates = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
+                .Where(nic => nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                .Where(nic => nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
+                .SelectMany(GetUnicastAddressesSafe)
+                .Select(ua => ua.Address)
+                .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork)
+                .Where(ip => !IPAddress.IsLoopback(ip))
+                .Where(ip => !ip.ToString().StartsWith("169.254.", StringComparison.Ordinal)) // APIPA
+                .Distinct()
+                .ToList();
+
+            var best = candidates
+                .OrderByDescending(IsPrivateIpv4)
+                .ThenBy(ip => ip.ToString(), StringComparer.Ordinal)
+                .FirstOrDefault();
+
+            LocalIpAddress = best?.ToString() ?? "未检测到";
+        }
+        catch
+        {
+            LocalIpAddress = "获取失败";
+        }
+    }
+
+    private static IEnumerable<UnicastIPAddressInformation> GetUnicastAddressesSafe(NetworkInterface nic)
+    {
+        try
+        {
+            return nic.GetIPProperties().UnicastAddresses.Cast<UnicastIPAddressInformation>();
+        }
+        catch
+        {
+            return Enumerable.Empty<UnicastIPAddressInformation>();
+        }
+    }
+
+    private static bool IsPrivateIpv4(IPAddress ip)
+    {
+        var bytes = ip.GetAddressBytes();
+        // 10.0.0.0/8
+        if (bytes[0] == 10)
+        {
+            return true;
+        }
+
+        // 172.16.0.0/12
+        if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31)
+        {
+            return true;
+        }
+
+        // 192.168.0.0/16
+        if (bytes[0] == 192 && bytes[1] == 168)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private class AdminStatusResponse

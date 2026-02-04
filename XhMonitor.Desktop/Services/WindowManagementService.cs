@@ -130,7 +130,7 @@ public sealed class WindowManagementService : IWindowManagementService
             var startupManager = _serviceProvider.GetRequiredService<IStartupManager>();
             var adminModeManager = _serviceProvider.GetRequiredService<IAdminModeManager>();
             var backendServerService = _serviceProvider.GetRequiredService<IBackendServerService>();
-            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService)
+            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService, _serviceDiscovery)
             {
                 Owner = _floatingWindow
             };

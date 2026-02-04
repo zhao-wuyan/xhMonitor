@@ -8,6 +8,8 @@ interface ProcessListProps {
   processes: ProcessInfo[];
   metricMetadata: MetricMetadata[];
   colorMap: Record<string, string>;
+  maxMemoryMb?: number;
+  maxVramMb?: number;
 }
 
 type SortField = 'processName' | string;
@@ -27,7 +29,7 @@ const getProcessDisplayName = (process: ProcessInfo): string => {
 };
 
 export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & ProcessListScrollProps>(
-  ({ processes, metricMetadata, colorMap, scrollMode = 'page', processTableMaxHeight = 0 }, ref) => {
+  ({ processes, metricMetadata, colorMap, maxMemoryMb, maxVramMb, scrollMode = 'page', processTableMaxHeight = 0 }, ref) => {
   const [sortField, setSortField] = useState<SortField>(DEFAULT_RESOURCE_SORT_FIELD);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,6 +113,23 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
     }
   };
 
+  const getProgressMaxValue = (metric: MetricMetadata): number | null => {
+    if (metric.unit === '%') {
+      return 100;
+    }
+
+    const metricId = metric.metricId.toLowerCase();
+    if (metricId === 'memory' || metricId === 'ram') {
+      return typeof maxMemoryMb === 'number' && maxMemoryMb > 0 ? maxMemoryMb : null;
+    }
+
+    if (metricId === 'vram') {
+      return typeof maxVramMb === 'number' && maxVramMb > 0 ? maxVramMb : null;
+    }
+
+    return null;
+  };
+
   const tableHeaderRow = (
     <tr>
       <th
@@ -190,6 +209,12 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                 {orderedMetricMetadata.map((metric) => {
                   const metricValue = process.metrics[metric.metricId];
                   const color = colorMap[metric.metricId] || '#6b7280';
+                  const progressMax = getProgressMaxValue(metric);
+                  const widthPercent =
+                    metricValue !== undefined && progressMax != null && progressMax > 0
+                      ? Math.min((Math.max(metricValue, 0) / progressMax) * 100, 100)
+                      : 0;
+
                   return (
                     <td key={metric.metricId}>
                       {metricValue !== undefined ? (
@@ -201,7 +226,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                             <div
                               className="progress-fill"
                               style={{
-                                width: `${Math.min((metricValue / (metric.unit === '%' ? 100 : 1024)) * 100, 100)}%`,
+                                width: `${widthPercent}%`,
                                 backgroundColor: color
                               }}
                             />

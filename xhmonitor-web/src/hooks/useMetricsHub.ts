@@ -1,12 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import * as signalR from '@microsoft/signalr';
 import type { DiskUsage, MetricsData, ProcessMetaData, ProcessInfo, SystemUsage } from '../types';
+import { METRICS_HUB_URL } from '../config/endpoints';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:35179';
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? DEFAULT_API_BASE_URL;
-const HUB_URL =
-  (import.meta.env.VITE_METRICS_HUB_URL as string | undefined) ?? `${API_BASE_URL.replace(/\/$/, '')}/hubs/metrics`;
+const HUB_URL = METRICS_HUB_URL;
 
 export const useMetricsHub = () => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);

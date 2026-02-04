@@ -596,7 +596,7 @@
                                                   VerticalAlignment="Center"/>
                                     </Grid>
 
-                                    <Grid>
+                                    <Grid Margin="0,0,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
@@ -622,6 +622,45 @@
                                                   IsChecked="{Binding AdminMode}"
                                                   VerticalAlignment="Center"/>
                                     </Grid>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="6"
+                                                Background="#1F1F1F"
+                                                BorderBrush="{StaticResource NavBorder}"
+                                                BorderThickness="1"
+                                                Margin="0,0,12,0">
+                                            <Viewbox Width="14" Height="14">
+                                                <Path Data="M12 2L4 5V11C4 16.5 7.8 21.4 12 22C16.2 21.4 20 16.5 20 11V5L12 2M12 12L16 8L14.6 6.6L12 9.2L9.4 6.6L8 8L12 12Z" Fill="#FF9800"/>
+                                            </Viewbox>
+                                        </Border>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="启用局域网访问" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                            <TextBlock Text="允许局域网内其他设备访问Web界面（需重启生效）" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2"
+                                                  Style="{StaticResource ToggleSwitchStyle}"
+                                                  IsChecked="{Binding EnableLanAccess}"
+                                                  VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                    <!-- 本机IP地址显示 -->
+                                    <Border Margin="40,12,0,12"
+                                            Padding="10,6"
+                                            CornerRadius="4"
+                                            Background="#1E2A1E"
+                                            HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="本机IP: " FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding LocalIpAddress}" FontSize="12" Foreground="#81C784" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
 
                                     <!-- Service 管理员状态指示器 -->
                                     <Border Margin="40,12,0,0"
@@ -677,6 +716,81 @@
                                             </TextBlock>
                                         </StackPanel>
                                     </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 局域网安全设置卡片 -->
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
+                                    <TextBlock Text="局域网安全设置" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12"/>
+
+                                    <!-- 访问密钥开关 -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28"
+                                                Height="28"
+                                                CornerRadius="6"
+                                                Background="#1F1F1F"
+                                                BorderBrush="{StaticResource NavBorder}"
+                                                BorderThickness="1"
+                                                Margin="0,0,12,0">
+                                            <Viewbox Width="14" Height="14">
+                                                <Path Data="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M12 7C13.4 7 14.8 8.1 14.8 9.5V11C15.4 11 16 11.6 16 12.3V15.8C16 16.4 15.4 17 14.7 17H9.2C8.6 17 8 16.4 8 15.7V12.2C8 11.6 8.6 11 9.2 11V9.5C9.2 8.1 10.6 7 12 7M12 8.2C11.2 8.2 10.5 8.7 10.5 9.5V11H13.5V9.5C13.5 8.7 12.8 8.2 12 8.2Z" Fill="#4CAF50"/>
+                                            </Viewbox>
+                                        </Border>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="启用访问密钥" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                            <TextBlock Text="要求局域网访问时提供密钥（增强安全性）" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2"
+                                                  Style="{StaticResource ToggleSwitchStyle}"
+                                                  IsChecked="{Binding EnableAccessKey}"
+                                                  VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                    <!-- 访问密钥输入 -->
+                                    <StackPanel Margin="40,0,0,12">
+                                        <TextBlock Text="访问密钥" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,5"/>
+                                        <TextBox Text="{Binding AccessKey, UpdateSourceTrigger=PropertyChanged}"
+                                                 Height="35"
+                                                 VerticalContentAlignment="Center"
+                                                 Padding="8"
+                                                 Background="{StaticResource InputBackground}"
+                                                 Foreground="{StaticResource TextPrimary}"
+                                                 BorderBrush="{StaticResource NavBorder}"
+                                                 BorderThickness="1"
+                                                 IsEnabled="{Binding EnableAccessKey}"
+                                                 FontFamily="Consolas"/>
+                                        <TextBlock Text="留空将自动生成随机密钥" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- IP白名单 -->
+                                    <StackPanel Margin="0,0,0,0">
+                                        <TextBlock Text="IP白名单（可选）" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,5"/>
+                                        <TextBox Text="{Binding IpWhitelist, UpdateSourceTrigger=PropertyChanged}"
+                                                 Height="80"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 VerticalContentAlignment="Top"
+                                                 Padding="8"
+                                                 Background="{StaticResource InputBackground}"
+                                                 Foreground="{StaticResource TextPrimary}"
+                                                 BorderBrush="{StaticResource NavBorder}"
+                                                 BorderThickness="1"
+                                                 FontFamily="Consolas"
+                                                 FontSize="12"/>
+                                        <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0">
+                                            每行一个IP地址或CIDR段，例如：<LineBreak/>
+                                            192.168.1.100<LineBreak/>
+                                            192.168.1.0/24<LineBreak/>
+                                            留空表示不限制IP访问
+                                        </TextBlock>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

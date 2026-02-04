@@ -295,6 +295,8 @@ function AppContent() {
             processes={metricsData.processes}
             metricMetadata={config.metadata}
             colorMap={config.colorMap}
+            maxMemoryMb={systemUsage?.maxMemory}
+            maxVramMb={systemUsage?.maxVram}
             scrollMode={adaptiveScroll.mode}
             processTableMaxHeight={adaptiveScroll.processTableMaxHeight}
           />

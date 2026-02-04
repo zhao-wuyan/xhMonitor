@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_V1_BASE } from '../config/endpoints';
 
 export interface MetricClickConfig {
   enabled: boolean;
@@ -16,9 +17,6 @@ const DEFAULT_SETTINGS: WidgetSettings = {
   metricClickActions: {}
 };
 
-// 从环境变量获取 API URL，支持 http://localhost:35179 作为默认值
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:35179';
-
 export const useWidgetConfig = () => {
   const [settings, setSettings] = useState<WidgetSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -30,7 +28,7 @@ export const useWidgetConfig = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/widgetconfig`);
+      const response = await fetch(`${API_V1_BASE}/widgetconfig`);
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -44,7 +42,7 @@ export const useWidgetConfig = () => {
 
   const updateSettings = async (newSettings: WidgetSettings) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/widgetconfig`, {
+      const response = await fetch(`${API_V1_BASE}/widgetconfig`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)
@@ -63,7 +61,7 @@ export const useWidgetConfig = () => {
 
   const updateMetricConfig = async (metricId: string, config: MetricClickConfig) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/widgetconfig/${metricId}`, {
+      const response = await fetch(`${API_V1_BASE}/widgetconfig/${metricId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)

@@ -112,6 +112,33 @@ public static class ConfigurationDefaults
         public const bool StartWithWindows = false;
 
         /// <summary>
+         /// 是否启用局域网访问默认值。
+         /// 该设置为用户偏好，存储在数据库 ApplicationSettings (System.EnableLanAccess)，可在运行时修改。
+         /// 启用后，Web服务器将监听 0.0.0.0，允许局域网内其他设备访问。
+         /// </summary>
+        public const bool EnableLanAccess = false;
+
+        /// <summary>
+         /// 是否启用访问密钥认证默认值。
+         /// 该设置为用户偏好，存储在数据库 ApplicationSettings (System.EnableAccessKey)，可在运行时修改。
+         /// 启用后，局域网访问需要提供访问密钥。
+         /// </summary>
+        public const bool EnableAccessKey = false;
+
+        /// <summary>
+         /// 访问密钥默认值（空表示未设置）。
+         /// 该设置为用户偏好，存储在数据库 ApplicationSettings (System.AccessKey)，可在运行时修改。
+         /// </summary>
+        public const string AccessKey = "";
+
+        /// <summary>
+         /// IP白名单默认值（空表示不限制）。
+         /// 该设置为用户偏好，存储在数据库 ApplicationSettings (System.IpWhitelist)，可在运行时修改。
+         /// 格式：逗号分隔的IP地址或CIDR，例如："192.168.1.100,192.168.1.0/24"
+         /// </summary>
+        public const string IpWhitelist = "";
+
+        /// <summary>
          /// SignalR 服务端口默认值。范围: 1-65535。
          /// 端口属于基础设施配置：由服务端 appsettings.json (Server:Port) 管理，不存储在数据库中。
          /// </summary>
@@ -161,6 +188,10 @@ public static class ConfigurationDefaults
         public static class System
         {
             public const string StartWithWindows = "StartWithWindows";
+            public const string EnableLanAccess = "EnableLanAccess";
+            public const string EnableAccessKey = "EnableAccessKey";
+            public const string AccessKey = "AccessKey";
+            public const string IpWhitelist = "IpWhitelist";
         }
 
         /// <summary>分类名称常量。</summary>

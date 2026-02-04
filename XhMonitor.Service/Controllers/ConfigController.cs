@@ -275,6 +275,7 @@ public class ConfigController : ControllerBase
         await using var context = await _contextFactory.CreateDbContextAsync();
 
         var updatedCount = 0;
+        var insertedCount = 0;
         var timestamp = DateTime.UtcNow;
         var processKeywordsUpdated = false;
 
@@ -301,12 +302,30 @@ public class ConfigController : ControllerBase
                         processKeywordsUpdated = true;
                     }
                 }
+                else
+                {
+                    // 新配置项：插入数据库，确保设置页的新增项可持久化。
+                    context.ApplicationSettings.Add(new ApplicationSettings
+                    {
+                        Category = category,
+                        Key = key,
+                        Value = value,
+                        CreatedAt = timestamp,
+                        UpdatedAt = timestamp
+                    });
+                    insertedCount++;
+
+                    if (category == "DataCollection" && key == "ProcessKeywords")
+                    {
+                        processKeywordsUpdated = true;
+                    }
+                }
             }
         }
 
         await context.SaveChangesAsync();
 
-        _logger.LogInformation("批量更新 {Count} 个配置项", updatedCount);
+        _logger.LogInformation("批量更新配置项：更新 {UpdatedCount} 个，新增 {InsertedCount} 个", updatedCount, insertedCount);
 
         // 如果进程关键字被更新,触发 ProcessScanner 重新加载
         if (processKeywordsUpdated)
@@ -315,7 +334,12 @@ public class ConfigController : ControllerBase
             await _processScanner.ReloadKeywordsAsync();
         }
 
-        return Ok(new { Message = $"成功更新 {updatedCount} 个配置项", UpdatedCount = updatedCount });
+        return Ok(new
+        {
+            Message = $"成功更新 {updatedCount} 个配置项，新增 {insertedCount} 个配置项",
+            UpdatedCount = updatedCount,
+            InsertedCount = insertedCount
+        });
     }
 
     /// <summary>

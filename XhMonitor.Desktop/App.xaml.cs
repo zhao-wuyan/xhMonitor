@@ -33,6 +33,9 @@ public partial class App : WpfApplication
             return;
         }
 
+        // 重启流程：新进程先等待旧进程退出，避免被单实例 Mutex 误判为重复启动。
+        WaitForRestartParentExit(e.Args);
+
         // 单实例检查
         _mutex = new Mutex(true, MutexName, out bool createdNew);
         if (!createdNew)
@@ -76,6 +79,41 @@ public partial class App : WpfApplication
 
         _windowManagementService = _host.Services.GetRequiredService<IWindowManagementService>();
         _windowManagementService.InitializeMainWindow();
+    }
+
+    private static void WaitForRestartParentExit(string[] args)
+    {
+        try
+        {
+            var index = Array.FindIndex(args, a => string.Equals(a, "--restart-parent", StringComparison.OrdinalIgnoreCase));
+            if (index < 0 || index + 1 >= args.Length)
+            {
+                return;
+            }
+
+            if (!int.TryParse(args[index + 1], out var parentPid) || parentPid <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var parent = Process.GetProcessById(parentPid);
+                parent.WaitForExit(15000);
+            }
+            catch (ArgumentException)
+            {
+                // 父进程已退出
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to wait for parent process ({parentPid}) exit: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to parse restart args: {ex.Message}");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
