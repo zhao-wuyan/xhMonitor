@@ -13,6 +13,8 @@ interface ProcessListProps {
 type SortField = 'processName' | string;
 type SortOrder = 'asc' | 'desc';
 
+const DEFAULT_RESOURCE_SORT_FIELD = 'gpuVramMemoryTotal';
+
 interface ProcessListScrollProps {
   scrollMode?: 'page' | 'process';
   processTableMaxHeight?: number;
@@ -26,9 +28,26 @@ const getProcessDisplayName = (process: ProcessInfo): string => {
 
 export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & ProcessListScrollProps>(
   ({ processes, metricMetadata, colorMap, scrollMode = 'page', processTableMaxHeight = 0 }, ref) => {
-  const [sortField, setSortField] = useState<SortField>('processName');
+  const [sortField, setSortField] = useState<SortField>(DEFAULT_RESOURCE_SORT_FIELD);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const orderedMetricMetadata = useMemo(() => {
+    const rank = (metricId: string) => {
+      const id = metricId.toLowerCase();
+      if (id === 'cpu') return 0;
+      if (id === 'memory' || id === 'ram') return 1;
+      if (id === 'gpu') return 2;
+      if (id === 'vram') return 3;
+      return 100;
+    };
+
+    return [...metricMetadata].sort((a, b) => {
+      const diff = rank(a.metricId) - rank(b.metricId);
+      if (diff !== 0) return diff;
+      return a.metricId.localeCompare(b.metricId);
+    });
+  }, [metricMetadata]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -60,10 +79,23 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
         return sortOrder === 'asc' ? a.processId - b.processId : b.processId - a.processId;
       }
 
-      const aValue = a.metrics[sortField] ?? 0;
-      const bValue = b.metrics[sortField] ?? 0;
+      const getSortValue = (p: ProcessInfo) => {
+        if (sortField === DEFAULT_RESOURCE_SORT_FIELD) {
+          const gpu = p.metrics.gpu ?? 0;
+          const vram = p.metrics.vram ?? 0;
+          const memory = p.metrics.memory ?? 0;
+          return gpu + vram + memory;
+        }
 
-      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+        return p.metrics[sortField] ?? 0;
+      };
+
+      const aValue = getSortValue(a);
+      const bValue = getSortValue(b);
+
+      const diff = sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      if (diff !== 0) return diff;
+      return getProcessDisplayName(b).localeCompare(getProcessDisplayName(a));
     });
 
     return filtered;
@@ -93,7 +125,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
       >
         {t('PID')} {sortField === 'processId' && (sortOrder === 'asc' ? ' ↑' : ' ↓')}
       </th>
-      {metricMetadata.map((metric) => (
+      {orderedMetricMetadata.map((metric) => (
         <th
           key={metric.metricId}
           onClick={() => handleSort(metric.metricId)}
@@ -155,7 +187,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                   </div>
                 </td>
                 <td className="pid-cell">{process.processId}</td>
-                {metricMetadata.map((metric) => {
+                {orderedMetricMetadata.map((metric) => {
                   const metricValue = process.metrics[metric.metricId];
                   const color = colorMap[metric.metricId] || '#6b7280';
                   return (

@@ -109,6 +109,38 @@ body.no-gradient .xh-app-shell::after {
   border-radius: 4px;
 }
 
+/* 关闭渐变时，背景对比度依赖用户的 Mask，容易导致 Header 小元素不清晰；这里给 Header 组件加一层更稳的对比度兜底。 */
+body.no-gradient .brand {
+  text-shadow: var(--xh-shadow-text);
+}
+
+body.no-gradient .version-tag {
+  color: rgba(248, 250, 252, 0.9);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+body.no-gradient .header-icon-button {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(248, 250, 252, 0.86);
+}
+
+body.no-gradient .header-icon-button:hover {
+  background: rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+body.no-gradient .status-badge {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.14);
+  text-shadow: var(--xh-shadow-text);
+}
+
+body.no-gradient .status-badge--offline {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .logo-box {
   width: 36px;
   height: 36px;

@@ -74,7 +74,7 @@ const StatCardBase = ({
           {title}
           {temperature !== undefined && (
             <span className="xh-stat-card__label-temp">
-              · {temperature}°C
+              · {Number.isFinite(temperature) ? temperature.toFixed(1) : '-'}°C
             </span>
           )}
         </div>
