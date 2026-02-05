@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-02-05T00:00:00.000Z",
+  "source": "ace",
+  "overview": {
+    "name": "XhMonitor",
+    "description": "高性能的 Windows 进程资源监控系统，用于实时采集、聚合分析和可视化进程的 CPU、内存、GPU、显存等资源使用情况",
+    "architecture": "分层架构设计：采集层（PerformanceMonitor）→ 存储层（SQLite + EF Core）→ 服务层（REST API + SignalR Hub）→ 展示层（React 前端 + WPF 桌面）"
+  },
+  "techStack": {
+    "backend": [".NET 8", "C# 12", "ASP.NET Core", "SQLite", "EF Core 8", "Serilog"],
+    "frontend": ["React 19", "TypeScript 5.9", "Vite 7", "TailwindCSS v4", "ECharts 6"],
+    "desktop": ["WPF", ".NET 8"],
+    "communication": ["SignalR", "REST API"]
+  },
+  "keyComponents": [
+    {
+      "name": "XhMonitor.Core",
+      "path": "XhMonitor.Core",
+      "description": "核心库，定义接口和实体、指标提供者（CPU、内存、GPU、显存）"
+    },
+    {
+      "name": "XhMonitor.Service",
+      "path": "XhMonitor.Service",
+      "description": "后端服务，REST API、SignalR Hub、后台任务（采集、聚合）"
+    },
+    {
+      "name": "XhMonitor.Desktop",
+      "path": "XhMonitor.Desktop",
+      "description": "WPF 桌面应用，MVVM 架构、悬浮窗、系统托盘、SignalR 客户端"
+    },
+    {
+      "name": "xhmonitor-web",
+      "path": "xhmonitor-web",
+      "description": "React 前端应用，提供可视化界面、ECharts 图表、国际化支持"
+    }
+  ],
+  "configuration": {
+    "appsettings": {
+      "Monitor": {
+        "IntervalSeconds": 3,
+        "SystemUsageIntervalSeconds": 1,
+        "Keywords": ["llama-server", "whisper", "indextts", "envmain", "NovaStudio", "!powershell"]
+      },
+      "Server": {
+        "Host": "localhost",
+        "Port": 35179,
+        "HubPath": "/hubs/metrics"
+      },
+      "Database": {
+        "RetentionDays": 30,
+        "CleanupIntervalHours": 24
+      },
+      "Power": {
+        "RyzenAdjPath": "",
+        "PollingIntervalSeconds": 3
+      }
+    },
+    "database": {
+      "categories": ["Appearance", "DataCollection", "System", "Monitoring"],
+      "settings": ["ThemeColor", "Opacity", "ProcessKeywords", "TopProcessCount", "StartWithWindows", "EnableLanAccess", "EnableAccessKey"]
+    }
+  },
+  "endpoints": {
+    "restApi": "http://localhost:35179/api/v1",
+    "signalRHub": "http://localhost:35179/hubs/metrics",
+    "webDev": "http://localhost:5173",
+    "webProd": "http://localhost:35180"
+  }
+}

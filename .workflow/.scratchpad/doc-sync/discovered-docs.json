@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-02-05T00:00:00.000Z",
+  "totalDocs": 8,
+  "docs": [
+    {
+      "path": "README.md",
+      "type": "readme",
+      "hasContent": true,
+      "lastModified": "2026-01-27",
+      "lastCommit": "c271e7e6d135635df1e351973a78407d6ad7e764",
+      "size": "large",
+      "sections": [
+        "Features",
+        "Installation",
+        "Usage",
+        "Configuration",
+        "API Reference",
+        "Architecture",
+        "Development",
+        "Performance",
+        "Roadmap",
+        "Contributing",
+        "License",
+        "Changelog",
+        "Contact"
+      ]
+    },
+    {
+      "path": "xhmonitor-web/README.md",
+      "type": "other",
+      "hasContent": true,
+      "lastModified": "unknown"
+    },
+    {
+      "path": "docs/widget-click-config.md",
+      "type": "guide",
+      "hasContent": true,
+      "lastModified": "unknown"
+    },
+    {
+      "path": "docs/桌面悬浮窗交互设计稿.md",
+      "type": "guide",
+      "hasContent": true,
+      "lastModified": "unknown"
+    },
+    {
+      "path": ".mcai/docs/0_INDEX.md",
+      "type": "other",
+      "hasContent": true,
+      "lastModified": "unknown",
+      "note": "项目文档索引"
+    },
+    {
+      "path": ".mcai/docs/1_ARCHITECTURE.md",
+      "type": "other",
+      "hasContent": true,
+      "lastModified": "unknown",
+      "note": "架构设计文档"
+    },
+    {
+      "path": ".mcai/docs/2_INTERFACES.md",
+      "type": "other",
+      "hasContent": true,
+      "lastModified": "unknown",
+      "note": "接口文档"
+    },
+    {
+      "path": ".mcai/docs/3_DEVELOPER_GUIDE.md",
+      "type": "other",
+      "hasContent": true,
+      "lastModified": "unknown",
+      "note": "开发者指南"
+    }
+  ],
+  "summary": {
+    "readme": 1,
+    "guides": 2,
+    "other": 5
+  }
+}

@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-02-05
+
+### Added
+- **硬盘指标监控**
+  - 新增 `DiskMetricProvider` 支持硬盘读写速度和使用率监控
+  - 集成 LibreHardwareMonitor 硬盘传感器
+  - Web 端新增 `DiskWidget` 组件显示硬盘指标
+- **访问密钥认证**
+  - 新增 `System.EnableAccessKey` 配置项启用访问密钥认证
+  - 新增 `System.AccessKey` 配置项设置访问密钥
+  - 新增 `System.IpWhitelist` 配置项设置 IP 白名单（支持 CIDR）
+  - Web 端新增 `AccessKeyScreen` 访问密钥输入页面
+  - 新增 `AuthContext` 管理认证状态
+  - 新增 `apiFetch` 统一 API 请求处理（自动附加访问密钥）
+- **局域网访问控制**
+  - 新增 `System.EnableLanAccess` 配置项启用局域网访问
+  - 新增 `FirewallManager` 管理 Windows 防火墙规则
+  - 新增 `IpWhitelistMatcher` 支持 IP 白名单匹配（CIDR 格式）
+  - Desktop 应用新增局域网访问设置界面
+- **API 端点集中化配置**
+  - 新增 `endpoints.ts` 集中管理 API 端点配置
+  - 统一 SignalR Hub URL 和 REST API Base URL
+  - 支持环境变量配置端点地址
+
+### Changed
+- **Web 体验优化**
+  - 调整指标卡片顺序（CPU → RAM → GPU → VRAM → NET → PWR → DISK）
+  - 优化指标标签图标和描述文本
+  - 优化设置面板布局和交互体验
+  - 调整面板透明度和毛玻璃效果
+- **关于页面完善**
+  - 完善技术栈说明（Desktop、Service、Web）
+  - 添加版本信息显示
+- **配置管理优化**
+  - 统一配置项命名规范（`System.*`、`DataCollection.*`）
+  - 完善配置项默认值和验证逻辑
+
+### Fixed
+- **设置页面问题修复**
+  - 修复设置保存失败问题
+  - 修复配置项加载异常
+  - 修复 UI 交互响应问题
+- **Web 端问题修复**
+  - 修复版本号显示不一致
+  - 修复 TypeScript 编译错误
+  - 修复拖拽排序动画问题
+
+### Technical Details
+- **架构改进**
+  - 引入 `AuthProvider` 统一认证状态管理
+  - 引入 `apiFetch` 统一 API 请求处理
+  - 引入 `endpoints.ts` 集中化端点配置
+  - 引入 `IpWhitelistMatcher` 支持 CIDR 格式 IP 白名单
+- **安全增强**
+  - SignalR 连接支持访问密钥认证
+  - REST API 请求支持访问密钥认证
+  - 支持 IP 白名单限制访问来源
+  - 支持 Windows 防火墙规则管理
+- **测试覆盖**
+  - 新增 `IpWhitelistMatcherTests` 单元测试
+  - 新增 `SettingsViewModelTests` 单元测试
+
 ## [0.2.0] - 2026-01-27
 
 ### Added

@@ -8,7 +8,7 @@
 
 ## Features
 
-- ✅ **多维度监控** - CPU、内存、GPU、显存、功耗、网络速度实时监控
+- ✅ **多维度监控** - CPU、内存、GPU、显存、硬盘、功耗、网络速度实时监控
 - ✅ **智能过滤** - 基于关键词过滤，精准监控目标进程
 - ✅ **分层聚合** - 自动生成分钟/小时/天级别统计数据
 - ✅ **实时推送** - SignalR 实时推送最新指标，延迟 < 100ms
@@ -19,6 +19,7 @@
 - ✅ **国际化支持** - 中英文切换，易于扩展多语言
 - ✅ **功耗管理** - RyzenAdj 集成，支持 AMD 平台功耗监控与调节
 - ✅ **设备验证** - 设备白名单机制，保护功耗调节功能
+- ✅ **安全认证** - 访问密钥认证、IP 白名单、局域网访问控制
 
 ## Installation
 
@@ -188,6 +189,10 @@ await connection.start();
 | `DataCollection.ProcessKeywords` | string[] | [] | 用户自定义进程关键词 |
 | `DataCollection.TopProcessCount` | int | 10 | 显示的 Top 进程数量 |
 | `System.StartWithWindows` | bool | false | 是否开机自启 |
+| `System.EnableLanAccess` | bool | false | 是否启用局域网访问 |
+| `System.EnableAccessKey` | bool | false | 是否启用访问密钥认证 |
+| `System.AccessKey` | string | "" | 访问密钥（空表示未设置） |
+| `System.IpWhitelist` | string | "" | IP 白名单（逗号分隔的 IP 地址或 CIDR） |
 
 更多配置说明参考：[Configuration Boundaries](XhMonitor.Service/docs/configuration-boundaries.md)
 
@@ -265,6 +270,7 @@ XhMonitor 采用分层架构设计：
 │     ├─ MemoryMetricProvider                                  │
 │     ├─ GpuMetricProvider                                     │
 │     ├─ VramMetricProvider                                    │
+│     ├─ DiskMetricProvider                                    │
 │     ├─ PowerMetricProvider (RyzenAdj)                        │
 │     └─ NetworkMetricProvider                                 │
 └─────────────────────────────────────────────────────────────┘
@@ -472,7 +478,18 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 详见 [CHANGELOG.md](CHANGELOG.md)
 
-### 最新版本 v0.2.0 (2026-01-27)
+### 最新版本 v0.2.6 (2026-02-05)
+
+- ✨ 新增硬盘指标监控（读写速度、使用率）
+- ✨ 新增访问密钥认证功能
+- ✨ 新增局域网访问控制和 IP 白名单
+- ✨ 新增 API 端点集中化配置管理
+- ✨ 完善关于页面技术栈说明
+- ✨ Web 体验优化（指标顺序调整、标签图标和描述）
+- ✨ 设置布局优化和面板透明度调整
+- 🐛 修复设置页面相关问题
+
+### v0.2.0 (2026-01-27)
 
 - ✨ 新增进程排序优化
 - ✨ 新增单实例模式与设备验证

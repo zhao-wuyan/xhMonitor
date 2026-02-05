@@ -1,136 +1,82 @@
 {
-  "analysisDate": "2026-01-27",
-  "documents": [
+  "timestamp": "2026-02-05T00:00:00.000Z",
+  "readmeLastCommit": "c271e7e6d135635df1e351973a78407d6ad7e764",
+  "readmeLastModified": "2026-01-27",
+  "commitsSinceReadme": [
     {
-      "path": "docs/widget-click-config.md",
-      "type": "guide",
-      "lastModified": "2025-12-23",
-      "daysSinceUpdate": 35,
-      "status": "potentially_outdated",
-      "relevantCommits": [
-        "8664e58 - feat: 单实例，启动脚本只启动desktop,添加设备验证，非星核无法切换功耗",
-        "f19bada - feat: 添加点击动画",
-        "126b98d - feat: 设置页改版，新增监控开关、开机自启与管理员模式"
-      ],
-      "outdatedSections": [
-        {
-          "section": "支持的动作类型",
-          "reason": "新增设备验证功能，非星核设备无法切换功耗模式",
-          "confidence": "medium"
-        },
-        {
-          "section": "视觉反馈",
-          "reason": "新增点击动画功能",
-          "confidence": "medium"
-        }
-      ]
+      "hash": "e26abcf",
+      "message": "feat: 完善关于页面技术栈说明",
+      "date": "2026-02-05",
+      "type": "feature"
     },
     {
-      "path": "docs/桌面悬浮窗交互设计稿.md",
-      "type": "design",
-      "lastModified": "2025-12-29",
-      "daysSinceUpdate": 29,
-      "status": "potentially_outdated",
-      "relevantCommits": [
-        "be550c9 - feat: 进程排序优化",
-        "8664e58 - feat: 单实例，启动脚本只启动desktop,添加设备验证",
-        "f19bada - feat: 添加点击动画",
-        "436acfa - feat：优化pinned宽度",
-        "d1fcf31 - feat: 管理员状态指示器，优化",
-        "126b98d - feat: 设置页改版",
-        "94ef801 - fix: 调整悬浮窗置顶卡片宽度",
-        "fba340d - feat: 功耗监控,添加ryzenadj打包逻辑",
-        "0ba810a - feat: health 探测自动解析后端端口，添加网络监控"
-      ],
-      "outdatedSections": [
-        {
-          "section": "文档版本/更新日期",
-          "reason": "文档版本仍为 v1.1，更新日期为 2025-12-29，已有大量新功能",
-          "confidence": "high"
-        },
-        {
-          "section": "代码行号引用",
-          "reason": "多处引用具体行号 (如 line 264-293)，代码已变更，行号可能不准确",
-          "confidence": "high"
-        },
-        {
-          "section": "Pinned Card 交互",
-          "reason": "pinned 宽度已优化 (436acfa)",
-          "confidence": "medium"
-        },
-        {
-          "section": "视觉设计规范",
-          "reason": "钉住卡片宽度已从 320px 调整",
-          "confidence": "medium"
-        },
-        {
-          "section": "后续迭代方向",
-          "reason": "部分功能已实现：功耗监控、网络监控、管理员状态指示器",
-          "confidence": "high"
-        }
-      ]
+      "hash": "0a7c2e5",
+      "message": "chore(release): 发布 0.2.6 版本",
+      "date": "2026-02-05",
+      "type": "release"
     },
     {
-      "path": "README.md",
-      "type": "readme",
-      "lastModified": "2026-01-25",
-      "daysSinceUpdate": 2,
-      "status": "recent",
-      "relevantCommits": [
-        "1d66b52 - docs: 优化文档和多余文件",
-        "be550c9 - feat: 进程排序优化",
-        "8664e58 - feat: 单实例，启动脚本只启动desktop,添加设备验证"
-      ],
-      "outdatedSections": [
-        {
-          "section": "当前状态",
-          "reason": "阶段6 Electron桌面端标记为进行中，但实际已有 WPF Desktop 实现",
-          "confidence": "medium"
-        },
-        {
-          "section": "更新日志",
-          "reason": "最新版本为 v0.5.0 (2025-12-21)，缺少后续版本记录",
-          "confidence": "high"
-        }
-      ]
+      "hash": "efdca1b",
+      "message": "feat(auth): 添加访问密钥认证和统一 API 请求处理",
+      "date": "2026-02-05",
+      "type": "feature"
     },
     {
-      "path": "CHANGELOG.md",
-      "type": "changelog",
-      "lastModified": "2026-01-19",
-      "daysSinceUpdate": 8,
-      "status": "needs_update",
-      "relevantCommits": [
-        "1d66b52 - docs: 优化文档和多余文件 (2026-01-27)",
-        "61449701 - fix: 处理警告 (2026-01-27)",
-        "be550c9 - feat: 进程排序优化 (2026-01-27)",
-        "8664e58 - feat: 单实例，启动脚本只启动desktop,添加设备验证 (2026-01-27)",
-        "f19bada - feat: 添加点击动画 (2026-01-27)",
-        "436acfa - feat：优化pinned宽度 (2026-01-27)",
-        "d1fcf31 - feat: 管理员状态指示器 (2026-01-27)",
-        "14657b4 - feat: 优化设置 (2026-01-27)",
-        "126b98d - feat: 设置页改版 (2026-01-27)",
-        "94ef801 - fix: 调整悬浮窗置顶卡片宽度 (2026-01-26)",
-        "d183b6e - fix: 修复启动脚本 (2026-01-26)",
-        "fba340d - feat: 功耗监控,添加ryzenadj打包逻辑 (2026-01-26)",
-        "0ba810a - feat: 网络监控，悬浮窗网络/内存显示优化 (2026-01-26)",
-        "dbf71c8 - fix：修复web端显存和内存占用问题 (2026-01-26)",
-        "76658c3 - fix: 进程卡片随悬浮窗移动 (2026-01-25)",
-        "c61d6d0 - fix: 修复进程详情卡片未随悬浮窗拖动而移动 (2026-01-25)"
-      ],
-      "outdatedSections": [
-        {
-          "section": "[Unreleased]",
-          "reason": "大量新功能和修复未记录到 Unreleased 章节",
-          "confidence": "high"
-        }
-      ]
+      "hash": "b4df440",
+      "message": "refactor(config): 集中化 API 端点配置管理",
+      "date": "2026-02-05",
+      "type": "refactor"
+    },
+    {
+      "hash": "83fd63a",
+      "message": "feat：接入硬盘指标监控",
+      "date": "2026-02-04",
+      "type": "feature"
+    }
+  ],
+  "outdatedSections": [
+    {
+      "doc": "README.md",
+      "section": "Features",
+      "reason": "新增访问密钥认证功能（efdca1b），需要在 Features 中添加安全认证相关特性",
+      "confidence": "high"
+    },
+    {
+      "doc": "README.md",
+      "section": "Features",
+      "reason": "新增硬盘指标监控功能（83fd63a），需要在多维度监控中添加硬盘监控",
+      "confidence": "high"
+    },
+    {
+      "doc": "README.md",
+      "section": "Configuration",
+      "reason": "新增访问密钥相关配置项（efdca1b, b4df440），需要在配置说明中添加 EnableAccessKey、AccessKey、IpWhitelist 等配置",
+      "confidence": "high"
+    },
+    {
+      "doc": "README.md",
+      "section": "Configuration",
+      "reason": "新增局域网访问配置（b4df440），需要在配置说明中添加 EnableLanAccess 配置",
+      "confidence": "high"
+    },
+    {
+      "doc": "README.md",
+      "section": "Changelog",
+      "reason": "发布了 0.2.6 版本（0a7c2e5），需要更新 Changelog 和最新版本信息",
+      "confidence": "high"
+    },
+    {
+      "doc": "README.md",
+      "section": "Architecture",
+      "reason": "新增硬盘指标提供者（83fd63a），需要在架构图的 MetricProviders 中添加 DiskMetricProvider",
+      "confidence": "medium"
     }
   ],
   "summary": {
-    "totalDocs": 4,
-    "needsUpdate": 2,
-    "potentiallyOutdated": 2,
-    "recent": 0
+    "totalCommits": 20,
+    "features": 7,
+    "outdatedSectionsCount": 6,
+    "highConfidence": 5,
+    "mediumConfidence": 1
   }
 }
