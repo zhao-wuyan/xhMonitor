@@ -4,7 +4,8 @@ export const i18n = {
     // 页面标题
     appTitle: '星核监视器',
     appSubtitle: 'Windows 资源监控器',
-    appVersion: 'v0.2.5',
+    // 版本号由构建时注入（见 src/version.ts），避免发布时遗漏同步
+    appVersion: '',
 
     // 连接状态
     connected: '已连接',
@@ -93,7 +94,8 @@ export const i18n = {
     // 页面标题
     appTitle: 'XhMonitor',
     appSubtitle: 'Windows Resource Monitor',
-    appVersion: 'v0.2.4',
+    // Version is injected at build time (see src/version.ts) to avoid manual sync.
+    appVersion: '',
 
     // 连接状态
     connected: 'Connected',

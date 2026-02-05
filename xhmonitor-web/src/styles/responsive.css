@@ -144,12 +144,15 @@ body.no-gradient .status-badge--offline {
 .logo-box {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--xh-color-cpu), var(--xh-color-ram));
   border-radius: 10px;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
+  overflow: hidden;
   box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.logo-box__img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .status-badge {

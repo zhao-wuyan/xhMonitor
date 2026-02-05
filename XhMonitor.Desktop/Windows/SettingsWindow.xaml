@@ -260,6 +260,46 @@
             <Setter Property="Margin" Value="6"/>
         </Style>
 
+        <!-- Settings 单行输入框样式（修复文本垂直偏上问题） -->
+        <Style x:Key="SettingsSingleLineTextBox" TargetType="TextBox">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Background" Value="{StaticResource InputBackground}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource NavBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="InputBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="InputBorder" Property="BorderBrush" Value="#5A5A5A"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="InputBorder" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="InputBorder" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ToggleSwitch 样式 -->
         <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
@@ -491,11 +531,26 @@
                                             Padding="10,6"
                                             CornerRadius="4"
                                             Background="#1E2A1E"
-                                            HorizontalAlignment="Left">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="本机IP: " FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding LocalIpAddress}" FontSize="12" Foreground="#81C784" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        </StackPanel>
+                                            HorizontalAlignment="Left"
+                                            MaxWidth="520">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="本机IP: "
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextSecondary}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding LocalIpEndpoint}"
+                                                       FontSize="12"
+                                                       Foreground="#81C784"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"/>
+                                        </Grid>
                                     </Border>
 
                                     <!-- Service 管理员状态指示器 -->
@@ -591,13 +646,9 @@
                                     <!-- 访问密钥输入 -->
                                     <StackPanel Margin="40,0,0,12">
                                         <TextBlock Text="访问密钥" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding AccessKey, UpdateSourceTrigger=PropertyChanged}"
+                                        <TextBox Style="{StaticResource SettingsSingleLineTextBox}"
+                                                 Text="{Binding AccessKey, UpdateSourceTrigger=PropertyChanged}"
                                                  Height="30"
-                                                 VerticalContentAlignment="Center"
-                                                 Padding="8,6"
-                                                 Background="{StaticResource InputBackground}"
-                                                 Foreground="{StaticResource TextPrimary}"
-                                                 BorderThickness="0"
                                                  IsEnabled="{Binding EnableAccessKey}"
                                                  FontFamily="Consolas"
                                                  FontSize="12"/>
@@ -774,23 +825,16 @@
                                 <StackPanel>
                                     <TextBlock Text="采集策略" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
                                     <TextBlock Text="Top 进程数量" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                                    <TextBox Height="35"
+                                    <TextBox Style="{StaticResource SettingsSingleLineTextBox}"
+                                             Height="35"
                                              Text="{Binding TopProcessCount}"
-                                             VerticalContentAlignment="Center"
-                                             Padding="5"
-                                             Background="{StaticResource InputBackground}"
-                                             Foreground="{StaticResource TextPrimary}"
-                                             BorderThickness="0"
                                              Margin="0,0,0,16"/>
 
                                     <TextBlock Text="历史数据保留时长 (天)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                                    <TextBox Height="35"
+                                    <TextBox Style="{StaticResource SettingsSingleLineTextBox}"
+                                             Height="35"
                                              Text="{Binding DataRetentionDays}"
-                                             VerticalContentAlignment="Center"
-                                             Padding="5"
-                                             Background="{StaticResource InputBackground}"
-                                             Foreground="{StaticResource TextPrimary}"
-                                             BorderThickness="0"/>
+                                             />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -804,7 +848,7 @@
                             <TextBlock Text="关于" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
 
                             <TextBlock Text="XhMonitor" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
-                            <TextBlock Text="版本：0.1.0" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="SettingsAboutVersionTextBlock" Text="版本：" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
                             <TextBlock Text="轻量级系统性能监控工具" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20" TextWrapping="Wrap"/>
 
                             <Separator Margin="0,10,0,20" Background="{StaticResource SeparatorColor}"/>

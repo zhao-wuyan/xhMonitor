@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Windows;
 using XhMonitor.Desktop.Dialogs;
 using XhMonitor.Desktop.Services;
@@ -28,6 +29,12 @@ public partial class SettingsWindow : Window
         _backendServerService = backendServerService;
         _serviceDiscovery = serviceDiscovery;
         DataContext = _viewModel;
+
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        if (version != null)
+        {
+            SettingsAboutVersionTextBlock.Text = $"版本：{version.Major}.{version.Minor}.{version.Build}";
+        }
 
         Loaded += async (s, e) =>
         {

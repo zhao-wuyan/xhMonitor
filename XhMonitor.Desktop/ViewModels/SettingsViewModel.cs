@@ -47,6 +47,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     private string _accessKey = ConfigurationDefaults.System.AccessKey;
     private string _ipWhitelist = ConfigurationDefaults.System.IpWhitelist;
     private string _localIpAddress = "正在获取...";
+    private readonly int _webPort;
 
     // Service 状态
     private bool _serviceIsAdmin = false;
@@ -58,6 +59,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     public SettingsViewModel(HttpClient httpClient, IServiceDiscovery serviceDiscovery)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _webPort = serviceDiscovery.WebPort;
         _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
 
@@ -192,7 +194,40 @@ public class SettingsViewModel : INotifyPropertyChanged
     public string LocalIpAddress
     {
         get => _localIpAddress;
-        set => SetProperty(ref _localIpAddress, value);
+        set
+        {
+            if (!SetProperty(ref _localIpAddress, value))
+            {
+                return;
+            }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalIpEndpoint)));
+        }
+    }
+
+    public int WebPort => _webPort;
+
+    public string LocalIpEndpoint
+    {
+        get
+        {
+            var parts = (LocalIpAddress ?? string.Empty)
+                .Split([',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            var endpoints = parts
+                .Where(part => IPAddress.TryParse(part, out _))
+                .Select(part => $"{part}:{WebPort}")
+                .ToList();
+
+            if (endpoints.Count > 0)
+            {
+                return string.Join(", ", endpoints);
+            }
+
+            return $"{LocalIpAddress} (端口 {WebPort})";
+        }
     }
 
     /// <summary>
@@ -416,10 +451,44 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         try
         {
-            var candidates = NetworkInterface.GetAllNetworkInterfaces()
+            var nicCandidates = NetworkInterface.GetAllNetworkInterfaces()
                 .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
                 .Where(nic => nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .Where(nic => nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
+                .Select(nic => new
+                {
+                    Nic = nic,
+                    IsVirtual = IsVirtualAdapter(nic),
+                    HasGateway = HasIpv4Gateway(nic),
+                })
+                .ToList();
+
+            // 过滤策略（用户视角“局域网可访问 IP”优先）：
+            // 1) 优先选择：非虚拟网卡 + 有默认网关（一般就是当前真实局域网出口）
+            // 2) 回退：非虚拟网卡（某些场景可能没有网关，例如直连/特殊网络）
+            // 3) 兜底：不过滤（避免完全显示“未检测到”）
+            var selectedNics = nicCandidates
+                .Where(x => !x.IsVirtual && x.HasGateway)
+                .Select(x => x.Nic)
+                .ToList();
+
+            if (selectedNics.Count == 0)
+            {
+                selectedNics = nicCandidates
+                    .Where(x => !x.IsVirtual)
+                    .Select(x => x.Nic)
+                    .ToList();
+            }
+
+            if (selectedNics.Count == 0)
+            {
+                selectedNics = nicCandidates.Select(x => x.Nic).ToList();
+            }
+
+            // 用户明确希望保留某些“内网穿透/VPN”类型网卡（即使没有默认网关）。
+            selectedNics.AddRange(nicCandidates.Where(x => IsAllowedTunnelAdapter(x.Nic)).Select(x => x.Nic));
+            selectedNics = selectedNics.GroupBy(nic => nic.Id).Select(g => g.First()).ToList();
+
+            var candidates = selectedNics
                 .SelectMany(GetUnicastAddressesSafe)
                 .Select(ua => ua.Address)
                 .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork)
@@ -428,17 +497,82 @@ public class SettingsViewModel : INotifyPropertyChanged
                 .Distinct()
                 .ToList();
 
-            var best = candidates
+            var sorted = candidates
                 .OrderByDescending(IsPrivateIpv4)
                 .ThenBy(ip => ip.ToString(), StringComparer.Ordinal)
-                .FirstOrDefault();
+                .Select(ip => ip.ToString())
+                .ToList();
 
-            LocalIpAddress = best?.ToString() ?? "未检测到";
+            LocalIpAddress = sorted.Count > 0 ? string.Join(", ", sorted) : "未检测到";
         }
         catch
         {
             LocalIpAddress = "获取失败";
         }
+    }
+
+    private static bool HasIpv4Gateway(NetworkInterface nic)
+    {
+        try
+        {
+            var gateways = nic.GetIPProperties().GatewayAddresses;
+            return gateways
+                .Select(g => g?.Address)
+                .Where(addr => addr != null && addr.AddressFamily == AddressFamily.InterNetwork)
+                .Any(addr => !IPAddress.Any.Equals(addr));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsAllowedTunnelAdapter(NetworkInterface nic)
+    {
+        // 白名单：允许特定“内网穿透 / Overlay 网络 / VPN”网卡出现在可访问地址里。
+        // 目的：这些网卡可能没有默认网关，但仍可用于访问 Web（例如同一 Tailscale/ZeroTier 网络内的设备）。
+        var name = (nic.Name ?? string.Empty).ToLowerInvariant();
+        var desc = (nic.Description ?? string.Empty).ToLowerInvariant();
+        var hay = $"{name} {desc}";
+
+        return name.StartsWith("et_", StringComparison.Ordinal) ||
+               desc.StartsWith("et_", StringComparison.Ordinal) ||
+               hay.Contains("easytier", StringComparison.Ordinal) ||
+               hay.Contains("tailscale", StringComparison.Ordinal) ||
+               hay.Contains("zerotier", StringComparison.Ordinal) ||
+               hay.Contains("wireguard", StringComparison.Ordinal) ||
+               hay.Contains("wintun", StringComparison.Ordinal) ||
+               hay.Contains("openvpn", StringComparison.Ordinal) ||
+               hay.Contains("hamachi", StringComparison.Ordinal);
+    }
+
+    private static bool IsVirtualAdapter(NetworkInterface nic)
+    {
+        if (IsAllowedTunnelAdapter(nic))
+        {
+            return false;
+        }
+
+        var name = (nic.Name ?? string.Empty).ToLowerInvariant();
+        var desc = (nic.Description ?? string.Empty).ToLowerInvariant();
+
+        // 常见虚拟/容器/VPN 网卡关键字（尽量覆盖中文/英文）
+        // 目标：把 Docker/WSL/Hyper-V/VMware/VirtualBox/TAP 等从“局域网可访问 IP”候选中排除。
+        var hay = $"{name} {desc}";
+        return hay.Contains("virtual", StringComparison.Ordinal) ||
+               hay.Contains("虚拟", StringComparison.Ordinal) ||
+               hay.Contains("vmware", StringComparison.Ordinal) ||
+               hay.Contains("virtualbox", StringComparison.Ordinal) ||
+               hay.Contains("hyper-v", StringComparison.Ordinal) ||
+               hay.Contains("vethernet", StringComparison.Ordinal) ||
+               hay.Contains("vEthernet".ToLowerInvariant(), StringComparison.Ordinal) ||
+               hay.Contains("docker", StringComparison.Ordinal) ||
+               hay.Contains("wsl", StringComparison.Ordinal) ||
+               hay.Contains("teredo", StringComparison.Ordinal) ||
+               hay.Contains("isatap", StringComparison.Ordinal) ||
+               hay.Contains("6to4", StringComparison.Ordinal) ||
+               hay.Contains("npcap", StringComparison.Ordinal) ||
+               hay.Contains("loopback", StringComparison.Ordinal);
     }
 
     private static IEnumerable<UnicastIPAddressInformation> GetUnicastAddressesSafe(NetworkInterface nic)

@@ -1,0 +1,49 @@
+{
+  "summary": "设置窗口（WPF）单行 TextBox 文本在固定高度下视觉偏上，尤其是“访问密钥”输入框。通过为单行 TextBox 引入一个精简的 ControlTemplate，让 VerticalContentAlignment 真正作用到 PART_ContentHost，从而实现稳定的垂直居中并保持现有暗色风格。",
+  "root_cause": "WPF TextBox 默认模板未将 VerticalContentAlignment 绑定到文本宿主（PART_ContentHost），导致仅靠属性设置/Padding 难以在不同字体度量（如 Consolas）+ 固定高度下达到视觉居中。",
+  "strategy": "comprehensive_fix",
+  "severity": "Low",
+  "risk_level": "Low",
+  "estimated_time": "20-40 minutes",
+  "tasks": [
+    {
+      "title": "为设置窗口增加单行 TextBox 垂直居中 Style",
+      "description": "在 SettingsWindow 的 Window.Resources 中新增 `SettingsSingleLineTextBox` 样式（含精简 ControlTemplate），将 `VerticalContentAlignment` 显式绑定到 `PART_ContentHost` 的 `VerticalAlignment`，并提供圆角、禁用态与聚焦态的最小视觉反馈（不改变默认配色）。",
+      "scope": [
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml"
+      ],
+      "action": "add_style",
+      "complexity": "S",
+      "rationale": "避免继续依赖经验型 Padding 调参；通过模板层修复才能保证不同字体/高度下都稳定居中。",
+      "verification": [
+        "构建 `XhMonitor.Desktop` 项目确保 XAML 编译通过",
+        "打开设置窗口，检查“访问密钥 / Top 进程数量 / 历史数据保留时长”三个单行输入框的文本在输入框高度内视觉居中"
+      ],
+      "risks": [
+        "自定义模板若缺少 `PART_ContentHost` 会导致 TextBox 不可用（需确保命名正确）",
+        "样式应用范围需仅限单行 TextBox，避免影响多行编辑框的滚动体验"
+      ],
+      "depends_on": []
+    },
+    {
+      "title": "应用 Style 到设置页的单行输入框",
+      "description": "将 SettingsWindow.xaml 中的 3 个单行 TextBox（AccessKey、TopProcessCount、DataRetentionDays）统一切换为 `SettingsSingleLineTextBox`，移除/简化重复属性，保留各自的 Height、FontFamily 等差异化设置。",
+      "scope": [
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml"
+      ],
+      "action": "refactor_markup",
+      "complexity": "S",
+      "rationale": "保证 UI 观感一致，并让垂直居中逻辑集中在 Style 中维护。",
+      "verification": [
+        "构建通过且运行无 XAML 绑定/模板报错",
+        "禁用（EnableAccessKey=false）时输入框禁用态仍清晰可辨且不刺眼"
+      ],
+      "risks": [
+        "Padding/Height 改动可能影响布局密度（需保持与现有卡片间距一致）"
+      ],
+      "depends_on": [
+        "为设置窗口增加单行 TextBox 垂直居中 Style"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "bug": "修复 desktop 桌面端设置中的输入框字体偏上的问题，需要居中且美观",
+  "severity": "Low",
+  "scope": "XhMonitor.Desktop 设置窗口（WPF）",
+  "symptoms": [
+    "设置窗口中单行输入框（尤其是“访问密钥”）文本看起来偏上，未在输入框高度内视觉居中"
+  ],
+  "evidence": [
+    {
+      "file": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "area": "局域网安全设置 → 访问密钥输入框",
+      "notes": [
+        "TextBox 指定了 Height=\"30\"、Padding=\"8,6\"、FontFamily=\"Consolas\"、VerticalContentAlignment=\"Center\"",
+        "实际 UI 仍表现为文本偏上（截图红框处）"
+      ]
+    }
+  ],
+  "likely_root_cause": [
+    "WPF TextBox 默认 ControlTemplate 不会将 VerticalContentAlignment 传递/绑定到 PART_ContentHost（文本承载的宿主），导致 VerticalContentAlignment=\"Center\" 对渲染无效或效果不足。",
+    "当前通过 Padding 试图“手动居中”，但在固定高度（Height=\"30\"）+ 等距上下 Padding + Consolas 字体度量组合下，视觉上仍偏上。"
+  ],
+  "affected_files": [
+    {
+      "path": "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+      "relevance": 0.95,
+      "why": "包含访问密钥等单行 TextBox 定义；是该问题的直接来源"
+    }
+  ],
+  "non_goals": [
+    "不改变业务绑定逻辑（AccessKey / EnableAccessKey 等）",
+    "不重做整个设置窗口的视觉系统，仅修复输入框文本垂直居中问题"
+  ],
+  "recommended_fix_direction": [
+    "在 SettingsWindow 资源中新增一个仅用于“单行输入框”的 TextBox Style（含精简 ControlTemplate），将 VerticalContentAlignment 显式绑定到 PART_ContentHost 的 VerticalAlignment，并保留现有背景色/字体等属性。",
+    "将“访问密钥 / TopProcessCount / DataRetentionDays”等单行 TextBox 引用该 Style，避免继续靠经验 Padding 调整。"
+  ],
+  "clarification_needs": []
+}

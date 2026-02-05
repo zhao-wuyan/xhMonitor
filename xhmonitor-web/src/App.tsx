@@ -19,6 +19,7 @@ import { DraggableGrid } from './components/DraggableGrid';
 import { MobileNav } from './components/MobileNav';
 import { ProcessList } from './components/ProcessList';
 import { AccessKeyScreen } from './pages/AccessKeyScreen';
+import { APP_VERSION_TAG } from './version';
 
 function AppShell() {
   const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
@@ -96,10 +97,12 @@ function AppShell() {
           <header className="header">
             {/* Left: Brand */}
             <div className="brand">
-              <div className="logo-box">XM</div>
+              <div className="logo-box" aria-hidden="true">
+                <img className="logo-box__img" src="/app_icon.svg" alt="" />
+              </div>
               <div>
                 {t('appTitle')}
-                <span className="version-tag">{t('appVersion')}</span>
+                <span className="version-tag">{APP_VERSION_TAG}</span>
               </div>
             </div>
 

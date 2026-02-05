@@ -90,7 +90,9 @@ public static class FirewallManager
                 Arguments = arguments,
                 UseShellExecute = true,
                 Verb = "runas",
-                CreateNoWindow = false
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                ErrorDialog = false
             };
         }
 

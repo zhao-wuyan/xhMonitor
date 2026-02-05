@@ -6,6 +6,8 @@ interface Window {
   };
 }
 
+declare const __APP_VERSION__: string;
+
 declare module '../../components/charts/MiniChart.js' {
   export type ChartFormatFn = (value: number) => string;
 
