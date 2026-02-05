@@ -566,7 +566,7 @@ public class SettingsViewModel : INotifyPropertyChanged
                hay.Contains("hyper-v", StringComparison.Ordinal) ||
                hay.Contains("vethernet", StringComparison.Ordinal) ||
                hay.Contains("vEthernet".ToLowerInvariant(), StringComparison.Ordinal) ||
-               hay.Contains("docker", StringComparison.Ordinal) ||
+               hay.Contains("docker", StringComparison.Ordinal) ||                                                                  
                hay.Contains("wsl", StringComparison.Ordinal) ||
                hay.Contains("teredo", StringComparison.Ordinal) ||
                hay.Contains("isatap", StringComparison.Ordinal) ||

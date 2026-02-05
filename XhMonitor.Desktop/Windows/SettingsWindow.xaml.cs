@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using XhMonitor.Desktop.Dialogs;
@@ -14,6 +15,7 @@ public partial class SettingsWindow : Window
     private readonly IAdminModeManager _adminModeManager;
     private readonly IBackendServerService _backendServerService;
     private readonly IServiceDiscovery _serviceDiscovery;
+    private readonly string _webUiUrl;
 
     public SettingsWindow(
         SettingsViewModel viewModel,
@@ -35,6 +37,9 @@ public partial class SettingsWindow : Window
         {
             SettingsAboutVersionTextBlock.Text = $"版本：{version.Major}.{version.Minor}.{version.Build}";
         }
+
+        _webUiUrl = BuildWebUiUrl();
+        SettingsAboutWebUrlTextBlock.Text = $"Web：{_webUiUrl}";
 
         Loaded += async (s, e) =>
         {
@@ -217,6 +222,71 @@ public partial class SettingsWindow : Window
 
         SaveButton.Content = originalContent;
         SaveButton.IsEnabled = true;
+    }
+
+    private string BuildWebUiUrl()
+    {
+        try
+        {
+            var host = new Uri(_serviceDiscovery.ApiBaseUrl).Host;
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                host = "localhost";
+            }
+
+            return $"http://{host}:{_serviceDiscovery.WebPort}";
+        }
+        catch
+        {
+            return $"http://localhost:{_serviceDiscovery.WebPort}";
+        }
+    }
+
+    private void OpenWebUi_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = _webUiUrl,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"无法打开 Web 界面。\n请手动访问：{_webUiUrl}\n\n错误：{ex.Message}",
+                "打开失败",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void CopyAboutInfo_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            var versionText = version == null ? "unknown" : $"{version.Major}.{version.Minor}.{version.Build}";
+
+            var content =
+                $"XhMonitor\n" +
+                $"Version: {versionText}\n" +
+                $"Web UI: {_webUiUrl}\n" +
+                $"API Base: {_serviceDiscovery.ApiBaseUrl}\n" +
+                $"Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+
+            System.Windows.Clipboard.SetText(content);
+            System.Windows.MessageBox.Show("已复制到剪贴板。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"复制失败：{ex.Message}",
+                "错误",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
