@@ -21,6 +21,15 @@ export const i18n = {
     'Open settings': '打开设置',
     'Close settings': '关闭设置',
     'Restore Defaults': '恢复默认',
+    Save: '保存',
+    Clear: '清除',
+
+    // 安全
+    Security: '安全',
+    'Access Key': '访问密钥',
+    'Access key hint': '启用“局域网访问密钥”后，在这里填写密钥，才可以访问数据接口与实时指标。',
+    'Access Key Required': '需要填写访问密钥',
+    'Enter access key': '请输入访问密钥',
 
     // 指标名称
     CPU: 'CPU',
@@ -101,6 +110,15 @@ export const i18n = {
     'Open settings': 'Open settings',
     'Close settings': 'Close settings',
     'Restore Defaults': 'Restore Defaults',
+    Save: 'Save',
+    Clear: 'Clear',
+
+    // Security
+    Security: 'Security',
+    'Access Key': 'Access Key',
+    'Access key hint': 'If LAN access key is enabled, enter the key here to access APIs and realtime metrics.',
+    'Access Key Required': 'Access key required',
+    'Enter access key': 'Enter access key',
 
     // 指标名称
     CPU: 'CPU',

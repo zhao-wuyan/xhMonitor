@@ -331,6 +331,18 @@
             <StackPanel>
                 <TextBlock Text="设置" FontSize="24" FontWeight="Bold" Margin="20,30,20,30" Foreground="{StaticResource TextPrimary}"/>
                 <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0" SelectedIndex="0">
+                    <ListBoxItem Tag="System">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Path Grid.Column="0" Data="{StaticResource IconSettings}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                  Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="系统选项" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ListBoxItem>
                     <ListBoxItem Tag="Appearance">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -353,18 +365,6 @@
                                   Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
                                   Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="数据采集" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </Grid>
-                    </ListBoxItem>
-                    <ListBoxItem Tag="System">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="20"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Path Grid.Column="0" Data="{StaticResource IconSettings}"
-                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                  Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="系统选项" Margin="8,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
                     </ListBoxItem>
                     <ListBoxItem Tag="About">
@@ -397,171 +397,7 @@
                         BorderThickness="0"
                         SelectedIndex="{Binding ElementName=NavList, Path=SelectedIndex}">
 
-                <!-- 页面 1: 外观设置 -->
-                <TabItem Visibility="Collapsed">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="外观设置" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="{StaticResource TextPrimary}"/>
-
-                            <Border Style="{StaticResource SettingsCard}">
-                                <StackPanel>
-                                    <TextBlock Text="悬浮窗透明度" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                                    <Grid Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="50"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Slider Maximum="100" Minimum="20" Value="{Binding Opacity}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Opacity, StringFormat={}{0}%}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <!-- 页面 2: 数据采集 -->
-                <TabItem Visibility="Collapsed">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <TextBlock Text="数据采集" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
-
-                            <Border Style="{StaticResource SettingsCard}">
-                                <StackPanel>
-                                    <TextBlock Text="监控配置" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                                    <TextBlock Text="选择需要采集的指标，开启后将在主界面展示。"
-                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12"/>
-                                    <UniformGrid Rows="2" Columns="3">
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="CPU" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="处理器" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorCpu}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="Memory" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="内存" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorMemory}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="GPU" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="显卡" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorGpu}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="VRAM" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="显存" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorVram}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="Power" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="功耗" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorPower}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="Network" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="网络" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorNetwork}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                    </UniformGrid>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Style="{StaticResource SettingsCard}">
-                                <StackPanel>
-                                    <TextBlock Text="进程监控关键词" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                                    <TextBlock Text="每行一个关键词。支持正则表达式，使用 ! 前缀排除，例如：!chrome"
-                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                    <TextBox Text="{Binding ProcessKeywords, UpdateSourceTrigger=PropertyChanged}"
-                                             Height="150"
-                                             AcceptsReturn="True"
-                                             TextWrapping="Wrap"
-                                             VerticalScrollBarVisibility="Auto"
-                                             Background="{StaticResource ListBackground}"
-                                             Foreground="{StaticResource TextPrimary}"
-                                             BorderBrush="{StaticResource NavBorder}"
-                                             BorderThickness="1"
-                                             Padding="8"
-                                             FontFamily="Consolas"
-                                             FontSize="12"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Style="{StaticResource SettingsCard}">
-                                <StackPanel>
-                                    <TextBlock Text="采集策略" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                                    <TextBlock Text="Top 进程数量" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                                    <TextBox Height="35"
-                                             Text="{Binding TopProcessCount}"
-                                             VerticalContentAlignment="Center"
-                                             Padding="5"
-                                             Background="{StaticResource InputBackground}"
-                                             Foreground="{StaticResource TextPrimary}"
-                                             BorderThickness="0"
-                                             Margin="0,0,0,16"/>
-
-                                    <TextBlock Text="历史数据保留时长 (天)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
-                                    <TextBox Height="35"
-                                             Text="{Binding DataRetentionDays}"
-                                             VerticalContentAlignment="Center"
-                                             Padding="5"
-                                             Background="{StaticResource InputBackground}"
-                                             Foreground="{StaticResource TextPrimary}"
-                                             BorderThickness="0"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-
-                <!-- 页面 3: 系统选项 -->
+                <!-- 页面 1: 系统选项 -->
                 <TabItem Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
@@ -756,15 +592,15 @@
                                     <StackPanel Margin="40,0,0,12">
                                         <TextBlock Text="访问密钥" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,5"/>
                                         <TextBox Text="{Binding AccessKey, UpdateSourceTrigger=PropertyChanged}"
-                                                 Height="35"
+                                                 Height="30"
                                                  VerticalContentAlignment="Center"
-                                                 Padding="8"
+                                                 Padding="8,6"
                                                  Background="{StaticResource InputBackground}"
                                                  Foreground="{StaticResource TextPrimary}"
-                                                 BorderBrush="{StaticResource NavBorder}"
-                                                 BorderThickness="1"
+                                                 BorderThickness="0"
                                                  IsEnabled="{Binding EnableAccessKey}"
-                                                 FontFamily="Consolas"/>
+                                                 FontFamily="Consolas"
+                                                 FontSize="12"/>
                                         <TextBlock Text="留空将自动生成随机密钥" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0"/>
                                     </StackPanel>
 
@@ -791,6 +627,170 @@
                                             留空表示不限制IP访问
                                         </TextBlock>
                                     </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- 页面 2: 外观设置 -->
+                <TabItem Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="外观设置" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="{StaticResource TextPrimary}"/>
+
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
+                                    <TextBlock Text="悬浮窗透明度" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="50"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Slider Maximum="100" Minimum="20" Value="{Binding Opacity}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Opacity, StringFormat={}{0}%}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- 页面 3: 数据采集 -->
+                <TabItem Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="数据采集" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20" Foreground="White"/>
+
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
+                                    <TextBlock Text="监控配置" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="选择需要采集的指标，开启后将在主界面展示。"
+                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12"/>
+                                    <UniformGrid Rows="2" Columns="3">
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="CPU" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="处理器" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorCpu}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Memory" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="内存" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorMemory}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="GPU" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="显卡" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorGpu}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="VRAM" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="显存" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorVram}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Power" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="功耗" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorPower}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Network" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="网络" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorNetwork}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
+                                    <TextBlock Text="进程监控关键词" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="每行一个关键词。支持正则表达式，使用 ! 前缀排除，例如：!chrome"
+                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                    <TextBox Text="{Binding ProcessKeywords, UpdateSourceTrigger=PropertyChanged}"
+                                             Height="150"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Background="{StaticResource ListBackground}"
+                                             Foreground="{StaticResource TextPrimary}"
+                                             BorderBrush="{StaticResource NavBorder}"
+                                             BorderThickness="1"
+                                             Padding="8"
+                                             FontFamily="Consolas"
+                                             FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
+                                    <TextBlock Text="采集策略" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Top 进程数量" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                                    <TextBox Height="35"
+                                             Text="{Binding TopProcessCount}"
+                                             VerticalContentAlignment="Center"
+                                             Padding="5"
+                                             Background="{StaticResource InputBackground}"
+                                             Foreground="{StaticResource TextPrimary}"
+                                             BorderThickness="0"
+                                             Margin="0,0,0,16"/>
+
+                                    <TextBlock Text="历史数据保留时长 (天)" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,5"/>
+                                    <TextBox Height="35"
+                                             Text="{Binding DataRetentionDays}"
+                                             VerticalContentAlignment="Center"
+                                             Padding="5"
+                                             Background="{StaticResource InputBackground}"
+                                             Foreground="{StaticResource TextPrimary}"
+                                             BorderThickness="0"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

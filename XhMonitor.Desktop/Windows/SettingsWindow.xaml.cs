@@ -243,4 +243,9 @@ public partial class SettingsWindow : Window
             _viewModel.AdminMode = ConfigurationDefaults.Monitoring.AdminMode;
         }
     }
+
+    private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
+    {
+
+    }
 }

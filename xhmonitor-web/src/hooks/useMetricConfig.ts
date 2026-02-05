@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { MetricMetadata, MetricConfig } from '../types';
 import { API_V1_BASE } from '../config/endpoints';
+import { apiFetch } from '../utils/apiFetch';
 
 const API_BASE = API_V1_BASE;
 
@@ -26,7 +27,7 @@ export const useMetricConfig = () => {
   useEffect(() => {
     const fetchMetricConfig = async () => {
       try {
-        const response = await fetch(`${API_BASE}/config/metrics`);
+        const response = await apiFetch(`${API_BASE}/config/metrics`);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }

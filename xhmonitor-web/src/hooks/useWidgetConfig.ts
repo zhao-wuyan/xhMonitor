@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_V1_BASE } from '../config/endpoints';
+import { apiFetch } from '../utils/apiFetch';
 
 export interface MetricClickConfig {
   enabled: boolean;
@@ -28,7 +29,7 @@ export const useWidgetConfig = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch(`${API_V1_BASE}/widgetconfig`);
+      const response = await apiFetch(`${API_V1_BASE}/widgetconfig`);
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -42,7 +43,7 @@ export const useWidgetConfig = () => {
 
   const updateSettings = async (newSettings: WidgetSettings) => {
     try {
-      const response = await fetch(`${API_V1_BASE}/widgetconfig`, {
+      const response = await apiFetch(`${API_V1_BASE}/widgetconfig`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)
@@ -61,7 +62,7 @@ export const useWidgetConfig = () => {
 
   const updateMetricConfig = async (metricId: string, config: MetricClickConfig) => {
     try {
-      const response = await fetch(`${API_V1_BASE}/widgetconfig/${metricId}`, {
+      const response = await apiFetch(`${API_V1_BASE}/widgetconfig/${metricId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)

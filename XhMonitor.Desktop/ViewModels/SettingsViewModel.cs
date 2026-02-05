@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text.Json;
 using XhMonitor.Core.Common;
 using XhMonitor.Core.Configuration;
@@ -179,13 +180,13 @@ public class SettingsViewModel : INotifyPropertyChanged
     public string AccessKey
     {
         get => _accessKey;
-        set => SetProperty(ref _accessKey, value);
+        set => SetProperty(ref _accessKey, value ?? string.Empty);
     }
 
     public string IpWhitelist
     {
         get => _ipWhitelist;
-        set => SetProperty(ref _ipWhitelist, value);
+        set => SetProperty(ref _ipWhitelist, value ?? string.Empty);
     }
 
     public string LocalIpAddress
@@ -304,6 +305,20 @@ public class SettingsViewModel : INotifyPropertyChanged
         IsSaving = true;
         try
         {
+            if (EnableAccessKey)
+            {
+                var trimmedAccessKey = (AccessKey ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(trimmedAccessKey))
+                {
+                    trimmedAccessKey = GenerateAccessKey();
+                }
+
+                if (!string.Equals(AccessKey, trimmedAccessKey, StringComparison.Ordinal))
+                {
+                    AccessKey = trimmedAccessKey;
+                }
+            }
+
             var settings = new Dictionary<string, Dictionary<string, string>>
             {
                 [ConfigurationDefaults.Keys.Categories.Appearance] = new()
@@ -333,8 +348,8 @@ public class SettingsViewModel : INotifyPropertyChanged
                     [ConfigurationDefaults.Keys.System.StartWithWindows] = StartWithWindows.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.System.EnableLanAccess] = EnableLanAccess.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.System.EnableAccessKey] = EnableAccessKey.ToString().ToLower(),
-                    [ConfigurationDefaults.Keys.System.AccessKey] = AccessKey,
-                    [ConfigurationDefaults.Keys.System.IpWhitelist] = IpWhitelist
+                    [ConfigurationDefaults.Keys.System.AccessKey] = AccessKey ?? string.Empty,
+                    [ConfigurationDefaults.Keys.System.IpWhitelist] = IpWhitelist ?? string.Empty
                 }
             };
 
@@ -351,6 +366,22 @@ public class SettingsViewModel : INotifyPropertyChanged
         {
             IsSaving = false;
         }
+    }
+
+    private static string GenerateAccessKey()
+    {
+        var bytes = new byte[32];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(bytes);
+        }
+
+        var base64Url = Convert.ToBase64String(bytes)
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
+
+        return base64Url.Length > 32 ? base64Url[..32] : base64Url;
     }
 
     /// <summary>

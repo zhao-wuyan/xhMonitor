@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Settings } from 'lucide-react';
 import { LayoutProvider, useLayout } from './contexts/LayoutContext';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { useAdaptiveScroll } from './hooks/useAdaptiveScroll';
@@ -17,8 +18,9 @@ import { DiskWidget } from './components/DiskWidget';
 import { DraggableGrid } from './components/DraggableGrid';
 import { MobileNav } from './components/MobileNav';
 import { ProcessList } from './components/ProcessList';
+import { AccessKeyScreen } from './pages/AccessKeyScreen';
 
-function AppContent() {
+function AppShell() {
   const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
   const { config, loading: configLoading } = useMetricConfig();
   const { layoutState } = useLayout();
@@ -313,6 +315,15 @@ function AppContent() {
   );
 }
 
+function AppContent() {
+  const { requiresAccessKey, authEpoch } = useAuth();
+  if (requiresAccessKey) {
+    return <AccessKeyScreen />;
+  }
+
+  return <AppShell key={authEpoch} />;
+}
+
 function App() {
   const timeSeriesOptions = useMemo(
     () => ({
@@ -330,11 +341,13 @@ function App() {
   );
 
   return (
-    <LayoutProvider>
-      <TimeSeriesProvider options={timeSeriesOptions}>
-        <AppContent />
-      </TimeSeriesProvider>
-    </LayoutProvider>
+    <AuthProvider>
+      <LayoutProvider>
+        <TimeSeriesProvider options={timeSeriesOptions}>
+          <AppContent />
+        </TimeSeriesProvider>
+      </LayoutProvider>
+    </AuthProvider>
   );
 }
 

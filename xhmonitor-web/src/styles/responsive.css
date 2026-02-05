@@ -563,6 +563,59 @@ body.no-gradient .status-badge--offline {
   flex-wrap: wrap;
 }
 
+.access-key-screen {
+  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.18), transparent 55%),
+    radial-gradient(circle at 80% 30%, rgba(16, 185, 129, 0.16), transparent 55%),
+    linear-gradient(135deg, rgb(17 24 39), rgb(15 23 42));
+}
+
+.access-key-screen__content {
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.access-key-screen__title {
+  color: rgba(248, 250, 252, 0.92);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.access-key-screen__input {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--xh-color-glass-border);
+  color: var(--xh-color-text-primary);
+  padding: 14px 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 1rem;
+  outline: none;
+}
+
+.access-key-screen__input:focus {
+  border-color: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+.access-key-screen__hint {
+  color: var(--xh-color-text-secondary);
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 520px;
+}
+
 @media (max-width: 360px) {
   .settings-toggle-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

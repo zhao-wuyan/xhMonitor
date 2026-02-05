@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import * as signalR from '@microsoft/signalr';
 import type { DiskUsage, MetricsData, ProcessMetaData, ProcessInfo, SystemUsage } from '../types';
 import { METRICS_HUB_URL } from '../config/endpoints';
+import { getAccessKey } from '../config/accessKey';
 
 const HUB_URL = METRICS_HUB_URL;
 
@@ -28,7 +29,9 @@ export const useMetricsHub = () => {
 
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
-      .withUrl(HUB_URL)
+      .withUrl(HUB_URL, {
+        accessTokenFactory: () => getAccessKey(),
+      })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)
       .build();
@@ -52,6 +55,21 @@ export const useMetricsHub = () => {
         setError(null);
         console.log('SignalR Connected');
       } catch (err) {
+        try {
+          const unauthorized =
+            (typeof err === 'object' &&
+              err !== null &&
+              'statusCode' in err &&
+              (err as { statusCode?: number }).statusCode === 401) ||
+            (err instanceof Error && /401|unauthorized/i.test(err.message));
+
+          if (unauthorized) {
+            window.dispatchEvent(new Event('xh-auth-required'));
+          }
+        } catch {
+          // ignore
+        }
+
         setError(err instanceof Error ? err.message : 'Connection failed');
         console.error('SignalR Connection Error:', err);
         setTimeout(startConnection, 5000);

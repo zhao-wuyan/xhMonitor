@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -119,18 +120,60 @@ public sealed class WebServerService : IWebServerService
                     // 安全中间件（IP白名单 + 访问密钥验证）
                     if (securityConfig.EnableLanAccess)
                     {
-                        var compiledWhitelist = IpWhitelistMatcher.Parse(securityConfig.IpWhitelist);
-                        var expectedAccessKeyBytes = securityConfig.EnableAccessKey && !string.IsNullOrWhiteSpace(securityConfig.AccessKey)
-                            ? Encoding.UTF8.GetBytes(securityConfig.AccessKey)
-                            : null;
+                        var localIps = GetLocalInterfaceAddresses();
+                        var snapshotLock = new SemaphoreSlim(1, 1);
+                        SecuritySnapshot? snapshot = null;
+                        var snapshotAt = DateTimeOffset.MinValue;
+
+                        async Task<SecuritySnapshot> GetSnapshotAsync(CancellationToken ct)
+                        {
+                            var now = DateTimeOffset.UtcNow;
+                            if (snapshot != null && now - snapshotAt <= TimeSpan.FromMilliseconds(200))
+                            {
+                                return snapshot;
+                            }
+
+                            await snapshotLock.WaitAsync(ct).ConfigureAwait(false);
+                            try
+                            {
+                                now = DateTimeOffset.UtcNow;
+                                if (snapshot != null && now - snapshotAt <= TimeSpan.FromMilliseconds(200))
+                                {
+                                    return snapshot;
+                                }
+
+                                var cfg = await GetSecurityConfigAsync(ct).ConfigureAwait(false);
+                                var compiled = IpWhitelistMatcher.Parse(cfg.IpWhitelist);
+                                var expected = cfg.EnableAccessKey && !string.IsNullOrWhiteSpace(cfg.AccessKey)
+                                    ? Encoding.UTF8.GetBytes(cfg.AccessKey)
+                                    : null;
+
+                                snapshot = new SecuritySnapshot(cfg, compiled, expected);
+                                snapshotAt = now;
+                                return snapshot;
+                            }
+                            finally
+                            {
+                                snapshotLock.Release();
+                            }
+                        }
 
                         app.Use(async (context, next) =>
                         {
-                            // IP白名单检查
-                            if (compiledWhitelist.HasRules)
+                            var clientAddress = NormalizeClientIp(context.Connection.RemoteIpAddress);
+                            var isLocalRequest = clientAddress != null && IsLocalRequest(clientAddress, localIps);
+                            if (isLocalRequest)
                             {
-                                var clientAddress = NormalizeClientIp(context.Connection.RemoteIpAddress);
-                                if (clientAddress == null || !compiledWhitelist.IsAllowed(clientAddress))
+                                await next();
+                                return;
+                            }
+
+                            var current = await GetSnapshotAsync(context.RequestAborted).ConfigureAwait(false);
+
+                            // IP白名单检查
+                            if (current.CompiledWhitelist.HasRules)
+                            {
+                                if (clientAddress == null || !current.CompiledWhitelist.IsAllowed(clientAddress))
                                 {
                                     Debug.WriteLine($"Access denied for IP: {context.Connection.RemoteIpAddress}");
                                     context.Response.StatusCode = 403;
@@ -140,10 +183,21 @@ public sealed class WebServerService : IWebServerService
                             }
 
                             // 访问密钥验证
-                            if (expectedAccessKeyBytes != null)
+                            // 仅保护 API 与 SignalR 反代入口，静态资源允许匿名访问（否则浏览器无法在首个 HTML 请求携带 header）
+                            var isProtectedPath = context.Request.Path.StartsWithSegments("/api")
+                                                  || context.Request.Path.StartsWithSegments("/hubs");
+                            if (isProtectedPath && current.Config.EnableAccessKey && !HttpMethods.IsOptions(context.Request.Method))
                             {
-                                var providedKey = context.Request.Headers["X-Access-Key"].ToString();
-                                if (!IsAccessKeyValid(providedKey, expectedAccessKeyBytes))
+                                if (current.ExpectedAccessKeyBytes == null)
+                                {
+                                    Debug.WriteLine("Access denied: access key enabled but not configured.");
+                                    context.Response.StatusCode = 503;
+                                    await context.Response.WriteAsync("Access denied: Access key is enabled but not configured");
+                                    return;
+                                }
+
+                                var providedKey = GetProvidedAccessKey(context);
+                                if (!IsAccessKeyValid(providedKey, current.ExpectedAccessKeyBytes))
                                 {
                                     Debug.WriteLine($"Access denied: Invalid access key from {context.Connection.RemoteIpAddress}");
                                     context.Response.StatusCode = 401;
@@ -302,13 +356,6 @@ public sealed class WebServerService : IWebServerService
                 }
             }
 
-            // 如果启用访问密钥但密钥为空，生成随机密钥
-            if (config.EnableAccessKey && string.IsNullOrWhiteSpace(config.AccessKey))
-            {
-                config.AccessKey = GenerateAccessKey();
-                Debug.WriteLine("Generated access key.");
-            }
-
             return config;
         }
         catch (Exception ex)
@@ -345,19 +392,82 @@ public sealed class WebServerService : IWebServerService
                && CryptographicOperations.FixedTimeEquals(providedBytes, expectedKeyBytes);
     }
 
-    private static string GenerateAccessKey()
+    private static string GetProvidedAccessKey(HttpContext context)
     {
-        var bytes = new byte[32];
-        using (var rng = RandomNumberGenerator.Create())
+        var providedKey = context.Request.Headers["X-Access-Key"].ToString();
+        if (!string.IsNullOrWhiteSpace(providedKey))
         {
-            rng.GetBytes(bytes);
+            return providedKey.Trim();
         }
-        var base64Url = Convert.ToBase64String(bytes)
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
 
-        return base64Url.Length > 32 ? base64Url[..32] : base64Url;
+        var authHeader = context.Request.Headers["Authorization"].ToString();
+        if (!string.IsNullOrWhiteSpace(authHeader)
+            && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            var token = authHeader["Bearer ".Length..].Trim();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                return token;
+            }
+        }
+
+        var accessToken = context.Request.Query["access_token"].ToString();
+        return accessToken?.Trim() ?? string.Empty;
+    }
+
+    private static HashSet<IPAddress> GetLocalInterfaceAddresses()
+    {
+        var addresses = new HashSet<IPAddress>();
+        try
+        {
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (ni.OperationalStatus != OperationalStatus.Up)
+                {
+                    continue;
+                }
+
+                var props = ni.GetIPProperties();
+                foreach (var addr in props.UnicastAddresses)
+                {
+                    var ip = addr.Address;
+                    if (ip == null)
+                    {
+                        continue;
+                    }
+
+                    if (ip.IsIPv4MappedToIPv6)
+                    {
+                        ip = ip.MapToIPv4();
+                    }
+
+                    addresses.Add(ip);
+                }
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+
+        addresses.Add(IPAddress.Loopback);
+        addresses.Add(IPAddress.IPv6Loopback);
+        return addresses;
+    }
+
+    private static bool IsLocalRequest(IPAddress remoteIp, HashSet<IPAddress> localIps)
+    {
+        if (IPAddress.IsLoopback(remoteIp))
+        {
+            return true;
+        }
+
+        if (remoteIp.IsIPv4MappedToIPv6)
+        {
+            remoteIp = remoteIp.MapToIPv4();
+        }
+
+        return localIps.Contains(remoteIp);
     }
 
     private class SecurityConfig
@@ -366,5 +476,19 @@ public sealed class WebServerService : IWebServerService
         public bool EnableAccessKey { get; set; }
         public string AccessKey { get; set; } = "";
         public string IpWhitelist { get; set; } = "";
+    }
+
+    private sealed class SecuritySnapshot
+    {
+        public SecuritySnapshot(SecurityConfig config, IpWhitelistMatcher compiledWhitelist, byte[]? expectedAccessKeyBytes)
+        {
+            Config = config;
+            CompiledWhitelist = compiledWhitelist;
+            ExpectedAccessKeyBytes = expectedAccessKeyBytes;
+        }
+
+        public SecurityConfig Config { get; }
+        public IpWhitelistMatcher CompiledWhitelist { get; }
+        public byte[]? ExpectedAccessKeyBytes { get; }
     }
 }
