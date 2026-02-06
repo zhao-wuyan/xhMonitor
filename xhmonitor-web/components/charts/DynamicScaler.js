@@ -90,6 +90,9 @@ class DynamicScaler {
   }
 }
 
+// ES6 默认导出
+export default DynamicScaler;
+
 // 导出为全局变量（用于浏览器环境）
 if (typeof window !== 'undefined') {
   window.DynamicScaler = DynamicScaler;

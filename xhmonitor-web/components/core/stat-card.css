@@ -134,6 +134,17 @@
   margin-top: 6px;
 }
 
+/* 位置修正：用于动态翻转，避免标记被裁剪（例如谷值贴底） */
+.xh-chart-peak-marker.pos-top {
+  transform: translate(-50%, -100%);
+  margin-top: -6px;
+}
+
+.xh-chart-peak-marker.pos-bottom {
+  transform: translate(-50%, 0);
+  margin-top: 6px;
+}
+
 .xh-chart-peak-marker.hidden {
   opacity: 0;
 }

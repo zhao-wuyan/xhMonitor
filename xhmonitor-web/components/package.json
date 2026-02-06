@@ -1,6 +1,7 @@
 {
   "name": "@xhmonitor/components",
   "version": "1.0.0",
+  "type": "module",
   "description": "XhMonitor 组件库 - 玻璃拟态设计的实时数据可视化组件",
   "main": "index.js",
   "keywords": [

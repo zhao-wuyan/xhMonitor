@@ -13,6 +13,14 @@
  * chart.draw(dataArray, 100);
  */
 
+import {
+  DEFAULT_PEAK_VALLEY_CONFIG,
+  computeSeriesStats,
+  filterSignificantExtrema,
+  findExtremaCandidates,
+  selectMarkerIdsToKeep,
+} from './peakValley.js';
+
 class MiniChart {
   constructor(canvasId, containerId, color, formatFn) {
     this.canvas = document.getElementById(canvasId);
@@ -26,6 +34,7 @@ class MiniChart {
     this.color = color;
     this.formatFn = formatFn || (v => v.toFixed(0) + '%');
     this.markers = []; // 存储峰谷标记 { index, value, type: 'max'|'min', element }
+    this.markerId = 0;
 
     this.resize();
 
@@ -120,57 +129,12 @@ class MiniChart {
    * @param {Array<Object>} points - 坐标点数组
    */
   updateMarkers(data, points) {
-    // 使用改进的算法：只保留显著的峰谷，遵循 峰-谷-峰-谷 交替规律
-    const validData = data.filter(v => v > 0);
-    if (validData.length < 3) return;
+    const finiteCount = data.reduce((acc, v) => (Number.isFinite(v) ? acc + 1 : acc), 0);
+    if (finiteCount < 3) return;
 
-    // 找出所有候选极值点
-    const candidates = [];
-    for (let i = 1; i < data.length - 1; i++) {
-      const prev = data[i - 1];
-      const curr = data[i];
-      const next = data[i + 1];
-
-      if (curr > prev && curr > next) {
-        candidates.push({ index: i, value: curr, type: 'max' });
-      } else if (curr < prev && curr < next) {
-        candidates.push({ index: i, value: curr, type: 'min' });
-      }
-    }
-
-    // 过滤：确保峰谷交替，且变化幅度足够大
-    const minAmplitude = 5;
-    const filtered = [];
-    let lastType = null;
-    let lastValue = null;
-
-    for (const c of candidates) {
-      // 确保峰谷交替
-      if (lastType === c.type) {
-        // 同类型：保留更极端的那个
-        if (filtered.length > 0) {
-          const last = filtered[filtered.length - 1];
-          if ((c.type === 'max' && c.value > last.value) ||
-              (c.type === 'min' && c.value < last.value)) {
-            filtered[filtered.length - 1] = c;
-            lastValue = c.value;
-          }
-        }
-        continue;
-      }
-
-      // 检查与上一个极值的幅度差
-      if (lastValue !== null && Math.abs(c.value - lastValue) < minAmplitude) {
-        continue;
-      }
-
-      filtered.push(c);
-      lastType = c.type;
-      lastValue = c.value;
-    }
-
-    // 清理已移出视图的标记
-    this.markers = this.markers.filter(m => {
+    // 1) 对齐最新窗口：数据每次 pushValue 都会左移 1 格，因此标记索引同步左移
+    this.markers = this.markers.filter((m) => {
+      m.index -= 1;
       if (m.index < 0) {
         m.element.remove();
         return false;
@@ -178,50 +142,162 @@ class MiniChart {
       return true;
     });
 
-    // 更新现有标记的索引（数据左移）
-    this.markers.forEach(m => {
-      m.index--;
-    });
+    const stats = computeSeriesStats(data, DEFAULT_PEAK_VALLEY_CONFIG);
 
-    // 添加新的极值标记（只添加右侧新出现的）
-    filtered.forEach(ext => {
-      // 检查是否已存在相近的标记
-      const exists = this.markers.some(m =>
-        Math.abs(m.index - ext.index) < 3 && m.type === ext.type
+    // 2) 仅在右侧新数据区域插入“显著”的新峰谷，减少噪声型标注堆叠
+    const candidates = findExtremaCandidates(data);
+    const significant = filterSignificantExtrema(candidates, data, stats, DEFAULT_PEAK_VALLEY_CONFIG);
+
+    const rightMostCount = 5;
+    const rightStartIndex = Math.max(1, data.length - rightMostCount);
+    const newCandidates = significant.filter((e) => e.index >= rightStartIndex);
+
+    // 每种类型只插入一个最显著的（避免一次出现多个造成重叠）
+    const bestByType = { max: null, min: null };
+    for (const e of newCandidates) {
+      const prev = bestByType[e.type];
+      if (!prev || e.prominence > prev.prominence) bestByType[e.type] = e;
+    }
+
+    for (const e of Object.values(bestByType)) {
+      if (!e) continue;
+
+      // 去重：同类型同索引不重复插入
+      const hasSame = this.markers.some((m) => m.type === e.type && m.index === e.index);
+      if (hasSame) continue;
+
+      // 聚类合并：与同类型附近标记非常接近且不更显著，则跳过
+      const clusterIndexDistance = 6;
+      const nearby = this.markers.filter(
+        (m) => m.type === e.type && Math.abs(m.index - e.index) <= clusterIndexDistance
       );
-      if (!exists && ext.index > data.length - 5) {
-        // 新峰出现时，移除所有比它小的峰；新谷出现时，移除所有比它大的谷
-        this.markers = this.markers.filter(m => {
-          if (m.type === ext.type) {
-            const shouldRemove = (ext.type === 'max' && ext.value > m.value) ||
-                                 (ext.type === 'min' && ext.value < m.value);
-            if (shouldRemove) {
-              m.element.remove();
-              return false;
-            }
-          }
-          return true;
-        });
-        this.addMarker(ext);
+      if (nearby.length > 0) {
+        const bestExisting = nearby.reduce((best, cur) =>
+          (cur.prominence ?? 0) > (best.prominence ?? 0) ? cur : best
+        );
+        const existingProminence = bestExisting.prominence ?? 0;
+        if (existingProminence > 0 && e.prominence <= existingProminence * 0.9) continue;
       }
+
+      this.addMarker(e);
+    }
+
+    // 3) 视觉裁剪：只保留少量、互不拥挤、且位于可视区域的标记
+    const keepIds = new Set(selectMarkerIdsToKeep(this.markers, points, DEFAULT_PEAK_VALLEY_CONFIG));
+    this.markers = this.markers.filter((m) => {
+      if (keepIds.has(m.id)) return true;
+      m.element.remove();
+      return false;
     });
 
-    // 更新所有标记的位置
-    const { width } = this.canvas;
+    // 4) 更新位置：防裁剪（翻转/夹取）+ 最终防重叠（Drop）
+    this.layoutMarkers(data, points);
+  }
 
-    this.markers.forEach(m => {
+  /**
+   * 更新标记位置与可视性（防裁剪 + 防重叠）
+   * @param {Array<number>} data - 数据数组
+   * @param {Array<Object>} points - 坐标点数组
+   */
+  layoutMarkers(data, points) {
+    const { width, height } = this.canvas;
+    const containerWidth = this.container.clientWidth || width;
+    const containerHeight = this.container.clientHeight || height;
+
+    const edgePadding = 2;
+    const markerMargin = 6;
+
+    // 第一遍：设置文本、夹取到容器内，并在贴边时翻转位置，避免被裁剪
+    this.markers.forEach((m) => {
       if (m.index < 0 || m.index >= points.length) return;
 
       const pt = points[m.index];
+      const el = m.element;
 
-      m.element.style.left = pt.x + 'px';
-      m.element.style.top = pt.y + 'px';
-      m.element.innerText = this.formatFn(data[m.index]);
+      const value = Number.isFinite(data[m.index]) ? data[m.index] : m.value;
+      el.innerText = this.formatFn(value);
 
-      // 左侧50%渐隐区域内的标记也渐隐
+      el.classList.remove('pos-top', 'pos-bottom');
+
+      const markerWidth = el.offsetWidth;
+      const markerHeight = el.offsetHeight;
+
+      let left = pt.x;
+      const minLeft = markerWidth / 2 + edgePadding;
+      const maxLeft = containerWidth - markerWidth / 2 - edgePadding;
+      left = Number.isFinite(left) ? Math.min(maxLeft, Math.max(minLeft, left)) : minLeft;
+
+      const y = pt.y;
+      let position = m.type === 'min' ? 'bottom' : 'top';
+
+      const topIfTop = y - markerMargin - markerHeight;
+      const topIfBottom = y + markerMargin;
+
+      if (position === 'bottom') {
+        if (topIfBottom + markerHeight > containerHeight - edgePadding) position = 'top';
+      } else {
+        if (topIfTop < edgePadding) position = 'bottom';
+      }
+
+      el.classList.add(position === 'top' ? 'pos-top' : 'pos-bottom');
+      el.style.left = left + 'px';
+      el.style.top = y + 'px';
+
+      // 左侧50%渐隐区域内的标记也渐隐（按曲线点的真实 x 计算）
       const fadeRatio = Math.min(1, pt.x / (width * 0.5));
-      m.element.style.opacity = fadeRatio;
+      el.style.opacity = fadeRatio;
     });
+
+    // 第二遍：最终防重叠（按显著性优先保留）
+    const containerRect = this.container.getBoundingClientRect();
+    const items = this.markers
+      .filter((m) => m.index >= 0 && m.index < points.length)
+      .map((m) => {
+        const rect = m.element.getBoundingClientRect();
+        const recency = m.index / Math.max(1, points.length - 1);
+        const priority =
+          (Number.isFinite(m.prominence) ? m.prominence : 0) *
+          (1 + DEFAULT_PEAK_VALLEY_CONFIG.recencyWeight * recency);
+
+        return {
+          marker: m,
+          rect: {
+            left: rect.left - containerRect.left,
+            right: rect.right - containerRect.left,
+            top: rect.top - containerRect.top,
+            bottom: rect.bottom - containerRect.top,
+          },
+          priority,
+        };
+      })
+      .sort((a, b) => b.priority - a.priority);
+
+    const kept = [];
+    const droppedIds = new Set();
+    const overlapPadding = 2;
+
+    const overlaps = (a, b) => {
+      return !(
+        a.right + overlapPadding < b.left ||
+        a.left - overlapPadding > b.right ||
+        a.bottom + overlapPadding < b.top ||
+        a.top - overlapPadding > b.bottom
+      );
+    };
+
+    for (const item of items) {
+      const hit = kept.some((k) => overlaps(item.rect, k.rect));
+      if (hit) droppedIds.add(item.marker.id);
+      else kept.push(item);
+    }
+
+    if (droppedIds.size > 0) {
+      this.markers = this.markers.filter((m) => {
+        if (!droppedIds.has(m.id)) return true;
+        m.element.remove();
+        return false;
+      });
+    }
   }
 
   /**
@@ -230,15 +306,18 @@ class MiniChart {
    */
   addMarker(ext) {
     const el = document.createElement('div');
-    el.className = 'xh-chart-peak-marker ' + ext.type;
+    el.className =
+      'xh-chart-peak-marker ' + ext.type + ' ' + (ext.type === 'min' ? 'pos-bottom' : 'pos-top');
     el.style.color = ext.type === 'max' ? this.color : '#94a3b8';
     el.innerText = this.formatFn(ext.value);
     this.container.appendChild(el);
 
     this.markers.push({
+      id: ++this.markerId,
       index: ext.index,
       value: ext.value,
       type: ext.type,
+      prominence: ext.prominence ?? 0,
       element: el
     });
   }

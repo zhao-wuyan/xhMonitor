@@ -1,0 +1,52 @@
+{
+  "session_id": "ANL-web-peak-valley-label-2026-02-05",
+  "topic": "web 端监控卡片曲线峰谷值标注重叠、截断，优化峰谷标注算法与布局",
+  "completed": "2026-02-05T23:25:56.6976316Z",
+  "total_rounds": 1,
+  "summary": "已将迷你曲线的峰谷标注从“固定阈值 + 累积标记”升级为“显著性（prominence）+ 噪声阈值 + 可视区裁剪 + 最小像素间距 + 动态翻转防裁剪”。标注数量显著减少，重叠会被主动裁剪，谷值贴底不再被 overflow 裁掉。",
+  "key_conclusions": [
+    {
+      "point": "用 prominence（峰谷显著性）替代固定幅度阈值，可更稳定地过滤噪声型局部极值，让峰谷更具代表性。",
+      "evidence": "xhmonitor-web/components/charts/peakValley.js",
+      "confidence": "high"
+    },
+    {
+      "point": "按可视区（keepAfterXRatio）+ 每种类型数量上限（maxPerType）+ 同类型最小像素间距（minXDistancePx）裁剪，可明显降低标签密度并缓解重叠。",
+      "evidence": "xhmonitor-web/components/charts/peakValley.js + xhmonitor-web/components/charts/MiniChart.js",
+      "confidence": "high"
+    },
+    {
+      "point": "对标签进行水平夹取（clamp）与贴边动态翻转（pos-top/pos-bottom），可避免谷值贴底、峰值贴顶时被裁剪。",
+      "evidence": "xhmonitor-web/components/charts/MiniChart.js + xhmonitor-web/components/core/stat-card.css",
+      "confidence": "high"
+    },
+    {
+      "point": "最终用包围盒碰撞检测做兜底 Drop，可在极端文本宽度/密集波动下继续保证“不会互相遮挡”。",
+      "evidence": "xhmonitor-web/components/charts/MiniChart.js",
+      "confidence": "medium"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "与产品确认默认展示策略：峰/谷各保留 1 个还是 2 个；平稳曲线是否允许不显示峰谷标签。",
+      "rationale": "数量策略直接影响“信息量 vs. 美观”的平衡。",
+      "priority": "high"
+    },
+    {
+      "action": "如需更强的“视觉可控”，可在 NET 等长文本场景下增加 max-width + ellipsis（可配置开关）。",
+      "rationale": "当前通过最小间距与重叠 Drop 兜底，但极长文本仍可能占用较大空间。",
+      "priority": "low"
+    }
+  ],
+  "open_questions": [
+    "prominenceNoiseFactor / prominenceRangeFactor / keepAfterXRatio / minXDistancePx 是否需要按指标可配置？",
+    "是否需要把左侧信息区视为不可覆盖区域（避免标签压到大号数值上）？"
+  ],
+  "follow_up_suggestions": [
+    {
+      "type": "task",
+      "summary": "添加一个可视化对比页（输入固定数据集）用于快速回归峰谷标注的重叠/裁剪问题。"
+    }
+  ]
+}
+

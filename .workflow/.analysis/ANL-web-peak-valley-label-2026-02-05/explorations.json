@@ -1,0 +1,41 @@
+{
+  "session_id": "ANL-web-peak-valley-label-2026-02-05",
+  "timestamp": "2026-02-05T23:25:56.6976316Z",
+  "topic": "web 端监控卡片曲线峰谷值标注重叠、截断，优化峰谷标注算法与布局",
+  "dimensions": ["implementation", "design"],
+  "sources": [
+    {
+      "type": "codebase",
+      "summary": "卡片迷你曲线由自研 Canvas 组件 MiniChart 绘制，峰谷标记是绝对定位的 DOM 标签，样式与容器裁剪由 stat-card.css 控制。",
+      "files": [
+        "xhmonitor-web/components/charts/MiniChart.js",
+        "xhmonitor-web/components/core/stat-card.css",
+        "xhmonitor-web/src/components/ChartCanvas.tsx"
+      ]
+    },
+    {
+      "type": "screenshot",
+      "summary": "峰谷标注大量重叠；低谷标注贴近底部时出现被裁剪（只显示一半）。"
+    },
+    {
+      "type": "docs",
+      "summary": "组件库文档记录了“候选极值 + 交替过滤 + 生命周期管理”的原始意图，但未处理标注避让/防裁剪。",
+      "files": ["xhmonitor-web/components/docs/README.md"]
+    }
+  ],
+  "key_findings": [
+    "重叠根因：标记数量无上限，且没有基于像素距离/包围盒的避让；同类型仅做了很弱的去重（索引差 < 3）。",
+    "代表性不足：旧逻辑依赖固定阈值与“新峰只删除更小峰”的策略，会保留大量相邻且值相近的峰/谷，视觉上显得杂乱。",
+    "裁剪根因：谷值标签默认在点下方（CSS transform + margin），而卡片容器 .xh-stat-card 设置了 overflow: hidden，导致贴底时被裁剪。",
+    "现状实现可扩展：峰谷算法在 MiniChart.updateMarkers 内部，可抽成纯函数并补充单元测试。"
+  ],
+  "discussion_points": [
+    "每张卡片峰/谷各保留 1 个还是 2 个更符合产品预期？平稳曲线是否允许不显示峰谷标签？",
+    "是否需要把左侧信息区（150px）也视为“不可覆盖区域”，避免标签压到大号数值上？"
+  ],
+  "open_questions": [
+    "不同指标（CPU%、RAM/VRAM、NET、PWR）在数值尺度与格式化上差异较大，阈值策略是否需要按指标配置？",
+    "极端情况下（单位字符串很长）是否需要对标签做 max-width + ellipsis，还是必须完整显示？"
+  ]
+}
+

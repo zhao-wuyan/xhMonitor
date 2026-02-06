@@ -7,8 +7,10 @@
  */
 
 // 导出图表组件
-export { default as MiniChart } from './charts/MiniChart.js';
-export { default as DynamicScaler } from './charts/DynamicScaler.js';
+import MiniChart from './charts/MiniChart.js';
+import DynamicScaler from './charts/DynamicScaler.js';
+
+export { MiniChart, DynamicScaler };
 
 // 组件库信息
 export const version = '1.0.0';
