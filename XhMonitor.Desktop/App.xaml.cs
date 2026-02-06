@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using XhMonitor.Desktop.Localization;
 using XhMonitor.Desktop.Services;
 using XhMonitor.Desktop.ViewModels;
 using WpfApplication = System.Windows.Application;
@@ -175,18 +177,10 @@ public partial class App : WpfApplication
         // 检查 .NET 版本
         if (runtimeVersion.Major < 8)
         {
+            var prompt = RuntimeDependencyPrompts.DotNet8OrHigherRequired(runtimeVersion, CultureInfo.CurrentUICulture);
             var result = System.Windows.MessageBox.Show(
-                $"当前 .NET 版本：{runtimeVersion}\n" +
-                "XhMonitor 需要 .NET 8.0 或更高版本。\n\n" +
-                "【重要】请下载并安装 .NET Desktop Runtime 8.0：\n" +
-                "https://dotnet.microsoft.com/download/dotnet/8.0\n\n" +
-                "安装步骤：\n" +
-                "1. 点击上方链接访问官方下载页\n" +
-                "2. 找到 \".NET Desktop Runtime 8.0.x\" 部分\n" +
-                "3. 下载 Windows x64 版本（约 55 MB）\n" +
-                "4. 安装后重启电脑\n\n" +
-                "是否立即打开下载页面？",
-                "运行环境检测",
+                prompt.Message,
+                prompt.Title,
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -196,7 +190,7 @@ public partial class App : WpfApplication
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = "https://dotnet.microsoft.com/download/dotnet/8.0",
+                        FileName = prompt.DownloadUrl,
                         UseShellExecute = true
                     });
                 }
@@ -223,18 +217,10 @@ public partial class App : WpfApplication
         // Framework-Dependent 版本（轻量级），需要检查系统是否安装了 Desktop Runtime
         if (!CheckDesktopRuntimeInstalled())
         {
+            var prompt = RuntimeDependencyPrompts.DesktopRuntimeMissing(CultureInfo.CurrentUICulture);
             var result = System.Windows.MessageBox.Show(
-                "检测到您使用的是轻量级版本，需要安装 .NET Desktop Runtime。\n\n" +
-                "【重要】请下载并安装 .NET Desktop Runtime 8.0：\n" +
-                "https://dotnet.microsoft.com/download/dotnet/8.0\n\n" +
-                "安装步骤：\n" +
-                "1. 点击上方链接访问官方下载页\n" +
-                "2. 找到 \".NET Desktop Runtime 8.0.x\" 部分\n" +
-                "3. 下载 Windows x64 版本（约 55 MB）\n" +
-                "4. 安装后重启电脑\n\n" +
-                "注意：不要下载 .NET Runtime（基础版），必须下载 Desktop Runtime！\n\n" +
-                "是否立即打开下载页面？",
-                "缺少 Desktop Runtime",
+                prompt.Message,
+                prompt.Title,
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -244,7 +230,7 @@ public partial class App : WpfApplication
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = "https://dotnet.microsoft.com/download/dotnet/8.0",
+                        FileName = prompt.DownloadUrl,
                         UseShellExecute = true
                     });
                 }

@@ -110,7 +110,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; I
 
 [Run]
 ; 安装完成后运行
-Filename: "{app}\Desktop\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent runascurrentuser
+Filename: "{app}\Desktop\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent runascurrentuser; Check: CanLaunchDesktopApp
 
 [UninstallRun]
 ; 卸载前停止服务
@@ -124,12 +124,188 @@ Type: filesandordirs; Name: "{app}\Service\*.db-shm"
 Type: filesandordirs; Name: "{app}\Service\*.db-wal"
 
 [Code]
+var
+  RuntimePromptShown: Boolean;
+
 // 强制终止进程
 procedure KillProcess(ProcessName: String);
 var
   ResultCode: Integer;
 begin
   Exec('taskkill.exe', '/F /IM ' + ProcessName, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function IsChineseSystemLanguage(): Boolean;
+var
+  LangId: Integer;
+begin
+  try
+    LangId := GetUILanguage;
+  except
+    LangId := 0;
+  end;
+
+  // PRIMARYLANGID(LANGID) = LANGID & 0x3FF，中文主语言 ID = 0x04
+  Result := (LangId and $3FF) = $04;
+end;
+
+function TryGetDotNetInstallLocationX64(var InstallLocation: String): Boolean;
+begin
+  // 优先读取 64 位 .NET 安装路径（支持自定义安装目录）
+  InstallLocation := '';
+  Result := IsWin64 and RegQueryStringValue(HKLM64, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64', 'InstallLocation', InstallLocation);
+end;
+
+function HasDesktopRuntime8AtBase(const BasePath: String): Boolean;
+var
+  SearchPattern: String;
+  FindRec: TFindRec;
+begin
+  // 如果连 dotnet.exe 都不存在，则直接判定未安装（避免误扫）
+  if not FileExists(AddBackslash(BasePath) + 'dotnet.exe') then
+  begin
+    Result := False;
+    exit;
+  end;
+
+  SearchPattern := AddBackslash(BasePath) + 'shared\Microsoft.WindowsDesktop.App\8.*';
+
+  // 通过共享框架目录判断是否已安装 Desktop Runtime 8.x
+  if FindFirst(SearchPattern, FindRec) then
+  begin
+    Result := True;
+    FindClose(FindRec);
+  end
+  else
+  begin
+    Result := False;
+  end;
+end;
+
+function IsDotNetDesktopRuntime8Installed(): Boolean;
+var
+  InstallLocation: String;
+begin
+  // 先用注册表的 x64 安装路径（支持自定义目录）
+  if TryGetDotNetInstallLocationX64(InstallLocation) then
+  begin
+    if HasDesktopRuntime8AtBase(InstallLocation) then
+    begin
+      Result := True;
+      exit;
+    end;
+  end;
+
+  // 再检查常见默认路径。注意：安装器可能为 32 位，此时 {pf} 会指向 Program Files (x86)，因此需要显式检查 {pf64}。
+  if IsWin64 then
+  begin
+    if HasDesktopRuntime8AtBase(ExpandConstant('{pf64}\dotnet')) then
+    begin
+      Result := True;
+      exit;
+    end;
+
+    if HasDesktopRuntime8AtBase(ExpandConstant('{pf32}\dotnet')) then
+    begin
+      Result := True;
+      exit;
+    end;
+  end
+  else
+  begin
+    if HasDesktopRuntime8AtBase(ExpandConstant('{pf}\dotnet')) then
+    begin
+      Result := True;
+      exit;
+    end;
+  end;
+
+  // 兜底：有些环境可能为“用户级 dotnet”安装
+  if HasDesktopRuntime8AtBase(ExpandConstant('{localappdata}\Microsoft\dotnet')) then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  Result := False;
+end;
+
+function IsSelfContainedPackageInstalled(): Boolean;
+begin
+  // Self-Contained 版本会包含 hostfxr.dll（不依赖系统安装的 .NET Desktop Runtime）
+  Result := FileExists(ExpandConstant('{app}\Desktop\hostfxr.dll'));
+end;
+
+procedure OpenUrl(const Url: String);
+var
+  ResultCode: Integer;
+begin
+  ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;
+
+procedure ShowRuntimeMissingPrompt();
+var
+  TitleText: String;
+  MessageText: String;
+  DotNetUrl: String;
+  FullInstallerUrl: String;
+  ResultId: Integer;
+begin
+  if RuntimePromptShown then
+    exit;
+
+  RuntimePromptShown := True;
+  DotNetUrl := 'https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/windowsdesktop-runtime-8.0.23-win-x64.exe';
+  FullInstallerUrl := '{#MyAppURL}/releases';
+
+  if IsChineseSystemLanguage() then
+  begin
+    TitleText := '缺少运行环境';
+    MessageText :=
+      '要运行此应用程序，你必须安装或更新 .NET。' + #13#10 + #13#10 +
+      '当前安装包不带运行环境（.NET Desktop Runtime）。' + #13#10 +
+      '检测到你的系统缺少相关运行环境，无法运行 XhMonitor。' + #13#10 + #13#10 +
+      '你需要安装运行环境，或者下载包含运行环境的完整安装包。' + #13#10 + #13#10 +
+      '运行环境下载：' + #13#10 + DotNetUrl + #13#10 + #13#10 +
+      '完整安装包下载：' + #13#10 + FullInstallerUrl + #13#10 + #13#10 +
+      '是否立即打开运行环境下载页面？';
+  end
+  else
+  begin
+    TitleText := 'Missing runtime';
+    MessageText :=
+      'You must install or update .NET to run this application.' + #13#10 + #13#10 +
+      'This installer does not include the runtime (.NET Desktop Runtime).' + #13#10 +
+      'Your system is missing the required runtime, so XhMonitor cannot run.' + #13#10 + #13#10 +
+      'Install the runtime, or download the full installer that includes the runtime (self-contained).' + #13#10 + #13#10 +
+      'Runtime download:' + #13#10 + DotNetUrl + #13#10 + #13#10 +
+      'Full installer download:' + #13#10 + FullInstallerUrl + #13#10 + #13#10 +
+      'Open the runtime download page now?';
+  end;
+
+  ResultId := MsgBox(MessageText, mbInformation, MB_YESNO);
+  if ResultId = IDYES then
+  begin
+    OpenUrl(DotNetUrl);
+  end;
+end;
+
+function CanLaunchDesktopApp(): Boolean;
+begin
+  if IsSelfContainedPackageInstalled() then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if IsDotNetDesktopRuntime8Installed() then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  ShowRuntimeMissingPrompt();
+  Result := False;
 end;
 
 // 安装前停止旧服务（在安装目录确定后）
@@ -151,6 +327,15 @@ begin
     KillProcess('XhMonitor.Service.exe');
     KillProcess('XhMonitor.Desktop.exe');
     Sleep(1000);
+  end;
+
+  // 精简版（不带运行环境）在运行前给出明确提示，避免弹出 .NET host 默认错误提示
+  if CurStep = ssPostInstall then
+  begin
+    if (not IsSelfContainedPackageInstalled()) and (not IsDotNetDesktopRuntime8Installed()) then
+    begin
+      ShowRuntimeMissingPrompt();
+    end;
   end;
 end;
 
