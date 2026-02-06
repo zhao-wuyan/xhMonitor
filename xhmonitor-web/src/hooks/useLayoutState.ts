@@ -42,6 +42,7 @@ export interface LayoutState {
   themeColors: ThemeColors;
   diskPosition: DiskPosition;
   dragMode: DragMode;
+  showPeakValleyMarkers: boolean;
 }
 
 export type LayoutStatePatch = Omit<
@@ -89,6 +90,7 @@ const DEFAULT_LAYOUT_STATE: LayoutState = {
   },
   diskPosition: 'left',
   dragMode: 'sort',
+  showPeakValleyMarkers: true,
 };
 
 const canUseStorage = () =>
@@ -184,6 +186,10 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
     },
     diskPosition,
     dragMode,
+    showPeakValleyMarkers: toBooleanValue(
+      state.showPeakValleyMarkers,
+      DEFAULT_LAYOUT_STATE.showPeakValleyMarkers
+    ),
   };
 };
 
@@ -209,6 +215,7 @@ const mergeLayoutState = (state: LayoutState, patch: LayoutStatePatch): LayoutSt
     },
     diskPosition: patch.diskPosition ?? state.diskPosition,
     dragMode: patch.dragMode ?? state.dragMode,
+    showPeakValleyMarkers: patch.showPeakValleyMarkers ?? state.showPeakValleyMarkers,
   });
 };
 
@@ -264,6 +271,10 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
     },
     diskPosition: toDiskPosition(stateValue.diskPosition, DEFAULT_LAYOUT_STATE.diskPosition),
     dragMode: toDragMode(stateValue.dragMode, DEFAULT_LAYOUT_STATE.dragMode),
+    showPeakValleyMarkers: toBooleanValue(
+      stateValue.showPeakValleyMarkers,
+      DEFAULT_LAYOUT_STATE.showPeakValleyMarkers
+    ),
   };
 
   return normalizeLayoutState(candidate);
@@ -330,6 +341,7 @@ export const useLayoutState = () => {
         themeColors: { ...DEFAULT_LAYOUT_STATE.themeColors },
         diskPosition: DEFAULT_LAYOUT_STATE.diskPosition,
         dragMode: DEFAULT_LAYOUT_STATE.dragMode,
+        showPeakValleyMarkers: DEFAULT_LAYOUT_STATE.showPeakValleyMarkers,
       })
     );
   }, []);

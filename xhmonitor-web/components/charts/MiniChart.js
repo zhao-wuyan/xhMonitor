@@ -18,6 +18,7 @@ import {
   computeSeriesStats,
   filterSignificantExtrema,
   findExtremaCandidates,
+  pickFallbackMarker,
   selectMarkerIdsToKeep,
 } from './peakValley.js';
 
@@ -35,6 +36,7 @@ class MiniChart {
     this.formatFn = formatFn || (v => v.toFixed(0) + '%');
     this.markers = []; // 存储峰谷标记 { index, value, type: 'max'|'min', element }
     this.markerId = 0;
+    this.markersEnabled = true;
 
     this.resize();
 
@@ -129,8 +131,30 @@ class MiniChart {
    * @param {Array<Object>} points - 坐标点数组
    */
   updateMarkers(data, points) {
-    const finiteCount = data.reduce((acc, v) => (Number.isFinite(v) ? acc + 1 : acc), 0);
-    if (finiteCount < 3) return;
+    if (!this.markersEnabled) {
+      this.clearMarkers();
+      return;
+    }
+
+    if (!Array.isArray(data) || data.length < 2 || points.length < 2) {
+      this.clearMarkers();
+      return;
+    }
+
+    const width = points[points.length - 1].x;
+    const cutoffX = width * DEFAULT_PEAK_VALLEY_CONFIG.keepAfterXRatio;
+    let visibleStartIndex = 0;
+    while (visibleStartIndex < points.length && points[visibleStartIndex].x < cutoffX) {
+      visibleStartIndex++;
+    }
+
+    const hasVisibleValidValue = data.some(
+      (value, index) => index >= visibleStartIndex && Number.isFinite(value) && value > 0
+    );
+    if (!hasVisibleValidValue) {
+      this.clearMarkers();
+      return;
+    }
 
     // 1) 对齐最新窗口：数据每次 pushValue 都会左移 1 格，因此标记索引同步左移
     this.markers = this.markers.filter((m) => {
@@ -190,8 +214,22 @@ class MiniChart {
       return false;
     });
 
+    // 兜底：当可视区内没有任何标注时，至少保留 1 个标注（有曲线时）
+    if (this.markers.length === 0) {
+      const fallback = pickFallbackMarker(data, points, stats, DEFAULT_PEAK_VALLEY_CONFIG);
+      if (fallback) {
+        this.addMarker(fallback);
+      }
+    }
+
     // 4) 更新位置：防裁剪（翻转/夹取）+ 最终防重叠（Drop）
     this.layoutMarkers(data, points);
+  }
+
+  clearMarkers() {
+    if (!this.markers || this.markers.length === 0) return;
+    this.markers.forEach((m) => m.element.remove());
+    this.markers = [];
   }
 
   /**

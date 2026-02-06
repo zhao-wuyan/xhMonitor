@@ -63,6 +63,10 @@ export const SettingsDrawer = ({
     updateLayout({ visibility: { [key]: value } });
   };
 
+  const handlePeakValleyMarkersToggle = (value: boolean) => {
+    updateLayout({ showPeakValleyMarkers: value });
+  };
+
   const handleGradientToggle = (value: boolean) => {
     updateLayout({ background: { gradient: value } });
   };
@@ -230,6 +234,24 @@ export const SettingsDrawer = ({
               </label>
             </div>
           </div>
+
+            <div className="settings-group">
+              <div className="settings-group-title">{t('Chart')}</div>
+              <div className="settings-inline-row settings-inline-row--actions">
+                <label className="settings-inline-label" htmlFor="setting-peak-valley-markers">
+                  {t('Peak/Valley Labels')}
+                </label>
+                <label className="settings-switch">
+                  <input
+                    id="setting-peak-valley-markers"
+                    type="checkbox"
+                    checked={layoutState.showPeakValleyMarkers}
+                    onChange={(event) => handlePeakValleyMarkersToggle(event.target.checked)}
+                  />
+                  <span className="settings-switch__track" aria-hidden="true" />
+                </label>
+              </div>
+            </div>
 
           <div className="settings-group">
             <div className="settings-group-title">{t('Background')}</div>

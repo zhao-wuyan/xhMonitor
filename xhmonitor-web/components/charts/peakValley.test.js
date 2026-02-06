@@ -7,6 +7,7 @@ import {
   computeSeriesStats,
   filterSignificantExtrema,
   findExtremaCandidates,
+  pickFallbackMarker,
   selectMarkerIdsToKeep,
 } from './peakValley.js';
 
@@ -81,3 +82,52 @@ test('selectMarkerIdsToKeep: limits per type and enforces min distance', () => {
   assert.deepEqual(keepIds.sort((a, b) => a - b), [1, 3, 4, 5]);
 });
 
+test('pickFallbackMarker: prefers extrema in visible region', () => {
+  const data = [1, 2, 3, 2, 1, 2, 6, 2, 1, 1];
+  const points = Array.from({ length: data.length }, (_, i) => ({ x: i * 10, y: 0 }));
+  const stats = computeSeriesStats(data, DEFAULT_PEAK_VALLEY_CONFIG);
+
+  const marker = pickFallbackMarker(data, points, stats, {
+    ...DEFAULT_PEAK_VALLEY_CONFIG,
+    keepAfterXRatio: 0.35,
+    recencyWeight: 0,
+  });
+
+  assert.ok(marker);
+  assert.equal(marker.type, 'max');
+  assert.equal(marker.index, 6);
+  assert.equal(marker.value, 6);
+  assert.ok(marker.prominence > 0);
+});
+
+test('pickFallbackMarker: monotonic selects extreme in visible region', () => {
+  const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const points = Array.from({ length: data.length }, (_, i) => ({ x: i * 10, y: 0 }));
+  const stats = computeSeriesStats(data, DEFAULT_PEAK_VALLEY_CONFIG);
+
+  const marker = pickFallbackMarker(data, points, stats, {
+    ...DEFAULT_PEAK_VALLEY_CONFIG,
+    keepAfterXRatio: 0.35,
+    recencyWeight: 0,
+  });
+
+  assert.ok(marker);
+  assert.equal(marker.type, 'max');
+  assert.equal(marker.index, 9);
+  assert.equal(marker.value, 10);
+  assert.ok(marker.prominence > 0);
+});
+
+test('pickFallbackMarker: returns null when visible region has only invalid/zero values', () => {
+  const data = [0, 0, 0, 0, 0, 0];
+  const points = Array.from({ length: data.length }, (_, i) => ({ x: i * 10, y: 0 }));
+  const stats = computeSeriesStats(data, DEFAULT_PEAK_VALLEY_CONFIG);
+
+  const marker = pickFallbackMarker(data, points, stats, {
+    ...DEFAULT_PEAK_VALLEY_CONFIG,
+    keepAfterXRatio: 0.35,
+    recencyWeight: 0,
+  });
+
+  assert.equal(marker, null);
+});

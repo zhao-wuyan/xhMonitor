@@ -81,3 +81,78 @@
 - `xhmonitor-web/components/charts/MiniChart.js`：更新峰谷插入策略与标签布局/防裁剪/防重叠。
 - `xhmonitor-web/components/core/stat-card.css`：新增 `pos-top/pos-bottom` 位置类，支持动态翻转。
 - `xhmonitor-web/components/charts/peakValley.test.js`：Node 内置 test runner 单元测试。
+
+---
+
+### Round 2 - User Feedback & Refinement (2026-02-06 10:04 UTC+8)
+
+#### User Input
+
+- 有时曲线会出现“没有任何标注”的情况，需要保证 **有曲线时，可视区内至少 1 个标注**。
+- 设置中需要新增一个 **滑块开关**，允许用户关闭该标注。
+
+#### Changes Applied
+
+1. **最少 1 个标注兜底**
+   - 当筛选/裁剪后可视区内没有任何标注时，使用兜底策略选取一个点进行标注：
+     - 优先：可视区内 prominence 最大的候选极值；
+     - 否则：可视区内的 max/min（择其更偏离均值的一侧）。
+2. **设置开关**
+   - `LayoutState` 新增 `showPeakValleyMarkers`（默认开启，localStorage 持久化）。
+   - 设置面板新增滑块开关，关闭后会清空并停止渲染峰谷标注。
+
+#### Updated Artifacts
+
+- `xhmonitor-web/components/charts/peakValley.js`：新增 `pickFallbackMarker()` 兜底逻辑。
+- `xhmonitor-web/components/charts/MiniChart.js`：支持 `markersEnabled` 开关 + 兜底插入。
+- `xhmonitor-web/src/hooks/useLayoutState.ts`：新增并持久化 `showPeakValleyMarkers`。
+- `xhmonitor-web/src/components/SettingsDrawer.tsx`：新增滑块开关 UI。
+- `xhmonitor-web/src/styles/responsive.css`：新增 `.settings-switch` 样式。
+- `xhmonitor-web/src/App.tsx`、`xhmonitor-web/src/components/ChartCanvas.tsx`：将开关接入 MiniChart。
+
+---
+
+### Round 3 - User Feedback & Refinement (2026-02-06 10:16 UTC+8)
+
+#### User Input
+
+- “至少 1 个标注”需要更精确：当没有获取到有效值时不显示（例如 `null`/无效值，或 `0` 值）。
+
+#### Changes Applied
+
+1. **有效值定义**
+   - 标注的有效值定义为：`Number.isFinite(value) && value > 0`。
+2. **兜底条件收紧**
+   - 当显示区（keepAfterXRatio 右侧）没有任何有效值时：清空并不显示任何标注。
+   - 仅当显示区存在有效值且筛选后无标注时，才启用兜底 `pickFallbackMarker()` 选取 1 个标注。
+3. **筛选逻辑同步**
+   - `filterSignificantExtrema()` 会过滤掉 `0`/无效值，避免出现“谷值为 0”的无意义标注。
+
+#### Updated Artifacts
+
+- `xhmonitor-web/components/charts/peakValley.js`：显著性筛选与兜底均忽略 `0`/无效值。
+- `xhmonitor-web/components/charts/MiniChart.js`：显示区无有效值时直接清空标注；兜底仅在存在有效值时触发。
+- `xhmonitor-web/components/charts/peakValley.test.js`：新增“全 0 时兜底返回 null”的用例。
+
+---
+
+### Round 4 - UI Refinement (2026-02-06 10:41 UTC+8)
+
+#### User Input
+
+- 峰谷标注在设置中不是“标题”，应按普通设置项展示。
+- 设置抽屉的背景透明度不应该随“面板透明度（glassOpacity）”变化，否则容易被背景干扰阅读。
+
+#### Changes Applied
+
+1. **设置项样式调整**
+   - 将“峰谷标注”从标题样式改为普通 label，避免出现圆点/加粗的标题感。
+2. **设置抽屉背景与面板透明度解耦**
+   - 为设置抽屉增加独立背景变量 `--xh-color-settings-bg`，固定更不透明的背景，保证可读性。
+   - `.settings-drawer` 不再使用 `--xh-color-glass-bg`（会受 `--xh-glass-opacity` 影响）。
+
+#### Updated Artifacts
+
+- `xhmonitor-web/src/components/SettingsDrawer.tsx`：峰谷标注设置项改为普通 label。
+- `xhmonitor-web/components/core/design-tokens.css`：新增 `--xh-color-settings-bg`。
+- `xhmonitor-web/src/styles/responsive.css`：`.settings-drawer` 使用独立背景变量。

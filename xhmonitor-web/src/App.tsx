@@ -161,6 +161,7 @@ function AppShell() {
                       seriesKey="cpu"
                       color={color}
                       formatFn={(v) => v.toFixed(1) + '%'}
+                      showPeakValleyMarkers={layoutState.showPeakValleyMarkers}
                     />
                   </StatCard>
                 );
@@ -184,6 +185,7 @@ function AppShell() {
                       color={color}
                       maxValue={ramMaxMb > 0 ? ramMaxMb : undefined}
                       formatFn={(v) => formatMegabytesLabel(v)}
+                      showPeakValleyMarkers={layoutState.showPeakValleyMarkers}
                     />
                   </StatCard>
                 );
@@ -205,6 +207,7 @@ function AppShell() {
                       seriesKey="gpu"
                       color={color}
                       formatFn={(v) => v.toFixed(1) + '%'}
+                      showPeakValleyMarkers={layoutState.showPeakValleyMarkers}
                     />
                   </StatCard>
                 );
@@ -228,6 +231,7 @@ function AppShell() {
                       color={color}
                       maxValue={vramMaxMb > 0 ? vramMaxMb : undefined}
                       formatFn={(v) => formatMegabytesLabel(v)}
+                      showPeakValleyMarkers={layoutState.showPeakValleyMarkers}
                     />
                   </StatCard>
                 );
@@ -252,6 +256,7 @@ function AppShell() {
                       seriesKey="net"
                       color={color}
                       formatFn={(v) => formatNetworkRateLabel(v)}
+                      showPeakValleyMarkers={layoutState.showPeakValleyMarkers}
                     />
                   </StatCard>
                 );
@@ -276,6 +281,7 @@ function AppShell() {
                       color={color}
                       maxValue={powerAvailable && maxPower > 0 ? maxPower : undefined}
                       formatFn={(v) => v.toFixed(0) + ' W'}
+                      showPeakValleyMarkers={layoutState.showPeakValleyMarkers}
                     />
                   </StatCard>
                 );

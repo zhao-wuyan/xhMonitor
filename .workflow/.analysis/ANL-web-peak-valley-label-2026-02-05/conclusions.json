@@ -1,9 +1,9 @@
 {
   "session_id": "ANL-web-peak-valley-label-2026-02-05",
   "topic": "web 端监控卡片曲线峰谷值标注重叠、截断，优化峰谷标注算法与布局",
-  "completed": "2026-02-05T23:25:56.6976316Z",
-  "total_rounds": 1,
-  "summary": "已将迷你曲线的峰谷标注从“固定阈值 + 累积标记”升级为“显著性（prominence）+ 噪声阈值 + 可视区裁剪 + 最小像素间距 + 动态翻转防裁剪”。标注数量显著减少，重叠会被主动裁剪，谷值贴底不再被 overflow 裁掉。",
+  "completed": "2026-02-06T02:41:47.8624715Z",
+  "total_rounds": 4,
+  "summary": "已将迷你曲线的峰谷标注从“固定阈值 + 累积标记”升级为“显著性（prominence）+ 噪声阈值 + 可视区裁剪 + 最小像素间距 + 动态翻转防裁剪”，并补充“显示区存在有效值时至少 1 个标注”的兜底策略；当显示区仅 `0`/无效值时不显示标注。同时在设置中新增滑块开关，允许用户一键关闭峰谷标注；并将设置抽屉背景与面板透明度解耦，保证设置面板可读性。",
   "key_conclusions": [
     {
       "point": "用 prominence（峰谷显著性）替代固定幅度阈值，可更稳定地过滤噪声型局部极值，让峰谷更具代表性。",
@@ -24,6 +24,16 @@
       "point": "最终用包围盒碰撞检测做兜底 Drop，可在极端文本宽度/密集波动下继续保证“不会互相遮挡”。",
       "evidence": "xhmonitor-web/components/charts/MiniChart.js",
       "confidence": "medium"
+    },
+    {
+      "point": "通过兜底策略确保显示区存在有效值时至少 1 个标注；当显示区仅 `0`/无效值时不显示标注，并提供设置开关允许用户关闭标注。",
+      "evidence": "xhmonitor-web/components/charts/peakValley.js + xhmonitor-web/components/charts/MiniChart.js + xhmonitor-web/src/hooks/useLayoutState.ts + xhmonitor-web/src/components/SettingsDrawer.tsx",
+      "confidence": "high"
+    },
+    {
+      "point": "设置抽屉使用独立背景变量，避免受“面板透明度（glassOpacity）”影响，从而在复杂背景下保持良好可读性。",
+      "evidence": "xhmonitor-web/components/core/design-tokens.css + xhmonitor-web/src/styles/responsive.css + xhmonitor-web/src/components/SettingsDrawer.tsx",
+      "confidence": "high"
     }
   ],
   "recommendations": [
@@ -49,4 +59,3 @@
     }
   ]
 }
-

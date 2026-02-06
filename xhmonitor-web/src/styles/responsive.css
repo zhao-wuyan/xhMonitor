@@ -353,7 +353,7 @@ body.no-gradient .status-badge--offline {
   right: 0;
   height: 100vh;
   width: min(360px, 92vw);
-  background: var(--xh-color-glass-bg);
+  background: var(--xh-color-settings-bg, rgba(15, 23, 42, 0.92));
   backdrop-filter: blur(var(--xh-blur));
   -webkit-backdrop-filter: blur(var(--xh-blur));
   border-left: 1px solid var(--xh-color-glass-border);
@@ -512,6 +512,60 @@ body.no-gradient .status-badge--offline {
   gap: 8px;
   font-size: 0.75rem;
   color: var(--xh-color-text-primary);
+}
+
+/* Slider switch (used for lightweight feature toggles) */
+.settings-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.settings-switch__track {
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--xh-color-glass-border);
+  position: relative;
+  transition: background var(--xh-duration-normal) var(--xh-ease),
+    border-color var(--xh-duration-normal) var(--xh-ease);
+}
+
+.settings-switch__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.92);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  transition: transform var(--xh-duration-normal) var(--xh-ease);
+}
+
+.settings-switch input:checked + .settings-switch__track {
+  background: rgba(59, 130, 246, 0.45);
+  border-color: rgba(59, 130, 246, 0.7);
+}
+
+.settings-switch input:checked + .settings-switch__track::after {
+  transform: translateX(16px);
+}
+
+.settings-switch input:focus-visible + .settings-switch__track {
+  outline: 2px solid rgba(59, 130, 246, 0.7);
+  outline-offset: 2px;
 }
 
 .settings-inline-row {

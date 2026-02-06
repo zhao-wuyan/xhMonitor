@@ -12,6 +12,7 @@ interface ChartCanvasProps {
   data?: number[];
   className?: string;
   refreshHz?: number;
+  showPeakValleyMarkers?: boolean;
 }
 
 type MiniChartInstance = {
@@ -20,6 +21,7 @@ type MiniChartInstance = {
   destroy: () => void;
   color?: string;
   formatFn?: ChartFormatFn;
+  markersEnabled?: boolean;
 };
 
 type MiniChartConstructor = new (
@@ -41,6 +43,7 @@ const ChartCanvasBase = ({
   data,
   className,
   refreshHz = 3,
+  showPeakValleyMarkers = true,
 }: ChartCanvasProps) => {
   const { getSeriesData } = useTimeSeries();
   const rawId = useId();
@@ -99,7 +102,8 @@ const ChartCanvasBase = ({
     if (!chartRef.current) return;
     chartRef.current.color = color;
     chartRef.current.formatFn = resolvedFormat;
-  }, [color, resolvedFormat]);
+    chartRef.current.markersEnabled = showPeakValleyMarkers;
+  }, [color, resolvedFormat, showPeakValleyMarkers]);
 
   useEffect(() => {
     pendingDataRef.current = seriesData;
@@ -152,7 +156,8 @@ const areEqual = (prev: ChartCanvasProps, next: ChartCanvasProps) => {
     prev.formatFn === next.formatFn &&
     prev.data === next.data &&
     prev.className === next.className &&
-    prev.refreshHz === next.refreshHz
+    prev.refreshHz === next.refreshHz &&
+    prev.showPeakValleyMarkers === next.showPeakValleyMarkers
   );
 };
 

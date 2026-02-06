@@ -8,6 +8,7 @@
  */
 
 const isFiniteNumber = (value) => Number.isFinite(value);
+const isMarkerValueValid = (value) => isFiniteNumber(value) && value > 0;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -201,7 +202,7 @@ export const filterSignificantExtrema = (
       ...c,
       prominence: computeProminence(data, c.index, c.type, config.prominenceWindow),
     }))
-    .filter((c) => c.prominence >= threshold && c.prominence > 0);
+    .filter((c) => isMarkerValueValid(c.value) && c.prominence >= threshold && c.prominence > 0);
 };
 
 const scoreMarker = (marker, pointsLength, recencyWeight) => {
@@ -257,3 +258,87 @@ export const selectMarkerIdsToKeep = (markers, points, config = DEFAULT_PEAK_VAL
   return keep.map((m) => m.id);
 };
 
+/**
+ * 兜底策略：当可视区内没有任何峰谷标记时，选取一个“最值得展示”的点位用于标注。
+ * - 优先：可视区内 prominence 最大的候选极值
+ * - 否则：可视区内的 max/min（择其更偏离均值的一侧）
+ *
+ * @param {number[]} data
+ * @param {{x:number,y:number}[]} points
+ * @param {{min:number,max:number,range:number,noise:number}} stats
+ * @param {typeof DEFAULT_PEAK_VALLEY_CONFIG} config
+ * @returns {{index:number,value:number,type:'max'|'min',prominence:number} | null}
+ */
+export const pickFallbackMarker = (data, points, stats, config = DEFAULT_PEAK_VALLEY_CONFIG) => {
+  if (points.length === 0 || data.length === 0) return null;
+
+  const width = points[points.length - 1].x;
+  const cutoffX = width * config.keepAfterXRatio;
+
+  let startIndex = 0;
+  while (startIndex < points.length && points[startIndex].x < cutoffX) startIndex++;
+  if (startIndex >= points.length) return null;
+
+  const endIndex = points.length - 1;
+
+  const score = (candidate) => scoreMarker(candidate, points.length, config.recencyWeight);
+
+  const candidates = findExtremaCandidates(data)
+    .filter((c) => c.index >= startIndex && c.index <= endIndex)
+    .map((c) => ({
+      ...c,
+      prominence: computeProminence(data, c.index, c.type, config.prominenceWindow),
+    }))
+    .filter((c) => isMarkerValueValid(c.value) && c.prominence > 0);
+
+  if (candidates.length > 0) {
+    let best = candidates[0];
+    let bestScore = score(best);
+    for (let i = 1; i < candidates.length; i++) {
+      const s = score(candidates[i]);
+      if (s > bestScore) {
+        best = candidates[i];
+        bestScore = s;
+      }
+    }
+    return best;
+  }
+
+  let maxValue = -Infinity;
+  let maxIndex = -1;
+  let minValue = Infinity;
+  let minIndex = -1;
+  let sum = 0;
+  let count = 0;
+
+  for (let i = startIndex; i <= endIndex; i++) {
+    const v = data[i];
+    if (!isMarkerValueValid(v)) continue;
+    sum += v;
+    count++;
+    if (v > maxValue) {
+      maxValue = v;
+      maxIndex = i;
+    }
+    if (v < minValue) {
+      minValue = v;
+      minIndex = i;
+    }
+  }
+
+  if (count === 0) return null;
+
+  const mean = sum / count;
+  const deltaMax = maxValue - mean;
+  const deltaMin = mean - minValue;
+
+  const useMax = deltaMax >= deltaMin;
+  const index = useMax ? maxIndex : minIndex;
+  const value = useMax ? maxValue : minValue;
+  const type = useMax ? 'max' : 'min';
+
+  const computed = computeProminence(data, index, type, config.prominenceWindow);
+  const fallbackProminence = computed > 0 ? computed : Math.max(stats.range, stats.noise, 1);
+
+  return { index, value, type, prominence: fallbackProminence };
+};

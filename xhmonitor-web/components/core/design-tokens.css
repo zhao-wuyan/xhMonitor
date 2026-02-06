@@ -18,6 +18,9 @@
   --xh-color-glass-border: rgba(255, 255, 255, 0.08);
   --xh-color-glass-highlight: rgba(255, 255, 255, 0.05);
 
+  /* 设置面板（固定更不透明，避免受面板透明度影响） */
+  --xh-color-settings-bg: rgba(15, 23, 42, 0.92);
+
   /* 语义色 - 监控指标 */
   --xh-color-cpu: #3b82f6;      /* Blue */
   --xh-color-ram: #8b5cf6;      /* Violet */
