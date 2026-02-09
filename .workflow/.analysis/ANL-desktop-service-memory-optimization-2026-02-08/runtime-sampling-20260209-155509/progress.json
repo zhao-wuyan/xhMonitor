@@ -1,0 +1,11 @@
+﻿{
+    "started_at":  "2026-02-09T15:55:10.0505659+08:00",
+    "now":  "2026-02-09T16:02:28.7623632+08:00",
+    "elapsed_sec":  435,
+    "duration_sec":  1800,
+    "progress_pct":  24.17,
+    "service_pid_current":  35884,
+    "desktop_pid_current":  18184,
+    "service_missing_samples":  0,
+    "desktop_missing_samples":  0
+}

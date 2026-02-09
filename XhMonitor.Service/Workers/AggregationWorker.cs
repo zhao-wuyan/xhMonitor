@@ -63,6 +63,7 @@ public sealed class AggregationWorker : BackgroundService
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var lastWatermark = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Minute)
             .OrderByDescending(r => r.Timestamp)
             .Select(r => r.Timestamp)
@@ -79,6 +80,7 @@ public sealed class AggregationWorker : BackgroundService
 
         var windowStart = lastWatermark == default ?
             await context.ProcessMetricRecords
+                .AsNoTracking()
                 .OrderBy(r => r.Timestamp)
                 .Select(r => r.Timestamp)
                 .FirstOrDefaultAsync(cancellationToken) :
@@ -93,6 +95,7 @@ public sealed class AggregationWorker : BackgroundService
         _logger.LogInformation("Aggregating Raw → Minute: {Start} to {End}", windowStart, windowEnd);
 
         var rawRecords = await context.ProcessMetricRecords
+            .AsNoTracking()
             .Where(r => r.Timestamp > windowStart && r.Timestamp < windowEnd)
             .OrderBy(r => r.Timestamp)
             .ToListAsync(cancellationToken);
@@ -179,6 +182,7 @@ public sealed class AggregationWorker : BackgroundService
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var lastWatermark = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Hour)
             .OrderByDescending(r => r.Timestamp)
             .Select(r => r.Timestamp)
@@ -194,6 +198,7 @@ public sealed class AggregationWorker : BackgroundService
 
         var windowStart = lastWatermark == default ?
             await context.AggregatedMetricRecords
+                .AsNoTracking()
                 .Where(r => r.AggregationLevel == AggregationLevel.Minute)
                 .OrderBy(r => r.Timestamp)
                 .Select(r => r.Timestamp)
@@ -209,6 +214,7 @@ public sealed class AggregationWorker : BackgroundService
         _logger.LogInformation("Aggregating Minute → Hour: {Start} to {End}", windowStart, windowEnd);
 
         var minuteRecords = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Minute &&
                        r.Timestamp > windowStart && r.Timestamp < windowEnd)
             .OrderBy(r => r.Timestamp)
@@ -234,6 +240,7 @@ public sealed class AggregationWorker : BackgroundService
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var lastWatermark = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Day)
             .OrderByDescending(r => r.Timestamp)
             .Select(r => r.Timestamp)
@@ -249,6 +256,7 @@ public sealed class AggregationWorker : BackgroundService
 
         var windowStart = lastWatermark == default ?
             await context.AggregatedMetricRecords
+                .AsNoTracking()
                 .Where(r => r.AggregationLevel == AggregationLevel.Hour)
                 .OrderBy(r => r.Timestamp)
                 .Select(r => r.Timestamp)
@@ -264,6 +272,7 @@ public sealed class AggregationWorker : BackgroundService
         _logger.LogInformation("Aggregating Hour → Day: {Start} to {End}", windowStart, windowEnd);
 
         var hourRecords = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Hour &&
                        r.Timestamp > windowStart && r.Timestamp < windowEnd)
             .OrderBy(r => r.Timestamp)

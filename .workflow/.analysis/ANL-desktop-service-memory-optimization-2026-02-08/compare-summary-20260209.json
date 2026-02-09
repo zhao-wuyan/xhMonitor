@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-02-09T16:37:30+08:00",
+  "topic": "优化前后内存占用对比（同口径 480 秒采样）",
+  "before": {
+    "source_dir": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-before-20260209-161838",
+    "install_dir": "C:/my_program/XhMonitor",
+    "duration_sec": 480
+  },
+  "after": {
+    "source_dir": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-after-20260209-162821",
+    "install_dir": "C:/ProjectDev/project/xinghe/xhMonitor (workspace build)",
+    "duration_sec": 480
+  },
+  "service": {
+    "working_set_avg_before_mb": 233.468,
+    "working_set_avg_after_mb": 191.392,
+    "working_set_avg_delta_mb": -42.076,
+    "working_set_avg_delta_pct": -18.02,
+    "working_set_max_before_mb": 262.766,
+    "working_set_max_after_mb": 200.379,
+    "working_set_max_delta_mb": -62.387,
+    "private_avg_before_mb": 138.474,
+    "private_avg_after_mb": 109.315,
+    "private_avg_delta_mb": -29.159,
+    "private_avg_delta_pct": -21.06
+  },
+  "desktop": {
+    "working_set_avg_before_mb": 239.558,
+    "working_set_avg_after_mb": 221.96,
+    "working_set_avg_delta_mb": -17.598,
+    "working_set_avg_delta_pct": -7.35,
+    "working_set_max_before_mb": 250.121,
+    "working_set_max_after_mb": 234.348,
+    "working_set_max_delta_mb": -15.773,
+    "private_avg_before_mb": 142.953,
+    "private_avg_after_mb": 134.156,
+    "private_avg_delta_mb": -8.797,
+    "private_avg_delta_pct": -6.15
+  },
+  "caveats": [
+    "优化前 service 进程拒绝 dotnet-counters 连接，因此 service 的 GC/alloc 只在优化后可得。",
+    "本对比为 480 秒短窗对比，长时间 30-60 分钟漂移仍建议继续观察。"
+  ]
+}

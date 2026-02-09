@@ -1,0 +1,8 @@
+﻿{
+    "started_at":  "2026-02-09T15:54:16.7960694+08:00",
+    "duration_sec":  1800,
+    "interval_sec":  5,
+    "initial_service_pid":  35884,
+    "initial_desktop_pid":  18184,
+    "counter_exe":  "C:\\Users\\xinghe_zwy\\.dotnet\\tools\\dotnet-counters.exe"
+}

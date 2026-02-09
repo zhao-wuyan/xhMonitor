@@ -51,7 +51,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<HardwareLimitsDto>(data.GetRawText(), jsonOptions);
+                var dto = data.Deserialize<HardwareLimitsDto>(jsonOptions);
                 if (dto != null) HardwareLimitsReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -65,7 +65,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<SystemUsageDto>(data.GetRawText(), jsonOptions);
+                var dto = data.Deserialize<SystemUsageDto>(jsonOptions);
                 if (dto != null) SystemUsageReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -79,7 +79,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<ProcessDataDto>(data.GetRawText(), jsonOptions);
+                var dto = data.Deserialize<ProcessDataDto>(jsonOptions);
                 if (dto != null) ProcessDataReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -93,7 +93,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<ProcessMetaDto>(data.GetRawText(), jsonOptions);
+                var dto = data.Deserialize<ProcessMetaDto>(jsonOptions);
                 if (dto != null) ProcessMetaReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -107,7 +107,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var metrics = JsonSerializer.Deserialize<MetricsDataDto>(data.GetRawText(), jsonOptions);
+                var metrics = data.Deserialize<MetricsDataDto>(jsonOptions);
                 if (metrics != null) MetricsReceived?.Invoke(metrics);
             }
             catch (Exception ex)

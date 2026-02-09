@@ -1,0 +1,143 @@
+{
+  "session_id": "ANL-desktop-service-memory-optimization-2026-02-08",
+  "timestamp": "2026-02-08T22:35:00+08:00",
+  "topic": "分析桌面端和 service 端内存占用问题，需不减少功能的情况下，尽可能降低内存占用和资源占用",
+  "depth": "full",
+  "dimensions": [
+    "performance",
+    "implementation",
+    "architecture",
+    "decision"
+  ],
+  "sources": [
+    {
+      "type": "codebase",
+      "summary": "分析了 service/core/desktop 关键路径：采集、缓存、传输、聚合、UI 绑定更新。"
+    },
+    {
+      "type": "runtime_log",
+      "summary": "读取 service-out.log，确认采集与推送链路为高频持续运行。"
+    },
+    {
+      "type": "external_docs",
+      "summary": "交叉验证 .NET GC、SignalR、EF Core、SQLite 的官方优化建议。"
+    }
+  ],
+  "evidence_locations": [
+    "XhMonitor.Service/Worker.cs",
+    "XhMonitor.Service/Core/PerformanceMonitor.cs",
+    "XhMonitor.Service/Core/ProcessScanner.cs",
+    "XhMonitor.Service/Workers/AggregationWorker.cs",
+    "XhMonitor.Service/Data/Repositories/MetricRepository.cs",
+    "XhMonitor.Core/Services/LibreHardwareManager.cs",
+    "XhMonitor.Core/Providers/SystemMetricProvider.cs",
+    "XhMonitor.Core/Providers/GpuMetricProvider.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+    "XhMonitor.Desktop/Services/WebServerService.cs",
+    "XhMonitor.Desktop/Services/SignalRService.cs",
+    "XhMonitor.Service/service-out.log"
+  ],
+  "key_findings": [
+    {
+      "id": "F1",
+      "title": "Service 队列堆积风险较低，但每轮对象分配率偏高",
+      "detail": "进程快照通道使用 BoundedChannel(1) 丢旧策略，避免无限增长；但每轮仍分配 ProcessSnapshot、字典、列表和序列化对象。",
+      "impact": "持续 GC 压力，长时间运行后内存维持高水位。",
+      "confidence": "high"
+    },
+    {
+      "id": "F2",
+      "title": "采样频率较高导致 steady-state 资源成本偏高",
+      "detail": "进程采集 3 秒、系统采集 1 秒，形成长期稳定分配与 CPU 开销。",
+      "impact": "RSS 基线抬升，CPU 与内存协同上升。",
+      "confidence": "high"
+    },
+    {
+      "id": "F3",
+      "title": "聚合任务存在窗口全量加载峰值",
+      "detail": "AggregationWorker 对时间窗口数据执行 ToListAsync 后再分组聚合。",
+      "impact": "分钟级峰值内存和暂停波动。",
+      "confidence": "high"
+    },
+    {
+      "id": "F4",
+      "title": "ProcessScanner 命令行读取产生大量短生命周期字符串",
+      "detail": "每轮扫描目标进程并抓取命令行，目标多时分配明显。",
+      "impact": "Gen0/Gen1 压力增加，影响 service 长稳占用。",
+      "confidence": "medium"
+    },
+    {
+      "id": "F5",
+      "title": "Hardware 快照链路多对象创建",
+      "detail": "LibreHardwareManager 与系统指标 provider 高频构造传感器与读数对象。",
+      "impact": "采集链路内存 churn 增大。",
+      "confidence": "medium"
+    },
+    {
+      "id": "F6",
+      "title": "Desktop UI 列表更新策略偏重",
+      "detail": "ViewModel 收到消息后排序和集合变更频繁，WPF 绑定刷新代价较高。",
+      "impact": "UI 线程 CPU/内存开销偏高，常驻内存上限抬升。",
+      "confidence": "high"
+    },
+    {
+      "id": "F7",
+      "title": "Desktop 内嵌 WebServer 形成额外基础内存",
+      "detail": "本地 WebServer/YARP 常驻会引入额外对象图。",
+      "impact": "80 MB 基线中存在可优化但不可忽视的架构成本。",
+      "confidence": "medium"
+    },
+    {
+      "id": "F8",
+      "title": "运行时只设置 HeapHardLimit，细节调优不足",
+      "detail": "目前 runtimeconfig.template.json 仅配置 512 MB 上限。",
+      "impact": "在分配模式未优化前，GC 参数收益有限但仍可辅助抑制峰值。",
+      "confidence": "high"
+    }
+  ],
+  "discussion_points": [
+    "是否接受按进程活跃度自适应采样（idle 降频，active 升频）？",
+    "是否将 ProcessSnapshot 从 Dictionary 改为紧凑结构（固定字段 + 可选扩展）？",
+    "是否优先改造 AggregationWorker 为分批聚合，避免窗口全量拉取？",
+    "Desktop 是否可以改为批处理增量 diff 更新集合，降低重排次数？",
+    "是否先建立可观测基线（GC heap、alloc rate、LOH）后再分阶段上线优化？"
+  ],
+  "open_questions": [
+    "典型监控目标进程数量和峰值数量是多少？",
+    "是否允许对不活跃进程延长采样周期至 5-10 秒？",
+    "desktop 内嵌 web server 是否允许按需懒启动？",
+    "是否有硬性 CPU 占用上限或电源策略限制？"
+  ],
+  "round2_decision": {
+    "user_choice": "1",
+    "meaning": "保持当前方向，输出 2-3 天低风险优化实施清单（具体到文件和改动点）",
+    "output_artifact": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/phase-a-plan.md"
+  },
+  "external_references": [
+    {
+      "title": ".NET GC runtime config",
+      "url": "https://learn.microsoft.com/dotnet/core/runtime-config/garbage-collector"
+    },
+    {
+      "title": "ASP.NET Core memory",
+      "url": "https://learn.microsoft.com/aspnet/core/performance/memory"
+    },
+    {
+      "title": "SignalR configuration",
+      "url": "https://learn.microsoft.com/aspnet/core/signalr/configuration"
+    },
+    {
+      "title": "SignalR scale",
+      "url": "https://learn.microsoft.com/aspnet/core/signalr/scale"
+    },
+    {
+      "title": "EF Core efficient querying",
+      "url": "https://learn.microsoft.com/ef/core/performance/efficient-querying"
+    },
+    {
+      "title": "SQLite PRAGMA",
+      "url": "https://sqlite.org/pragma.html"
+    }
+  ]
+}

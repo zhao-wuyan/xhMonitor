@@ -297,30 +297,48 @@ public class Worker : BackgroundService
 
             if (metaUpdates.Count > 0)
             {
-                await _hubContext.Clients.All.ReceiveProcessMetadata(new
+                var metadata = new List<ProcessMetadataSnapshot>(metaUpdates.Count);
+                foreach (var update in metaUpdates)
+                {
+                    metadata.Add(new ProcessMetadataSnapshot
+                    {
+                        ProcessId = update.ProcessId,
+                        ProcessName = update.ProcessName,
+                        CommandLine = update.CommandLine,
+                        DisplayName = update.DisplayName
+                    });
+                }
+
+                await _hubContext.Clients.All.ReceiveProcessMetadata(new ProcessMetadataEnvelope
                 {
                     Timestamp = timestamp,
-                    ProcessCount = metaUpdates.Count,
-                    Processes = metaUpdates.Select(m => new
-                    {
-                        m.ProcessId,
-                        m.ProcessName,
-                        m.CommandLine,
-                        m.DisplayName
-                    }).ToList()
+                    ProcessCount = metadata.Count,
+                    Processes = metadata
+                });
+            }
+
+            var snapshotProcesses = new List<ProcessMetricSnapshot>(metrics.Count);
+            foreach (var metric in metrics)
+            {
+                var metricValues = new Dictionary<string, double>(metric.Metrics.Count);
+                foreach (var (metricId, metricValue) in metric.Metrics)
+                {
+                    metricValues[metricId] = metricValue.Value;
+                }
+
+                snapshotProcesses.Add(new ProcessMetricSnapshot
+                {
+                    ProcessId = metric.Info.ProcessId,
+                    ProcessName = metric.Info.ProcessName,
+                    Metrics = metricValues
                 });
             }
 
             var snapshot = new ProcessSnapshot
             {
                 Timestamp = timestamp,
-                ProcessCount = metrics.Count,
-                Processes = metrics.Select(m => new ProcessMetricSnapshot
-                {
-                    ProcessId = m.Info.ProcessId,
-                    ProcessName = m.Info.ProcessName,
-                    Metrics = m.Metrics.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value)
-                }).ToList()
+                ProcessCount = snapshotProcesses.Count,
+                Processes = snapshotProcesses
             };
 
             EnqueueProcessSnapshot(snapshot);
@@ -340,16 +358,11 @@ public class Worker : BackgroundService
         {
             await foreach (var snapshot in _processSnapshotChannel.Reader.ReadAllAsync(stoppingToken))
             {
-                await _hubContext.Clients.All.ReceiveProcessMetrics(new
+                await _hubContext.Clients.All.ReceiveProcessMetrics(new ProcessMetricsEnvelope
                 {
                     Timestamp = snapshot.Timestamp,
                     ProcessCount = snapshot.ProcessCount,
-                    Processes = snapshot.Processes.Select(p => new
-                    {
-                        p.ProcessId,
-                        p.ProcessName,
-                        p.Metrics
-                    }).ToList()
+                    Processes = snapshot.Processes
                 });
             }
         }
@@ -373,10 +386,32 @@ public class Worker : BackgroundService
         public List<ProcessMetricSnapshot> Processes { get; init; } = new();
     }
 
+    private sealed class ProcessMetricsEnvelope
+    {
+        public DateTime Timestamp { get; init; }
+        public int ProcessCount { get; init; }
+        public List<ProcessMetricSnapshot> Processes { get; init; } = new();
+    }
+
     private sealed class ProcessMetricSnapshot
     {
         public int ProcessId { get; init; }
         public string ProcessName { get; init; } = string.Empty;
         public Dictionary<string, double> Metrics { get; init; } = new();
+    }
+
+    private sealed class ProcessMetadataEnvelope
+    {
+        public DateTime Timestamp { get; init; }
+        public int ProcessCount { get; init; }
+        public List<ProcessMetadataSnapshot> Processes { get; init; } = new();
+    }
+
+    private sealed class ProcessMetadataSnapshot
+    {
+        public int ProcessId { get; init; }
+        public string ProcessName { get; init; } = string.Empty;
+        public string CommandLine { get; init; } = string.Empty;
+        public string DisplayName { get; init; } = string.Empty;
     }
 }

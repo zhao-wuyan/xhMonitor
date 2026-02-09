@@ -1,0 +1,128 @@
+﻿{
+    "started_at":  "2026-02-09T16:28:22.0261208+08:00",
+    "finished_at":  "2026-02-09T16:36:26.0223996+08:00",
+    "requested_duration_sec":  480,
+    "actual_duration_sec":  484,
+    "interval_sec":  5,
+    "pids":  {
+                 "service_initial":  49316,
+                 "service_last_seen":  49316,
+                 "desktop_initial":  28804,
+                 "desktop_last_seen":  28804
+             },
+    "process_samples":  {
+                            "total_rows":  194,
+                            "service_rows":  97,
+                            "desktop_rows":  97,
+                            "service_missing_samples":  0,
+                            "desktop_missing_samples":  0
+                        },
+    "service":  {
+                    "working_set_mb":  {
+                                           "min":  176.418,
+                                           "avg":  191.392,
+                                           "max":  200.379
+                                       },
+                    "private_mb":  {
+                                       "min":  86.293,
+                                       "avg":  109.315,
+                                       "max":  120.617
+                                   },
+                    "handles":  {
+                                    "min":  777,
+                                    "avg":  808.866,
+                                    "max":  935
+                                },
+                    "threads":  {
+                                    "min":  24,
+                                    "avg":  29.351,
+                                    "max":  40
+                                },
+                    "counters":  {
+                                     "working_set_mb":  {
+                                                            "min":  184.955,
+                                                            "avg":  200.814,
+                                                            "max":  212.836
+                                                        },
+                                     "gc_heap_size_mb":  {
+                                                             "min":  24.196,
+                                                             "avg":  49.697,
+                                                             "max":  70.836
+                                                         },
+                                     "allocation_rate_b_per_interval":  {
+                                                                            "min":  19156520,
+                                                                            "avg":  30402634.833,
+                                                                            "max":  42312664
+                                                                        },
+                                     "gen0_gc_count_per_interval":  {
+                                                                        "min":  1,
+                                                                        "avg":  1.844,
+                                                                        "max":  3
+                                                                    },
+                                     "time_in_gc_percent":  {
+                                                                "min":  0,
+                                                                "avg":  0.01,
+                                                                "max":  1
+                                                            }
+                                 }
+                },
+    "desktop":  {
+                    "working_set_mb":  {
+                                           "min":  182.344,
+                                           "avg":  221.96,
+                                           "max":  234.348
+                                       },
+                    "private_mb":  {
+                                       "min":  89.957,
+                                       "avg":  134.156,
+                                       "max":  148.48
+                                   },
+                    "handles":  {
+                                    "min":  1814,
+                                    "avg":  1829.804,
+                                    "max":  1859
+                                },
+                    "threads":  {
+                                    "min":  31,
+                                    "avg":  35.278,
+                                    "max":  44
+                                },
+                    "counters":  {
+                                     "working_set_mb":  {
+                                                            "min":  191.148,
+                                                            "avg":  233.12,
+                                                            "max":  245.735
+                                                        },
+                                     "gc_heap_size_mb":  {
+                                                             "min":  3.448,
+                                                             "avg":  13.876,
+                                                             "max":  22.857
+                                                         },
+                                     "allocation_rate_b_per_interval":  {
+                                                                            "min":  280496,
+                                                                            "avg":  575028.333,
+                                                                            "max":  8496536
+                                                                        },
+                                     "gen0_gc_count_per_interval":  {
+                                                                        "min":  0,
+                                                                        "avg":  0.031,
+                                                                        "max":  1
+                                                                    },
+                                     "time_in_gc_percent":  {
+                                                                "min":  0,
+                                                                "avg":  0,
+                                                                "max":  0
+                                                            }
+                                 }
+                },
+    "artifacts":  {
+                      "sample_csv":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\process-memory-samples.csv",
+                      "service_counter_csv":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\service-runtime-counters.csv",
+                      "desktop_counter_csv":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\desktop-runtime-counters.csv",
+                      "service_counter_out_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\service-counter.out.log",
+                      "service_counter_err_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\service-counter.err.log",
+                      "desktop_counter_out_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\desktop-counter.out.log",
+                      "desktop_counter_err_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\desktop-counter.err.log",
+                      "progress_json":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\progress.json"
+                  }
+}
