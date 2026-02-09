@@ -297,6 +297,40 @@
 - `C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-summary-20260209.json`
 - `C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-report-20260209.md`
 
+### Round 6 - Implementation Continuation (2026-02-09 18:38 +08:00)
+
+#### User Input
+
+用户要求继续执行剩余项：`2（参数可调）`、`3（补单测）`、`4（Phase B 聚合流式化）`。
+
+#### Implemented Changes
+
+1. `2` Desktop 参数配置化（已实现）
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/Configuration/UiOptimizationOptions.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/appsettings.json`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/App.xaml.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs`
+   - 结果：节流开关与间隔改为配置驱动（默认 `150ms`），并增加归一化与可测逻辑。
+2. `3` 单测补齐（已实现）
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop.Tests/SignalRServiceTests.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop.Tests/FloatingWindowViewModelThrottleTests.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Tests/Services/ProcessScannerTests.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Tests/Services/AggregationWorkerTests.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/AssemblyInfo.cs`
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Core/ProcessScanner.cs`
+   - 结果：补齐关键优化点回归覆盖，并通过 `InternalsVisibleTo` 暴露必要内部测试面。
+3. `4` Phase B 聚合流式化（已实现）
+   - `C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Workers/AggregationWorker.cs`
+   - 结果：Raw→Minute、Minute→Hour、Hour→Day 全部改为按 `Id` 分批读取并增量聚合，避免窗口全量 `ToListAsync` 引发峰值抬升。
+
+#### Validation Results
+
+- 执行：`dotnet test C:/ProjectDev/project/xinghe/xhMonitor/xhMonitor.sln`
+- 结果：
+  - `XhMonitor.Tests`：`171 passed, 0 failed`
+  - `XhMonitor.Desktop.Tests`：`24 passed, 0 failed`
+- 结论：`2/3/4` 已完成并通过回归，当前可进入下一轮长时间运行观测（30-60 分钟）以确认稳态收益。
+
 ---
 
 ## Current Understanding
@@ -318,12 +352,13 @@
 - 聚合任务与 UI 列表刷新是两个高价值切入点：改造成本可控、收益可观。  
 - 需要用同一套观测指标衡量优化效果，防止“内存下降但 CPU 或延迟恶化”。
 - 用户已明确优先级：先输出并执行 `Phase A` 低风险包，再进入更深层架构改造。
+- `Round 6` 已将 Phase B 的聚合流式化落地，峰值控制能力从“查询侧无跟踪”升级为“读取侧分批 + 聚合侧增量”。
 
 ---
 
 ## Session Statistics
 
-- **Total Rounds**: `2`（进行中）  
-- **Duration**: `~25 min`（Round 1-2）  
-- **Sources Used**: codebase exploration、runtime log、official docs  
-- **Artifacts Generated**: `discussion.md`, `explorations.json`, `conclusions.json`, `phase-a-plan.md`
+- **Total Rounds**: `6`（进行中）  
+- **Duration**: `~20 hours`（跨 `2026-02-08` 到 `2026-02-09`）  
+- **Sources Used**: codebase exploration、runtime log、official docs、before/after sampling  
+- **Artifacts Generated**: `discussion.md`, `explorations.json`, `conclusions.json`, `phase-a-plan.md`, `compare-summary-20260209.json`, `compare-report-20260209.md`

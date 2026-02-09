@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
+using Microsoft.Extensions.Options;
+using XhMonitor.Desktop.Configuration;
 using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.Services;
 
@@ -15,10 +17,12 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     private readonly Dictionary<int, ProcessRowViewModel> _processIndex = new();
     private readonly HashSet<int> _pinnedProcessIds = new();
     private readonly DispatcherTimer _processRefreshTimer;
-    private static readonly TimeSpan ProcessRefreshInterval = TimeSpan.FromMilliseconds(150);
+    private readonly TimeSpan _processRefreshInterval;
+    private readonly bool _enableProcessRefreshThrottling;
     private DateTime _lastProcessRefreshUtc = DateTime.MinValue;
     private IReadOnlyList<ProcessInfoDto>? _pendingProcesses;
     private PanelState _stateBeforeClickthrough = PanelState.Collapsed;
+    private const int DefaultProcessRefreshIntervalMs = 150;
 
     public ObservableCollection<ProcessRowViewModel> TopProcesses { get; } = new();
     public ObservableCollection<ProcessRowViewModel> PinnedProcesses { get; } = new();
@@ -171,7 +175,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _isConnected = value; OnPropertyChanged(); }
     }
 
-    public FloatingWindowViewModel(IServiceDiscovery? serviceDiscovery = null)
+    public FloatingWindowViewModel(
+        IServiceDiscovery? serviceDiscovery = null,
+        IOptions<UiOptimizationOptions>? uiOptimizationOptions = null)
     {
         serviceDiscovery ??= new ServiceDiscovery();
         _signalRService = new SignalRService(serviceDiscovery.SignalRUrl);
@@ -182,11 +188,16 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         _signalRService.ProcessMetaReceived += OnProcessMetaReceived;
         _signalRService.ConnectionStateChanged += OnConnectionStateChanged;
 
+        var options = uiOptimizationOptions?.Value ?? new UiOptimizationOptions();
+        _enableProcessRefreshThrottling = options.EnableProcessRefreshThrottling;
+        var refreshIntervalMs = NormalizeProcessRefreshIntervalMs(options.ProcessRefreshIntervalMs);
+        _processRefreshInterval = TimeSpan.FromMilliseconds(refreshIntervalMs);
+
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher != null)
         {
             _processRefreshTimer = new DispatcherTimer(
-                ProcessRefreshInterval,
+                _processRefreshInterval,
                 DispatcherPriority.Background,
                 OnProcessRefreshTimerTick,
                 dispatcher);
@@ -195,7 +206,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         {
             _processRefreshTimer = new DispatcherTimer
             {
-                Interval = ProcessRefreshInterval
+                Interval = _processRefreshInterval
             };
             _processRefreshTimer.Tick += OnProcessRefreshTimerTick;
         }
@@ -397,10 +408,17 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     private void QueueProcessRefresh(IReadOnlyList<ProcessInfoDto> processes)
     {
+        if (!_enableProcessRefreshThrottling)
+        {
+            _pendingProcesses = processes;
+            ApplyPendingProcessRefresh();
+            return;
+        }
+
         _pendingProcesses = processes;
         var now = DateTime.UtcNow;
 
-        if ((now - _lastProcessRefreshUtc) >= ProcessRefreshInterval)
+        if (ShouldApplyRefreshImmediately(now, _lastProcessRefreshUtc, _processRefreshInterval))
         {
             ApplyPendingProcessRefresh();
             return;
@@ -421,7 +439,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         }
 
         var now = DateTime.UtcNow;
-        if ((now - _lastProcessRefreshUtc) < ProcessRefreshInterval)
+        if (!ShouldApplyRefreshImmediately(now, _lastProcessRefreshUtc, _processRefreshInterval))
         {
             return;
         }
@@ -458,6 +476,19 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         SyncCollectionOrder(TopProcesses, orderedTop);
         SyncPinnedCollection();
     }
+
+    internal static int NormalizeProcessRefreshIntervalMs(int intervalMs)
+    {
+        if (intervalMs <= 0)
+        {
+            return DefaultProcessRefreshIntervalMs;
+        }
+
+        return Math.Clamp(intervalMs, 16, 2000);
+    }
+
+    internal static bool ShouldApplyRefreshImmediately(DateTime nowUtc, DateTime lastRefreshUtc, TimeSpan refreshInterval)
+        => (nowUtc - lastRefreshUtc) >= refreshInterval;
 
     private void SyncProcessIndex(IEnumerable<ProcessInfoDto> processes)
     {

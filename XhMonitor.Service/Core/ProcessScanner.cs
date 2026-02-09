@@ -282,5 +282,16 @@ public class ProcessScanner
         }
     }
 
+    internal int DebugCommandLineCacheCount => _commandLineCache.Count;
+
+    internal bool DebugContainsCommandLineCacheEntry(int pid)
+        => _commandLineCache.ContainsKey(pid);
+
+    internal void DebugSetCommandLineCacheEntry(int pid, string commandLine, DateTime expiresAtUtc)
+        => _commandLineCache[pid] = new CommandLineCacheEntry(commandLine, expiresAtUtc);
+
+    internal void DebugCleanupCommandLineCache(IReadOnlySet<int> liveProcessIds, DateTime scanTimestamp)
+        => CleanupCommandLineCache(liveProcessIds, scanTimestamp);
+
     private readonly record struct CommandLineCacheEntry(string CommandLine, DateTime ExpiresAtUtc);
 }

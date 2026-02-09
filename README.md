@@ -164,37 +164,19 @@ await connection.start();
 
 ## Configuration
 
-### appsettings.json
+### 关键配置（建议优先关注）
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `Monitor:IntervalSeconds` | int | 3 | 进程采集间隔（秒） |
-| `Monitor:SystemUsageIntervalSeconds` | int | 1 | 系统使用率采集间隔（秒） |
-| `Monitor:Keywords` | string[] | [] | 进程过滤关键词数组 |
-| `MetricProviders:PluginDirectory` | string | "" | 自定义指标插件目录 |
-| `MetricProviders:PreferLibreHardwareMonitor` | bool | true | 是否优先使用 LibreHardwareMonitor 混合架构 |
-| `Database:RetentionDays` | int | 30 | 数据保留天数 |
-| `Database:CleanupIntervalHours` | int | 24 | 数据清理间隔（小时） |
-| `Server:Port` | int | 35179 | 后端服务端口 |
-| `Server:HubPath` | string | "/hubs/metrics" | SignalR Hub 路径 |
-| `Power:RyzenAdjPath` | string | "" | RyzenAdj 可执行文件路径 |
-| `Power:PollingIntervalSeconds` | int | 3 | 功耗采样间隔（秒） |
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `Monitor:IntervalSeconds` | `3` | Service 进程采集间隔（秒） |
+| `Monitor:Keywords` | 示例见 `appsettings.json` | 目标进程过滤关键词 |
+| `Server:Port` | `35179` | Service HTTP/SignalR 服务端口 |
+| `SignalR:*BufferSize` | `1048576` | SignalR 缓冲上限，影响峰值内存 |
+| `Aggregation:BatchSize` | `2000` | 聚合任务分批读取大小，影响聚合阶段峰值内存 |
+| `UiOptimization:ProcessRefreshIntervalMs` | `Development=100` `Staging=150` `Production=200` | Desktop 刷新节流间隔 |
 
-### 数据库设置（ApplicationSettings）
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `Appearance.ThemeColor` | string | "Dark" | UI 主题颜色 |
-| `Appearance.Opacity` | int | 60 | 窗口不透明度 |
-| `DataCollection.ProcessKeywords` | string[] | [] | 用户自定义进程关键词 |
-| `DataCollection.TopProcessCount` | int | 10 | 显示的 Top 进程数量 |
-| `System.StartWithWindows` | bool | false | 是否开机自启 |
-| `System.EnableLanAccess` | bool | false | 是否启用局域网访问 |
-| `System.EnableAccessKey` | bool | false | 是否启用访问密钥认证 |
-| `System.AccessKey` | string | "" | 访问密钥（空表示未设置） |
-| `System.IpWhitelist` | string | "" | IP 白名单（逗号分隔的 IP 地址或 CIDR） |
-
-更多配置说明参考：[Configuration Boundaries](XhMonitor.Service/docs/configuration-boundaries.md)
+完整配置说明（含全部字段）请看：`docs/appsettings-reference.md`  
+配置边界说明请看：[Configuration Boundaries](XhMonitor.Service/docs/configuration-boundaries.md)
 
 ## API Reference
 

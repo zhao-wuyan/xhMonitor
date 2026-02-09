@@ -114,8 +114,10 @@ try
 
     builder.Services.Configure<MonitorSettings>(builder.Configuration.GetSection("Monitor"));
     builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database"));
+    builder.Services.Configure<AggregationSettings>(builder.Configuration.GetSection("Aggregation"));
     builder.Services.AddOptions<MonitorSettings>().ValidateDataAnnotations().ValidateOnStart();
     builder.Services.AddOptions<DatabaseSettings>().ValidateDataAnnotations().ValidateOnStart();
+    builder.Services.AddOptions<AggregationSettings>().ValidateDataAnnotations().ValidateOnStart();
 
     var connectionResult = ValidateConnectionString(builder.Configuration);
     if (connectionResult.IsFailure)
