@@ -98,6 +98,51 @@ public static class ConfigurationDefaults
         /// 是否启用管理员模式默认值。
         /// </summary>
         public const bool AdminMode = false;
+
+        /// <summary>
+        /// 是否启用悬浮窗模式默认值。
+        /// </summary>
+        public const bool EnableFloatingMode = true;
+
+        /// <summary>
+        /// 是否启用任务栏模式默认值。
+        /// </summary>
+        public const bool EnableTaskbarMode = false;
+
+        /// <summary>
+        /// 任务栏 CPU 指标名称默认值。
+        /// </summary>
+        public const string TaskbarCpuLabel = "CPU";
+
+        /// <summary>
+        /// 任务栏内存指标名称默认值。
+        /// </summary>
+        public const string TaskbarMemoryLabel = "MEM";
+
+        /// <summary>
+        /// 任务栏 GPU 指标名称默认值。
+        /// </summary>
+        public const string TaskbarGpuLabel = "GPU";
+
+        /// <summary>
+        /// 任务栏功耗指标名称默认值。
+        /// </summary>
+        public const string TaskbarPowerLabel = "PWR";
+
+        /// <summary>
+        /// 任务栏上传名称默认值。
+        /// </summary>
+        public const string TaskbarUploadLabel = "↑";
+
+        /// <summary>
+        /// 任务栏下载名称默认值。
+        /// </summary>
+        public const string TaskbarDownloadLabel = "↓";
+
+        /// <summary>
+        /// 任务栏列间距默认值（像素）。
+        /// </summary>
+        public const int TaskbarColumnGap = 8;
     }
 
     /// <summary>
@@ -182,6 +227,15 @@ public static class ConfigurationDefaults
             public const string MonitorPower = "MonitorPower";
             public const string MonitorNetwork = "MonitorNetwork";
             public const string AdminMode = "AdminMode";
+            public const string EnableFloatingMode = "EnableFloatingMode";
+            public const string EnableTaskbarMode = "EnableTaskbarMode";
+            public const string TaskbarCpuLabel = "TaskbarCpuLabel";
+            public const string TaskbarMemoryLabel = "TaskbarMemoryLabel";
+            public const string TaskbarGpuLabel = "TaskbarGpuLabel";
+            public const string TaskbarPowerLabel = "TaskbarPowerLabel";
+            public const string TaskbarUploadLabel = "TaskbarUploadLabel";
+            public const string TaskbarDownloadLabel = "TaskbarDownloadLabel";
+            public const string TaskbarColumnGap = "TaskbarColumnGap";
         }
 
         /// <summary>系统设置键名。</summary>

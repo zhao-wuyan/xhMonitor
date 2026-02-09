@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.Dialogs;
 using XhMonitor.Desktop.Services;
 using XhMonitor.Desktop.ViewModels;
@@ -195,6 +196,8 @@ public partial class SettingsWindow : Window
                 await ShowSaveSuccessHintAsync();
             }
 
+            await ApplyDisplayModesAsync();
+
             // 更新原始值，避免重复提示
             _viewModel.UpdateOriginalAdminMode();
             _viewModel.UpdateOriginalEnableLanAccess();
@@ -222,6 +225,22 @@ public partial class SettingsWindow : Window
 
         SaveButton.Content = originalContent;
         SaveButton.IsEnabled = true;
+    }
+
+    private async Task ApplyDisplayModesAsync()
+    {
+        try
+        {
+            var windowManagementService = ((App)System.Windows.Application.Current).Services?.GetService<IWindowManagementService>();
+            if (windowManagementService != null)
+            {
+                await windowManagementService.RefreshDisplayModesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to apply display mode settings: {ex.Message}");
+        }
     }
 
     private string BuildWebUiUrl()

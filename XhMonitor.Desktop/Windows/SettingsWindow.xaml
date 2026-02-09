@@ -803,6 +803,75 @@
 
                             <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
+                                    <TextBlock Text="显示模式（支持并存）" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="悬浮窗与任务栏模式可单独开启，或同时开启。任务栏模式使用最短单位（如 G/M、K/s）。"
+                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                                    <UniformGrid Rows="1" Columns="2" Margin="0,0,0,12">
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="悬浮窗模式" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="Desktop Floating Window" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding EnableFloatingMode}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="任务栏模式" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="TrafficMonitor 风格列布局" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding EnableTaskbarMode}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </UniformGrid>
+
+                                    <TextBlock Text="任务栏指标名称（自定义）" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                                    <UniformGrid Rows="2" Columns="4" Margin="0,0,0,10">
+                                        <StackPanel Margin="0,0,8,8">
+                                            <TextBlock Text="CPU 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarCpuLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,8">
+                                            <TextBlock Text="内存名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarMemoryLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,8">
+                                            <TextBlock Text="GPU 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarGpuLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="功耗名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarPowerLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0">
+                                            <TextBlock Text="上传前缀" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarUploadLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0">
+                                            <TextBlock Text="下载前缀" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarDownloadLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0">
+                                            <TextBlock Text="列间距(px)" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding TaskbarColumnGap, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
                                     <TextBlock Text="进程监控关键词" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
                                     <TextBlock Text="每行一个关键词。支持正则表达式，使用 ! 前缀排除，例如：!chrome"
                                                Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>

@@ -1,7 +1,11 @@
 using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using XhMonitor.Core.Configuration;
 using XhMonitor.Desktop;
+using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.ViewModels;
 
 namespace XhMonitor.Desktop.Services;
@@ -12,26 +16,36 @@ public sealed class WindowManagementService : IWindowManagementService
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
     private readonly IPowerControlService _powerControlService;
+    private readonly ITaskbarPlacementService _taskbarPlacementService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly HttpClient _httpClient;
+    private readonly string _apiBaseUrl;
     private FloatingWindow? _floatingWindow;
+    private Windows.TaskbarMetricsWindow? _taskbarWindow;
+    private TaskbarDisplaySettings _displaySettings = new();
 
     public WindowManagementService(
         ITrayIconService trayIconService,
         IServiceDiscovery serviceDiscovery,
         IProcessManager processManager,
         IPowerControlService powerControlService,
+        ITaskbarPlacementService taskbarPlacementService,
+        IHttpClientFactory httpClientFactory,
         IServiceProvider serviceProvider)
     {
         _trayIconService = trayIconService;
         _serviceDiscovery = serviceDiscovery;
         _processManager = processManager;
         _powerControlService = powerControlService;
+        _taskbarPlacementService = taskbarPlacementService;
         _serviceProvider = serviceProvider;
+        _httpClient = httpClientFactory.CreateClient();
+        _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
     }
 
     public void InitializeMainWindow()
     {
-        if (_floatingWindow != null)
+        if (_floatingWindow != null || _taskbarWindow != null)
         {
             return;
         }
@@ -40,7 +54,8 @@ public sealed class WindowManagementService : IWindowManagementService
         _floatingWindow.MetricActionRequested += OnMetricActionRequested;
         _floatingWindow.MetricLongPressStarted += OnMetricLongPressStarted;
         _floatingWindow.ProcessActionRequested += OnProcessActionRequested;
-        _floatingWindow.Show();
+
+        _taskbarWindow = new Windows.TaskbarMetricsWindow(_taskbarPlacementService, _serviceDiscovery);
 
         _trayIconService.Initialize(
             _floatingWindow,
@@ -49,6 +64,13 @@ public sealed class WindowManagementService : IWindowManagementService
             OpenSettingsWindow,
             OpenAboutWindow,
             ExitApplication);
+
+        // 启动阶段先使用本地默认配置，避免 UI 线程等待网络配置导致阻塞。
+        _displaySettings = new TaskbarDisplaySettings();
+        _displaySettings.Normalize();
+        ApplyDisplayModes(_displaySettings);
+
+        _ = RefreshDisplayModesSafeAsync();
     }
 
     public void ShowMainWindow()
@@ -71,28 +93,65 @@ public sealed class WindowManagementService : IWindowManagementService
     {
         if (_floatingWindow == null)
         {
+            CloseTaskbarWindow();
             return;
         }
 
         _floatingWindow.AllowClose();
         _floatingWindow.Close();
         _floatingWindow = null;
+
+        CloseTaskbarWindow();
+    }
+
+    public async Task RefreshDisplayModesAsync()
+    {
+        _displaySettings = await LoadDisplaySettingsAsync();
+
+        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            ApplyDisplayModes(_displaySettings);
+        });
+    }
+
+    private async Task RefreshDisplayModesSafeAsync()
+    {
+        try
+        {
+            await RefreshDisplayModesAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to refresh display modes: {ex.Message}");
+        }
     }
 
     private void ToggleMainWindow()
     {
-        if (_floatingWindow == null)
+        if (_displaySettings.EnableFloatingMode && _floatingWindow != null)
         {
+            if (_floatingWindow.IsVisible)
+            {
+                HideMainWindow();
+            }
+            else
+            {
+                ShowMainWindow();
+            }
+
             return;
         }
 
-        if (_floatingWindow.IsVisible)
+        if (_displaySettings.EnableTaskbarMode && _taskbarWindow != null)
         {
-            HideMainWindow();
-        }
-        else
-        {
-            ShowMainWindow();
+            if (_taskbarWindow.IsVisible)
+            {
+                _taskbarWindow.Hide();
+            }
+            else
+            {
+                _taskbarWindow.Show();
+            }
         }
     }
 
@@ -164,7 +223,122 @@ public sealed class WindowManagementService : IWindowManagementService
     private void ExitApplication()
     {
         _floatingWindow?.AllowClose();
+        _taskbarWindow?.AllowClose();
         System.Windows.Application.Current.Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
+    }
+
+    private async Task<TaskbarDisplaySettings> LoadDisplaySettingsAsync()
+    {
+        var settings = new TaskbarDisplaySettings();
+
+        try
+        {
+            var response = await _httpClient.GetAsync($"{_apiBaseUrl}/settings").ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                settings.Normalize();
+                return settings;
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>().ConfigureAwait(false);
+            if (payload?.TryGetValue(ConfigurationDefaults.Keys.Categories.Monitoring, out var monitoring) == true)
+            {
+                settings.MonitorCpu = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorCpu, settings.MonitorCpu);
+                settings.MonitorMemory = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorMemory, settings.MonitorMemory);
+                settings.MonitorGpu = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorGpu, settings.MonitorGpu);
+                settings.MonitorPower = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorPower, settings.MonitorPower);
+                settings.MonitorNetwork = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, settings.MonitorNetwork);
+                settings.EnableFloatingMode = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode, settings.EnableFloatingMode);
+                settings.EnableTaskbarMode = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableTaskbarMode, settings.EnableTaskbarMode);
+                settings.TaskbarCpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarCpuLabel, settings.TaskbarCpuLabel);
+                settings.TaskbarMemoryLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarMemoryLabel, settings.TaskbarMemoryLabel);
+                settings.TaskbarGpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarGpuLabel, settings.TaskbarGpuLabel);
+                settings.TaskbarPowerLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarPowerLabel, settings.TaskbarPowerLabel);
+                settings.TaskbarUploadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarUploadLabel, settings.TaskbarUploadLabel);
+                settings.TaskbarDownloadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarDownloadLabel, settings.TaskbarDownloadLabel);
+                settings.TaskbarColumnGap = ParseInt(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarColumnGap, settings.TaskbarColumnGap);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to load display settings: {ex.Message}");
+        }
+
+        settings.Normalize();
+        return settings;
+    }
+
+    private void ApplyDisplayModes(TaskbarDisplaySettings settings)
+    {
+        settings.Normalize();
+
+        if (_taskbarWindow != null)
+        {
+            _taskbarWindow.ApplyDisplaySettings(settings);
+            if (settings.EnableTaskbarMode)
+            {
+                if (!_taskbarWindow.IsVisible)
+                {
+                    _taskbarWindow.Show();
+                }
+            }
+            else
+            {
+                _taskbarWindow.Hide();
+            }
+        }
+
+        if (_floatingWindow != null)
+        {
+            if (settings.EnableFloatingMode)
+            {
+                if (!_floatingWindow.IsVisible)
+                {
+                    _floatingWindow.Show();
+                }
+            }
+            else
+            {
+                _floatingWindow.Hide();
+            }
+        }
+    }
+
+    private void CloseTaskbarWindow()
+    {
+        if (_taskbarWindow == null)
+        {
+            return;
+        }
+
+        _taskbarWindow.AllowClose();
+        _taskbarWindow.Close();
+        _taskbarWindow = null;
+    }
+
+    private static bool ParseBool(Dictionary<string, string> values, string key, bool fallback)
+    {
+        return values.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static int ParseInt(Dictionary<string, string> values, string key, int fallback)
+    {
+        return values.TryGetValue(key, out var raw) && int.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static string ParseString(Dictionary<string, string> values, string key, string fallback)
+    {
+        if (!values.TryGetValue(key, out var raw))
+        {
+            return fallback;
+        }
+
+        var normalized = raw.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
     }
 
     private async void OnMetricLongPressStarted(object? sender, MetricActionEventArgs e)

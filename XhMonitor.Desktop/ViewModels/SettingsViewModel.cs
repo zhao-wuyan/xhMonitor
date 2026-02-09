@@ -36,6 +36,15 @@ public class SettingsViewModel : INotifyPropertyChanged
     private bool _monitorVram = ConfigurationDefaults.Monitoring.MonitorVram;
     private bool _monitorPower = ConfigurationDefaults.Monitoring.MonitorPower;
     private bool _monitorNetwork = ConfigurationDefaults.Monitoring.MonitorNetwork;
+    private bool _enableFloatingMode = ConfigurationDefaults.Monitoring.EnableFloatingMode;
+    private bool _enableTaskbarMode = ConfigurationDefaults.Monitoring.EnableTaskbarMode;
+    private string _taskbarCpuLabel = ConfigurationDefaults.Monitoring.TaskbarCpuLabel;
+    private string _taskbarMemoryLabel = ConfigurationDefaults.Monitoring.TaskbarMemoryLabel;
+    private string _taskbarGpuLabel = ConfigurationDefaults.Monitoring.TaskbarGpuLabel;
+    private string _taskbarPowerLabel = ConfigurationDefaults.Monitoring.TaskbarPowerLabel;
+    private string _taskbarUploadLabel = ConfigurationDefaults.Monitoring.TaskbarUploadLabel;
+    private string _taskbarDownloadLabel = ConfigurationDefaults.Monitoring.TaskbarDownloadLabel;
+    private int _taskbarColumnGap = ConfigurationDefaults.Monitoring.TaskbarColumnGap;
     private bool _adminMode = ConfigurationDefaults.Monitoring.AdminMode;
     private bool _originalAdminMode = ConfigurationDefaults.Monitoring.AdminMode;
 
@@ -127,6 +136,60 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         get => _monitorNetwork;
         set => SetProperty(ref _monitorNetwork, value);
+    }
+
+    public bool EnableFloatingMode
+    {
+        get => _enableFloatingMode;
+        set => SetProperty(ref _enableFloatingMode, value);
+    }
+
+    public bool EnableTaskbarMode
+    {
+        get => _enableTaskbarMode;
+        set => SetProperty(ref _enableTaskbarMode, value);
+    }
+
+    public string TaskbarCpuLabel
+    {
+        get => _taskbarCpuLabel;
+        set => SetProperty(ref _taskbarCpuLabel, value ?? string.Empty);
+    }
+
+    public string TaskbarMemoryLabel
+    {
+        get => _taskbarMemoryLabel;
+        set => SetProperty(ref _taskbarMemoryLabel, value ?? string.Empty);
+    }
+
+    public string TaskbarGpuLabel
+    {
+        get => _taskbarGpuLabel;
+        set => SetProperty(ref _taskbarGpuLabel, value ?? string.Empty);
+    }
+
+    public string TaskbarPowerLabel
+    {
+        get => _taskbarPowerLabel;
+        set => SetProperty(ref _taskbarPowerLabel, value ?? string.Empty);
+    }
+
+    public string TaskbarUploadLabel
+    {
+        get => _taskbarUploadLabel;
+        set => SetProperty(ref _taskbarUploadLabel, value ?? string.Empty);
+    }
+
+    public string TaskbarDownloadLabel
+    {
+        get => _taskbarDownloadLabel;
+        set => SetProperty(ref _taskbarDownloadLabel, value ?? string.Empty);
+    }
+
+    public int TaskbarColumnGap
+    {
+        get => _taskbarColumnGap;
+        set => SetProperty(ref _taskbarColumnGap, Math.Clamp(value, 2, 24));
     }
 
     public bool AdminMode
@@ -288,13 +351,22 @@ public class SettingsViewModel : INotifyPropertyChanged
             // 监控设置
             if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.Monitoring, out var monitoring))
             {
-                MonitorCpu = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorCpu]);
-                MonitorMemory = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorMemory]);
-                MonitorGpu = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorGpu]);
-                MonitorVram = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorVram]);
-                MonitorPower = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorPower]);
-                MonitorNetwork = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorNetwork]);
-                AdminMode = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.AdminMode]);
+                MonitorCpu = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorCpu, ConfigurationDefaults.Monitoring.MonitorCpu);
+                MonitorMemory = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorMemory, ConfigurationDefaults.Monitoring.MonitorMemory);
+                MonitorGpu = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorGpu, ConfigurationDefaults.Monitoring.MonitorGpu);
+                MonitorVram = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorVram, ConfigurationDefaults.Monitoring.MonitorVram);
+                MonitorPower = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorPower, ConfigurationDefaults.Monitoring.MonitorPower);
+                MonitorNetwork = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, ConfigurationDefaults.Monitoring.MonitorNetwork);
+                AdminMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.AdminMode, ConfigurationDefaults.Monitoring.AdminMode);
+                EnableFloatingMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode, ConfigurationDefaults.Monitoring.EnableFloatingMode);
+                EnableTaskbarMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableTaskbarMode, ConfigurationDefaults.Monitoring.EnableTaskbarMode);
+                TaskbarCpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarCpuLabel, ConfigurationDefaults.Monitoring.TaskbarCpuLabel);
+                TaskbarMemoryLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarMemoryLabel, ConfigurationDefaults.Monitoring.TaskbarMemoryLabel);
+                TaskbarGpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarGpuLabel, ConfigurationDefaults.Monitoring.TaskbarGpuLabel);
+                TaskbarPowerLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarPowerLabel, ConfigurationDefaults.Monitoring.TaskbarPowerLabel);
+                TaskbarUploadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarUploadLabel, ConfigurationDefaults.Monitoring.TaskbarUploadLabel);
+                TaskbarDownloadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarDownloadLabel, ConfigurationDefaults.Monitoring.TaskbarDownloadLabel);
+                TaskbarColumnGap = GetInt(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarColumnGap, ConfigurationDefaults.Monitoring.TaskbarColumnGap);
                 _originalAdminMode = AdminMode; // 保存原始值用于变更检测
             }
 
@@ -376,7 +448,16 @@ public class SettingsViewModel : INotifyPropertyChanged
                     [ConfigurationDefaults.Keys.Monitoring.MonitorVram] = MonitorVram.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.Monitoring.MonitorPower] = MonitorPower.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.Monitoring.MonitorNetwork] = MonitorNetwork.ToString().ToLower(),
-                    [ConfigurationDefaults.Keys.Monitoring.AdminMode] = AdminMode.ToString().ToLower()
+                    [ConfigurationDefaults.Keys.Monitoring.AdminMode] = AdminMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode] = EnableFloatingMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.EnableTaskbarMode] = EnableTaskbarMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarCpuLabel] = (TaskbarCpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarMemoryLabel] = (TaskbarMemoryLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarGpuLabel] = (TaskbarGpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarPowerLabel] = (TaskbarPowerLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarUploadLabel] = (TaskbarUploadLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarDownloadLabel] = (TaskbarDownloadLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.TaskbarColumnGap] = TaskbarColumnGap.ToString()
                 },
                 [ConfigurationDefaults.Keys.Categories.System] = new()
                 {
@@ -615,6 +696,31 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         public bool IsAdmin { get; set; }
         public string? Message { get; set; }
+    }
+
+    private static bool GetBool(Dictionary<string, string> settings, string key, bool fallback)
+    {
+        return settings.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static int GetInt(Dictionary<string, string> settings, string key, int fallback)
+    {
+        return settings.TryGetValue(key, out var raw) && int.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static string GetString(Dictionary<string, string> settings, string key, string fallback)
+    {
+        if (!settings.TryGetValue(key, out var raw))
+        {
+            return fallback;
+        }
+
+        var normalized = (raw ?? string.Empty).Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

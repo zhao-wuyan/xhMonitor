@@ -1,0 +1,39 @@
+{
+  "angle": "testing",
+  "project_structure": [
+    "当前 Desktop.Tests 主要覆盖 ViewModel 纯逻辑与工具类",
+    "尚未覆盖 WindowManagementService/TrayIconService 的模式编排逻辑"
+  ],
+  "relevant_files": [
+    "XhMonitor.Desktop.Tests/SettingsViewModelTests.cs",
+    "XhMonitor.Desktop.Tests/FloatingWindowViewModelThrottleTests.cs",
+    "XhMonitor.Desktop.Tests/SignalRServiceTests.cs",
+    "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs"
+  ],
+  "patterns": [
+    "测试框架为 xUnit + FluentAssertions",
+    "已有对时间窗口节流逻辑的单元测试模式（可复用到任务栏刷新节流）",
+    "SettingsViewModel 测试存在 FakeServiceDiscovery 模式（可复用新增配置键测试）"
+  ],
+  "dependencies": [
+    "UI Window 直接集成测试成本高，建议抽离 taskbar 文本格式化/布局计算为纯函数进行单元测试",
+    "Win32 定位逻辑建议通过接口抽象（ITaskbarLocator）后使用 mock 测试边界"
+  ],
+  "integration_points": [
+    "新增 SettingsViewModelTests：新配置键默认值/序列化/反序列化兼容",
+    "新增 TaskbarTextFormatterTests：不同指标组合与单位格式",
+    "新增 TaskbarPlacementCalculatorTests：底部/左侧/右侧任务栏坐标计算",
+    "新增 WindowManagementServiceTests：双模式启停状态机"
+  ],
+  "constraints": [
+    "避免在测试中直接依赖真实 Shell_TrayWnd 或用户桌面环境",
+    "需要覆盖“缺失配置键”场景，确保升级后老用户配置可正常加载"
+  ],
+  "clarification_needs": [],
+  "_metadata": {
+    "exploration_angle": "testing",
+    "exploration_index": 3,
+    "timestamp": "2026-02-09T19:39:17.237Z"
+  }
+}

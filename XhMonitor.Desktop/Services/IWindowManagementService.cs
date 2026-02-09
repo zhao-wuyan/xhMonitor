@@ -9,4 +9,6 @@ public interface IWindowManagementService
     void HideMainWindow();
 
     void CloseMainWindow();
+
+    Task RefreshDisplayModesAsync();
 }

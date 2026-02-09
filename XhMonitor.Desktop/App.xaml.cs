@@ -71,6 +71,7 @@ public partial class App : WpfApplication
                 services.AddSingleton<ITrayIconService, TrayIconService>();
                 services.AddSingleton<IProcessManager, ProcessManager>();
                 services.AddSingleton<IPowerControlService, PowerControlService>();
+                services.AddSingleton<ITaskbarPlacementService, TaskbarPlacementService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
                 services.AddSingleton<IAdminModeManager, AdminModeManager>();
                 services.AddSingleton<IStartupManager, StartupManager>();

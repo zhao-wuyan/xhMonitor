@@ -1,0 +1,50 @@
+{
+  "angle": "patterns",
+  "project_structure": [
+    "Desktop UI: WPF 单窗口悬浮层（FloatingWindow）+ MVVM（FloatingWindowViewModel）",
+    "窗口生命周期与入口：App -> WindowManagementService -> FloatingWindow + TrayIcon",
+    "设置持久化链路：Desktop SettingsViewModel -> Service ConfigController -> ApplicationSettings(SQLite)",
+    "实时数据链路：SignalRService -> FloatingWindowViewModel 属性更新 -> XAML 绑定"
+  ],
+  "relevant_files": [
+    "XhMonitor.Desktop/FloatingWindow.xaml",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+    "XhMonitor.Desktop/Services/WindowManagementService.cs",
+    "XhMonitor.Desktop/Services/TrayIconService.cs",
+    "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+    "XhMonitor.Service/Controllers/ConfigController.cs",
+    "XhMonitor.Service/Data/MonitorDbContext.cs",
+    "XhMonitor.Core/Configuration/ConfigurationDefaults.cs"
+  ],
+  "patterns": [
+    "设置页布尔开关采用 SettingsViewModel 属性 + XAML 双向绑定 + SaveSettingsAsync 批量提交模式",
+    "监控可见性开关采用 Monitoring 分类键（MonitorCpu/Memory/Gpu/Vram/Power/Network）",
+    "悬浮窗当前固定 Topmost=true 且 ShowInTaskbar=false，属于桌面浮层模式",
+    "系统托盘使用 WinForms NotifyIcon + ContextMenuStrip，负责显示/隐藏与入口分发",
+    "桌面端尚未存在 taskbar 文本显示/嵌入任务栏相关 API 封装"
+  ],
+  "dependencies": [
+    "WPF + WinForms 已启用（XhMonitor.Desktop.csproj: UseWPF=true, UseWindowsForms=true）",
+    "当前已存在 user32 interop（点击穿透等），可扩展 Win32 定位/窗口样式逻辑",
+    "无现成 taskbar toolbar/deskband 依赖，需要自研 Win32 适配层"
+  ],
+  "integration_points": [
+    "App.OnStartup 创建 Host 后调用 IWindowManagementService.InitializeMainWindow",
+    "WindowManagementService 持有 FloatingWindow 并初始化 TrayIconService",
+    "FloatingWindow.OnLoaded 会拉取 /api/v1/config/settings 并应用可见性/透明度",
+    "SettingsWindow 保存后通过 SettingsViewModel 写回配置，部分选项触发重启流程"
+  ],
+  "constraints": [
+    "新增模式需要保持与现有悬浮窗模式可并存",
+    "新增配置键必须兼容旧数据库（缺失键时有默认值，不能抛 KeyNotFound）",
+    "任务栏相关实现受 Windows 版本、任务栏布局、第三方任务栏改造影响较大"
+  ],
+  "clarification_needs": [],
+  "_metadata": {
+    "exploration_angle": "patterns",
+    "exploration_index": 1,
+    "timestamp": "2026-02-09T19:39:17.237Z"
+  }
+}
