@@ -37,14 +37,14 @@ public class SettingsViewModel : INotifyPropertyChanged
     private bool _monitorPower = ConfigurationDefaults.Monitoring.MonitorPower;
     private bool _monitorNetwork = ConfigurationDefaults.Monitoring.MonitorNetwork;
     private bool _enableFloatingMode = ConfigurationDefaults.Monitoring.EnableFloatingMode;
-    private bool _enableTaskbarMode = ConfigurationDefaults.Monitoring.EnableTaskbarMode;
-    private string _taskbarCpuLabel = ConfigurationDefaults.Monitoring.TaskbarCpuLabel;
-    private string _taskbarMemoryLabel = ConfigurationDefaults.Monitoring.TaskbarMemoryLabel;
-    private string _taskbarGpuLabel = ConfigurationDefaults.Monitoring.TaskbarGpuLabel;
-    private string _taskbarPowerLabel = ConfigurationDefaults.Monitoring.TaskbarPowerLabel;
-    private string _taskbarUploadLabel = ConfigurationDefaults.Monitoring.TaskbarUploadLabel;
-    private string _taskbarDownloadLabel = ConfigurationDefaults.Monitoring.TaskbarDownloadLabel;
-    private int _taskbarColumnGap = ConfigurationDefaults.Monitoring.TaskbarColumnGap;
+    private bool _enableEdgeDockMode = ConfigurationDefaults.Monitoring.EnableEdgeDockMode;
+    private string _dockCpuLabel = ConfigurationDefaults.Monitoring.DockCpuLabel;
+    private string _dockMemoryLabel = ConfigurationDefaults.Monitoring.DockMemoryLabel;
+    private string _dockGpuLabel = ConfigurationDefaults.Monitoring.DockGpuLabel;
+    private string _dockPowerLabel = ConfigurationDefaults.Monitoring.DockPowerLabel;
+    private string _dockUploadLabel = ConfigurationDefaults.Monitoring.DockUploadLabel;
+    private string _dockDownloadLabel = ConfigurationDefaults.Monitoring.DockDownloadLabel;
+    private int _dockColumnGap = ConfigurationDefaults.Monitoring.DockColumnGap;
     private bool _adminMode = ConfigurationDefaults.Monitoring.AdminMode;
     private bool _originalAdminMode = ConfigurationDefaults.Monitoring.AdminMode;
 
@@ -144,52 +144,52 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _enableFloatingMode, value);
     }
 
-    public bool EnableTaskbarMode
+    public bool EnableEdgeDockMode
     {
-        get => _enableTaskbarMode;
-        set => SetProperty(ref _enableTaskbarMode, value);
+        get => _enableEdgeDockMode;
+        set => SetProperty(ref _enableEdgeDockMode, value);
     }
 
-    public string TaskbarCpuLabel
+    public string DockCpuLabel
     {
-        get => _taskbarCpuLabel;
-        set => SetProperty(ref _taskbarCpuLabel, value ?? string.Empty);
+        get => _dockCpuLabel;
+        set => SetProperty(ref _dockCpuLabel, value ?? string.Empty);
     }
 
-    public string TaskbarMemoryLabel
+    public string DockMemoryLabel
     {
-        get => _taskbarMemoryLabel;
-        set => SetProperty(ref _taskbarMemoryLabel, value ?? string.Empty);
+        get => _dockMemoryLabel;
+        set => SetProperty(ref _dockMemoryLabel, value ?? string.Empty);
     }
 
-    public string TaskbarGpuLabel
+    public string DockGpuLabel
     {
-        get => _taskbarGpuLabel;
-        set => SetProperty(ref _taskbarGpuLabel, value ?? string.Empty);
+        get => _dockGpuLabel;
+        set => SetProperty(ref _dockGpuLabel, value ?? string.Empty);
     }
 
-    public string TaskbarPowerLabel
+    public string DockPowerLabel
     {
-        get => _taskbarPowerLabel;
-        set => SetProperty(ref _taskbarPowerLabel, value ?? string.Empty);
+        get => _dockPowerLabel;
+        set => SetProperty(ref _dockPowerLabel, value ?? string.Empty);
     }
 
-    public string TaskbarUploadLabel
+    public string DockUploadLabel
     {
-        get => _taskbarUploadLabel;
-        set => SetProperty(ref _taskbarUploadLabel, value ?? string.Empty);
+        get => _dockUploadLabel;
+        set => SetProperty(ref _dockUploadLabel, value ?? string.Empty);
     }
 
-    public string TaskbarDownloadLabel
+    public string DockDownloadLabel
     {
-        get => _taskbarDownloadLabel;
-        set => SetProperty(ref _taskbarDownloadLabel, value ?? string.Empty);
+        get => _dockDownloadLabel;
+        set => SetProperty(ref _dockDownloadLabel, value ?? string.Empty);
     }
 
-    public int TaskbarColumnGap
+    public int DockColumnGap
     {
-        get => _taskbarColumnGap;
-        set => SetProperty(ref _taskbarColumnGap, Math.Clamp(value, 2, 24));
+        get => _dockColumnGap;
+        set => SetProperty(ref _dockColumnGap, Math.Clamp(value, 0, 24));
     }
 
     public bool AdminMode
@@ -359,14 +359,14 @@ public class SettingsViewModel : INotifyPropertyChanged
                 MonitorNetwork = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, ConfigurationDefaults.Monitoring.MonitorNetwork);
                 AdminMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.AdminMode, ConfigurationDefaults.Monitoring.AdminMode);
                 EnableFloatingMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode, ConfigurationDefaults.Monitoring.EnableFloatingMode);
-                EnableTaskbarMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableTaskbarMode, ConfigurationDefaults.Monitoring.EnableTaskbarMode);
-                TaskbarCpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarCpuLabel, ConfigurationDefaults.Monitoring.TaskbarCpuLabel);
-                TaskbarMemoryLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarMemoryLabel, ConfigurationDefaults.Monitoring.TaskbarMemoryLabel);
-                TaskbarGpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarGpuLabel, ConfigurationDefaults.Monitoring.TaskbarGpuLabel);
-                TaskbarPowerLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarPowerLabel, ConfigurationDefaults.Monitoring.TaskbarPowerLabel);
-                TaskbarUploadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarUploadLabel, ConfigurationDefaults.Monitoring.TaskbarUploadLabel);
-                TaskbarDownloadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarDownloadLabel, ConfigurationDefaults.Monitoring.TaskbarDownloadLabel);
-                TaskbarColumnGap = GetInt(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarColumnGap, ConfigurationDefaults.Monitoring.TaskbarColumnGap);
+                EnableEdgeDockMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableEdgeDockMode, ConfigurationDefaults.Monitoring.EnableEdgeDockMode);
+                DockCpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockCpuLabel, ConfigurationDefaults.Monitoring.DockCpuLabel);
+                DockMemoryLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel, ConfigurationDefaults.Monitoring.DockMemoryLabel);
+                DockGpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockGpuLabel, ConfigurationDefaults.Monitoring.DockGpuLabel);
+                DockPowerLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockPowerLabel, ConfigurationDefaults.Monitoring.DockPowerLabel);
+                DockUploadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockUploadLabel, ConfigurationDefaults.Monitoring.DockUploadLabel);
+                DockDownloadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel, ConfigurationDefaults.Monitoring.DockDownloadLabel);
+                DockColumnGap = GetInt(monitoring, ConfigurationDefaults.Keys.Monitoring.DockColumnGap, ConfigurationDefaults.Monitoring.DockColumnGap);
                 _originalAdminMode = AdminMode; // 保存原始值用于变更检测
             }
 
@@ -450,14 +450,14 @@ public class SettingsViewModel : INotifyPropertyChanged
                     [ConfigurationDefaults.Keys.Monitoring.MonitorNetwork] = MonitorNetwork.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.Monitoring.AdminMode] = AdminMode.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode] = EnableFloatingMode.ToString().ToLower(),
-                    [ConfigurationDefaults.Keys.Monitoring.EnableTaskbarMode] = EnableTaskbarMode.ToString().ToLower(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarCpuLabel] = (TaskbarCpuLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarMemoryLabel] = (TaskbarMemoryLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarGpuLabel] = (TaskbarGpuLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarPowerLabel] = (TaskbarPowerLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarUploadLabel] = (TaskbarUploadLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarDownloadLabel] = (TaskbarDownloadLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.TaskbarColumnGap] = TaskbarColumnGap.ToString()
+                    [ConfigurationDefaults.Keys.Monitoring.EnableEdgeDockMode] = EnableEdgeDockMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockCpuLabel] = (DockCpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel] = (DockMemoryLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockGpuLabel] = (DockGpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockPowerLabel] = (DockPowerLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockUploadLabel] = (DockUploadLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel] = (DockDownloadLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockColumnGap] = DockColumnGap.ToString()
                 },
                 [ConfigurationDefaults.Keys.Categories.System] = new()
                 {

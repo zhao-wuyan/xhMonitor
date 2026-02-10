@@ -15,6 +15,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.ViewModels;
+using WinFormsCursor = System.Windows.Forms.Cursor;
+using WinFormsScreen = System.Windows.Forms.Screen;
 
 namespace XhMonitor.Desktop;
 
@@ -323,6 +325,9 @@ public partial class FloatingWindow : Window
             ApplyPlacement(placement);
         }
 
+        // 启动时纠正历史位置，避免与任务栏重叠。
+        ResetToNearestNonTaskbarOverlapByCurrentScreen();
+
         _hwndSource = HwndSource.FromHwnd(_windowHandle);
         _hwndSource?.AddHook(WndProc);
     }
@@ -416,6 +421,10 @@ public partial class FloatingWindow : Window
             _isDragging = false;
             StopLongPressTimer();
             System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 拖动结束");
+            if (!TryActivateEdgeDockModeByHalfOut())
+            {
+                ResetToNearestNonTaskbarOverlapByMouseScreen();
+            }
             e.Handled = true;
             return;
         }
@@ -977,6 +986,88 @@ public partial class FloatingWindow : Window
         Top = top;
         Width = placement.Width;
         Height = placement.Height;
+    }
+
+    private bool TryActivateEdgeDockModeByHalfOut()
+    {
+        // 贴边触发基于完整屏幕边界，任务栏区域不参与触发判定。
+        var screenBounds = WinFormsScreen.FromPoint(WinFormsCursor.Position).Bounds;
+        var boundaryLeft = screenBounds.Left;
+        var boundaryTop = screenBounds.Top;
+        var boundaryRight = screenBounds.Right;
+        var boundaryBottom = screenBounds.Bottom;
+
+        var windowWidth = Math.Max(Width, ActualWidth);
+        var windowHeight = Math.Max(Height, ActualHeight);
+
+        var overflowLeft = Math.Max(0, boundaryLeft - Left);
+        var overflowRight = Math.Max(0, (Left + windowWidth) - boundaryRight);
+        var overflowTop = Math.Max(0, boundaryTop - Top);
+        var overflowBottom = Math.Max(0, (Top + windowHeight) - boundaryBottom);
+
+        var shouldTrigger =
+            overflowLeft >= windowWidth / 2.0 ||
+            overflowRight >= windowWidth / 2.0 ||
+            overflowTop >= windowHeight / 2.0 ||
+            overflowBottom >= windowHeight / 2.0;
+
+        if (!shouldTrigger)
+        {
+            return false;
+        }
+
+        var windowManagementService = ((App)System.Windows.Application.Current).Services?.GetService<XhMonitor.Desktop.Services.IWindowManagementService>();
+        windowManagementService?.ActivateEdgeDockMode();
+        return true;
+    }
+
+    private void ResetToNearestNonTaskbarOverlapByCurrentScreen()
+    {
+        var screen = _windowHandle != IntPtr.Zero
+            ? WinFormsScreen.FromHandle(_windowHandle)
+            : WinFormsScreen.FromPoint(WinFormsCursor.Position);
+        ResetToNearestNonTaskbarOverlap(screen);
+    }
+
+    private void ResetToNearestNonTaskbarOverlapByMouseScreen()
+    {
+        var screen = WinFormsScreen.FromPoint(WinFormsCursor.Position);
+        ResetToNearestNonTaskbarOverlap(screen);
+    }
+
+    private void ResetToNearestNonTaskbarOverlap(WinFormsScreen screen)
+    {
+        var workingArea = screen.WorkingArea;
+        var windowWidth = Math.Max(Width, ActualWidth);
+        var windowHeight = Math.Max(Height, ActualHeight);
+
+        var minLeft = workingArea.Left;
+        var maxLeft = workingArea.Right - windowWidth;
+        var minTop = workingArea.Top;
+        var maxTop = workingArea.Bottom - windowHeight;
+
+        var targetLeft = ClampToRange(Left, minLeft, maxLeft);
+        var targetTop = ClampToRange(Top, minTop, maxTop);
+
+        if (Math.Abs(targetLeft - Left) > 0.5)
+        {
+            Left = targetLeft;
+        }
+
+        if (Math.Abs(targetTop - Top) > 0.5)
+        {
+            Top = targetTop;
+        }
+    }
+
+    private static double ClampToRange(double value, double min, double max)
+    {
+        if (min > max)
+        {
+            return min;
+        }
+
+        return Math.Clamp(value, min, max);
     }
 
     private static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)

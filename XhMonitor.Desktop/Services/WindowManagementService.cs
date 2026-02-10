@@ -16,12 +16,11 @@ public sealed class WindowManagementService : IWindowManagementService
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
     private readonly IPowerControlService _powerControlService;
-    private readonly ITaskbarPlacementService _taskbarPlacementService;
     private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
     private readonly string _apiBaseUrl;
     private FloatingWindow? _floatingWindow;
-    private Windows.TaskbarMetricsWindow? _taskbarWindow;
+    private Windows.TaskbarMetricsWindow? _edgeDockWindow;
     private TaskbarDisplaySettings _displaySettings = new();
 
     public WindowManagementService(
@@ -29,7 +28,6 @@ public sealed class WindowManagementService : IWindowManagementService
         IServiceDiscovery serviceDiscovery,
         IProcessManager processManager,
         IPowerControlService powerControlService,
-        ITaskbarPlacementService taskbarPlacementService,
         IHttpClientFactory httpClientFactory,
         IServiceProvider serviceProvider)
     {
@@ -37,7 +35,6 @@ public sealed class WindowManagementService : IWindowManagementService
         _serviceDiscovery = serviceDiscovery;
         _processManager = processManager;
         _powerControlService = powerControlService;
-        _taskbarPlacementService = taskbarPlacementService;
         _serviceProvider = serviceProvider;
         _httpClient = httpClientFactory.CreateClient();
         _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
@@ -45,7 +42,7 @@ public sealed class WindowManagementService : IWindowManagementService
 
     public void InitializeMainWindow()
     {
-        if (_floatingWindow != null || _taskbarWindow != null)
+        if (_floatingWindow != null || _edgeDockWindow != null)
         {
             return;
         }
@@ -55,7 +52,7 @@ public sealed class WindowManagementService : IWindowManagementService
         _floatingWindow.MetricLongPressStarted += OnMetricLongPressStarted;
         _floatingWindow.ProcessActionRequested += OnProcessActionRequested;
 
-        _taskbarWindow = new Windows.TaskbarMetricsWindow(_taskbarPlacementService, _serviceDiscovery);
+        _edgeDockWindow = new Windows.TaskbarMetricsWindow(_serviceDiscovery);
 
         _trayIconService.Initialize(
             _floatingWindow,
@@ -93,7 +90,7 @@ public sealed class WindowManagementService : IWindowManagementService
     {
         if (_floatingWindow == null)
         {
-            CloseTaskbarWindow();
+            CloseEdgeDockWindow();
             return;
         }
 
@@ -101,7 +98,7 @@ public sealed class WindowManagementService : IWindowManagementService
         _floatingWindow.Close();
         _floatingWindow = null;
 
-        CloseTaskbarWindow();
+        CloseEdgeDockWindow();
     }
 
     public async Task RefreshDisplayModesAsync()
@@ -112,6 +109,14 @@ public sealed class WindowManagementService : IWindowManagementService
         {
             ApplyDisplayModes(_displaySettings);
         });
+    }
+
+    public void ActivateEdgeDockMode()
+    {
+        _displaySettings.EnableEdgeDockMode = true;
+        _displaySettings.EnableFloatingMode = false;
+        _displaySettings.Normalize();
+        ApplyDisplayModes(_displaySettings);
     }
 
     private async Task RefreshDisplayModesSafeAsync()
@@ -128,6 +133,20 @@ public sealed class WindowManagementService : IWindowManagementService
 
     private void ToggleMainWindow()
     {
+        if (_displaySettings.EnableEdgeDockMode && _edgeDockWindow != null)
+        {
+            if (_edgeDockWindow.IsVisible)
+            {
+                _edgeDockWindow.Hide();
+            }
+            else
+            {
+                _edgeDockWindow.Show();
+            }
+
+            return;
+        }
+
         if (_displaySettings.EnableFloatingMode && _floatingWindow != null)
         {
             if (_floatingWindow.IsVisible)
@@ -137,20 +156,6 @@ public sealed class WindowManagementService : IWindowManagementService
             else
             {
                 ShowMainWindow();
-            }
-
-            return;
-        }
-
-        if (_displaySettings.EnableTaskbarMode && _taskbarWindow != null)
-        {
-            if (_taskbarWindow.IsVisible)
-            {
-                _taskbarWindow.Hide();
-            }
-            else
-            {
-                _taskbarWindow.Show();
             }
         }
     }
@@ -223,7 +228,7 @@ public sealed class WindowManagementService : IWindowManagementService
     private void ExitApplication()
     {
         _floatingWindow?.AllowClose();
-        _taskbarWindow?.AllowClose();
+        _edgeDockWindow?.AllowClose();
         System.Windows.Application.Current.Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
     }
 
@@ -249,14 +254,14 @@ public sealed class WindowManagementService : IWindowManagementService
                 settings.MonitorPower = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorPower, settings.MonitorPower);
                 settings.MonitorNetwork = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, settings.MonitorNetwork);
                 settings.EnableFloatingMode = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode, settings.EnableFloatingMode);
-                settings.EnableTaskbarMode = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableTaskbarMode, settings.EnableTaskbarMode);
-                settings.TaskbarCpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarCpuLabel, settings.TaskbarCpuLabel);
-                settings.TaskbarMemoryLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarMemoryLabel, settings.TaskbarMemoryLabel);
-                settings.TaskbarGpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarGpuLabel, settings.TaskbarGpuLabel);
-                settings.TaskbarPowerLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarPowerLabel, settings.TaskbarPowerLabel);
-                settings.TaskbarUploadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarUploadLabel, settings.TaskbarUploadLabel);
-                settings.TaskbarDownloadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarDownloadLabel, settings.TaskbarDownloadLabel);
-                settings.TaskbarColumnGap = ParseInt(monitoring, ConfigurationDefaults.Keys.Monitoring.TaskbarColumnGap, settings.TaskbarColumnGap);
+                settings.EnableEdgeDockMode = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableEdgeDockMode, settings.EnableEdgeDockMode);
+                settings.DockCpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockCpuLabel, settings.DockCpuLabel);
+                settings.DockMemoryLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel, settings.DockMemoryLabel);
+                settings.DockGpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockGpuLabel, settings.DockGpuLabel);
+                settings.DockPowerLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockPowerLabel, settings.DockPowerLabel);
+                settings.DockUploadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockUploadLabel, settings.DockUploadLabel);
+                settings.DockDownloadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel, settings.DockDownloadLabel);
+                settings.DockColumnGap = ParseInt(monitoring, ConfigurationDefaults.Keys.Monitoring.DockColumnGap, settings.DockColumnGap);
             }
         }
         catch (Exception ex)
@@ -271,26 +276,28 @@ public sealed class WindowManagementService : IWindowManagementService
     private void ApplyDisplayModes(TaskbarDisplaySettings settings)
     {
         settings.Normalize();
+        var showEdgeDock = settings.EnableEdgeDockMode;
+        var showFloating = settings.EnableFloatingMode && !showEdgeDock;
 
-        if (_taskbarWindow != null)
+        if (_edgeDockWindow != null)
         {
-            _taskbarWindow.ApplyDisplaySettings(settings);
-            if (settings.EnableTaskbarMode)
+            _edgeDockWindow.ApplyDisplaySettings(settings);
+            if (showEdgeDock)
             {
-                if (!_taskbarWindow.IsVisible)
+                if (!_edgeDockWindow.IsVisible)
                 {
-                    _taskbarWindow.Show();
+                    _edgeDockWindow.Show();
                 }
             }
             else
             {
-                _taskbarWindow.Hide();
+                _edgeDockWindow.Hide();
             }
         }
 
         if (_floatingWindow != null)
         {
-            if (settings.EnableFloatingMode)
+            if (showFloating)
             {
                 if (!_floatingWindow.IsVisible)
                 {
@@ -304,16 +311,16 @@ public sealed class WindowManagementService : IWindowManagementService
         }
     }
 
-    private void CloseTaskbarWindow()
+    private void CloseEdgeDockWindow()
     {
-        if (_taskbarWindow == null)
+        if (_edgeDockWindow == null)
         {
             return;
         }
 
-        _taskbarWindow.AllowClose();
-        _taskbarWindow.Close();
-        _taskbarWindow = null;
+        _edgeDockWindow.AllowClose();
+        _edgeDockWindow.Close();
+        _edgeDockWindow = null;
     }
 
     private static bool ParseBool(Dictionary<string, string> values, string key, bool fallback)

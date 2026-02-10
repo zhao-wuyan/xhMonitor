@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Taskbar Metrics"
+        Title="Organic Dock Metrics"
         WindowStyle="None"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -12,52 +12,67 @@
         Topmost="True"
         AllowsTransparency="True"
         Background="Transparent"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseMove="Window_MouseMove"
+        MouseLeftButtonUp="Window_MouseLeftButtonUp"
         Width="{Binding WindowWidth}"
-        Height="{Binding WindowHeight}">
+        Height="{Binding WindowHeight}"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
 
-    <Border CornerRadius="6"
-            Background="#D9101012"
-            BorderBrush="#2EFFFFFF"
-            BorderThickness="1"
-            IsHitTestVisible="False"
-            Padding="8,4"
-            SnapsToDevicePixels="True">
-        <ItemsControl ItemsSource="{Binding Columns}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal"/>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Border Width="{Binding Width}"
-                            Margin="{Binding Margin}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+    <Grid Background="Transparent">
+        <Border x:Name="ChromeBorder"
+                CornerRadius="6"
+                Background="#99101012"
+                BorderBrush="#1AFFFFFF"
+                BorderThickness="1"
+                IsHitTestVisible="False"
+                Padding="{Binding WindowPadding}"
+                SnapsToDevicePixels="True"
+                TextOptions.TextFormattingMode="Display">
+            <ItemsControl ItemsSource="{Binding Columns}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="{Binding DataContext.PanelOrientation, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="{Binding Width}"
+                                Height="{Binding Height}"
+                                Margin="{Binding Margin}"
+                                Background="Transparent">
+                            <StackPanel x:Name="MetricStack"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="LabelTextBlock"
+                                           Text="{Binding LabelText}"
+                                           FontSize="{Binding DataContext.LabelFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                           FontWeight="Bold"
+                                           FontFamily="JetBrains Mono, Consolas"
+                                           Foreground="{Binding LabelBrush}"
+                                           TextAlignment="Center"
+                                           Margin="{Binding LabelMargin}"
+                                           TextTrimming="CharacterEllipsis"/>
 
-                            <TextBlock Grid.Row="0"
-                                       Text="{Binding TopText}"
-                                       FontSize="10"
-                                       FontWeight="SemiBold"
-                                       Foreground="#B7FFFFFF"
-                                       HorizontalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis"/>
-
-                            <TextBlock Grid.Row="1"
-                                       Text="{Binding BottomText}"
-                                       FontSize="11"
-                                       FontWeight="Bold"
-                                       FontFamily="Consolas"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis"/>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </Border>
+                                <TextBlock Text="{Binding ValueText}"
+                                           FontSize="{Binding DataContext.ValueFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                           FontWeight="Bold"
+                                           FontFamily="JetBrains Mono, Consolas"
+                                           Foreground="#E6FFFFFF"
+                                           TextAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsVertical}" Value="True">
+                                <Setter TargetName="MetricStack" Property="StackPanel.Orientation" Value="Vertical"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+    </Grid>
 </Window>

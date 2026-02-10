@@ -5,7 +5,7 @@ namespace XhMonitor.Desktop.Models;
 public sealed class TaskbarDisplaySettings
 {
     public bool EnableFloatingMode { get; set; } = ConfigurationDefaults.Monitoring.EnableFloatingMode;
-    public bool EnableTaskbarMode { get; set; } = ConfigurationDefaults.Monitoring.EnableTaskbarMode;
+    public bool EnableEdgeDockMode { get; set; } = ConfigurationDefaults.Monitoring.EnableEdgeDockMode;
 
     public bool MonitorCpu { get; set; } = ConfigurationDefaults.Monitoring.MonitorCpu;
     public bool MonitorMemory { get; set; } = ConfigurationDefaults.Monitoring.MonitorMemory;
@@ -13,24 +13,24 @@ public sealed class TaskbarDisplaySettings
     public bool MonitorPower { get; set; } = ConfigurationDefaults.Monitoring.MonitorPower;
     public bool MonitorNetwork { get; set; } = ConfigurationDefaults.Monitoring.MonitorNetwork;
 
-    public string TaskbarCpuLabel { get; set; } = ConfigurationDefaults.Monitoring.TaskbarCpuLabel;
-    public string TaskbarMemoryLabel { get; set; } = ConfigurationDefaults.Monitoring.TaskbarMemoryLabel;
-    public string TaskbarGpuLabel { get; set; } = ConfigurationDefaults.Monitoring.TaskbarGpuLabel;
-    public string TaskbarPowerLabel { get; set; } = ConfigurationDefaults.Monitoring.TaskbarPowerLabel;
-    public string TaskbarUploadLabel { get; set; } = ConfigurationDefaults.Monitoring.TaskbarUploadLabel;
-    public string TaskbarDownloadLabel { get; set; } = ConfigurationDefaults.Monitoring.TaskbarDownloadLabel;
+    public string DockCpuLabel { get; set; } = ConfigurationDefaults.Monitoring.DockCpuLabel;
+    public string DockMemoryLabel { get; set; } = ConfigurationDefaults.Monitoring.DockMemoryLabel;
+    public string DockGpuLabel { get; set; } = ConfigurationDefaults.Monitoring.DockGpuLabel;
+    public string DockPowerLabel { get; set; } = ConfigurationDefaults.Monitoring.DockPowerLabel;
+    public string DockUploadLabel { get; set; } = ConfigurationDefaults.Monitoring.DockUploadLabel;
+    public string DockDownloadLabel { get; set; } = ConfigurationDefaults.Monitoring.DockDownloadLabel;
 
-    public int TaskbarColumnGap { get; set; } = ConfigurationDefaults.Monitoring.TaskbarColumnGap;
+    public int DockColumnGap { get; set; } = ConfigurationDefaults.Monitoring.DockColumnGap;
 
     public void Normalize()
     {
-        TaskbarCpuLabel = NormalizeLabel(TaskbarCpuLabel, ConfigurationDefaults.Monitoring.TaskbarCpuLabel);
-        TaskbarMemoryLabel = NormalizeLabel(TaskbarMemoryLabel, ConfigurationDefaults.Monitoring.TaskbarMemoryLabel);
-        TaskbarGpuLabel = NormalizeLabel(TaskbarGpuLabel, ConfigurationDefaults.Monitoring.TaskbarGpuLabel);
-        TaskbarPowerLabel = NormalizeLabel(TaskbarPowerLabel, ConfigurationDefaults.Monitoring.TaskbarPowerLabel);
-        TaskbarUploadLabel = NormalizeLabel(TaskbarUploadLabel, ConfigurationDefaults.Monitoring.TaskbarUploadLabel);
-        TaskbarDownloadLabel = NormalizeLabel(TaskbarDownloadLabel, ConfigurationDefaults.Monitoring.TaskbarDownloadLabel);
-        TaskbarColumnGap = Math.Clamp(TaskbarColumnGap, 2, 24);
+        DockCpuLabel = NormalizeLabel(DockCpuLabel, ConfigurationDefaults.Monitoring.DockCpuLabel);
+        DockMemoryLabel = NormalizeLabel(DockMemoryLabel, ConfigurationDefaults.Monitoring.DockMemoryLabel);
+        DockGpuLabel = NormalizeLabel(DockGpuLabel, ConfigurationDefaults.Monitoring.DockGpuLabel);
+        DockPowerLabel = NormalizeLabel(DockPowerLabel, ConfigurationDefaults.Monitoring.DockPowerLabel);
+        DockUploadLabel = NormalizeLabel(DockUploadLabel, ConfigurationDefaults.Monitoring.DockUploadLabel);
+        DockDownloadLabel = NormalizeLabel(DockDownloadLabel, ConfigurationDefaults.Monitoring.DockDownloadLabel);
+        DockColumnGap = Math.Clamp(DockColumnGap, 0, 24);
     }
 
     private static string NormalizeLabel(string? value, string fallback)

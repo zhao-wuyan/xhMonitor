@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有机吸附矩阵 (Organic Dock)</title>
+    <style>
+        :root {
+            --bg-color: rgba(12, 12, 14, 0.6); /* 稍微加深一点点以突出光效 */
+            --text-base: #ffffff;
+            --font-size: 12px;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+            
+            /* 配色表 */
+            --c-net: #56B4E9;
+            --c-cpu: #D55E00;
+            --c-mem: #F0E442;
+            --c-gpu: #E69F00;
+            --c-tmp: #CC79A7;
+            --c-fps: #009E73;
+        }
+
+        body {
+            /* 深色壁纸更能体现光效 */
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        /* --- 核心容器 --- */
+        #matrix-bar {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            
+            background: var(--bg-color);
+            color: var(--text-base);
+            font-family: var(--font-mono);
+            font-size: var(--font-size);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            
+            /* 玻璃质感 */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            
+            /* 默认悬浮状态：全圆角，微弱边框 */
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            
+            padding: 5px 8px;
+            
+            display: flex;
+            z-index: 10000;
+            user-select: none;
+            cursor: grab;
+            
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1); /* 更平滑的缓动 */
+        }
+
+        #matrix-bar:active {
+            cursor: grabbing;
+            background: rgba(0,0,0,0.8);
+            transform: translate(-50%, -50%) scale(0.98);
+        }
+
+        /* --- 数据项 --- */
+        .group {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            line-height: 1;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9); /* 增强文字在半透明下的可读性 */
+        }
+
+        .lbl { opacity: 1; }
+        .lbl.n { color: var(--c-net); }
+        .lbl.c { color: var(--c-cpu); }
+        .lbl.m { color: var(--c-mem); }
+        .lbl.g { color: var(--c-gpu); }
+        .lbl.t { color: var(--c-tmp); }
+        .lbl.f { color: var(--c-fps); }
+        
+        .val { color: rgba(255,255,255,0.9); white-space: nowrap; }
+
+        /* ====== 布局形态 ====== */
+
+        /* 1. 横排 */
+        #matrix-bar.horizontal {
+            flex-direction: row;
+            width: fit-content;
+            height: auto;
+            writing-mode: horizontal-tb;
+            gap: 12px;
+        }
+
+        /* 2. 竖排 */
+        #matrix-bar.vertical {
+            writing-mode: vertical-rl; 
+            text-orientation: upright;
+            width: auto;
+            height: fit-content;
+            gap: 8px;
+            
+            /* 竖排极致压缩：物理左右无内边距 */
+            padding: 8px 0; 
+            letter-spacing: -2px; 
+        }
+        
+        #matrix-bar.vertical .group {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ====== 吸附核心逻辑 (Organic Dock) ====== */
+        /* 
+           原理：
+           1. 移除对应方向的圆角 (变直角)
+           2. 保留相反方向的圆角 (保持胶囊感)
+           3. 在接触面添加高亮边框 (光条)
+           4. 添加对应颜色的光晕 (box-shadow)
+        */
+
+        /* 通用吸附重置 */
+        .docked {
+            border: none !important; /* 移除默认微弱边框，改用单边高亮 */
+            background: rgba(10, 12, 16, 0.85); /* 吸附后稍微变实，增加稳固感 */
+        }
+
+        /* -> 上吸附 */
+        #matrix-bar.dock-top {
+            top: 0 !important;
+            
+            /* 仅上方直角，下方圆角 */
+            border-radius: 0 0 8px 8px; 
+            
+            /* 极细亮条 */
+            border-top: 2px solid var(--c-net); 
+            
+            /* 向下的光晕 */
+            box-shadow: 0 4px 20px -2px rgba(86, 180, 233, 0.4); 
+        }
+
+        /* -> 下吸附 */
+        #matrix-bar.dock-bottom {
+            top: auto !important;
+            bottom: 0 !important;
+            
+            /* 仅下方直角 */
+            border-radius: 8px 8px 0 0;
+            
+            border-bottom: 2px solid var(--c-net);
+            box-shadow: 0 -4px 20px -2px rgba(86, 180, 233, 0.4);
+        }
+
+        /* -> 左吸附 */
+        #matrix-bar.dock-left {
+            left: 0 !important;
+            
+            /* 仅左侧直角 */
+            border-radius: 0 8px 8px 0;
+            
+            border-left: 2px solid var(--c-gpu);
+            box-shadow: 4px 0 20px -2px rgba(230, 159, 0, 0.4);
+        }
+
+        /* -> 右吸附 */
+        #matrix-bar.dock-right {
+            left: auto !important;
+            right: 0 !important;
+            
+            /* 仅右侧直角 */
+            border-radius: 8px 0 0 8px;
+            
+            border-right: 2px solid var(--c-gpu);
+            box-shadow: -4px 0 20px -2px rgba(230, 159, 0, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="matrix-bar" class="horizontal">
+        <div class="group" title="Net"><span class="lbl n">N</span><span class="val" id="val-net">12K</span></div>
+        <div class="group" title="FPS"><span class="lbl f">F</span><span class="val" id="val-fps">144</span></div>
+        <div class="group" title="CPU"><span class="lbl c">C</span><span class="val" id="val-cpu">12%</span></div>
+        <div class="group" title="GPU"><span class="lbl g">G</span><span class="val" id="val-gpu">34%</span></div>
+        <div class="group" title="RAM"><span class="lbl m">M</span><span class="val" id="val-mem">64%</span></div>
+        <div class="group" title="Temp"><span class="lbl t">T</span><span class="val" id="val-tmp">45°</span></div>
+    </div>
+    
+    <div style="position:fixed; bottom:50px; width:100%; text-align:center; color:rgba(255,255,255,0.4); font-size:12px; pointer-events:none; font-family: sans-serif; text-shadow: 0 1px 2px #000;">
+        把我知道的拖到屏幕边缘 · 感受“有机吸附”
+    </div>
+
+    <script>
+        const bar = document.getElementById('matrix-bar');
+        let isDragging = false;
+        let startX, startY;
+        let initialLeft, initialTop;
+        const SNAP_MARGIN = 80;
+
+        bar.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = bar.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            
+            // 拖拽时：恢复全圆角悬浮态
+            bar.className = 'horizontal'; 
+            bar.style.transform = 'none'; 
+            bar.style.left = initialLeft + 'px';
+            bar.style.top = initialTop + 'px';
+            bar.style.bottom = ''; 
+            bar.style.right = '';
+            
+            // 拖拽时高亮一下，表示激活
+            bar.style.background = 'rgba(255,255,255,0.1)';
+            bar.style.border = '1px solid rgba(255,255,255,0.3)';
+            bar.style.transition = 'none'; 
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            bar.style.left = (initialLeft + dx) + 'px';
+            bar.style.top = (initialTop + dy) + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            bar.style.background = ''; // 恢复CSS定义的背景
+            bar.style.border = '';     // 恢复CSS定义的边框
+            bar.style.transition = 'all 0.3s cubic-bezier(0.19, 1, 0.22, 1)'; // 弹簧回弹感
+            detectSnap();
+        });
+
+        function detectSnap() {
+            const rect = bar.getBoundingClientRect();
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            const distTop = rect.top;
+            const distBottom = winH - rect.bottom;
+            const distLeft = rect.left;
+            const distRight = winW - rect.right;
+            const minDist = Math.min(distTop, distBottom, distLeft, distRight);
+
+            if (minDist > SNAP_MARGIN) {
+                ensureInBounds(rect, winW, winH);
+                return;
+            }
+
+            if (minDist === distTop) dock('top');
+            else if (minDist === distBottom) dock('bottom');
+            else if (minDist === distLeft) dock('left');
+            else dock('right');
+        }
+
+        function dock(direction) {
+            bar.className = 'docked';
+            // 根据方向添加基础布局类 + 方向类
+            if (direction === 'top' || direction === 'bottom') {
+                bar.classList.add('horizontal');
+            } else {
+                bar.classList.add('vertical');
+            }
+            bar.classList.add('dock-' + direction);
+        }
+        
+        function ensureInBounds(rect, w, h) {
+            let newLeft = parseInt(bar.style.left);
+            let newTop = parseInt(bar.style.top);
+            if (newLeft < 10) newLeft = 10;
+            if (newLeft + rect.width > w - 10) newLeft = w - rect.width - 10;
+            if (newTop < 10) newTop = 10;
+            if (newTop + rect.height > h - 10) newTop = h - rect.height - 10;
+            bar.style.left = newLeft + 'px';
+            bar.style.top = newTop + 'px';
+        }
+
+        window.addEventListener('resize', () => {
+             bar.className = 'horizontal';
+             bar.style.left = '50%';
+             bar.style.top = '50%';
+             bar.style.transform = 'translate(-50%, -50%)';
+        });
+
+        // ====== 模拟数据 ======
+        function randomVal(min, max) { return Math.floor(Math.random() * (max - min + 1) + min); }
+        setInterval(() => {
+            document.getElementById('val-net').innerText = (Math.random() * 20).toFixed(0) + 'K';
+            document.getElementById('val-fps').innerText = randomVal(130, 144);
+            document.getElementById('val-cpu').innerText = randomVal(5, 20) + '%';
+            document.getElementById('val-gpu').innerText = randomVal(25, 55) + '%';
+            if(Math.random()>0.8) document.getElementById('val-mem').innerText = randomVal(60, 62) + '%';
+            document.getElementById('val-tmp').innerText = randomVal(42, 48) + '°';
+        }, 2000);
+    </script>
+</body>
+</html>

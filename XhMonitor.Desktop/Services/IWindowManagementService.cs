@@ -11,4 +11,6 @@ public interface IWindowManagementService
     void CloseMainWindow();
 
     Task RefreshDisplayModesAsync();
+
+    void ActivateEdgeDockMode();
 }

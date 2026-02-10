@@ -105,44 +105,44 @@ public static class ConfigurationDefaults
         public const bool EnableFloatingMode = true;
 
         /// <summary>
-        /// 是否启用任务栏模式默认值。
+        /// 是否启用贴边模式默认值。
         /// </summary>
-        public const bool EnableTaskbarMode = false;
+        public const bool EnableEdgeDockMode = false;
 
         /// <summary>
-        /// 任务栏 CPU 指标名称默认值。
+        /// 贴边模式 CPU 指标名称默认值。
         /// </summary>
-        public const string TaskbarCpuLabel = "CPU";
+        public const string DockCpuLabel = "C";
 
         /// <summary>
-        /// 任务栏内存指标名称默认值。
+        /// 贴边模式内存指标名称默认值。
         /// </summary>
-        public const string TaskbarMemoryLabel = "MEM";
+        public const string DockMemoryLabel = "M";
 
         /// <summary>
-        /// 任务栏 GPU 指标名称默认值。
+        /// 贴边模式 GPU 指标名称默认值。
         /// </summary>
-        public const string TaskbarGpuLabel = "GPU";
+        public const string DockGpuLabel = "G";
 
         /// <summary>
-        /// 任务栏功耗指标名称默认值。
+        /// 贴边模式功耗指标名称默认值。
         /// </summary>
-        public const string TaskbarPowerLabel = "PWR";
+        public const string DockPowerLabel = "P";
 
         /// <summary>
-        /// 任务栏上传名称默认值。
+        /// 贴边模式上传名称默认值。
         /// </summary>
-        public const string TaskbarUploadLabel = "↑";
+        public const string DockUploadLabel = "U";
 
         /// <summary>
-        /// 任务栏下载名称默认值。
+        /// 贴边模式下载名称默认值。
         /// </summary>
-        public const string TaskbarDownloadLabel = "↓";
+        public const string DockDownloadLabel = "D";
 
         /// <summary>
-        /// 任务栏列间距默认值（像素）。
+        /// 贴边模式列间距默认值（像素）。
         /// </summary>
-        public const int TaskbarColumnGap = 8;
+        public const int DockColumnGap = 0;
     }
 
     /// <summary>
@@ -228,14 +228,14 @@ public static class ConfigurationDefaults
             public const string MonitorNetwork = "MonitorNetwork";
             public const string AdminMode = "AdminMode";
             public const string EnableFloatingMode = "EnableFloatingMode";
-            public const string EnableTaskbarMode = "EnableTaskbarMode";
-            public const string TaskbarCpuLabel = "TaskbarCpuLabel";
-            public const string TaskbarMemoryLabel = "TaskbarMemoryLabel";
-            public const string TaskbarGpuLabel = "TaskbarGpuLabel";
-            public const string TaskbarPowerLabel = "TaskbarPowerLabel";
-            public const string TaskbarUploadLabel = "TaskbarUploadLabel";
-            public const string TaskbarDownloadLabel = "TaskbarDownloadLabel";
-            public const string TaskbarColumnGap = "TaskbarColumnGap";
+            public const string EnableEdgeDockMode = "EnableEdgeDockMode";
+            public const string DockCpuLabel = "DockCpuLabel";
+            public const string DockMemoryLabel = "DockMemoryLabel";
+            public const string DockGpuLabel = "DockGpuLabel";
+            public const string DockPowerLabel = "DockPowerLabel";
+            public const string DockUploadLabel = "DockUploadLabel";
+            public const string DockDownloadLabel = "DockDownloadLabel";
+            public const string DockColumnGap = "DockColumnGap";
         }
 
         /// <summary>系统设置键名。</summary>
