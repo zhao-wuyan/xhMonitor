@@ -125,6 +125,11 @@ public static class ConfigurationDefaults
         public const string DockGpuLabel = "G";
 
         /// <summary>
+        /// 贴边模式显存指标名称默认值。
+        /// </summary>
+        public const string DockVramLabel = "V";
+
+        /// <summary>
         /// 贴边模式功耗指标名称默认值。
         /// </summary>
         public const string DockPowerLabel = "P";
@@ -143,6 +148,11 @@ public static class ConfigurationDefaults
         /// 贴边模式列间距默认值（像素）。
         /// </summary>
         public const int DockColumnGap = 0;
+
+        /// <summary>
+        /// 贴边模式视觉风格默认值。可选：Bar / Text。
+        /// </summary>
+        public const string DockVisualStyle = "Bar";
     }
 
     /// <summary>
@@ -232,10 +242,12 @@ public static class ConfigurationDefaults
             public const string DockCpuLabel = "DockCpuLabel";
             public const string DockMemoryLabel = "DockMemoryLabel";
             public const string DockGpuLabel = "DockGpuLabel";
+            public const string DockVramLabel = "DockVramLabel";
             public const string DockPowerLabel = "DockPowerLabel";
             public const string DockUploadLabel = "DockUploadLabel";
             public const string DockDownloadLabel = "DockDownloadLabel";
             public const string DockColumnGap = "DockColumnGap";
+            public const string DockVisualStyle = "DockVisualStyle";
         }
 
         /// <summary>系统设置键名。</summary>

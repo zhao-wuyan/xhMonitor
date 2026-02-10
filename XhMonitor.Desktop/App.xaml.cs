@@ -74,6 +74,7 @@ public partial class App : WpfApplication
                 services.AddSingleton<ITaskbarPlacementService, TaskbarPlacementService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
                 services.AddSingleton<IAdminModeManager, AdminModeManager>();
+                services.AddSingleton<IDesktopLaunchModeFlagManager, DesktopLaunchModeFlagManager>();
                 services.AddSingleton<IStartupManager, StartupManager>();
                 services.AddHostedService<ApplicationHostedService>();
 

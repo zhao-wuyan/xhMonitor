@@ -43,5 +43,24 @@ public class SettingsViewModelTests
 
         vm.LocalIpEndpoint.Should().Be("未检测到 (端口 35180)");
     }
-}
 
+    [Fact]
+    public void DockVisualStyle_ShouldNormalizeToBar_WhenInputInvalid()
+    {
+        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery());
+
+        vm.DockVisualStyle = "unknown-style";
+
+        vm.DockVisualStyle.Should().Be("Bar");
+    }
+
+    [Fact]
+    public void DockVisualStyle_ShouldKeepText_WhenInputIsText()
+    {
+        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery());
+
+        vm.DockVisualStyle = "Text";
+
+        vm.DockVisualStyle.Should().Be("Text");
+    }
+}

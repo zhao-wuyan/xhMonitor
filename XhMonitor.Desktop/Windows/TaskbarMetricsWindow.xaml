@@ -42,33 +42,199 @@
                                 Height="{Binding Height}"
                                 Margin="{Binding Margin}"
                                 Background="Transparent">
-                            <StackPanel x:Name="MetricStack"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center">
-                                <TextBlock x:Name="LabelTextBlock"
-                                           Text="{Binding LabelText}"
-                                           FontSize="{Binding DataContext.LabelFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
-                                           FontWeight="Bold"
-                                           FontFamily="JetBrains Mono, Consolas"
-                                           Foreground="{Binding LabelBrush}"
-                                           TextAlignment="Center"
-                                           Margin="{Binding LabelMargin}"
-                                           TextTrimming="CharacterEllipsis"/>
+                            <Grid>
+                                <StackPanel x:Name="TextStyleStack"
+                                            Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding LabelText}"
+                                               FontSize="{Binding DataContext.LabelFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               FontWeight="Bold"
+                                               FontFamily="JetBrains Mono, Consolas"
+                                               Foreground="{Binding LabelBrush}"
+                                               TextAlignment="Center"
+                                               Margin="{Binding LabelMargin}"
+                                               TextTrimming="CharacterEllipsis"/>
 
-                                <TextBlock Text="{Binding ValueText}"
-                                           FontSize="{Binding DataContext.ValueFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
-                                           FontWeight="Bold"
-                                           FontFamily="JetBrains Mono, Consolas"
-                                           Foreground="#E6FFFFFF"
-                                           TextAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
+                                    <TextBlock Text="{Binding ValueText}"
+                                               FontSize="{Binding DataContext.ValueFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               FontWeight="Bold"
+                                               FontFamily="JetBrains Mono, Consolas"
+                                               Foreground="#E6FFFFFF"
+                                               TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+
+                                <Grid x:Name="BarStyleGrid"
+                                      Visibility="Collapsed"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center">
+                                    <StackPanel x:Name="BarNumericHorizontal"
+                                                Visibility="Collapsed"
+                                                Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding LabelText}"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="{Binding LabelBrush}"
+                                                   Margin="0,0,4,0"
+                                                   TextAlignment="Center"/>
+                                        <TextBlock Text="{Binding ValueText}"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="#E6FFFFFF"
+                                                   TextAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="BarNumericVertical"
+                                                Visibility="Collapsed"
+                                                Orientation="Vertical"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ValueText}"
+                                                   FontSize="9"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="#E6FFFFFF"
+                                                   TextAlignment="Center"
+                                                   Margin="0,0,0,2"/>
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding LabelText}"
+                                                       FontSize="12"
+                                                       FontWeight="Bold"
+                                                       FontFamily="JetBrains Mono, Consolas"
+                                                       Foreground="{Binding LabelBrush}"
+                                                       TextAlignment="Center"
+                                                       Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding BarUnitText}"
+                                                       FontSize="9"
+                                                       FontWeight="Bold"
+                                                       FontFamily="JetBrains Mono, Consolas"
+                                                       Foreground="{Binding LabelBrush}"
+                                                       TextAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="BarMetricHorizontal"
+                                                Visibility="Collapsed"
+                                                Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding LabelText}"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="{Binding LabelBrush}"
+                                                   Margin="0,0,4,0"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center"/>
+                                        <Grid Width="{Binding BarTrackWidth}"
+                                              Height="{Binding BarTrackHeight}"
+                                              VerticalAlignment="Center">
+                                            <Border Background="#26FFFFFF"
+                                                    CornerRadius="2"/>
+                                            <Border Background="{Binding LabelBrush}"
+                                                    CornerRadius="2"
+                                                    Height="{Binding BarTrackHeight}"
+                                                    Width="{Binding BarFillLength}"
+                                                    HorizontalAlignment="Left"/>
+                                            <TextBlock Text="{Binding BarDisplayText}"
+                                                       FontSize="9"
+                                                       FontWeight="Bold"
+                                                       FontFamily="JetBrains Mono, Consolas"
+                                                       Foreground="{Binding BarTextBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="BarMetricVertical"
+                                                Visibility="Collapsed"
+                                                Orientation="Vertical"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                        <Grid Width="{Binding BarTrackWidth}"
+                                              Height="{Binding BarTrackHeight}"
+                                              HorizontalAlignment="Center"
+                                              Margin="0,0,0,2">
+                                            <Border Background="#26FFFFFF"
+                                                    CornerRadius="2"/>
+                                            <Border Background="{Binding LabelBrush}"
+                                                    CornerRadius="1"
+                                                    Width="{Binding BarTrackWidth}"
+                                                    Height="{Binding BarFillLength}"
+                                                    VerticalAlignment="Bottom"/>
+                                        </Grid>
+                                        <TextBlock Text="{Binding BarDisplayText}"
+                                                   FontSize="9"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="#CCFFFFFF"
+                                                   HorizontalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding LabelText}"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="{Binding LabelBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   TextAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
                         </Border>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsVertical}" Value="True">
-                                <Setter TargetName="MetricStack" Property="StackPanel.Orientation" Value="Vertical"/>
+                                <Setter TargetName="TextStyleStack" Property="StackPanel.Orientation" Value="Vertical"/>
                             </DataTrigger>
+
+                            <DataTrigger Binding="{Binding UseBarVisual}" Value="True">
+                                <Setter TargetName="TextStyleStack" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="BarStyleGrid" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding UseBarVisual}" Value="True"/>
+                                    <Condition Binding="{Binding IsBarMetric}" Value="False"/>
+                                    <Condition Binding="{Binding IsVertical}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="BarNumericHorizontal" Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding UseBarVisual}" Value="True"/>
+                                    <Condition Binding="{Binding IsBarMetric}" Value="False"/>
+                                    <Condition Binding="{Binding IsVertical}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="BarNumericVertical" Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding UseBarVisual}" Value="True"/>
+                                    <Condition Binding="{Binding IsBarMetric}" Value="True"/>
+                                    <Condition Binding="{Binding IsVertical}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="BarMetricHorizontal" Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding UseBarVisual}" Value="True"/>
+                                    <Condition Binding="{Binding IsBarMetric}" Value="True"/>
+                                    <Condition Binding="{Binding IsVertical}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="BarMetricVertical" Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

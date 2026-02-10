@@ -337,6 +337,7 @@ public partial class SettingsWindow : Window
             _viewModel.MonitorPower = ConfigurationDefaults.Monitoring.MonitorPower;
             _viewModel.MonitorNetwork = ConfigurationDefaults.Monitoring.MonitorNetwork;
             _viewModel.AdminMode = ConfigurationDefaults.Monitoring.AdminMode;
+            _viewModel.DockVisualStyle = ConfigurationDefaults.Monitoring.DockVisualStyle;
         }
     }
 

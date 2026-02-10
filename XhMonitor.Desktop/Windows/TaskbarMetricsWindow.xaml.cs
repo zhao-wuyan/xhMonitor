@@ -22,17 +22,29 @@ namespace XhMonitor.Desktop.Windows;
 
 public partial class TaskbarMetricsWindow : Window
 {
+    // 吸附后贴边的额外偏移：0 表示紧贴屏幕可用区域边界。
     private const double EdgeSnapMargin = 0;
+    // 拖拽时触发吸附检测的距离阈值（像素）。
     private const double DockSnapDistance = 80;
+    // 普通悬浮模式最小宽度。
     private const double MinFloatingWidth = 88;
+    // 普通悬浮模式最小高度。
     private const double MinFloatingHeight = 20;
-    private const double MinDockSideWidth = 20;
+    // 左右贴边时窗口最小宽度（最终窗口层面的下限）。
+    private const double MinDockSideWidth = 14;
+    // 左右贴边时窗口最大宽度（最终窗口层面的上限）。
+    private const double MaxDockSideWidth = 24;
+    // 左右贴边时窗口最小高度。
     private const double MinDockSideHeight = 20;
 
     private static readonly IntPtr HwndTopMost = new(-1);
+    // Win32 SetWindowPos 标志：保持当前大小不变。
     private const uint SwpNoSize = 0x0001;
+    // Win32 SetWindowPos 标志：保持当前位置不变。
     private const uint SwpNoMove = 0x0002;
+    // Win32 SetWindowPos 标志：不激活窗口。
     private const uint SwpNoActivate = 0x0010;
+    // Win32 SetWindowPos 标志：不改变 owner 窗口的 Z 序。
     private const uint SwpNoOwnerZOrder = 0x0200;
 
     private static readonly WpfBrush FloatingBackgroundBrush = CreateBrush(0x99, 0x0C, 0x0C, 0x0E);
@@ -365,8 +377,8 @@ public partial class TaskbarMetricsWindow : Window
     {
         if (isDocked && dockSide is EdgeDockSide.Left or EdgeDockSide.Right)
         {
-            // 左右贴边走极简宽度，避免被浮窗最小宽度规则撑开。
-            Width = Math.Max(MinDockSideWidth, _viewModel.WindowWidth);
+            // 左右贴边限制在紧凑宽度区间，避免柱状模式被放大。
+            Width = Math.Clamp(_viewModel.WindowWidth, MinDockSideWidth, MaxDockSideWidth);
             Height = Math.Max(MinDockSideHeight, _viewModel.WindowHeight);
             return;
         }

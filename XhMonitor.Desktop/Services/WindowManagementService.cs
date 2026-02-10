@@ -16,6 +16,7 @@ public sealed class WindowManagementService : IWindowManagementService
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
     private readonly IPowerControlService _powerControlService;
+    private readonly IDesktopLaunchModeFlagManager _desktopLaunchModeFlagManager;
     private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
     private readonly string _apiBaseUrl;
@@ -28,6 +29,7 @@ public sealed class WindowManagementService : IWindowManagementService
         IServiceDiscovery serviceDiscovery,
         IProcessManager processManager,
         IPowerControlService powerControlService,
+        IDesktopLaunchModeFlagManager desktopLaunchModeFlagManager,
         IHttpClientFactory httpClientFactory,
         IServiceProvider serviceProvider)
     {
@@ -35,6 +37,7 @@ public sealed class WindowManagementService : IWindowManagementService
         _serviceDiscovery = serviceDiscovery;
         _processManager = processManager;
         _powerControlService = powerControlService;
+        _desktopLaunchModeFlagManager = desktopLaunchModeFlagManager;
         _serviceProvider = serviceProvider;
         _httpClient = httpClientFactory.CreateClient();
         _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
@@ -65,6 +68,7 @@ public sealed class WindowManagementService : IWindowManagementService
         // 启动阶段先使用本地默认配置，避免 UI 线程等待网络配置导致阻塞。
         _displaySettings = new TaskbarDisplaySettings();
         _displaySettings.Normalize();
+        ApplyLaunchModeFlagOverride(_displaySettings);
         ApplyDisplayModes(_displaySettings);
 
         _ = RefreshDisplayModesSafeAsync();
@@ -104,6 +108,8 @@ public sealed class WindowManagementService : IWindowManagementService
     public async Task RefreshDisplayModesAsync()
     {
         _displaySettings = await LoadDisplaySettingsAsync();
+        PersistLaunchModeFlagWhenSingleModeSelected(_displaySettings);
+        ApplyLaunchModeFlagOverride(_displaySettings);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
         {
@@ -116,6 +122,7 @@ public sealed class WindowManagementService : IWindowManagementService
         _displaySettings.EnableEdgeDockMode = true;
         _displaySettings.EnableFloatingMode = false;
         _displaySettings.Normalize();
+        _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.MiniEdgeDock);
         ApplyDisplayModes(_displaySettings);
     }
 
@@ -251,6 +258,7 @@ public sealed class WindowManagementService : IWindowManagementService
                 settings.MonitorCpu = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorCpu, settings.MonitorCpu);
                 settings.MonitorMemory = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorMemory, settings.MonitorMemory);
                 settings.MonitorGpu = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorGpu, settings.MonitorGpu);
+                settings.MonitorVram = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorVram, settings.MonitorVram);
                 settings.MonitorPower = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorPower, settings.MonitorPower);
                 settings.MonitorNetwork = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, settings.MonitorNetwork);
                 settings.EnableFloatingMode = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode, settings.EnableFloatingMode);
@@ -258,10 +266,12 @@ public sealed class WindowManagementService : IWindowManagementService
                 settings.DockCpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockCpuLabel, settings.DockCpuLabel);
                 settings.DockMemoryLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel, settings.DockMemoryLabel);
                 settings.DockGpuLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockGpuLabel, settings.DockGpuLabel);
+                settings.DockVramLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockVramLabel, settings.DockVramLabel);
                 settings.DockPowerLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockPowerLabel, settings.DockPowerLabel);
                 settings.DockUploadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockUploadLabel, settings.DockUploadLabel);
                 settings.DockDownloadLabel = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel, settings.DockDownloadLabel);
                 settings.DockColumnGap = ParseInt(monitoring, ConfigurationDefaults.Keys.Monitoring.DockColumnGap, settings.DockColumnGap);
+                settings.DockVisualStyle = ParseString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockVisualStyle, settings.DockVisualStyle);
             }
         }
         catch (Exception ex)
@@ -308,6 +318,39 @@ public sealed class WindowManagementService : IWindowManagementService
             {
                 _floatingWindow.Hide();
             }
+        }
+    }
+
+    /// <summary>
+    /// 当用户在设置页只启用一种模式时，更新启动模式标识，确保下次启动沿用该选择。
+    /// </summary>
+    private void PersistLaunchModeFlagWhenSingleModeSelected(TaskbarDisplaySettings settings)
+    {
+        if (settings.EnableEdgeDockMode && !settings.EnableFloatingMode)
+        {
+            _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.MiniEdgeDock);
+            return;
+        }
+
+        if (settings.EnableFloatingMode && !settings.EnableEdgeDockMode)
+        {
+            _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.FloatingWindow);
+        }
+    }
+
+    /// <summary>
+    /// 应用本地启动模式标识：仅在“悬浮窗优先”时覆盖默认优先级（默认仍保持贴边优先）。
+    /// </summary>
+    private void ApplyLaunchModeFlagOverride(TaskbarDisplaySettings settings)
+    {
+        if (_desktopLaunchModeFlagManager.TryGetLaunchMode() != DesktopLaunchMode.FloatingWindow)
+        {
+            return;
+        }
+
+        if (settings.EnableFloatingMode)
+        {
+            settings.EnableEdgeDockMode = false;
         }
     }
 

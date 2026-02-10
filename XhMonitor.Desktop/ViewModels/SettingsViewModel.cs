@@ -41,10 +41,12 @@ public class SettingsViewModel : INotifyPropertyChanged
     private string _dockCpuLabel = ConfigurationDefaults.Monitoring.DockCpuLabel;
     private string _dockMemoryLabel = ConfigurationDefaults.Monitoring.DockMemoryLabel;
     private string _dockGpuLabel = ConfigurationDefaults.Monitoring.DockGpuLabel;
+    private string _dockVramLabel = ConfigurationDefaults.Monitoring.DockVramLabel;
     private string _dockPowerLabel = ConfigurationDefaults.Monitoring.DockPowerLabel;
     private string _dockUploadLabel = ConfigurationDefaults.Monitoring.DockUploadLabel;
     private string _dockDownloadLabel = ConfigurationDefaults.Monitoring.DockDownloadLabel;
     private int _dockColumnGap = ConfigurationDefaults.Monitoring.DockColumnGap;
+    private string _dockVisualStyle = ConfigurationDefaults.Monitoring.DockVisualStyle;
     private bool _adminMode = ConfigurationDefaults.Monitoring.AdminMode;
     private bool _originalAdminMode = ConfigurationDefaults.Monitoring.AdminMode;
 
@@ -168,6 +170,12 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _dockGpuLabel, value ?? string.Empty);
     }
 
+    public string DockVramLabel
+    {
+        get => _dockVramLabel;
+        set => SetProperty(ref _dockVramLabel, value ?? string.Empty);
+    }
+
     public string DockPowerLabel
     {
         get => _dockPowerLabel;
@@ -190,6 +198,12 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         get => _dockColumnGap;
         set => SetProperty(ref _dockColumnGap, Math.Clamp(value, 0, 24));
+    }
+
+    public string DockVisualStyle
+    {
+        get => _dockVisualStyle;
+        set => SetProperty(ref _dockVisualStyle, NormalizeDockVisualStyle(value));
     }
 
     public bool AdminMode
@@ -363,10 +377,12 @@ public class SettingsViewModel : INotifyPropertyChanged
                 DockCpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockCpuLabel, ConfigurationDefaults.Monitoring.DockCpuLabel);
                 DockMemoryLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel, ConfigurationDefaults.Monitoring.DockMemoryLabel);
                 DockGpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockGpuLabel, ConfigurationDefaults.Monitoring.DockGpuLabel);
+                DockVramLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockVramLabel, ConfigurationDefaults.Monitoring.DockVramLabel);
                 DockPowerLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockPowerLabel, ConfigurationDefaults.Monitoring.DockPowerLabel);
                 DockUploadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockUploadLabel, ConfigurationDefaults.Monitoring.DockUploadLabel);
                 DockDownloadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel, ConfigurationDefaults.Monitoring.DockDownloadLabel);
                 DockColumnGap = GetInt(monitoring, ConfigurationDefaults.Keys.Monitoring.DockColumnGap, ConfigurationDefaults.Monitoring.DockColumnGap);
+                DockVisualStyle = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockVisualStyle, ConfigurationDefaults.Monitoring.DockVisualStyle);
                 _originalAdminMode = AdminMode; // 保存原始值用于变更检测
             }
 
@@ -454,10 +470,12 @@ public class SettingsViewModel : INotifyPropertyChanged
                     [ConfigurationDefaults.Keys.Monitoring.DockCpuLabel] = (DockCpuLabel ?? string.Empty).Trim(),
                     [ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel] = (DockMemoryLabel ?? string.Empty).Trim(),
                     [ConfigurationDefaults.Keys.Monitoring.DockGpuLabel] = (DockGpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockVramLabel] = (DockVramLabel ?? string.Empty).Trim(),
                     [ConfigurationDefaults.Keys.Monitoring.DockPowerLabel] = (DockPowerLabel ?? string.Empty).Trim(),
                     [ConfigurationDefaults.Keys.Monitoring.DockUploadLabel] = (DockUploadLabel ?? string.Empty).Trim(),
                     [ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel] = (DockDownloadLabel ?? string.Empty).Trim(),
-                    [ConfigurationDefaults.Keys.Monitoring.DockColumnGap] = DockColumnGap.ToString()
+                    [ConfigurationDefaults.Keys.Monitoring.DockColumnGap] = DockColumnGap.ToString(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockVisualStyle] = NormalizeDockVisualStyle(DockVisualStyle)
                 },
                 [ConfigurationDefaults.Keys.Categories.System] = new()
                 {
@@ -721,6 +739,14 @@ public class SettingsViewModel : INotifyPropertyChanged
 
         var normalized = (raw ?? string.Empty).Trim();
         return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+    }
+
+    private static string NormalizeDockVisualStyle(string? style)
+    {
+        var normalized = (style ?? string.Empty).Trim();
+        return normalized.Equals("Text", StringComparison.OrdinalIgnoreCase)
+            ? "Text"
+            : "Bar";
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

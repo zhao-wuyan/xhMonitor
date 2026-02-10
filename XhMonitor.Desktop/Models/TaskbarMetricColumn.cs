@@ -16,6 +16,14 @@ public sealed class TaskbarMetricColumn : INotifyPropertyChanged
     private double _height;
     private Thickness _labelMargin;
     private bool _isVertical;
+    private bool _useBarVisual;
+    private bool _isBarMetric;
+    private double _barTrackWidth;
+    private double _barTrackHeight;
+    private double _barFillLength;
+    private string _barDisplayText = string.Empty;
+    private string _barUnitText = string.Empty;
+    private WpfBrush _barTextBrush = WpfBrushes.White;
     private Thickness _margin;
 
     public string LabelText
@@ -58,6 +66,54 @@ public sealed class TaskbarMetricColumn : INotifyPropertyChanged
     {
         get => _isVertical;
         set => SetField(ref _isVertical, value);
+    }
+
+    public bool UseBarVisual
+    {
+        get => _useBarVisual;
+        set => SetField(ref _useBarVisual, value);
+    }
+
+    public bool IsBarMetric
+    {
+        get => _isBarMetric;
+        set => SetField(ref _isBarMetric, value);
+    }
+
+    public double BarTrackWidth
+    {
+        get => _barTrackWidth;
+        set => SetField(ref _barTrackWidth, value);
+    }
+
+    public double BarTrackHeight
+    {
+        get => _barTrackHeight;
+        set => SetField(ref _barTrackHeight, value);
+    }
+
+    public double BarFillLength
+    {
+        get => _barFillLength;
+        set => SetField(ref _barFillLength, value);
+    }
+
+    public string BarDisplayText
+    {
+        get => _barDisplayText;
+        set => SetField(ref _barDisplayText, value);
+    }
+
+    public string BarUnitText
+    {
+        get => _barUnitText;
+        set => SetField(ref _barUnitText, value);
+    }
+
+    public WpfBrush BarTextBrush
+    {
+        get => _barTextBrush;
+        set => SetField(ref _barTextBrush, value);
     }
 
     public Thickness Margin
