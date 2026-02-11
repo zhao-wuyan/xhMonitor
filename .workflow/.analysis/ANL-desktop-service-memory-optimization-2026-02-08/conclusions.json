@@ -1,0 +1,289 @@
+{
+  "session_id": "ANL-desktop-service-memory-optimization-2026-02-08",
+  "topic": "分析桌面端和 service 端内存占用问题，需不减少功能的情况下，尽可能降低内存占用和资源占用",
+  "completed": "2026-02-09T18:38:32+08:00",
+  "status": "phase_b_implemented_round6",
+  "total_rounds": 6,
+  "summary": "在 Phase A 基础上，Round 6 已完成剩余 2/3/4：Desktop 节流参数配置化、关键单测补齐、AggregationWorker 三层聚合流式化。当前全量回归通过，进入长时间稳态验证阶段。",
+  "key_conclusions": [
+    {
+      "point": "Service 当前更像高分配率问题，不是明显无限缓存泄漏。",
+      "evidence": "BoundedChannel(1) 限制了快照队列；但采集链路每轮仍创建大量对象与字典。",
+      "confidence": "high"
+    },
+    {
+      "point": "AggregationWorker 的全量窗口读取是峰值内存风险点。",
+      "evidence": "分钟窗口数据 ToListAsync 后再分组，容易造成短时高水位。",
+      "confidence": "high"
+    },
+    {
+      "point": "Desktop 的主要优化收益在 UI 更新策略，而非单纯减少功能。",
+      "evidence": "ViewModel 集合排序/重建和高频通知会放大 WPF 绑定开销。",
+      "confidence": "high"
+    },
+    {
+      "point": "GC 参数调优有帮助，但优先级应低于数据通路减分配。",
+      "evidence": "运行时已设置硬上限；官方建议优先降低不必要分配与缓冲。",
+      "confidence": "high"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "R1：引入分层采样策略（active 进程高频，idle 进程低频；系统指标分级采样）",
+      "rationale": "直接降低 steady-state 分配和 CPU，占用下降可快速验证，功能保持完整。",
+      "priority": "high",
+      "scope": "service",
+      "expected_impact": "service 常驻内存下降 10%~20%，CPU 同步下降",
+      "risk": "low"
+    },
+    {
+      "action": "R2：压缩 ProcessSnapshot 数据结构，减少每进程 Dictionary 和中间 List",
+      "rationale": "减少对象图规模和序列化中间态，降低 GC 压力。",
+      "priority": "high",
+      "scope": "service/core",
+      "expected_impact": "采集链路分配率下降 15%~30%",
+      "risk": "medium"
+    },
+    {
+      "action": "R3：将 AggregationWorker 改为分批/流式聚合，避免窗口全量加载",
+      "rationale": "削峰是长稳运行的关键，减少分钟级突增。",
+      "priority": "high",
+      "scope": "service/data",
+      "expected_impact": "峰值内存下降 20%~40%",
+      "risk": "medium"
+    },
+    {
+      "action": "R4：Desktop 端改为批处理增量 diff 更新（最小化集合重排和通知）",
+      "rationale": "降低 UI 线程负担，保持界面功能与实时性。",
+      "priority": "high",
+      "scope": "desktop",
+      "expected_impact": "desktop 常驻内存下降 10%~25%，渲染更平滑",
+      "risk": "medium"
+    },
+    {
+      "action": "R5：SignalR 缓冲和消息大小治理（限流、批量、字段裁剪但不删功能）",
+      "rationale": "减少网络层暂存对象和序列化负担。",
+      "priority": "medium",
+      "scope": "service/desktop",
+      "expected_impact": "内存抖动和瞬时峰值下降",
+      "risk": "low"
+    },
+    {
+      "action": "R6：SQLite 运行参数细调（cache_size、checkpoint 节奏）",
+      "rationale": "降低数据库侧缓存带来的不稳定峰值。",
+      "priority": "medium",
+      "scope": "service/data",
+      "expected_impact": "长时间运行内存曲线更平稳",
+      "risk": "low"
+    },
+    {
+      "action": "R7：建立内存优化验收基线（dotnet-counters、gcdump、alloc rate）",
+      "rationale": "避免盲改，保证优化可量化、可回归。",
+      "priority": "high",
+      "scope": "service/desktop",
+      "expected_impact": "缩短调优周期，避免负优化",
+      "risk": "low"
+    },
+    {
+      "action": "R8：评估 desktop 内嵌 WebServer 懒启动策略",
+      "rationale": "不删功能，仅按需激活，减少空闲常驻开销。",
+      "priority": "medium",
+      "scope": "desktop",
+      "expected_impact": "idle 场景内存下降 5%~15%",
+      "risk": "medium"
+    }
+  ],
+  "phase_a_plan_file": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/phase-a-plan.md",
+  "phase_a_tasks": [
+    {
+      "id": "A1",
+      "title": "Worker 快照构建减分配",
+      "files": [
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Worker.cs"
+      ],
+      "touch_points": [
+        "SendProcessDataAsync",
+        "RunProcessPushLoopAsync"
+      ],
+      "priority": "high",
+      "risk": "low",
+      "estimate_hours": "3-4"
+    },
+    {
+      "id": "A2",
+      "title": "ProcessScanner 命令行缓存",
+      "files": [
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Core/ProcessScanner.cs"
+      ],
+      "touch_points": [
+        "ScanProcesses",
+        "ProcessSingleProcess"
+      ],
+      "priority": "high",
+      "risk": "low",
+      "estimate_hours": "2-3"
+    },
+    {
+      "id": "A3",
+      "title": "聚合查询 AsNoTracking",
+      "files": [
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Workers/AggregationWorker.cs"
+      ],
+      "touch_points": [
+        "AggregateRawToMinuteAsync",
+        "AggregateMinuteToHourAsync",
+        "AggregateHourToDayAsync"
+      ],
+      "priority": "high",
+      "risk": "low",
+      "estimate_hours": "1-2"
+    },
+    {
+      "id": "A4",
+      "title": "SignalR 缓冲阈值配置化",
+      "files": [
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Program.cs",
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/appsettings.json"
+      ],
+      "touch_points": [
+        "AddSignalR",
+        "MapHub"
+      ],
+      "priority": "high",
+      "risk": "medium-low",
+      "estimate_hours": "2"
+    },
+    {
+      "id": "A5",
+      "title": "Desktop SignalR 反序列化减分配",
+      "files": [
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/Services/SignalRService.cs"
+      ],
+      "touch_points": [
+        "On<JsonElement> callbacks"
+      ],
+      "priority": "high",
+      "risk": "low",
+      "estimate_hours": "1-2"
+    },
+    {
+      "id": "A6",
+      "title": "Desktop 列表刷新轻量节流",
+      "files": [
+        "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs"
+      ],
+      "touch_points": [
+        "OnProcessDataReceived",
+        "OnMetricsReceived",
+        "SyncCollectionOrder"
+      ],
+      "priority": "medium",
+      "risk": "medium",
+      "estimate_hours": "3-4"
+    }
+  ],
+  "implementation_result": {
+    "implemented_task_ids": [
+      "A1",
+      "A2",
+      "A3",
+      "A4",
+      "A5",
+      "A6"
+    ],
+    "changed_files": [
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Worker.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Core/ProcessScanner.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Workers/AggregationWorker.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/AssemblyInfo.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/Program.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Service/appsettings.json",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/App.xaml.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/appsettings.json",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/Configuration/UiOptimizationOptions.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/Services/SignalRService.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Tests/Services/ProcessScannerTests.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Tests/Services/AggregationWorkerTests.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop.Tests/SignalRServiceTests.cs",
+      "C:/ProjectDev/project/xinghe/xhMonitor/XhMonitor.Desktop.Tests/FloatingWindowViewModelThrottleTests.cs"
+    ],
+    "test_command": "dotnet test C:/ProjectDev/project/xinghe/xhMonitor/xhMonitor.sln",
+    "test_result": {
+      "service_tests": "171 passed, 0 failed",
+      "desktop_tests": "24 passed, 0 failed"
+    }
+  },
+  "before_after_comparison": {
+    "before_source": "C:/my_program/XhMonitor",
+    "before_summary": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-before-20260209-161838/summary.json",
+    "after_source": "C:/ProjectDev/project/xinghe/xhMonitor",
+    "after_summary": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-after-20260209-162821/summary.json",
+    "sampling_window_sec": 480,
+    "service": {
+      "working_set_avg_delta_pct": -18.02,
+      "working_set_max_delta_mb": -62.387,
+      "private_avg_delta_pct": -21.06
+    },
+    "desktop": {
+      "working_set_avg_delta_pct": -7.35,
+      "working_set_max_delta_mb": -15.773,
+      "private_avg_delta_pct": -6.15
+    },
+    "confidence": "medium-high",
+    "limitations": [
+      "优化前 service 拒绝 dotnet-counters 连接，无法比较 service 的 GC/alloc 计数器。",
+      "窗口为 480 秒短窗，长稳结论建议继续用 30-60 分钟验证。"
+    ],
+    "report_file": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/compare-report-20260209.md"
+  },
+  "validation_metrics": [
+    {
+      "name": "Service RSS steady-state",
+      "target": "170 MB+ 降至 120~150 MB 区间（同负载）"
+    },
+    {
+      "name": "Service alloc rate",
+      "target": "下降 20%+"
+    },
+    {
+      "name": "Aggregation peak",
+      "target": "峰值下降 30% 左右"
+    },
+    {
+      "name": "Desktop RSS steady-state",
+      "target": "80 MB 降至 60~72 MB 区间（同功能）"
+    },
+    {
+      "name": "UI update latency",
+      "target": "P95 不劣化，最好下降"
+    }
+  ],
+  "open_questions": [
+    "是否现在补跑 30-60 分钟长窗，验证新增流式聚合在稳态下的峰值收益？",
+    "UiOptimization 的 ProcessRefreshIntervalMs 在线上默认值是否固定 150ms，还是按环境分层配置（100/150/200）？",
+    "AggregationBatchSize=2000 是否需要在极端数据量场景继续压测并调整为配置项？"
+  ],
+  "follow_up_suggestions": [
+    {
+      "type": "task",
+      "summary": "执行 30-60 分钟长窗对比采样，确认 Round 6 后 service 峰值内存曲线与 GC alloc 稳定下降。"
+    },
+    {
+      "type": "task",
+      "summary": "将 UiOptimization 参数纳入发布配置（dev/staging/prod），并补充参数回归基线。"
+    },
+    {
+      "type": "issue",
+      "summary": "评估将 AggregationBatchSize 配置化并加入压测门槛，避免未来数据规模增长后回退。"
+    }
+  ],
+  "references": [
+    "https://learn.microsoft.com/dotnet/core/runtime-config/garbage-collector",
+    "https://learn.microsoft.com/aspnet/core/performance/memory",
+    "https://learn.microsoft.com/aspnet/core/signalr/configuration",
+    "https://learn.microsoft.com/aspnet/core/signalr/scale",
+    "https://learn.microsoft.com/ef/core/performance/efficient-querying",
+    "https://sqlite.org/pragma.html"
+  ]
+}

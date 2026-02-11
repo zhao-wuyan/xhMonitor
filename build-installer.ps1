@@ -173,7 +173,14 @@ Write-Host "[3/3] 编译安装程序..." -ForegroundColor Yellow
 try {
     # 使用 ISCC 命令行参数传递版本号，避免修改文件导致编码问题
     Push-Location $InstallerDir
-    & $isccPath "/DMyAppVersion=$Version" $IssFile
+    $isccArgs = @(
+        "/DMyAppVersion=$Version"
+        $IssFile
+    )
+    if ($Lite) {
+        $isccArgs = @("/DIsLiteBuild=1") + $isccArgs
+    }
+    & $isccPath @isccArgs
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "错误: 安装程序编译失败！" -ForegroundColor Red

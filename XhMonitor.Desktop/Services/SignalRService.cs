@@ -51,7 +51,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<HardwareLimitsDto>(data.GetRawText(), jsonOptions);
+                var dto = DeserializePayload<HardwareLimitsDto>(data, jsonOptions);
                 if (dto != null) HardwareLimitsReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -65,7 +65,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<SystemUsageDto>(data.GetRawText(), jsonOptions);
+                var dto = DeserializePayload<SystemUsageDto>(data, jsonOptions);
                 if (dto != null) SystemUsageReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -79,7 +79,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<ProcessDataDto>(data.GetRawText(), jsonOptions);
+                var dto = DeserializePayload<ProcessDataDto>(data, jsonOptions);
                 if (dto != null) ProcessDataReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -93,7 +93,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<ProcessMetaDto>(data.GetRawText(), jsonOptions);
+                var dto = DeserializePayload<ProcessMetaDto>(data, jsonOptions);
                 if (dto != null) ProcessMetaReceived?.Invoke(dto);
             }
             catch (Exception ex)
@@ -107,7 +107,7 @@ public class SignalRService : IAsyncDisposable
         {
             try
             {
-                var metrics = JsonSerializer.Deserialize<MetricsDataDto>(data.GetRawText(), jsonOptions);
+                var metrics = DeserializePayload<MetricsDataDto>(data, jsonOptions);
                 if (metrics != null) MetricsReceived?.Invoke(metrics);
             }
             catch (Exception ex)
@@ -138,6 +138,11 @@ public class SignalRService : IAsyncDisposable
         await _connection.StartAsync();
         ConnectionStateChanged?.Invoke(true);
     }
+
+    internal static T? DeserializePayload<T>(JsonElement data, JsonSerializerOptions jsonOptions)
+        => data.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+            ? default
+            : data.Deserialize<T>(jsonOptions);
 
     /// <summary>
     /// 主动重连 SignalR（断开后重新连接）

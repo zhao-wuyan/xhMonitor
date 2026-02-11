@@ -1,0 +1,61 @@
+{
+  "status": "partial",
+  "reason": "sampling window closed before planned 30-minute duration",
+  "started": "2026-02-09T15:55:10.1043870+08:00",
+  "ended": "2026-02-09T16:02:28.7623632+08:00",
+  "duration_sec": 438,
+  "planned_duration_sec": 1800,
+  "planned_completion_pct": 24.17,
+  "total_rows": 176,
+  "service_rows": 88,
+  "desktop_rows": 88,
+  "service": {
+    "working_set_mb": {
+      "min": 155.078,
+      "avg": 180.643,
+      "max": 191.305
+    },
+    "private_mb": {
+      "min": 95.531,
+      "avg": 103.412,
+      "max": 108.98
+    },
+    "gc_heap_mb": {
+      "min": 22.755,
+      "avg": 37.593,
+      "max": 56.494
+    },
+    "allocation_rate_b_per_5s": {
+      "min": 18767400.0,
+      "avg": 32635855.906,
+      "max": 49267424.0
+    }
+  },
+  "desktop": {
+    "working_set_mb": {
+      "min": 147.457,
+      "avg": 188.701,
+      "max": 222.418
+    },
+    "private_mb": {
+      "min": 153.008,
+      "avg": 155.092,
+      "max": 162.309
+    },
+    "gc_heap_mb": {
+      "min": 4.506,
+      "avg": 13.542,
+      "max": 23.301
+    },
+    "allocation_rate_b_per_5s": {
+      "min": 334688.0,
+      "avg": 712324.93,
+      "max": 10805664.0
+    }
+  },
+  "artifacts": {
+    "samples": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/runtime-sampling-20260209-155509/process-memory-samples.csv",
+    "service_counters": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/runtime-sampling-20260209-155509/service-runtime-counters.csv",
+    "desktop_counters": "C:/ProjectDev/project/xinghe/xhMonitor/.workflow/.analysis/ANL-desktop-service-memory-optimization-2026-02-08/runtime-sampling-20260209-155509/desktop-runtime-counters.csv"
+  }
+}

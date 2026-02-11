@@ -1,0 +1,116 @@
+{
+  "summary": "为 Desktop 增加类似 TrafficMonitor 的任务栏显示模式，支持显示实时指标、开关控制，并与现有悬浮窗模式同时存在。",
+  "approach": "采用“双后端 + 单数据源”策略：先落地稳定的 Taskbar Docked Window（任务栏贴边窗口）实现，再预留 Experimental 嵌入式后端；配置层提供独立开关（Floating / Taskbar）与并存策略；两种模式共享同一实时指标状态服务，避免双 SignalR 连接。",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "抽离共享实时指标状态服务",
+      "description": "从 FloatingWindowViewModel 中拆分可复用的数据采集与状态更新逻辑，形成 SharedMetricsState 服务，供悬浮窗与任务栏窗口共同订阅。",
+      "scope": "desktop-data-layer",
+      "files": [
+        "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+        "XhMonitor.Desktop/Services/SignalRService.cs",
+        "XhMonitor.Desktop/Services/IMetricsStateService.cs",
+        "XhMonitor.Desktop/Services/MetricsStateService.cs",
+        "XhMonitor.Desktop/App.xaml.cs"
+      ],
+      "depends_on": [],
+      "execution_group": "G1",
+      "complexity": "High"
+    },
+    {
+      "id": "T2",
+      "title": "实现任务栏显示窗口（稳定后端）",
+      "description": "新增 TaskbarMetricsWindow 与定位服务，基于 Win32 获取任务栏区域并贴边显示指标文本；支持刷新节流、DPI、多任务栏方向与失败回退。",
+      "scope": "desktop-ui-taskbar-mode",
+      "files": [
+        "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml",
+        "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+        "XhMonitor.Desktop/Services/ITaskbarPlacementService.cs",
+        "XhMonitor.Desktop/Services/TaskbarPlacementService.cs",
+        "XhMonitor.Desktop/Services/TaskbarTextFormatter.cs"
+      ],
+      "depends_on": [
+        "T1"
+      ],
+      "execution_group": "G2",
+      "complexity": "High"
+    },
+    {
+      "id": "T3",
+      "title": "模式编排与生命周期管理（支持并存）",
+      "description": "扩展 WindowManagementService 与 TrayIconService，支持 Floating 模式、Taskbar 模式、双模式同时运行，并提供托盘快捷切换。",
+      "scope": "desktop-orchestration",
+      "files": [
+        "XhMonitor.Desktop/Services/IWindowManagementService.cs",
+        "XhMonitor.Desktop/Services/WindowManagementService.cs",
+        "XhMonitor.Desktop/Services/ITrayIconService.cs",
+        "XhMonitor.Desktop/Services/TrayIconService.cs"
+      ],
+      "depends_on": [
+        "T1",
+        "T2"
+      ],
+      "execution_group": "G3",
+      "complexity": "Medium"
+    },
+    {
+      "id": "T4",
+      "title": "设置项与持久化扩展",
+      "description": "新增任务栏模式配置键（启用开关、显示模板/简略程度、刷新频率），接入 SettingsViewModel 与 SettingsWindow；兼容旧配置缺失键并提供默认值。",
+      "scope": "desktop-settings-persistence",
+      "files": [
+        "XhMonitor.Core/Configuration/ConfigurationDefaults.cs",
+        "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml",
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+        "XhMonitor.Service/Data/SeedDataIds.cs",
+        "XhMonitor.Service/Data/MonitorDbContext.cs",
+        "XhMonitor.Service/Migrations/*AddTaskbarDisplaySettings*.cs"
+      ],
+      "depends_on": [
+        "T1"
+      ],
+      "execution_group": "G2",
+      "complexity": "Medium"
+    },
+    {
+      "id": "T5",
+      "title": "测试与兼容性验证",
+      "description": "补充单元测试与关键手工验证清单，覆盖配置兼容、文本格式化、定位计算、模式切换状态机，以及 Win10/Win11 兼容行为。",
+      "scope": "desktop-quality",
+      "files": [
+        "XhMonitor.Desktop.Tests/SettingsViewModelTests.cs",
+        "XhMonitor.Desktop.Tests/FloatingWindowViewModelThrottleTests.cs",
+        "XhMonitor.Desktop.Tests/TaskbarTextFormatterTests.cs",
+        "XhMonitor.Desktop.Tests/TaskbarPlacementServiceTests.cs",
+        "XhMonitor.Desktop.Tests/WindowManagementServiceModeTests.cs"
+      ],
+      "depends_on": [
+        "T2",
+        "T3",
+        "T4"
+      ],
+      "execution_group": "G4",
+      "complexity": "Medium"
+    }
+  ],
+  "estimated_time": "14-22 小时（约 2-3 个工作日）",
+  "complexity": "High",
+  "_metadata": {
+    "timestamp": "2026-02-09T19:40:01.474Z",
+    "source": "lite-plan",
+    "planning_mode": "direct",
+    "exploration_angles": [
+      "patterns",
+      "integration-points",
+      "testing",
+      "dependencies"
+    ],
+    "assumptions": [
+      "优先保证稳定可用（贴边窗口），再预留实验性嵌入实现。",
+      "默认允许 Floating 与 Taskbar 同时启用。",
+      "配置缺失时自动回落默认值，不阻塞启动。"
+    ]
+  }
+}

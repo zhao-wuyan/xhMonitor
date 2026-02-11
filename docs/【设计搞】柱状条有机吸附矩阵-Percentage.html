@@ -1,0 +1,474 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能矩阵 (Percentage)</title>
+    <style>
+        :root {
+            --bg-color: rgba(12, 12, 14, 0.7);
+            --text-base: #ffffff;
+            --font-size: 12px;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+            
+            /* 配色表 (Okabe-Ito) */
+            --c-net: #56B4E9;
+            --c-cpu: #D55E00;
+            --c-mem: #F0E442;
+            --c-gpu: #E69F00;
+            --c-tmp: #CC79A7;
+            --c-fps: #009E73;
+        }
+
+        body {
+            /* 深邃背景，凸显微数据 */
+            background: url('https://images.unsplash.com/photo-1519608400483-a59042bd52cb?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        /* --- 核心容器 --- */
+        #matrix-bar {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            
+            background: var(--bg-color);
+            color: var(--text-base);
+            font-family: var(--font-mono);
+            font-size: var(--font-size);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            
+            /* 默认悬浮态 */
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            padding: 5px 8px;
+            
+            display: flex;
+            z-index: 10000;
+            user-select: none;
+            cursor: grab;
+            
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        #matrix-bar:active {
+            cursor: grabbing;
+            background: rgba(0,0,0,0.9);
+            transform: translate(-50%, -50%) scale(0.98);
+        }
+
+        /* --- 组通用样式 --- */
+        .group {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 标签文字 (N, F, C...) */
+        .lbl { 
+            font-weight: 800; 
+            text-shadow: 0 0 3px currentColor; 
+            z-index: 2;
+        }
+        .lbl.n { color: var(--c-net); }
+        .lbl.f { color: var(--c-fps); }
+        .lbl.c { color: var(--c-cpu); }
+        .lbl.g { color: var(--c-gpu); }
+        .lbl.m { color: var(--c-mem); }
+        .lbl.t { color: var(--c-tmp); }
+
+        /* 纯数值 (Net/FPS) */
+        .val-text {
+            color: rgba(255,255,255,0.9);
+            white-space: nowrap;
+            font-size: 11px;
+            margin-left: 4px; /* 横排时的间距 */
+        }
+
+        /* --- 进度条容器 --- */
+        .bar-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            width: 100%;
+            border-radius: 1px;
+            transition: width 0.2s, height 0.2s; 
+            box-shadow: 0 0 5px currentColor;
+        }
+
+        .fill-c { background: var(--c-cpu); color: var(--c-cpu); }
+        .fill-g { background: var(--c-gpu); color: var(--c-gpu); }
+        .fill-m { background: var(--c-mem); color: var(--c-mem); }
+        .fill-t { background: var(--c-tmp); color: var(--c-tmp); }
+
+        /* --- 百分比数值 (微字体) --- */
+        .pct-num {
+            font-size: 9px;
+            color: rgba(255,255,255,0.8);
+            pointer-events: none; /* 防止遮挡拖拽 */
+        }
+
+
+        /* ====== 布局形态转换 ====== */
+
+        /* 1. 横排模式 (Horizontal) */
+        #matrix-bar.horizontal {
+            flex-direction: row;
+            gap: 14px;
+            height: auto;
+            align-items: center;
+        }
+
+        #matrix-bar.horizontal .group {
+            flex-direction: row;
+            gap: 4px;
+        }
+
+        #matrix-bar.horizontal .bar-track {
+            width: 40px;  /* 稍微加宽一点以容纳文字 */
+            height: 8px;  
+        }
+        
+        #matrix-bar.horizontal .bar-fill {
+            height: 100%; 
+        }
+
+        /* 横排时，百分比显示在条中间 */
+        #matrix-bar.horizontal .pct-num {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            text-shadow: 0 1px 2px #000; /* 确保在亮色条上也能看清 */
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        /* 2. 竖排模式 (Vertical) */
+        #matrix-bar.vertical {
+            flex-direction: column;
+            width: auto;
+            gap: 8px;
+            
+            /* 物理宽度极致压缩 */
+            padding: 8px 2px; 
+        }
+
+        #matrix-bar.vertical .group {
+            /* 关键布局：百分比(上) -> 条(中) -> 标签(下) */
+            flex-direction: column-reverse; 
+            gap: 2px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        #matrix-bar.vertical .val-text {
+            font-size: 9px;
+            margin-left: 0;
+            transform: scale(0.9);
+        }
+
+        #matrix-bar.vertical .bar-wrapper {
+            flex-direction: column-reverse; /* 为了让百分比在条上面 */
+            gap: 2px;
+        }
+
+        #matrix-bar.vertical .bar-track {
+            width: 5px;   /* 极细 */
+            height: 32px; 
+            display: flex;
+            align-items: flex-end; 
+        }
+        
+        #matrix-bar.vertical .bar-fill {
+            width: 100%;
+        }
+
+        /* 竖排时，百分比在条上方，字体极小 */
+        #matrix-bar.vertical .pct-num {
+            position: static;
+            transform: none;
+            font-size: 9px;
+            opacity: 0.7;
+        }
+
+
+        /* ====== 有机吸附逻辑 (Organic Dock) ====== */
+        
+        .docked {
+            border: none !important;
+            background: rgba(10, 12, 16, 0.85) !important;
+        }
+
+        /* 上吸附 */
+        #matrix-bar.dock-top {
+            top: 0 !important;
+            border-radius: 0 0 8px 8px;
+            border-top: 2px solid var(--c-net);
+            box-shadow: 0 4px 20px -2px rgba(86, 180, 233, 0.4);
+        }
+
+        /* 下吸附 */
+        #matrix-bar.dock-bottom {
+            top: auto !important;
+            bottom: 0 !important;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 2px solid var(--c-net);
+            box-shadow: 0 -4px 20px -2px rgba(86, 180, 233, 0.4);
+        }
+
+        /* 左吸附 (竖排) */
+        #matrix-bar.dock-left {
+            left: 0 !important;
+            border-radius: 0 8px 8px 0;
+            border-left: 2px solid var(--c-gpu);
+            box-shadow: 4px 0 20px -2px rgba(230, 159, 0, 0.4);
+        }
+
+        /* 右吸附 (竖排) */
+        #matrix-bar.dock-right {
+            left: auto !important;
+            right: 0 !important;
+            border-radius: 8px 0 0 8px;
+            border-right: 2px solid var(--c-gpu);
+            box-shadow: -4px 0 20px -2px rgba(230, 159, 0, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 默认 Horizontal -->
+    <div id="matrix-bar" class="horizontal">
+        
+        <!-- Net (纯数字) -->
+        <div class="group" title="Net">
+            <span class="lbl n">N</span>
+            <span class="val-text" id="val-net">12K</span>
+        </div>
+
+        <!-- FPS (纯数字) -->
+        <div class="group" title="FPS">
+            <span class="lbl f">F</span>
+            <span class="val-text" id="val-fps">144</span>
+        </div>
+
+        <!-- CPU (进度条 + %) -->
+        <div class="group" title="CPU">
+            <span class="lbl c">C</span>
+            <div class="bar-wrapper">
+                <span class="pct-num" id="pct-cpu">12%</span>
+                <div class="bar-track">
+                    <div class="bar-fill fill-c" id="bar-cpu" style="width: 12%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPU (进度条 + %) -->
+        <div class="group" title="GPU">
+            <span class="lbl g">G</span>
+            <div class="bar-wrapper">
+                <span class="pct-num" id="pct-gpu">34%</span>
+                <div class="bar-track">
+                    <div class="bar-fill fill-g" id="bar-gpu" style="width: 34%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAM (进度条 + %) -->
+        <div class="group" title="RAM">
+            <span class="lbl m">M</span>
+            <div class="bar-wrapper">
+                <span class="pct-num" id="pct-mem">64%</span>
+                <div class="bar-track">
+                    <div class="bar-fill fill-m" id="bar-mem" style="width: 64%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TMP (进度条 + %) -->
+        <div class="group" title="Temp">
+            <span class="lbl t">T</span>
+            <div class="bar-wrapper">
+                <span class="pct-num" id="pct-tmp">45°</span>
+                <div class="bar-track">
+                    <div class="bar-fill fill-t" id="bar-tmp" style="width: 45%"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <div style="position:fixed; bottom:50px; width:100%; text-align:center; color:rgba(255,255,255,0.4); font-size:12px; pointer-events:none; font-family: sans-serif; text-shadow: 0 1px 2px #000;">
+        拖拽至边缘：百分比数值将自动适配方向
+    </div>
+
+    <script>
+        const bar = document.getElementById('matrix-bar');
+        let isDragging = false;
+        let startX, startY;
+        let initialLeft, initialTop;
+        const SNAP_MARGIN = 80;
+
+        let isVertical = false;
+
+        bar.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = bar.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            
+            // 恢复悬浮
+            setOrientation('horizontal');
+            bar.className = 'horizontal'; 
+            bar.style.transform = 'none'; 
+            bar.style.left = initialLeft + 'px';
+            bar.style.top = initialTop + 'px';
+            bar.style.bottom = ''; 
+            bar.style.right = '';
+            
+            bar.style.background = 'rgba(255,255,255,0.1)'; 
+            bar.style.transition = 'none'; 
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            bar.style.left = (initialLeft + dx) + 'px';
+            bar.style.top = (initialTop + dy) + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            bar.style.background = ''; 
+            bar.style.transition = 'all 0.3s cubic-bezier(0.19, 1, 0.22, 1)';
+            detectSnap();
+        });
+
+        function detectSnap() {
+            const rect = bar.getBoundingClientRect();
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            const minDist = Math.min(rect.top, winH - rect.bottom, rect.left, winW - rect.right);
+
+            if (minDist > SNAP_MARGIN) {
+                ensureInBounds(rect, winW, winH);
+                return;
+            }
+
+            if (minDist === rect.top) dock('top');
+            else if (minDist === (winH - rect.bottom)) dock('bottom');
+            else if (minDist === rect.left) dock('left');
+            else dock('right');
+        }
+
+        function dock(direction) {
+            bar.className = 'docked';
+            if (direction === 'top' || direction === 'bottom') {
+                bar.classList.add('horizontal');
+                bar.classList.add('dock-' + direction);
+                setOrientation('horizontal');
+            } else {
+                bar.classList.add('vertical');
+                bar.classList.add('dock-' + direction);
+                setOrientation('vertical');
+            }
+        }
+
+        function setOrientation(mode) {
+            isVertical = (mode === 'vertical');
+            updateBarsVisuals();
+        }
+
+        function ensureInBounds(rect, w, h) {
+            let newLeft = parseInt(bar.style.left);
+            let newTop = parseInt(bar.style.top);
+            if (newLeft < 10) newLeft = 10;
+            if (newLeft + rect.width > w - 10) newLeft = w - rect.width - 10;
+            if (newTop < 10) newTop = 10;
+            if (newTop + rect.height > h - 10) newTop = h - rect.height - 10;
+            bar.style.left = newLeft + 'px';
+            bar.style.top = newTop + 'px';
+        }
+
+        window.addEventListener('resize', () => {
+             setOrientation('horizontal');
+             bar.className = 'horizontal';
+             bar.style.left = '50%';
+             bar.style.top = '50%';
+             bar.style.transform = 'translate(-50%, -50%)';
+        });
+
+        // ====== 数据与动画 ======
+        const metrics = { cpu: 12, gpu: 34, mem: 64, tmp: 45 };
+
+        function updateBar(key, val, suffix = '%') {
+            const barEl = document.getElementById('bar-' + key);
+            const numEl = document.getElementById('pct-' + key);
+            
+            if (isVertical) {
+                barEl.style.width = '100%';
+                barEl.style.height = val + '%';
+                // 竖向时省去%，只显示数字，节省空间
+                numEl.innerText = val;
+            } else {
+                barEl.style.height = '100%';
+                barEl.style.width = val + '%';
+                // 横向时显示完整
+                numEl.innerText = val + suffix;
+            }
+        }
+
+        function updateBarsVisuals() {
+            updateBar('cpu', metrics.cpu);
+            updateBar('gpu', metrics.gpu);
+            updateBar('mem', metrics.mem);
+            updateBar('tmp', metrics.tmp, '°');
+        }
+
+        function randomVal(min, max) { return Math.floor(Math.random() * (max - min + 1) + min); }
+        
+        setInterval(() => {
+            document.getElementById('val-net').innerText = (Math.random() * 20).toFixed(0) + 'K';
+            document.getElementById('val-fps').innerText = randomVal(120, 144);
+            
+            metrics.cpu = randomVal(5, 45);
+            metrics.gpu = randomVal(20, 80);
+            if(Math.random() > 0.7) metrics.mem = randomVal(60, 65);
+            metrics.tmp = randomVal(40, 65);
+
+            updateBarsVisuals();
+
+        }, 2000);
+
+    </script>
+</body>
+</html>

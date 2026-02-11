@@ -1,0 +1,42 @@
+{
+  "angle": "dependencies",
+  "project_structure": [
+    "内部依赖：Desktop -> Core（配置常量、模型）",
+    "运行依赖：Windows Shell / user32 API / SignalR 后端",
+    "外部环境：Windows 任务栏实现（Win10/Win11/第三方任务栏增强）"
+  ],
+  "relevant_files": [
+    "XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+    "XhMonitor.Desktop/Services/SignalRService.cs",
+    "XhMonitor.Core/Configuration/ConfigurationDefaults.cs",
+    "XhMonitor.Service/Data/MonitorDbContext.cs",
+    "XhMonitor.Service/Data/SeedDataIds.cs",
+    "XhMonitor.Service/Controllers/ConfigController.cs"
+  ],
+  "patterns": [
+    "已有 API 能力适合存储新增模式配置，无需新增数据库表",
+    "MonitorDbContext 使用 HasData + SeedDataIds，若新增默认键需同步 seed 与 snapshot/migration",
+    "ConfigController.UpdateSettings 支持不存在键自动插入，便于平滑升级"
+  ],
+  "dependencies": [
+    "若走“真嵌入任务栏”路径，需依赖未公开/兼容性较差的 Shell 容器结构（高风险）",
+    "若走“任务栏贴边独立窗口”路径，仅依赖公开 Win32 API，落地风险可控",
+    "TrafficMonitor 社区反馈显示 Win11 + 第三方任务栏环境兼容性差异明显（需降级策略）"
+  ],
+  "integration_points": [
+    "建议采用双实现策略：Stable（贴边窗口）+ Experimental（嵌入式尝试，可关闭）",
+    "通过统一接口 ITaskbarDisplayBackend 屏蔽底层实现差异"
+  ],
+  "constraints": [
+    "必须允许用户关闭任务栏模式并保留现有悬浮窗体验",
+    "必须支持两种模式并存（共享同一数据源，避免双连接）",
+    "当任务栏定位失败或环境不支持时要自动回退并给出可见提示"
+  ],
+  "clarification_needs": [],
+  "_metadata": {
+    "exploration_angle": "dependencies",
+    "exploration_index": 4,
+    "timestamp": "2026-02-09T19:39:17.237Z"
+  }
+}

@@ -114,8 +114,10 @@ try
 
     builder.Services.Configure<MonitorSettings>(builder.Configuration.GetSection("Monitor"));
     builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database"));
+    builder.Services.Configure<AggregationSettings>(builder.Configuration.GetSection("Aggregation"));
     builder.Services.AddOptions<MonitorSettings>().ValidateDataAnnotations().ValidateOnStart();
     builder.Services.AddOptions<DatabaseSettings>().ValidateDataAnnotations().ValidateOnStart();
+    builder.Services.AddOptions<AggregationSettings>().ValidateDataAnnotations().ValidateOnStart();
 
     var connectionResult = ValidateConnectionString(builder.Configuration);
     if (connectionResult.IsFailure)
@@ -260,7 +262,18 @@ builder.Services.AddSingleton<PerformanceMonitor>();
 builder.Services.AddSingleton<IProcessMetadataStore, ProcessMetadataStore>();
 
 builder.Services.AddControllers();
-builder.Services.AddSignalR();
+var signalRSection = builder.Configuration.GetSection("SignalR");
+var signalRMaximumReceiveMessageSize = signalRSection.GetValue<long?>("MaximumReceiveMessageSize");
+var signalRApplicationMaxBufferSize = signalRSection.GetValue<long?>("ApplicationMaxBufferSize");
+var signalRTransportMaxBufferSize = signalRSection.GetValue<long?>("TransportMaxBufferSize");
+
+builder.Services.AddSignalR(options =>
+{
+    if (signalRMaximumReceiveMessageSize.HasValue && signalRMaximumReceiveMessageSize.Value > 0)
+    {
+        options.MaximumReceiveMessageSize = signalRMaximumReceiveMessageSize.Value;
+    }
+});
 
 builder.Services.AddCors(options =>
 {
@@ -338,7 +351,18 @@ app.UseCors("AllowAll");
 app.UseRouting();
 
 app.MapControllers();
-app.MapHub<MetricsHub>(hubPath);
+app.MapHub<MetricsHub>(hubPath, options =>
+{
+    if (signalRApplicationMaxBufferSize.HasValue && signalRApplicationMaxBufferSize.Value > 0)
+    {
+        options.ApplicationMaxBufferSize = signalRApplicationMaxBufferSize.Value;
+    }
+
+    if (signalRTransportMaxBufferSize.HasValue && signalRTransportMaxBufferSize.Value > 0)
+    {
+        options.TransportMaxBufferSize = signalRTransportMaxBufferSize.Value;
+    }
+});
 
 Log.Information(
     "SignalR Hub: http://{Host}:{Port}{HubPath}",

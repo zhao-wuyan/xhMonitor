@@ -1,0 +1,10 @@
+﻿{
+    "started_at":  "2026-02-09T16:28:22.0261208+08:00",
+    "now":  "2026-02-09T16:36:26.0223996+08:00",
+    "elapsed_sec":  484,
+    "duration_sec":  480,
+    "progress_pct":  100,
+    "status":  "completed",
+    "summary_file":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\summary.json",
+    "report_file":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\.analysis\\ANL-desktop-service-memory-optimization-2026-02-08\\compare-after-20260209-162821\\report.md"
+}

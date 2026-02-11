@@ -14,7 +14,10 @@ using System.Collections.Specialized;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Extensions.DependencyInjection;
+using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.ViewModels;
+using WinFormsCursor = System.Windows.Forms.Cursor;
+using WinFormsScreen = System.Windows.Forms.Screen;
 
 namespace XhMonitor.Desktop;
 
@@ -23,6 +26,7 @@ public partial class FloatingWindow : Window
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20L;
     private const double DRAG_THRESHOLD = 5.0; // 拖动阈值(像素)
+    private const double EDGE_DOCK_SNAP_DISTANCE = 24.0; // 贴边触发的近边阈值(像素)
 
     private readonly FloatingWindowViewModel _viewModel;
     private readonly WindowPositionStore _positionStore;
@@ -43,6 +47,7 @@ public partial class FloatingWindow : Window
     // 拖动相关
     private bool _isDragging;
     private System.Windows.Point _dragStartPoint;
+    private bool _dragReleaseHandled;
 
     // Pinned Stack 定位相关
     private bool _lastPopupAbove = false;
@@ -217,6 +222,22 @@ public partial class FloatingWindow : Window
         await _viewModel.ReconnectAsync();
     }
 
+    public void ApplyDisplaySettings(TaskbarDisplaySettings settings)
+    {
+        if (settings == null)
+        {
+            return;
+        }
+
+        _viewModel.IsCpuVisible = settings.MonitorCpu;
+        _viewModel.IsMemoryVisible = settings.MonitorMemory;
+        _viewModel.IsGpuVisible = settings.MonitorGpu;
+        _viewModel.IsVramVisible = settings.MonitorVram;
+        _viewModel.IsNetworkVisible = settings.MonitorNetwork;
+        // 保留原有硬件可用性判断：仅在硬件支持时显示功耗指标。
+        _viewModel.IsPowerVisible = settings.MonitorPower && _viewModel.IsPowerVisible;
+    }
+
     public void SetClickThrough(bool enabled)
     {
         IsClickThroughEnabled = enabled;
@@ -292,18 +313,15 @@ public partial class FloatingWindow : Window
                 // 加载监控设置
                 if (settings?.TryGetValue("Monitoring", out var monitoring) == true)
                 {
-                    if (monitoring.TryGetValue("MonitorCpu", out var cpu))
-                        _viewModel.IsCpuVisible = bool.Parse(cpu);
-                    if (monitoring.TryGetValue("MonitorMemory", out var memory))
-                        _viewModel.IsMemoryVisible = bool.Parse(memory);
-                    if (monitoring.TryGetValue("MonitorGpu", out var gpu))
-                        _viewModel.IsGpuVisible = bool.Parse(gpu);
-                    if (monitoring.TryGetValue("MonitorVram", out var vram))
-                        _viewModel.IsVramVisible = bool.Parse(vram);
-                    if (monitoring.TryGetValue("MonitorPower", out var power))
-                        _viewModel.IsPowerVisible = bool.Parse(power) && _viewModel.IsPowerVisible; // 保留原有的硬件检测逻辑
-                    if (monitoring.TryGetValue("MonitorNetwork", out var network))
-                        _viewModel.IsNetworkVisible = bool.Parse(network);
+                    ApplyDisplaySettings(new TaskbarDisplaySettings
+                    {
+                        MonitorCpu = TryParseBool(monitoring, "MonitorCpu", _viewModel.IsCpuVisible),
+                        MonitorMemory = TryParseBool(monitoring, "MonitorMemory", _viewModel.IsMemoryVisible),
+                        MonitorGpu = TryParseBool(monitoring, "MonitorGpu", _viewModel.IsGpuVisible),
+                        MonitorVram = TryParseBool(monitoring, "MonitorVram", _viewModel.IsVramVisible),
+                        MonitorPower = TryParseBool(monitoring, "MonitorPower", _viewModel.IsPowerVisible),
+                        MonitorNetwork = TryParseBool(monitoring, "MonitorNetwork", _viewModel.IsNetworkVisible)
+                    });
                 }
             }
         }
@@ -314,6 +332,13 @@ public partial class FloatingWindow : Window
         }
     }
 
+    private static bool TryParseBool(Dictionary<string, string> values, string key, bool fallback)
+    {
+        return values.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
         _windowHandle = new WindowInteropHelper(this).Handle;
@@ -322,6 +347,9 @@ public partial class FloatingWindow : Window
         {
             ApplyPlacement(placement);
         }
+
+        // 启动时纠正历史位置，避免与任务栏重叠。
+        ResetToNearestNonTaskbarOverlapByCurrentScreen();
 
         _hwndSource = HwndSource.FromHwnd(_windowHandle);
         _hwndSource?.AddHook(WndProc);
@@ -343,8 +371,8 @@ public partial class FloatingWindow : Window
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标离开");
         _viewModel.OnBarPointerLeave();
 
-        // 如果正在拖动,停止拖动
-        _isDragging = false;
+        // 不能在 MouseLeave 中清空拖拽状态：
+        // DragMove 返回后还需要依赖 _isDragging 进入 HandleWindowDragReleased。
     }
 
     // 主控制栏鼠标按下 - 开始长按计时,记录拖动起点
@@ -395,10 +423,14 @@ public partial class FloatingWindow : Window
             try
             {
                 DragMove();
+
+                // DragMove 在鼠标释放时返回；这里是最可靠的拖拽结束点。
+                HandleWindowDragReleased();
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore drag errors
+                System.Diagnostics.Debug.WriteLine($"DragMove 异常：{ex.Message}");
+                _isDragging = false;
             }
         }
     }
@@ -410,12 +442,18 @@ public partial class FloatingWindow : Window
 
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 鼠标抬起,isDragging={_isDragging}");
 
+        // DragMove 返回后，MouseUp 仍可能到达；此时直接吞掉，避免误触点击逻辑。
+        if (_dragReleaseHandled)
+        {
+            _dragReleaseHandled = false;
+            e.Handled = true;
+            return;
+        }
+
         // 如果正在拖动,不执行任何逻辑
         if (_isDragging)
         {
-            _isDragging = false;
-            StopLongPressTimer();
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 拖动结束");
+            HandleWindowDragReleased();
             e.Handled = true;
             return;
         }
@@ -977,6 +1015,165 @@ public partial class FloatingWindow : Window
         Top = top;
         Width = placement.Width;
         Height = placement.Height;
+    }
+
+    private bool TryActivateEdgeDockModeOnDragRelease(out string reason, out string detail)
+    {
+        var screen = WinFormsScreen.FromPoint(WinFormsCursor.Position);
+        // 完整屏幕边界：用于“半窗越界”触发。
+        var screenBounds = screen.Bounds;
+        // 工作区边界：仅用于识别任务栏所在方向，避免把任务栏边缘当作贴边触发。
+        var workingBounds = screen.WorkingArea;
+
+        // 若某一侧存在任务栏占位，则该方向不触发悬浮窗 -> 迷你/贴边切换。
+        var hasTaskbarOnLeft = workingBounds.Left > screenBounds.Left;
+        var hasTaskbarOnTop = workingBounds.Top > screenBounds.Top;
+        var hasTaskbarOnRight = workingBounds.Right < screenBounds.Right;
+        var hasTaskbarOnBottom = workingBounds.Bottom < screenBounds.Bottom;
+
+        var boundaryLeft = screenBounds.Left;
+        var boundaryTop = screenBounds.Top;
+        var boundaryRight = screenBounds.Right;
+        var boundaryBottom = screenBounds.Bottom;
+
+        var windowWidth = Math.Max(Width, ActualWidth);
+        var windowHeight = Math.Max(Height, ActualHeight);
+
+        var overflowLeft = Math.Max(0, boundaryLeft - Left);
+        var overflowRight = Math.Max(0, (Left + windowWidth) - boundaryRight);
+        var overflowTop = Math.Max(0, boundaryTop - Top);
+        var overflowBottom = Math.Max(0, (Top + windowHeight) - boundaryBottom);
+
+        var halfOutLeft = !hasTaskbarOnLeft && overflowLeft >= windowWidth / 2.0;
+        var halfOutRight = !hasTaskbarOnRight && overflowRight >= windowWidth / 2.0;
+        var halfOutTop = !hasTaskbarOnTop && overflowTop >= windowHeight / 2.0;
+        var halfOutBottom = !hasTaskbarOnBottom && overflowBottom >= windowHeight / 2.0;
+        var triggerByHalfOut = halfOutLeft || halfOutRight || halfOutTop || halfOutBottom;
+
+        var screenLeftDistance = Math.Abs(Left - boundaryLeft);
+        var screenRightDistance = Math.Abs((Left + windowWidth) - boundaryRight);
+        var screenTopDistance = Math.Abs(Top - boundaryTop);
+        var screenBottomDistance = Math.Abs((Top + windowHeight) - boundaryBottom);
+
+        var nearLeft = !hasTaskbarOnLeft && screenLeftDistance <= EDGE_DOCK_SNAP_DISTANCE;
+        var nearRight = !hasTaskbarOnRight && screenRightDistance <= EDGE_DOCK_SNAP_DISTANCE;
+        var nearTop = !hasTaskbarOnTop && screenTopDistance <= EDGE_DOCK_SNAP_DISTANCE;
+        var nearBottom = !hasTaskbarOnBottom && screenBottomDistance <= EDGE_DOCK_SNAP_DISTANCE;
+        var triggerByNearScreenEdge = nearLeft || nearRight || nearTop || nearBottom;
+
+        var cursor = WinFormsCursor.Position;
+        var cursorNearLeft = !hasTaskbarOnLeft && Math.Abs(cursor.X - boundaryLeft) <= EDGE_DOCK_SNAP_DISTANCE;
+        var cursorNearRight = !hasTaskbarOnRight && Math.Abs(boundaryRight - cursor.X) <= EDGE_DOCK_SNAP_DISTANCE;
+        var cursorNearTop = !hasTaskbarOnTop && Math.Abs(cursor.Y - boundaryTop) <= EDGE_DOCK_SNAP_DISTANCE;
+        var cursorNearBottom = !hasTaskbarOnBottom && Math.Abs(boundaryBottom - cursor.Y) <= EDGE_DOCK_SNAP_DISTANCE;
+        var triggerByCursorEdge = cursorNearLeft || cursorNearRight || cursorNearTop || cursorNearBottom;
+
+        var activatedSides = new List<string>(4);
+        if (nearLeft || halfOutLeft || cursorNearLeft) activatedSides.Add("L");
+        if (nearRight || halfOutRight || cursorNearRight) activatedSides.Add("R");
+        if (nearTop || halfOutTop || cursorNearTop) activatedSides.Add("T");
+        if (nearBottom || halfOutBottom || cursorNearBottom) activatedSides.Add("B");
+        var sideSummary = activatedSides.Count == 0 ? "-" : string.Join("/", activatedSides);
+
+        var shouldTrigger = triggerByHalfOut || triggerByNearScreenEdge || triggerByCursorEdge;
+        detail = $"screen=({screenBounds.Left},{screenBounds.Top},{screenBounds.Right},{screenBounds.Bottom}), " +
+                 $"working=({workingBounds.Left},{workingBounds.Top},{workingBounds.Right},{workingBounds.Bottom}), " +
+                 $"window=({Left:F1},{Top:F1},{windowWidth:F1},{windowHeight:F1}), " +
+                 $"overflow(L:{overflowLeft:F1},R:{overflowRight:F1},T:{overflowTop:F1},B:{overflowBottom:F1}), " +
+                 $"near(L:{nearLeft},R:{nearRight},T:{nearTop},B:{nearBottom}), " +
+                 $"cursorNear(L:{cursorNearLeft},R:{cursorNearRight},T:{cursorNearTop},B:{cursorNearBottom}), " +
+                 $"taskbar(L:{hasTaskbarOnLeft},R:{hasTaskbarOnRight},T:{hasTaskbarOnTop},B:{hasTaskbarOnBottom}), " +
+                 $"trigger(halfOut:{triggerByHalfOut},nearEdge:{triggerByNearScreenEdge},cursor:{triggerByCursorEdge}), " +
+                 $"side={sideSummary}";
+
+        if (!shouldTrigger)
+        {
+            reason = "未满足贴边阈值";
+            return false;
+        }
+
+        var windowManagementService = ((App)System.Windows.Application.Current).Services?.GetService<XhMonitor.Desktop.Services.IWindowManagementService>();
+        if (windowManagementService == null)
+        {
+            reason = "窗口管理服务不可用";
+            return false;
+        }
+
+        var activated = windowManagementService?.TryActivateEdgeDockMode() == true;
+        reason = activated
+            ? $"触发切换成功（边={sideSummary}）"
+            : "触发成功但切换被拒绝（检查迷你/贴边开关）";
+
+        return activated;
+    }
+
+    private void HandleWindowDragReleased()
+    {
+        if (!_isDragging)
+        {
+            return;
+        }
+
+        _isDragging = false;
+        _dragReleaseHandled = true;
+        StopLongPressTimer();
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 拖动结束");
+
+        var activated = TryActivateEdgeDockModeOnDragRelease(out _, out _);
+
+        if (!activated)
+        {
+            ResetToNearestNonTaskbarOverlapByMouseScreen();
+        }
+    }
+
+    private void ResetToNearestNonTaskbarOverlapByCurrentScreen()
+    {
+        var screen = _windowHandle != IntPtr.Zero
+            ? WinFormsScreen.FromHandle(_windowHandle)
+            : WinFormsScreen.FromPoint(WinFormsCursor.Position);
+        ResetToNearestNonTaskbarOverlap(screen);
+    }
+
+    private void ResetToNearestNonTaskbarOverlapByMouseScreen()
+    {
+        var screen = WinFormsScreen.FromPoint(WinFormsCursor.Position);
+        ResetToNearestNonTaskbarOverlap(screen);
+    }
+
+    private void ResetToNearestNonTaskbarOverlap(WinFormsScreen screen)
+    {
+        var workingArea = screen.WorkingArea;
+        var windowWidth = Math.Max(Width, ActualWidth);
+        var windowHeight = Math.Max(Height, ActualHeight);
+
+        var minLeft = workingArea.Left;
+        var maxLeft = workingArea.Right - windowWidth;
+        var minTop = workingArea.Top;
+        var maxTop = workingArea.Bottom - windowHeight;
+
+        var targetLeft = ClampToRange(Left, minLeft, maxLeft);
+        var targetTop = ClampToRange(Top, minTop, maxTop);
+
+        if (Math.Abs(targetLeft - Left) > 0.5)
+        {
+            Left = targetLeft;
+        }
+
+        if (Math.Abs(targetTop - Top) > 0.5)
+        {
+            Top = targetTop;
+        }
+    }
+
+    private static double ClampToRange(double value, double min, double max)
+    {
+        if (min > max)
+        {
+            return min;
+        }
+
+        return Math.Clamp(value, min, max);
     }
 
     private static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)

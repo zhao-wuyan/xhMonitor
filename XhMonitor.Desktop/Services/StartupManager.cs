@@ -173,6 +173,7 @@ public class StartupManager : IStartupManager
             UseShellExecute = requireAdmin,
             Verb = requireAdmin ? "runas" : string.Empty,
             CreateNoWindow = !requireAdmin,
+            WindowStyle = ProcessWindowStyle.Hidden,
             RedirectStandardOutput = !requireAdmin,
             RedirectStandardError = !requireAdmin,
             // .NET 8 默认不支持 GBK，使用 null 让系统自动选择编码

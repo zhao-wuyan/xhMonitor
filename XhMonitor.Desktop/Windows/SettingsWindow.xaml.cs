@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.Dialogs;
+using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.Services;
 using XhMonitor.Desktop.ViewModels;
 using XhMonitor.Core.Configuration;
@@ -16,6 +18,7 @@ public partial class SettingsWindow : Window
     private readonly IBackendServerService _backendServerService;
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly string _webUiUrl;
+    private bool _originalStartupEnabled;
 
     public SettingsWindow(
         SettingsViewModel viewModel,
@@ -51,7 +54,14 @@ public partial class SettingsWindow : Window
                     "错误",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+
+                _originalStartupEnabled = _viewModel.StartWithWindows;
+                return;
             }
+
+            // 仅在窗口加载时查询一次开机自启动状态，避免每次保存都触发外部命令。
+            _originalStartupEnabled = _startupManager.IsStartupEnabled();
+            _viewModel.StartWithWindows = _originalStartupEnabled;
         };
     }
 
@@ -59,7 +69,7 @@ public partial class SettingsWindow : Window
     {
         // 检查管理员模式变更
         var adminModeChanged = _viewModel.AdminMode != _viewModel.OriginalAdminMode;
-        var startupChanged = _viewModel.StartWithWindows != _startupManager.IsStartupEnabled();
+        var startupChanged = _viewModel.StartWithWindows != _originalStartupEnabled;
         var lanAccessChanged = _viewModel.EnableLanAccess != _viewModel.OriginalEnableLanAccess;
         string? firewallWarning = null;
 
@@ -80,9 +90,13 @@ public partial class SettingsWindow : Window
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
+            else
+            {
+                _originalStartupEnabled = _viewModel.StartWithWindows;
+            }
         }
         // 如果只是管理员模式变更（开机自启动未变），需要更新计划任务的运行级别
-        else if (adminModeChanged && _startupManager.IsStartupEnabled())
+        else if (adminModeChanged && _originalStartupEnabled)
         {
             _startupManager.UpdateRunLevel();
         }
@@ -195,6 +209,8 @@ public partial class SettingsWindow : Window
                 await ShowSaveSuccessHintAsync();
             }
 
+            await ApplyDisplayModesAsync();
+
             // 更新原始值，避免重复提示
             _viewModel.UpdateOriginalAdminMode();
             _viewModel.UpdateOriginalEnableLanAccess();
@@ -222,6 +238,53 @@ public partial class SettingsWindow : Window
 
         SaveButton.Content = originalContent;
         SaveButton.IsEnabled = true;
+    }
+
+    private async Task ApplyDisplayModesAsync()
+    {
+        try
+        {
+            var windowManagementService = ((App)System.Windows.Application.Current).Services?.GetService<IWindowManagementService>();
+            if (windowManagementService != null)
+            {
+                var displaySettings = BuildDisplaySettingsFromViewModel();
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    windowManagementService.ApplyDisplaySettings(displaySettings);
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to apply display mode settings: {ex.Message}");
+        }
+    }
+
+    private TaskbarDisplaySettings BuildDisplaySettingsFromViewModel()
+    {
+        var settings = new TaskbarDisplaySettings
+        {
+            EnableFloatingMode = _viewModel.EnableFloatingMode,
+            EnableEdgeDockMode = _viewModel.EnableEdgeDockMode,
+            MonitorCpu = _viewModel.MonitorCpu,
+            MonitorMemory = _viewModel.MonitorMemory,
+            MonitorGpu = _viewModel.MonitorGpu,
+            MonitorVram = _viewModel.MonitorVram,
+            MonitorPower = _viewModel.MonitorPower,
+            MonitorNetwork = _viewModel.MonitorNetwork,
+            DockCpuLabel = _viewModel.DockCpuLabel,
+            DockMemoryLabel = _viewModel.DockMemoryLabel,
+            DockGpuLabel = _viewModel.DockGpuLabel,
+            DockVramLabel = _viewModel.DockVramLabel,
+            DockPowerLabel = _viewModel.DockPowerLabel,
+            DockUploadLabel = _viewModel.DockUploadLabel,
+            DockDownloadLabel = _viewModel.DockDownloadLabel,
+            DockColumnGap = _viewModel.DockColumnGap,
+            DockVisualStyle = _viewModel.DockVisualStyle
+        };
+
+        settings.Normalize();
+        return settings;
     }
 
     private string BuildWebUiUrl()
@@ -318,6 +381,7 @@ public partial class SettingsWindow : Window
             _viewModel.MonitorPower = ConfigurationDefaults.Monitoring.MonitorPower;
             _viewModel.MonitorNetwork = ConfigurationDefaults.Monitoring.MonitorNetwork;
             _viewModel.AdminMode = ConfigurationDefaults.Monitoring.AdminMode;
+            _viewModel.DockVisualStyle = ConfigurationDefaults.Monitoring.DockVisualStyle;
         }
     }
 

@@ -3,6 +3,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows.Threading;
+using Microsoft.Extensions.Options;
+using XhMonitor.Desktop.Configuration;
 using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.Services;
 
@@ -13,7 +16,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     private readonly SignalRService _signalRService;
     private readonly Dictionary<int, ProcessRowViewModel> _processIndex = new();
     private readonly HashSet<int> _pinnedProcessIds = new();
+    private readonly DispatcherTimer _processRefreshTimer;
+    private readonly TimeSpan _processRefreshInterval;
+    private readonly bool _enableProcessRefreshThrottling;
+    private DateTime _lastProcessRefreshUtc = DateTime.MinValue;
+    private IReadOnlyList<ProcessInfoDto>? _pendingProcesses;
     private PanelState _stateBeforeClickthrough = PanelState.Collapsed;
+    private const int DefaultProcessRefreshIntervalMs = 150;
 
     public ObservableCollection<ProcessRowViewModel> TopProcesses { get; } = new();
     public ObservableCollection<ProcessRowViewModel> PinnedProcesses { get; } = new();
@@ -166,7 +175,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _isConnected = value; OnPropertyChanged(); }
     }
 
-    public FloatingWindowViewModel(IServiceDiscovery? serviceDiscovery = null)
+    public FloatingWindowViewModel(
+        IServiceDiscovery? serviceDiscovery = null,
+        IOptions<UiOptimizationOptions>? uiOptimizationOptions = null)
     {
         serviceDiscovery ??= new ServiceDiscovery();
         _signalRService = new SignalRService(serviceDiscovery.SignalRUrl);
@@ -176,6 +187,29 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         _signalRService.ProcessDataReceived += OnProcessDataReceived;
         _signalRService.ProcessMetaReceived += OnProcessMetaReceived;
         _signalRService.ConnectionStateChanged += OnConnectionStateChanged;
+
+        var options = uiOptimizationOptions?.Value ?? new UiOptimizationOptions();
+        _enableProcessRefreshThrottling = options.EnableProcessRefreshThrottling;
+        var refreshIntervalMs = NormalizeProcessRefreshIntervalMs(options.ProcessRefreshIntervalMs);
+        _processRefreshInterval = TimeSpan.FromMilliseconds(refreshIntervalMs);
+
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher != null)
+        {
+            _processRefreshTimer = new DispatcherTimer(
+                _processRefreshInterval,
+                DispatcherPriority.Background,
+                OnProcessRefreshTimerTick,
+                dispatcher);
+        }
+        else
+        {
+            _processRefreshTimer = new DispatcherTimer
+            {
+                Interval = _processRefreshInterval
+            };
+            _processRefreshTimer.Tick += OnProcessRefreshTimerTick;
+        }
     }
 
     public void OnBarPointerEnter()
@@ -234,24 +268,27 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     private void OnConnectionStateChanged(bool connected)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
-        System.Windows.Application.Current?.Dispatcher.Invoke(() => IsConnected = connected);
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
+        _ = dispatcher.BeginInvoke(new Action(() => IsConnected = connected));
     }
 
     private void OnHardwareLimitsReceived(HardwareLimitsDto data)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
+        _ = dispatcher.BeginInvoke(new Action(() =>
         {
             MaxMemory = data.MaxMemory;
             MaxVram = data.MaxVram;
-        });
+        }));
     }
 
     private void OnSystemUsageReceived(SystemUsageDto data)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
+        _ = dispatcher.BeginInvoke(new Action(() =>
         {
             TotalCpu = data.TotalCpu;
             TotalGpu = data.TotalGpu;
@@ -265,36 +302,24 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             DownloadSpeed = data.DownloadSpeed;
             if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
             if (data.MaxVram > 0) MaxVram = data.MaxVram;
-        });
+        }));
     }
 
     private void OnProcessDataReceived(ProcessDataDto data)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-        {
-            SyncProcessIndex(data.Processes);
-
-            var orderedAll = data.Processes
-                .Select(p => _processIndex[p.ProcessId])
-                .OrderByDescending(p => p.Memory + p.Vram)
-                .ToList();
-
-            var orderedTop = orderedAll.Take(5).ToList();
-
-            SyncCollectionOrder(AllProcesses, orderedAll);
-            SyncCollectionOrder(TopProcesses, orderedTop);
-            SyncPinnedCollection();
-        });
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
+        _ = dispatcher.BeginInvoke(new Action(() => QueueProcessRefresh(data.Processes)));
     }
 
     private void OnProcessMetaReceived(ProcessMetaDto data)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
+        _ = dispatcher.BeginInvoke(new Action(() =>
         {
             SyncProcessMeta(data.Processes);
-        });
+        }));
     }
 
     public async Task InitializeAsync()
@@ -343,9 +368,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     private void OnMetricsReceived(MetricsDataDto data)
     {
-        if (System.Windows.Application.Current?.Dispatcher?.HasShutdownStarted == true) return;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
 
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        _ = dispatcher.BeginInvoke(new Action(() =>
         {
             if (data.SystemStats != null)
             {
@@ -376,20 +402,93 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 TotalVram = totalVram;
             }
 
-            SyncProcessIndex(data.Processes);
-
-            var orderedAll = data.Processes
-                .Select(p => _processIndex[p.ProcessId])
-                .OrderByDescending(p => p.Memory + p.Vram)
-                .ToList();
-
-            var orderedTop = orderedAll.Take(5).ToList();
-
-            SyncCollectionOrder(AllProcesses, orderedAll);
-            SyncCollectionOrder(TopProcesses, orderedTop);
-            SyncPinnedCollection();
-        });
+            QueueProcessRefresh(data.Processes);
+        }));
     }
+
+    private void QueueProcessRefresh(IReadOnlyList<ProcessInfoDto> processes)
+    {
+        if (!_enableProcessRefreshThrottling)
+        {
+            _pendingProcesses = processes;
+            ApplyPendingProcessRefresh();
+            return;
+        }
+
+        _pendingProcesses = processes;
+        var now = DateTime.UtcNow;
+
+        if (ShouldApplyRefreshImmediately(now, _lastProcessRefreshUtc, _processRefreshInterval))
+        {
+            ApplyPendingProcessRefresh();
+            return;
+        }
+
+        if (!_processRefreshTimer.IsEnabled)
+        {
+            _processRefreshTimer.Start();
+        }
+    }
+
+    private void OnProcessRefreshTimerTick(object? sender, EventArgs e)
+    {
+        if (_pendingProcesses == null)
+        {
+            _processRefreshTimer.Stop();
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (!ShouldApplyRefreshImmediately(now, _lastProcessRefreshUtc, _processRefreshInterval))
+        {
+            return;
+        }
+
+        ApplyPendingProcessRefresh();
+
+        if (_pendingProcesses == null)
+        {
+            _processRefreshTimer.Stop();
+        }
+    }
+
+    private void ApplyPendingProcessRefresh()
+    {
+        if (_pendingProcesses == null)
+        {
+            return;
+        }
+
+        var processes = _pendingProcesses;
+        _pendingProcesses = null;
+        _lastProcessRefreshUtc = DateTime.UtcNow;
+
+        SyncProcessIndex(processes);
+
+        var orderedAll = processes
+            .Select(p => _processIndex[p.ProcessId])
+            .OrderByDescending(p => p.Memory + p.Vram)
+            .ToList();
+
+        var orderedTop = orderedAll.Take(5).ToList();
+
+        SyncCollectionOrder(AllProcesses, orderedAll);
+        SyncCollectionOrder(TopProcesses, orderedTop);
+        SyncPinnedCollection();
+    }
+
+    internal static int NormalizeProcessRefreshIntervalMs(int intervalMs)
+    {
+        if (intervalMs <= 0)
+        {
+            return DefaultProcessRefreshIntervalMs;
+        }
+
+        return Math.Clamp(intervalMs, 16, 2000);
+    }
+
+    internal static bool ShouldApplyRefreshImmediately(DateTime nowUtc, DateTime lastRefreshUtc, TimeSpan refreshInterval)
+        => (nowUtc - lastRefreshUtc) >= refreshInterval;
 
     private void SyncProcessIndex(IEnumerable<ProcessInfoDto> processes)
     {
@@ -484,6 +583,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _processRefreshTimer.Stop();
+        _processRefreshTimer.Tick -= OnProcessRefreshTimerTick;
+        _pendingProcesses = null;
+
         _signalRService.MetricsReceived -= OnMetricsReceived;
         _signalRService.HardwareLimitsReceived -= OnHardwareLimitsReceived;
         _signalRService.SystemUsageReceived -= OnSystemUsageReceived;

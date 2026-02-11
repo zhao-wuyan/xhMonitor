@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using XhMonitor.Core.Entities;
 using XhMonitor.Core.Enums;
+using XhMonitor.Service.Configuration;
 using XhMonitor.Service.Data;
 using System.Text.Json;
 
@@ -11,6 +13,10 @@ public sealed class AggregationWorker : BackgroundService
     private readonly IDbContextFactory<MonitorDbContext> _contextFactory;
     private readonly ILogger<AggregationWorker> _logger;
     private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
+    private readonly int _aggregationBatchSize;
+    private const int DefaultAggregationBatchSize = 2000;
+    private const int MinAggregationBatchSize = 100;
+    private const int MaxAggregationBatchSize = 50000;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -20,15 +26,19 @@ public sealed class AggregationWorker : BackgroundService
 
     public AggregationWorker(
         IDbContextFactory<MonitorDbContext> contextFactory,
-        ILogger<AggregationWorker> logger)
+        ILogger<AggregationWorker> logger,
+        IOptions<AggregationSettings>? aggregationSettings = null)
     {
         _contextFactory = contextFactory;
         _logger = logger;
+
+        var configuredBatchSize = aggregationSettings?.Value.BatchSize ?? DefaultAggregationBatchSize;
+        _aggregationBatchSize = NormalizeBatchSize(configuredBatchSize);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("AggregationWorker started");
+        _logger.LogInformation("AggregationWorker started, batch size: {BatchSize}", _aggregationBatchSize);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -63,6 +73,7 @@ public sealed class AggregationWorker : BackgroundService
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var lastWatermark = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Minute)
             .OrderByDescending(r => r.Timestamp)
             .Select(r => r.Timestamp)
@@ -79,6 +90,7 @@ public sealed class AggregationWorker : BackgroundService
 
         var windowStart = lastWatermark == default ?
             await context.ProcessMetricRecords
+                .AsNoTracking()
                 .OrderBy(r => r.Timestamp)
                 .Select(r => r.Timestamp)
                 .FirstOrDefaultAsync(cancellationToken) :
@@ -92,18 +104,13 @@ public sealed class AggregationWorker : BackgroundService
 
         _logger.LogInformation("Aggregating Raw → Minute: {Start} to {End}", windowStart, windowEnd);
 
-        var rawRecords = await context.ProcessMetricRecords
-            .Where(r => r.Timestamp > windowStart && r.Timestamp < windowEnd)
-            .OrderBy(r => r.Timestamp)
-            .ToListAsync(cancellationToken);
+        var aggregatedRecords = await AggregateRawToMinuteInBatchesAsync(context, windowStart, windowEnd, cancellationToken);
 
-        if (rawRecords.Count == 0)
+        if (aggregatedRecords.Count == 0)
         {
             _logger.LogDebug("No raw records in window");
             return;
         }
-
-        var aggregatedRecords = AggregateToMinute(rawRecords);
 
         await context.AggregatedMetricRecords.AddRangeAsync(aggregatedRecords, cancellationToken);
         var savedCount = await context.SaveChangesAsync(cancellationToken);
@@ -111,74 +118,12 @@ public sealed class AggregationWorker : BackgroundService
         _logger.LogInformation("Saved {Count} minute aggregations", savedCount);
     }
 
-    private List<AggregatedMetricRecord> AggregateToMinute(List<ProcessMetricRecord> rawRecords)
-    {
-        var grouped = rawRecords
-            .GroupBy(r => new
-            {
-                r.ProcessId,
-                r.ProcessName,
-                MinuteTimestamp = r.Timestamp.TruncateToMinute()
-            });
-
-        var results = new List<AggregatedMetricRecord>();
-
-        foreach (var group in grouped)
-        {
-            var metrics = new Dictionary<string, MetricAggregation>();
-
-            foreach (var record in group)
-            {
-                var recordMetrics = JsonSerializer.Deserialize<Dictionary<string, MetricValue>>(
-                    record.MetricsJson, JsonOptions);
-
-                if (recordMetrics == null) continue;
-
-                foreach (var (metricId, metricValue) in recordMetrics)
-                {
-                    if (!metrics.ContainsKey(metricId))
-                    {
-                        metrics[metricId] = new MetricAggregation
-                        {
-                            Unit = metricValue.Unit ?? string.Empty
-                        };
-                    }
-
-                    var agg = metrics[metricId];
-                    var value = metricValue.Value;
-
-                    agg.Min = Math.Min(agg.Min, value);
-                    agg.Max = Math.Max(agg.Max, value);
-                    agg.Sum += value;
-                    agg.Count++;
-                }
-            }
-
-            foreach (var agg in metrics.Values)
-            {
-                agg.Avg = agg.Count > 0 ? agg.Sum / agg.Count : 0;
-            }
-
-            var metricsJson = JsonSerializer.Serialize(metrics, JsonOptions);
-
-            results.Add(new AggregatedMetricRecord
-            {
-                ProcessId = group.Key.ProcessId,
-                ProcessName = group.Key.ProcessName,
-                AggregationLevel = AggregationLevel.Minute,
-                Timestamp = DateTime.SpecifyKind(group.Key.MinuteTimestamp, DateTimeKind.Utc),
-                MetricsJson = metricsJson
-            });
-        }
-
-        return results;
-    }
-
     private async Task AggregateMinuteToHourAsync(CancellationToken cancellationToken)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var lastWatermark = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Hour)
             .OrderByDescending(r => r.Timestamp)
             .Select(r => r.Timestamp)
@@ -194,6 +139,7 @@ public sealed class AggregationWorker : BackgroundService
 
         var windowStart = lastWatermark == default ?
             await context.AggregatedMetricRecords
+                .AsNoTracking()
                 .Where(r => r.AggregationLevel == AggregationLevel.Minute)
                 .OrderBy(r => r.Timestamp)
                 .Select(r => r.Timestamp)
@@ -208,20 +154,20 @@ public sealed class AggregationWorker : BackgroundService
 
         _logger.LogInformation("Aggregating Minute → Hour: {Start} to {End}", windowStart, windowEnd);
 
-        var minuteRecords = await context.AggregatedMetricRecords
-            .Where(r => r.AggregationLevel == AggregationLevel.Minute &&
-                       r.Timestamp > windowStart && r.Timestamp < windowEnd)
-            .OrderBy(r => r.Timestamp)
-            .ToListAsync(cancellationToken);
+        var aggregatedRecords = await AggregateToHigherLevelInBatchesAsync(
+            context,
+            AggregationLevel.Minute,
+            AggregationLevel.Hour,
+            windowStart,
+            windowEnd,
+            timestamp => timestamp.TruncateToHour(),
+            cancellationToken);
 
-        if (minuteRecords.Count == 0)
+        if (aggregatedRecords.Count == 0)
         {
             _logger.LogDebug("No minute records in window");
             return;
         }
-
-        var aggregatedRecords = AggregateToHigherLevel(minuteRecords, AggregationLevel.Hour,
-            r => r.TruncateToHour());
 
         await context.AggregatedMetricRecords.AddRangeAsync(aggregatedRecords, cancellationToken);
         var savedCount = await context.SaveChangesAsync(cancellationToken);
@@ -234,6 +180,7 @@ public sealed class AggregationWorker : BackgroundService
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
         var lastWatermark = await context.AggregatedMetricRecords
+            .AsNoTracking()
             .Where(r => r.AggregationLevel == AggregationLevel.Day)
             .OrderByDescending(r => r.Timestamp)
             .Select(r => r.Timestamp)
@@ -249,6 +196,7 @@ public sealed class AggregationWorker : BackgroundService
 
         var windowStart = lastWatermark == default ?
             await context.AggregatedMetricRecords
+                .AsNoTracking()
                 .Where(r => r.AggregationLevel == AggregationLevel.Hour)
                 .OrderBy(r => r.Timestamp)
                 .Select(r => r.Timestamp)
@@ -263,20 +211,20 @@ public sealed class AggregationWorker : BackgroundService
 
         _logger.LogInformation("Aggregating Hour → Day: {Start} to {End}", windowStart, windowEnd);
 
-        var hourRecords = await context.AggregatedMetricRecords
-            .Where(r => r.AggregationLevel == AggregationLevel.Hour &&
-                       r.Timestamp > windowStart && r.Timestamp < windowEnd)
-            .OrderBy(r => r.Timestamp)
-            .ToListAsync(cancellationToken);
+        var aggregatedRecords = await AggregateToHigherLevelInBatchesAsync(
+            context,
+            AggregationLevel.Hour,
+            AggregationLevel.Day,
+            windowStart,
+            windowEnd,
+            timestamp => timestamp.TruncateToDay(),
+            cancellationToken);
 
-        if (hourRecords.Count == 0)
+        if (aggregatedRecords.Count == 0)
         {
             _logger.LogDebug("No hour records in window");
             return;
         }
-
-        var aggregatedRecords = AggregateToHigherLevel(hourRecords, AggregationLevel.Day,
-            r => r.TruncateToDay());
 
         await context.AggregatedMetricRecords.AddRangeAsync(aggregatedRecords, cancellationToken);
         var savedCount = await context.SaveChangesAsync(cancellationToken);
@@ -284,70 +232,222 @@ public sealed class AggregationWorker : BackgroundService
         _logger.LogInformation("Saved {Count} day aggregations", savedCount);
     }
 
-    private List<AggregatedMetricRecord> AggregateToHigherLevel(
-        List<AggregatedMetricRecord> sourceRecords,
-        AggregationLevel targetLevel,
-        Func<DateTime, DateTime> truncateFunc)
+    private async Task<List<AggregatedMetricRecord>> AggregateRawToMinuteInBatchesAsync(
+        MonitorDbContext context,
+        DateTime windowStart,
+        DateTime windowEnd,
+        CancellationToken cancellationToken)
     {
-        var grouped = sourceRecords
-            .GroupBy(r => new
-            {
-                r.ProcessId,
-                r.ProcessName,
-                TruncatedTimestamp = truncateFunc(r.Timestamp)
-            });
+        var buckets = new Dictionary<AggregationBucketKey, Dictionary<string, MetricAggregation>>();
+        long lastSeenId = 0;
 
-        var results = new List<AggregatedMetricRecord>();
-
-        foreach (var group in grouped)
+        while (true)
         {
-            var metrics = new Dictionary<string, MetricAggregation>();
-
-            foreach (var record in group)
-            {
-                var recordMetrics = JsonSerializer.Deserialize<Dictionary<string, MetricAggregation>>(
-                    record.MetricsJson, JsonOptions);
-
-                if (recordMetrics == null) continue;
-
-                foreach (var (metricId, metricAgg) in recordMetrics)
+            var batch = await context.ProcessMetricRecords
+                .AsNoTracking()
+                .Where(r => r.Timestamp > windowStart && r.Timestamp < windowEnd && r.Id > lastSeenId)
+                .OrderBy(r => r.Id)
+                .Select(r => new RawMetricRow
                 {
-                    if (!metrics.ContainsKey(metricId))
-                    {
-                        metrics[metricId] = new MetricAggregation
-                        {
-                            Min = double.MaxValue,
-                            Max = double.MinValue,
-                            Unit = metricAgg.Unit
-                        };
-                    }
+                    Id = r.Id,
+                    ProcessId = r.ProcessId,
+                    ProcessName = r.ProcessName,
+                    Timestamp = r.Timestamp,
+                    MetricsJson = r.MetricsJson
+                })
+                .Take(_aggregationBatchSize)
+                .ToListAsync(cancellationToken);
 
-                    var agg = metrics[metricId];
-                    agg.Min = Math.Min(agg.Min, metricAgg.Min);
-                    agg.Max = Math.Max(agg.Max, metricAgg.Max);
-                    agg.Sum += metricAgg.Sum;
-                    agg.Count += metricAgg.Count;
-                }
+            if (batch.Count == 0)
+            {
+                break;
             }
 
-            foreach (var agg in metrics.Values)
+            foreach (var row in batch)
             {
-                agg.Avg = agg.Count > 0 ? agg.Sum / agg.Count : 0;
+                var recordMetrics = JsonSerializer.Deserialize<Dictionary<string, MetricValue>>(row.MetricsJson, JsonOptions);
+                if (recordMetrics == null || recordMetrics.Count == 0)
+                {
+                    continue;
+                }
+
+                var minuteTimestamp = DateTime.SpecifyKind(row.Timestamp.TruncateToMinute(), DateTimeKind.Utc);
+                var bucketKey = new AggregationBucketKey(row.ProcessId, row.ProcessName, minuteTimestamp);
+                if (!buckets.TryGetValue(bucketKey, out var metrics))
+                {
+                    metrics = new Dictionary<string, MetricAggregation>();
+                    buckets[bucketKey] = metrics;
+                }
+
+                MergeMetricValues(metrics, recordMetrics);
+            }
+
+            lastSeenId = batch[^1].Id;
+        }
+
+        return BuildAggregatedRecords(buckets, AggregationLevel.Minute);
+    }
+
+    private async Task<List<AggregatedMetricRecord>> AggregateToHigherLevelInBatchesAsync(
+        MonitorDbContext context,
+        AggregationLevel sourceLevel,
+        AggregationLevel targetLevel,
+        DateTime windowStart,
+        DateTime windowEnd,
+        Func<DateTime, DateTime> truncateFunc,
+        CancellationToken cancellationToken)
+    {
+        var buckets = new Dictionary<AggregationBucketKey, Dictionary<string, MetricAggregation>>();
+        long lastSeenId = 0;
+
+        while (true)
+        {
+            var batch = await context.AggregatedMetricRecords
+                .AsNoTracking()
+                .Where(r => r.AggregationLevel == sourceLevel &&
+                            r.Timestamp > windowStart &&
+                            r.Timestamp < windowEnd &&
+                            r.Id > lastSeenId)
+                .OrderBy(r => r.Id)
+                .Select(r => new AggregatedMetricRow
+                {
+                    Id = r.Id,
+                    ProcessId = r.ProcessId,
+                    ProcessName = r.ProcessName,
+                    Timestamp = r.Timestamp,
+                    MetricsJson = r.MetricsJson
+                })
+                .Take(_aggregationBatchSize)
+                .ToListAsync(cancellationToken);
+
+            if (batch.Count == 0)
+            {
+                break;
+            }
+
+            foreach (var row in batch)
+            {
+                var recordMetrics = JsonSerializer.Deserialize<Dictionary<string, MetricAggregation>>(row.MetricsJson, JsonOptions);
+                if (recordMetrics == null || recordMetrics.Count == 0)
+                {
+                    continue;
+                }
+
+                var bucketTimestamp = DateTime.SpecifyKind(truncateFunc(row.Timestamp), DateTimeKind.Utc);
+                var bucketKey = new AggregationBucketKey(row.ProcessId, row.ProcessName, bucketTimestamp);
+                if (!buckets.TryGetValue(bucketKey, out var metrics))
+                {
+                    metrics = new Dictionary<string, MetricAggregation>();
+                    buckets[bucketKey] = metrics;
+                }
+
+                MergeMetricAggregations(metrics, recordMetrics);
+            }
+
+            lastSeenId = batch[^1].Id;
+        }
+
+        return BuildAggregatedRecords(buckets, targetLevel);
+    }
+
+    private static void MergeMetricValues(
+        Dictionary<string, MetricAggregation> target,
+        IReadOnlyDictionary<string, MetricValue> source)
+    {
+        foreach (var (metricId, metricValue) in source)
+        {
+            if (!target.TryGetValue(metricId, out var aggregate))
+            {
+                aggregate = new MetricAggregation
+                {
+                    Unit = metricValue.Unit ?? string.Empty
+                };
+                target[metricId] = aggregate;
+            }
+
+            var value = metricValue.Value;
+            aggregate.Min = Math.Min(aggregate.Min, value);
+            aggregate.Max = Math.Max(aggregate.Max, value);
+            aggregate.Sum += value;
+            aggregate.Count++;
+        }
+    }
+
+    private static void MergeMetricAggregations(
+        Dictionary<string, MetricAggregation> target,
+        IReadOnlyDictionary<string, MetricAggregation> source)
+    {
+        foreach (var (metricId, metricAggregation) in source)
+        {
+            if (!target.TryGetValue(metricId, out var aggregate))
+            {
+                aggregate = new MetricAggregation
+                {
+                    Min = double.MaxValue,
+                    Max = double.MinValue,
+                    Unit = metricAggregation.Unit
+                };
+                target[metricId] = aggregate;
+            }
+
+            aggregate.Min = Math.Min(aggregate.Min, metricAggregation.Min);
+            aggregate.Max = Math.Max(aggregate.Max, metricAggregation.Max);
+            aggregate.Sum += metricAggregation.Sum;
+            aggregate.Count += metricAggregation.Count;
+        }
+    }
+
+    private static List<AggregatedMetricRecord> BuildAggregatedRecords(
+        Dictionary<AggregationBucketKey, Dictionary<string, MetricAggregation>> buckets,
+        AggregationLevel targetLevel)
+    {
+        if (buckets.Count == 0)
+        {
+            return [];
+        }
+
+        var results = new List<AggregatedMetricRecord>(buckets.Count);
+        foreach (var (bucketKey, metrics) in buckets
+                     .OrderBy(entry => entry.Key.Timestamp)
+                     .ThenBy(entry => entry.Key.ProcessId))
+        {
+            foreach (var aggregate in metrics.Values)
+            {
+                aggregate.Avg = aggregate.Count > 0 ? aggregate.Sum / aggregate.Count : 0;
             }
 
             var metricsJson = JsonSerializer.Serialize(metrics, JsonOptions);
-
             results.Add(new AggregatedMetricRecord
             {
-                ProcessId = group.Key.ProcessId,
-                ProcessName = group.Key.ProcessName,
+                ProcessId = bucketKey.ProcessId,
+                ProcessName = bucketKey.ProcessName,
                 AggregationLevel = targetLevel,
-                Timestamp = DateTime.SpecifyKind(group.Key.TruncatedTimestamp, DateTimeKind.Utc),
+                Timestamp = bucketKey.Timestamp,
                 MetricsJson = metricsJson
             });
         }
 
         return results;
+    }
+
+    private readonly record struct AggregationBucketKey(int ProcessId, string ProcessName, DateTime Timestamp);
+
+    private sealed class RawMetricRow
+    {
+        public long Id { get; init; }
+        public int ProcessId { get; init; }
+        public string ProcessName { get; init; } = string.Empty;
+        public DateTime Timestamp { get; init; }
+        public string MetricsJson { get; init; } = string.Empty;
+    }
+
+    private sealed class AggregatedMetricRow
+    {
+        public long Id { get; init; }
+        public int ProcessId { get; init; }
+        public string ProcessName { get; init; } = string.Empty;
+        public DateTime Timestamp { get; init; }
+        public string MetricsJson { get; init; } = string.Empty;
     }
 
     private class MetricValue
@@ -364,6 +464,16 @@ public sealed class AggregationWorker : BackgroundService
         public double Sum { get; set; }
         public int Count { get; set; }
         public string Unit { get; set; } = string.Empty;
+    }
+
+    internal static int NormalizeBatchSize(int configuredBatchSize)
+    {
+        if (configuredBatchSize <= 0)
+        {
+            return DefaultAggregationBatchSize;
+        }
+
+        return Math.Clamp(configuredBatchSize, MinAggregationBatchSize, MaxAggregationBatchSize);
     }
 }
 

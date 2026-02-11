@@ -16,6 +16,8 @@ public class ProcessScanner
     private readonly IDbContextFactory<MonitorDbContext> _contextFactory;
     private readonly IProcessNameResolver _nameResolver;
     private readonly object _keywordsLock = new();
+    private readonly ConcurrentDictionary<int, CommandLineCacheEntry> _commandLineCache = new();
+    private static readonly TimeSpan CommandLineCacheTtl = TimeSpan.FromSeconds(30);
 
     // 配置文件中的基础关键字（不可变）
     private readonly List<string> _configIncludeKeywords;
@@ -136,6 +138,12 @@ public class ProcessScanner
         {
             var processes = Process.GetProcesses();
             var totalProcesses = processes.Length;
+            var scanTimestamp = DateTime.UtcNow;
+            var liveProcessIds = new HashSet<int>(totalProcesses);
+            foreach (var process in processes)
+            {
+                liveProcessIds.Add(process.Id);
+            }
             _logger.LogDebug("    → 开始扫描系统进程: 总计 {TotalCount} 个进程", totalProcesses);
 
             var options = new ParallelOptions
@@ -147,7 +155,7 @@ public class ProcessScanner
             {
                 try
                 {
-                    ProcessSingleProcess(process, results);
+                    ProcessSingleProcess(process, results, scanTimestamp);
                 }
                 catch (Exception ex)
                 {
@@ -160,6 +168,8 @@ public class ProcessScanner
                 }
             });
 
+            CleanupCommandLineCache(liveProcessIds, scanTimestamp);
+
             _logger.LogDebug("    → 进程扫描完成: 从 {TotalCount} 个进程中匹配到 {MatchedCount} 个, 耗时: {ElapsedMs}ms",
                 totalProcesses, results.Count, sw.ElapsedMilliseconds);
         }
@@ -171,30 +181,44 @@ public class ProcessScanner
         return results.ToList();
     }
 
-    private void ProcessSingleProcess(Process process, ConcurrentBag<ProcessInfo> results)
+    private void ProcessSingleProcess(Process process, ConcurrentBag<ProcessInfo> results, DateTime scanTimestamp)
     {
         var pid = process.Id;
         var processName = process.ProcessName;
         string? commandLine = null;
         _logger.LogTrace("进入ProcessSingleProcess");
 
-        try
+        if (_commandLineCache.TryGetValue(pid, out var cacheEntry) && cacheEntry.ExpiresAtUtc > scanTimestamp)
         {
-            commandLine = ProcessCommandLineReader.GetCommandLine(pid);
+            commandLine = cacheEntry.CommandLine;
         }
-        catch (UnauthorizedAccessException)
+        else
         {
-            return;
-        }
-        catch (InvalidOperationException)
-        {
-            return;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "获取进程命令行失败 {ProcessId} ({ProcessName})",
-                pid, processName);
-            return;
+            try
+            {
+                commandLine = ProcessCommandLineReader.GetCommandLine(pid);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "获取进程命令行失败 {ProcessId} ({ProcessName})",
+                    pid, processName);
+                return;
+            }
+
+            if (commandLine == null)
+            {
+                return;
+            }
+
+            _commandLineCache[pid] = new CommandLineCacheEntry(commandLine, scanTimestamp + CommandLineCacheTtl);
         }
 
         if (commandLine == null)
@@ -246,4 +270,28 @@ public class ProcessScanner
             return _includeKeywords.Where(k => commandLineLower.Contains(k)).ToList();
         }
     }
+
+    private void CleanupCommandLineCache(IReadOnlySet<int> liveProcessIds, DateTime scanTimestamp)
+    {
+        foreach (var cacheItem in _commandLineCache)
+        {
+            if (cacheItem.Value.ExpiresAtUtc <= scanTimestamp || !liveProcessIds.Contains(cacheItem.Key))
+            {
+                _commandLineCache.TryRemove(cacheItem.Key, out _);
+            }
+        }
+    }
+
+    internal int DebugCommandLineCacheCount => _commandLineCache.Count;
+
+    internal bool DebugContainsCommandLineCacheEntry(int pid)
+        => _commandLineCache.ContainsKey(pid);
+
+    internal void DebugSetCommandLineCacheEntry(int pid, string commandLine, DateTime expiresAtUtc)
+        => _commandLineCache[pid] = new CommandLineCacheEntry(commandLine, expiresAtUtc);
+
+    internal void DebugCleanupCommandLineCache(IReadOnlySet<int> liveProcessIds, DateTime scanTimestamp)
+        => CleanupCommandLineCache(liveProcessIds, scanTimestamp);
+
+    private readonly record struct CommandLineCacheEntry(string CommandLine, DateTime ExpiresAtUtc);
 }

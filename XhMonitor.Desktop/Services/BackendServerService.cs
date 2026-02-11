@@ -80,6 +80,7 @@ public sealed class BackendServerService : IBackendServerService
                     Arguments = $"run --project \"{fullPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     StandardOutputEncoding = System.Text.Encoding.UTF8,
@@ -190,6 +191,7 @@ public sealed class BackendServerService : IBackendServerService
                 UseShellExecute = needsAdmin, // 管理员模式需要 UseShellExecute=true
                 Verb = needsAdmin ? "runas" : string.Empty,
                 CreateNoWindow = !needsAdmin, // 管理员模式下无法隐藏窗口
+                WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = !needsAdmin,
                 RedirectStandardError = !needsAdmin
             }

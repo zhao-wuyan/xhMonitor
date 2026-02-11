@@ -1,0 +1,47 @@
+{
+  "angle": "integration-points",
+  "project_structure": [
+    "UI 控制入口集中在 WindowManagementService 与 SettingsWindow",
+    "业务数据入口集中在 FloatingWindowViewModel（SignalR 事件汇聚）",
+    "配置中心在 Service ConfigController + ApplicationSettings"
+  ],
+  "relevant_files": [
+    "XhMonitor.Desktop/App.xaml.cs",
+    "XhMonitor.Desktop/Services/IWindowManagementService.cs",
+    "XhMonitor.Desktop/Services/WindowManagementService.cs",
+    "XhMonitor.Desktop/Services/ITrayIconService.cs",
+    "XhMonitor.Desktop/Services/TrayIconService.cs",
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs",
+    "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+    "XhMonitor.Service/Controllers/ConfigController.cs"
+  ],
+  "patterns": [
+    "窗口实例由 WindowManagementService 管理，适合扩展第二窗口（TaskbarWindow）生命周期",
+    "托盘菜单是模式切换的天然入口，可新增 “任务栏模式” 开关与子菜单",
+    "SettingsWindow 第 3 页已有“监控配置”卡片，适合新增“显示模式”卡片",
+    "现有指标更新逻辑集中在 FloatingWindowViewModel，可抽为共享状态服务供两窗口复用"
+  ],
+  "dependencies": [
+    "若保留当前结构直接复用 FloatingWindowViewModel，会与 FloatingWindow 强耦合（面板状态/交互逻辑）",
+    "为支持双模式同时存在，建议拆分 SharedMetricsState（数据）与各窗口 UI ViewModel（展示）"
+  ],
+  "integration_points": [
+    "新增 ITaskbarDisplayService 并在 App DI 注册",
+    "WindowManagementService 扩展：初始化/显示/隐藏 TaskbarWindow",
+    "TrayIconService 扩展菜单项：开关任务栏模式、仅悬浮窗、双模式",
+    "SettingsViewModel 扩展配置键：TaskbarModeEnabled/FloatingModeEnabled/TaskbarTemplate",
+    "ConfigController 无需新接口，复用现有批量 settings API 即可"
+  ],
+  "constraints": [
+    "模式切换需避免循环触发（Settings 保存 -> Window 重建 -> 再次 Save）",
+    "TaskbarWindow 与 FloatingWindow 同时运行时不能重复建立 SignalR 连接造成额外开销",
+    "主线程 Dispatcher 上的 UI 更新必须受控，避免高频刷新导致卡顿"
+  ],
+  "clarification_needs": [],
+  "_metadata": {
+    "exploration_angle": "integration-points",
+    "exploration_index": 2,
+    "timestamp": "2026-02-09T19:39:17.237Z"
+  }
+}

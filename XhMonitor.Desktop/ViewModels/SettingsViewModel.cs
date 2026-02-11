@@ -36,6 +36,17 @@ public class SettingsViewModel : INotifyPropertyChanged
     private bool _monitorVram = ConfigurationDefaults.Monitoring.MonitorVram;
     private bool _monitorPower = ConfigurationDefaults.Monitoring.MonitorPower;
     private bool _monitorNetwork = ConfigurationDefaults.Monitoring.MonitorNetwork;
+    private bool _enableFloatingMode = ConfigurationDefaults.Monitoring.EnableFloatingMode;
+    private bool _enableEdgeDockMode = ConfigurationDefaults.Monitoring.EnableEdgeDockMode;
+    private string _dockCpuLabel = ConfigurationDefaults.Monitoring.DockCpuLabel;
+    private string _dockMemoryLabel = ConfigurationDefaults.Monitoring.DockMemoryLabel;
+    private string _dockGpuLabel = ConfigurationDefaults.Monitoring.DockGpuLabel;
+    private string _dockVramLabel = ConfigurationDefaults.Monitoring.DockVramLabel;
+    private string _dockPowerLabel = ConfigurationDefaults.Monitoring.DockPowerLabel;
+    private string _dockUploadLabel = ConfigurationDefaults.Monitoring.DockUploadLabel;
+    private string _dockDownloadLabel = ConfigurationDefaults.Monitoring.DockDownloadLabel;
+    private int _dockColumnGap = ConfigurationDefaults.Monitoring.DockColumnGap;
+    private string _dockVisualStyle = ConfigurationDefaults.Monitoring.DockVisualStyle;
     private bool _adminMode = ConfigurationDefaults.Monitoring.AdminMode;
     private bool _originalAdminMode = ConfigurationDefaults.Monitoring.AdminMode;
 
@@ -127,6 +138,72 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         get => _monitorNetwork;
         set => SetProperty(ref _monitorNetwork, value);
+    }
+
+    public bool EnableFloatingMode
+    {
+        get => _enableFloatingMode;
+        set => SetProperty(ref _enableFloatingMode, value);
+    }
+
+    public bool EnableEdgeDockMode
+    {
+        get => _enableEdgeDockMode;
+        set => SetProperty(ref _enableEdgeDockMode, value);
+    }
+
+    public string DockCpuLabel
+    {
+        get => _dockCpuLabel;
+        set => SetProperty(ref _dockCpuLabel, value ?? string.Empty);
+    }
+
+    public string DockMemoryLabel
+    {
+        get => _dockMemoryLabel;
+        set => SetProperty(ref _dockMemoryLabel, value ?? string.Empty);
+    }
+
+    public string DockGpuLabel
+    {
+        get => _dockGpuLabel;
+        set => SetProperty(ref _dockGpuLabel, value ?? string.Empty);
+    }
+
+    public string DockVramLabel
+    {
+        get => _dockVramLabel;
+        set => SetProperty(ref _dockVramLabel, value ?? string.Empty);
+    }
+
+    public string DockPowerLabel
+    {
+        get => _dockPowerLabel;
+        set => SetProperty(ref _dockPowerLabel, value ?? string.Empty);
+    }
+
+    public string DockUploadLabel
+    {
+        get => _dockUploadLabel;
+        set => SetProperty(ref _dockUploadLabel, value ?? string.Empty);
+    }
+
+    public string DockDownloadLabel
+    {
+        get => _dockDownloadLabel;
+        set => SetProperty(ref _dockDownloadLabel, value ?? string.Empty);
+    }
+
+    public int DockColumnGap
+    {
+        get => _dockColumnGap;
+        set => SetProperty(ref _dockColumnGap, Math.Clamp(value, 0, 24));
+    }
+
+    public string DockVisualStyle
+    {
+        get => _dockVisualStyle;
+        set => SetProperty(ref _dockVisualStyle, NormalizeDockVisualStyle(value));
     }
 
     public bool AdminMode
@@ -288,13 +365,24 @@ public class SettingsViewModel : INotifyPropertyChanged
             // 监控设置
             if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.Monitoring, out var monitoring))
             {
-                MonitorCpu = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorCpu]);
-                MonitorMemory = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorMemory]);
-                MonitorGpu = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorGpu]);
-                MonitorVram = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorVram]);
-                MonitorPower = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorPower]);
-                MonitorNetwork = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.MonitorNetwork]);
-                AdminMode = bool.Parse(monitoring[ConfigurationDefaults.Keys.Monitoring.AdminMode]);
+                MonitorCpu = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorCpu, ConfigurationDefaults.Monitoring.MonitorCpu);
+                MonitorMemory = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorMemory, ConfigurationDefaults.Monitoring.MonitorMemory);
+                MonitorGpu = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorGpu, ConfigurationDefaults.Monitoring.MonitorGpu);
+                MonitorVram = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorVram, ConfigurationDefaults.Monitoring.MonitorVram);
+                MonitorPower = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorPower, ConfigurationDefaults.Monitoring.MonitorPower);
+                MonitorNetwork = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, ConfigurationDefaults.Monitoring.MonitorNetwork);
+                AdminMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.AdminMode, ConfigurationDefaults.Monitoring.AdminMode);
+                EnableFloatingMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode, ConfigurationDefaults.Monitoring.EnableFloatingMode);
+                EnableEdgeDockMode = GetBool(monitoring, ConfigurationDefaults.Keys.Monitoring.EnableEdgeDockMode, ConfigurationDefaults.Monitoring.EnableEdgeDockMode);
+                DockCpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockCpuLabel, ConfigurationDefaults.Monitoring.DockCpuLabel);
+                DockMemoryLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel, ConfigurationDefaults.Monitoring.DockMemoryLabel);
+                DockGpuLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockGpuLabel, ConfigurationDefaults.Monitoring.DockGpuLabel);
+                DockVramLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockVramLabel, ConfigurationDefaults.Monitoring.DockVramLabel);
+                DockPowerLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockPowerLabel, ConfigurationDefaults.Monitoring.DockPowerLabel);
+                DockUploadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockUploadLabel, ConfigurationDefaults.Monitoring.DockUploadLabel);
+                DockDownloadLabel = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel, ConfigurationDefaults.Monitoring.DockDownloadLabel);
+                DockColumnGap = GetInt(monitoring, ConfigurationDefaults.Keys.Monitoring.DockColumnGap, ConfigurationDefaults.Monitoring.DockColumnGap);
+                DockVisualStyle = GetString(monitoring, ConfigurationDefaults.Keys.Monitoring.DockVisualStyle, ConfigurationDefaults.Monitoring.DockVisualStyle);
                 _originalAdminMode = AdminMode; // 保存原始值用于变更检测
             }
 
@@ -376,7 +464,18 @@ public class SettingsViewModel : INotifyPropertyChanged
                     [ConfigurationDefaults.Keys.Monitoring.MonitorVram] = MonitorVram.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.Monitoring.MonitorPower] = MonitorPower.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.Monitoring.MonitorNetwork] = MonitorNetwork.ToString().ToLower(),
-                    [ConfigurationDefaults.Keys.Monitoring.AdminMode] = AdminMode.ToString().ToLower()
+                    [ConfigurationDefaults.Keys.Monitoring.AdminMode] = AdminMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.EnableFloatingMode] = EnableFloatingMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.EnableEdgeDockMode] = EnableEdgeDockMode.ToString().ToLower(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockCpuLabel] = (DockCpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockMemoryLabel] = (DockMemoryLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockGpuLabel] = (DockGpuLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockVramLabel] = (DockVramLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockPowerLabel] = (DockPowerLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockUploadLabel] = (DockUploadLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockDownloadLabel] = (DockDownloadLabel ?? string.Empty).Trim(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockColumnGap] = DockColumnGap.ToString(),
+                    [ConfigurationDefaults.Keys.Monitoring.DockVisualStyle] = NormalizeDockVisualStyle(DockVisualStyle)
                 },
                 [ConfigurationDefaults.Keys.Categories.System] = new()
                 {
@@ -615,6 +714,39 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         public bool IsAdmin { get; set; }
         public string? Message { get; set; }
+    }
+
+    private static bool GetBool(Dictionary<string, string> settings, string key, bool fallback)
+    {
+        return settings.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static int GetInt(Dictionary<string, string> settings, string key, int fallback)
+    {
+        return settings.TryGetValue(key, out var raw) && int.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static string GetString(Dictionary<string, string> settings, string key, string fallback)
+    {
+        if (!settings.TryGetValue(key, out var raw))
+        {
+            return fallback;
+        }
+
+        var normalized = (raw ?? string.Empty).Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+    }
+
+    private static string NormalizeDockVisualStyle(string? style)
+    {
+        var normalized = (style ?? string.Empty).Trim();
+        return normalized.Equals("Text", StringComparison.OrdinalIgnoreCase)
+            ? "Text"
+            : "Bar";
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

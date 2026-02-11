@@ -6,6 +6,7 @@ using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using XhMonitor.Desktop.Configuration;
 using XhMonitor.Desktop.Localization;
 using XhMonitor.Desktop.Services;
 using XhMonitor.Desktop.ViewModels;
@@ -53,21 +54,27 @@ public partial class App : WpfApplication
 
         _host = Host.CreateDefaultBuilder()
             .UseContentRoot(AppDomain.CurrentDomain.BaseDirectory)
-            .ConfigureAppConfiguration((_, config) =>
+            .ConfigureAppConfiguration((hostingContext, config) =>
             {
+                var environmentName = hostingContext.HostingEnvironment.EnvironmentName;
+
                 config.SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                    .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true);
             })
             .ConfigureServices((context, services) =>
             {
+                services.Configure<UiOptimizationOptions>(context.Configuration.GetSection("UiOptimization"));
                 services.AddSingleton<IServiceDiscovery, ServiceDiscovery>();
                 services.AddSingleton<IBackendServerService, BackendServerService>();
                 services.AddSingleton<IWebServerService, WebServerService>();
                 services.AddSingleton<ITrayIconService, TrayIconService>();
                 services.AddSingleton<IProcessManager, ProcessManager>();
                 services.AddSingleton<IPowerControlService, PowerControlService>();
+                services.AddSingleton<ITaskbarPlacementService, TaskbarPlacementService>();
                 services.AddSingleton<IWindowManagementService, WindowManagementService>();
                 services.AddSingleton<IAdminModeManager, AdminModeManager>();
+                services.AddSingleton<IDesktopLaunchModeFlagManager, DesktopLaunchModeFlagManager>();
                 services.AddSingleton<IStartupManager, StartupManager>();
                 services.AddHostedService<ApplicationHostedService>();
 
