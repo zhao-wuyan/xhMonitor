@@ -1,3 +1,5 @@
+using XhMonitor.Desktop.Models;
+
 namespace XhMonitor.Desktop.Services;
 
 public interface IWindowManagementService
@@ -10,7 +12,9 @@ public interface IWindowManagementService
 
     void CloseMainWindow();
 
+    void ApplyDisplaySettings(TaskbarDisplaySettings settings);
+
     Task RefreshDisplayModesAsync();
 
-    void ActivateEdgeDockMode();
+    bool TryActivateEdgeDockMode();
 }

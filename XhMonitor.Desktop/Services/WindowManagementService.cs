@@ -7,11 +7,20 @@ using XhMonitor.Core.Configuration;
 using XhMonitor.Desktop;
 using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.ViewModels;
+using WinFormsCursor = System.Windows.Forms.Cursor;
+using WinFormsScreen = System.Windows.Forms.Screen;
 
 namespace XhMonitor.Desktop.Services;
 
 public sealed class WindowManagementService : IWindowManagementService
 {
+    private enum ActiveDisplayMode
+    {
+        None = 0,
+        Floating = 1,
+        EdgeDock = 2
+    }
+
     private readonly ITrayIconService _trayIconService;
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IProcessManager _processManager;
@@ -23,6 +32,8 @@ public sealed class WindowManagementService : IWindowManagementService
     private FloatingWindow? _floatingWindow;
     private Windows.TaskbarMetricsWindow? _edgeDockWindow;
     private TaskbarDisplaySettings _displaySettings = new();
+    private ActiveDisplayMode _activeDisplayMode = ActiveDisplayMode.None;
+    private bool _hasHydratedDisplaySettings;
 
     public WindowManagementService(
         ITrayIconService trayIconService,
@@ -56,6 +67,7 @@ public sealed class WindowManagementService : IWindowManagementService
         _floatingWindow.ProcessActionRequested += OnProcessActionRequested;
 
         _edgeDockWindow = new Windows.TaskbarMetricsWindow(_serviceDiscovery);
+        _edgeDockWindow.UndockedFromEdge += OnEdgeDockWindowUndockedFromEdge;
 
         _trayIconService.Initialize(
             _floatingWindow,
@@ -68,7 +80,8 @@ public sealed class WindowManagementService : IWindowManagementService
         // 启动阶段先使用本地默认配置，避免 UI 线程等待网络配置导致阻塞。
         _displaySettings = new TaskbarDisplaySettings();
         _displaySettings.Normalize();
-        ApplyLaunchModeFlagOverride(_displaySettings);
+        BootstrapDisplayModeSettingsByLaunchFlag(_displaySettings);
+        _activeDisplayMode = GetDefaultDisplayMode(_displaySettings);
         ApplyDisplayModes(_displaySettings);
 
         _ = RefreshDisplayModesSafeAsync();
@@ -108,8 +121,9 @@ public sealed class WindowManagementService : IWindowManagementService
     public async Task RefreshDisplayModesAsync()
     {
         _displaySettings = await LoadDisplaySettingsAsync();
+        _hasHydratedDisplaySettings = true;
         PersistLaunchModeFlagWhenSingleModeSelected(_displaySettings);
-        ApplyLaunchModeFlagOverride(_displaySettings);
+        _activeDisplayMode = GetDefaultDisplayMode(_displaySettings);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
         {
@@ -117,13 +131,53 @@ public sealed class WindowManagementService : IWindowManagementService
         });
     }
 
-    public void ActivateEdgeDockMode()
+    public void ApplyDisplaySettings(TaskbarDisplaySettings settings)
     {
-        _displaySettings.EnableEdgeDockMode = true;
-        _displaySettings.EnableFloatingMode = false;
+        _displaySettings = settings ?? new TaskbarDisplaySettings();
         _displaySettings.Normalize();
-        _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.MiniEdgeDock);
+        _hasHydratedDisplaySettings = true;
+        PersistLaunchModeFlagWhenSingleModeSelected(_displaySettings);
+        _activeDisplayMode = GetDefaultDisplayMode(_displaySettings);
         ApplyDisplayModes(_displaySettings);
+    }
+
+    public bool TryActivateEdgeDockMode()
+    {
+        // 设置拉取完成后，严格按开关判定。
+        if (_hasHydratedDisplaySettings && !_displaySettings.EnableEdgeDockMode)
+        {
+            Debug.WriteLine("[DisplayMode] Reject edge-dock activation: EnableEdgeDockMode=false");
+
+            return false;
+        }
+
+        _activeDisplayMode = ActiveDisplayMode.EdgeDock;
+        if (!_displaySettings.EnableFloatingMode)
+        {
+            _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.MiniEdgeDock);
+        }
+
+        // 从悬浮窗切换到贴边时，继承当前悬浮窗位置作为贴边锚点。
+        if (_edgeDockWindow != null)
+        {
+            var anchorLeft = _floatingWindow?.Left ?? double.NaN;
+            var anchorTop = _floatingWindow?.Top ?? double.NaN;
+            var anchorWidth = ResolveWindowDimension(
+                _floatingWindow?.Width ?? double.NaN,
+                _floatingWindow?.ActualWidth ?? double.NaN,
+                320);
+            var anchorHeight = ResolveWindowDimension(
+                _floatingWindow?.Height ?? double.NaN,
+                _floatingWindow?.ActualHeight ?? double.NaN,
+                60);
+
+            _edgeDockWindow.ActivateDockFromAnchor(anchorLeft, anchorTop, anchorWidth, anchorHeight);
+        }
+
+        ApplyDisplayModes(_displaySettings);
+        Debug.WriteLine($"[DisplayMode] Activate edge-dock success. Floating={_displaySettings.EnableFloatingMode}, EdgeDock={_displaySettings.EnableEdgeDockMode}, Hydrated={_hasHydratedDisplaySettings}");
+
+        return true;
     }
 
     private async Task RefreshDisplayModesSafeAsync()
@@ -140,7 +194,13 @@ public sealed class WindowManagementService : IWindowManagementService
 
     private void ToggleMainWindow()
     {
-        if (_displaySettings.EnableEdgeDockMode && _edgeDockWindow != null)
+        if (_activeDisplayMode == ActiveDisplayMode.None)
+        {
+            _activeDisplayMode = GetDefaultDisplayMode(_displaySettings);
+            ApplyDisplayModes(_displaySettings);
+        }
+
+        if (_activeDisplayMode == ActiveDisplayMode.EdgeDock && _edgeDockWindow != null)
         {
             if (_edgeDockWindow.IsVisible)
             {
@@ -150,11 +210,10 @@ public sealed class WindowManagementService : IWindowManagementService
             {
                 _edgeDockWindow.Show();
             }
-
             return;
         }
 
-        if (_displaySettings.EnableFloatingMode && _floatingWindow != null)
+        if (_activeDisplayMode == ActiveDisplayMode.Floating && _floatingWindow != null)
         {
             if (_floatingWindow.IsVisible)
             {
@@ -178,10 +237,8 @@ public sealed class WindowManagementService : IWindowManagementService
                 return;
             }
 
-            var aboutWindow = new Windows.AboutWindow
-            {
-                Owner = _floatingWindow
-            };
+            var aboutWindow = new Windows.AboutWindow();
+            TryAssignFloatingOwner(aboutWindow);
             aboutWindow.ShowDialog();
         });
     }
@@ -201,10 +258,8 @@ public sealed class WindowManagementService : IWindowManagementService
             var startupManager = _serviceProvider.GetRequiredService<IStartupManager>();
             var adminModeManager = _serviceProvider.GetRequiredService<IAdminModeManager>();
             var backendServerService = _serviceProvider.GetRequiredService<IBackendServerService>();
-            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService, _serviceDiscovery)
-            {
-                Owner = _floatingWindow
-            };
+            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService, _serviceDiscovery);
+            TryAssignFloatingOwner(settingsWindow);
             settingsWindow.ShowDialog();
         });
     }
@@ -286,8 +341,10 @@ public sealed class WindowManagementService : IWindowManagementService
     private void ApplyDisplayModes(TaskbarDisplaySettings settings)
     {
         settings.Normalize();
-        var showEdgeDock = settings.EnableEdgeDockMode;
-        var showFloating = settings.EnableFloatingMode && !showEdgeDock;
+        NormalizeActiveDisplayMode(settings);
+
+        var showEdgeDock = _activeDisplayMode == ActiveDisplayMode.EdgeDock && settings.EnableEdgeDockMode;
+        var showFloating = _activeDisplayMode == ActiveDisplayMode.Floating && settings.EnableFloatingMode;
 
         if (_edgeDockWindow != null)
         {
@@ -307,6 +364,7 @@ public sealed class WindowManagementService : IWindowManagementService
 
         if (_floatingWindow != null)
         {
+            _floatingWindow.ApplyDisplaySettings(settings);
             if (showFloating)
             {
                 if (!_floatingWindow.IsVisible)
@@ -319,6 +377,61 @@ public sealed class WindowManagementService : IWindowManagementService
                 _floatingWindow.Hide();
             }
         }
+
+    }
+
+    private void NormalizeActiveDisplayMode(TaskbarDisplaySettings settings)
+    {
+        switch (_activeDisplayMode)
+        {
+            case ActiveDisplayMode.EdgeDock when !settings.EnableEdgeDockMode:
+                _activeDisplayMode = settings.EnableFloatingMode
+                    ? ActiveDisplayMode.Floating
+                    : ActiveDisplayMode.None;
+                break;
+            case ActiveDisplayMode.Floating when !settings.EnableFloatingMode:
+                _activeDisplayMode = settings.EnableEdgeDockMode
+                    ? ActiveDisplayMode.EdgeDock
+                    : ActiveDisplayMode.None;
+                break;
+            case ActiveDisplayMode.None:
+                _activeDisplayMode = GetDefaultDisplayMode(settings);
+                break;
+        }
+    }
+
+    private static ActiveDisplayMode GetDefaultDisplayMode(TaskbarDisplaySettings settings)
+    {
+        // 新规则：两种都开启时，默认先显示悬浮窗模式。
+        if (settings.EnableFloatingMode)
+        {
+            return ActiveDisplayMode.Floating;
+        }
+
+        if (settings.EnableEdgeDockMode)
+        {
+            return ActiveDisplayMode.EdgeDock;
+        }
+
+        return ActiveDisplayMode.None;
+    }
+
+    /// <summary>
+    /// 在后端配置尚未返回前，基于本地启动标识引导一次初始模式，避免冷启动模式不一致。
+    /// </summary>
+    private void BootstrapDisplayModeSettingsByLaunchFlag(TaskbarDisplaySettings settings)
+    {
+        switch (_desktopLaunchModeFlagManager.TryGetLaunchMode())
+        {
+            case DesktopLaunchMode.FloatingWindow:
+                settings.EnableFloatingMode = true;
+                settings.EnableEdgeDockMode = false;
+                break;
+            case DesktopLaunchMode.MiniEdgeDock:
+                settings.EnableFloatingMode = false;
+                settings.EnableEdgeDockMode = true;
+                break;
+        }
     }
 
     /// <summary>
@@ -326,6 +439,13 @@ public sealed class WindowManagementService : IWindowManagementService
     /// </summary>
     private void PersistLaunchModeFlagWhenSingleModeSelected(TaskbarDisplaySettings settings)
     {
+        if (settings.EnableFloatingMode && settings.EnableEdgeDockMode)
+        {
+            // 新规则：双开时默认悬浮窗优先，启动标识固定为悬浮窗。
+            _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.FloatingWindow);
+            return;
+        }
+
         if (settings.EnableEdgeDockMode && !settings.EnableFloatingMode)
         {
             _desktopLaunchModeFlagManager.SetLaunchMode(DesktopLaunchMode.MiniEdgeDock);
@@ -338,22 +458,6 @@ public sealed class WindowManagementService : IWindowManagementService
         }
     }
 
-    /// <summary>
-    /// 应用本地启动模式标识：仅在“悬浮窗优先”时覆盖默认优先级（默认仍保持贴边优先）。
-    /// </summary>
-    private void ApplyLaunchModeFlagOverride(TaskbarDisplaySettings settings)
-    {
-        if (_desktopLaunchModeFlagManager.TryGetLaunchMode() != DesktopLaunchMode.FloatingWindow)
-        {
-            return;
-        }
-
-        if (settings.EnableFloatingMode)
-        {
-            settings.EnableEdgeDockMode = false;
-        }
-    }
-
     private void CloseEdgeDockWindow()
     {
         if (_edgeDockWindow == null)
@@ -361,9 +465,59 @@ public sealed class WindowManagementService : IWindowManagementService
             return;
         }
 
+        _edgeDockWindow.UndockedFromEdge -= OnEdgeDockWindowUndockedFromEdge;
         _edgeDockWindow.AllowClose();
         _edgeDockWindow.Close();
         _edgeDockWindow = null;
+    }
+
+    private void OnEdgeDockWindowUndockedFromEdge(object? sender, EventArgs e)
+    {
+        // 仅在“悬浮窗 + 迷你/贴边”双开时，脱离贴边自动恢复悬浮窗。
+        if (!(_displaySettings.EnableFloatingMode && _displaySettings.EnableEdgeDockMode))
+        {
+            return;
+        }
+
+        _activeDisplayMode = ActiveDisplayMode.Floating;
+        PlaceFloatingWindowNearCursor();
+        ApplyDisplayModes(_displaySettings);
+    }
+
+    private void PlaceFloatingWindowNearCursor()
+    {
+        if (_floatingWindow == null)
+        {
+            return;
+        }
+
+        var cursor = WinFormsCursor.Position;
+        var screen = WinFormsScreen.FromPoint(cursor);
+        var work = screen.WorkingArea;
+
+        var width = Math.Max(_floatingWindow.Width, _floatingWindow.ActualWidth);
+        var height = Math.Max(_floatingWindow.Height, _floatingWindow.ActualHeight);
+
+        if (!double.IsFinite(width) || width <= 0)
+        {
+            width = 320;
+        }
+
+        if (!double.IsFinite(height) || height <= 0)
+        {
+            height = 60;
+        }
+
+        var minLeft = work.Left;
+        var maxLeft = work.Right - width;
+        var minTop = work.Top;
+        var maxTop = work.Bottom - height;
+
+        var targetLeft = cursor.X - width / 2.0;
+        var targetTop = cursor.Y - height / 2.0;
+
+        _floatingWindow.Left = ClampToRange(targetLeft, minLeft, maxLeft);
+        _floatingWindow.Top = ClampToRange(targetTop, minTop, maxTop);
     }
 
     private static bool ParseBool(Dictionary<string, string> values, string key, bool fallback)
@@ -371,6 +525,31 @@ public sealed class WindowManagementService : IWindowManagementService
         return values.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
             ? parsed
             : fallback;
+    }
+
+    private static double ClampToRange(double value, double min, double max)
+    {
+        if (min > max)
+        {
+            return min;
+        }
+
+        return Math.Clamp(value, min, max);
+    }
+
+    private static double ResolveWindowDimension(double primary, double secondary, double fallback)
+    {
+        if (double.IsFinite(primary) && primary > 0)
+        {
+            return primary;
+        }
+
+        if (double.IsFinite(secondary) && secondary > 0)
+        {
+            return secondary;
+        }
+
+        return fallback;
     }
 
     private static int ParseInt(Dictionary<string, string> values, string key, int fallback)
@@ -389,6 +568,30 @@ public sealed class WindowManagementService : IWindowManagementService
 
         var normalized = raw.Trim();
         return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+    }
+
+    private void TryAssignFloatingOwner(Window dialogWindow)
+    {
+        var owner = _floatingWindow;
+        if (owner == null)
+        {
+            return;
+        }
+
+        // WPF 约束：Owner 必须是已显示过的 Window；在迷你/贴边模式下悬浮窗可能从未展示。
+        if (!owner.IsLoaded || !owner.IsVisible)
+        {
+            return;
+        }
+
+        try
+        {
+            dialogWindow.Owner = owner;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Debug.WriteLine($"Skip assigning floating owner: {ex.Message}");
+        }
     }
 
     private async void OnMetricLongPressStarted(object? sender, MetricActionEventArgs e)

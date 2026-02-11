@@ -51,8 +51,10 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
     private const double BarTrackHeightVertical = 32;
     // 柱状条百分比字号（例如 67）。
     private const double BarPercentFontSize = 9;
-    // 柱状条数值字号（主要用于 U/D 数值）。
-    private const double BarNumericFontSize = 9;
+    // 柱状条风格下，横向数值字号（需与 XAML BarNumericHorizontal 保持一致，避免宽度估算偏小导致截断）。
+    private const double BarNumericFontSizeHorizontal = 11;
+    // 柱状条风格下，纵向数值字号（与 XAML BarNumericVertical 保持一致）。
+    private const double BarNumericFontSizeVertical = 9;
     // 非贴边（顶部/底部/浮窗）横向模式左右内边距。
     private const double HorizontalModeHorizontalPadding = 8;
     // 文本风格左右贴边时左右内边距。
@@ -633,7 +635,9 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         var labelHeight = Math.Max(
             MeasureTextHeight(labelCurrent, _monoTypeface, LabelFontSize),
             MeasureTextHeight(labelMax, _monoTypeface, LabelFontSize));
-        var valueFontSize = isBarMetric ? BarPercentFontSize : BarNumericFontSize;
+        var valueFontSize = isBarMetric
+            ? BarPercentFontSize
+            : (isVertical ? BarNumericFontSizeVertical : BarNumericFontSizeHorizontal);
         var valueWidth = Math.Max(
             MeasureTextWidth(valueCurrent, _monoTypeface, valueFontSize),
             MeasureTextWidth(valueMax, _monoTypeface, valueFontSize));

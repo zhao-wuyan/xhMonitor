@@ -703,6 +703,88 @@
                                     </Grid>
                                 </StackPanel>
                             </Border>
+
+                            <Border Style="{StaticResource SettingsCard}">
+                                <StackPanel>
+                                    <TextBlock Text="显示模式" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="悬浮窗与迷你/贴边模式可单独开启；当两者同时开启时，默认先显示悬浮窗，可通过拖动吸附切换到迷你/贴边模式。迷你/贴边模式支持“柱状条/文本紧凑”两种风格，默认柱状条，单位使用最短形式（如 G/M、K/s）。"
+                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                                    <UniformGrid Rows="1" Columns="2" Margin="0,0,0,12">
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="悬浮窗模式" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="Desktop Floating Window" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding EnableFloatingMode}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <Border Style="{StaticResource SettingsTile}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="迷你/贴边模式" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                                    <TextBlock Text="Organic Dock（拖动吸附）" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                                </StackPanel>
+                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding EnableEdgeDockMode}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </UniformGrid>
+
+                                    <TextBlock Text="迷你/贴边风格" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                                    <ComboBox Height="32"
+                                              Margin="0,0,0,12"
+                                              SelectedValuePath="Tag"
+                                              SelectedValue="{Binding DockVisualStyle, UpdateSourceTrigger=PropertyChanged}">
+                                        <ComboBoxItem Content="柱状条（默认）" Tag="Bar"/>
+                                        <ComboBoxItem Content="文本紧凑" Tag="Text"/>
+                                    </ComboBox>
+
+                                    <TextBlock Text="迷你/贴边指标名称（可自定义，默认单字母）" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                                    <UniformGrid Rows="2" Columns="4" Margin="0,0,0,10">
+                                        <StackPanel Margin="0,0,8,8">
+                                            <TextBlock Text="CPU 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockCpuLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,8">
+                                            <TextBlock Text="内存名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockMemoryLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,8">
+                                            <TextBlock Text="GPU 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockGpuLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="VRAM 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockVramLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="功耗名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockPowerLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0">
+                                            <TextBlock Text="上传前缀" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockUploadLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0">
+                                            <TextBlock Text="下载前缀" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockDownloadLabel, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,8,0">
+                                            <TextBlock Text="组间距(px，0=自动)" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockColumnGap, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -797,88 +879,6 @@
                                                 <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding MonitorNetwork}" VerticalAlignment="Center"/>
                                             </Grid>
                                         </Border>
-                                    </UniformGrid>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Style="{StaticResource SettingsCard}">
-                                <StackPanel>
-                                    <TextBlock Text="显示模式" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                                    <TextBlock Text="悬浮窗与迷你/贴边模式可单独开启；当两者同时开启时，迷你/贴边模式优先生效。迷你/贴边模式支持“柱状条/文本紧凑”两种风格，默认柱状条，单位使用最短形式（如 G/M、K/s）。"
-                                               Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
-
-                                    <UniformGrid Rows="1" Columns="2" Margin="0,0,0,12">
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="悬浮窗模式" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="Desktop Floating Window" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding EnableFloatingMode}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                        <Border Style="{StaticResource SettingsTile}">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel>
-                                                    <TextBlock Text="迷你/贴边模式" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                                    <TextBlock Text="Organic Dock（拖动吸附）" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                </StackPanel>
-                                                <CheckBox Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding EnableEdgeDockMode}" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                    </UniformGrid>
-
-                                    <TextBlock Text="迷你/贴边风格" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
-                                    <ComboBox Height="32"
-                                              Margin="0,0,0,12"
-                                              SelectedValuePath="Tag"
-                                              SelectedValue="{Binding DockVisualStyle, UpdateSourceTrigger=PropertyChanged}">
-                                        <ComboBoxItem Content="柱状条（默认）" Tag="Bar"/>
-                                        <ComboBoxItem Content="文本紧凑" Tag="Text"/>
-                                    </ComboBox>
-
-                                    <TextBlock Text="迷你/贴边指标名称（可自定义，默认单字母）" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
-                                    <UniformGrid Rows="2" Columns="4" Margin="0,0,0,10">
-                                        <StackPanel Margin="0,0,8,8">
-                                            <TextBlock Text="CPU 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockCpuLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,8,8">
-                                            <TextBlock Text="内存名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockMemoryLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,8,8">
-                                            <TextBlock Text="GPU 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockGpuLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock Text="VRAM 名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockVramLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock Text="功耗名称" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockPowerLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="上传前缀" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockUploadLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="下载前缀" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockDownloadLabel, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
-                                        <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Text="组间距(px，0=自动)" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
-                                            <TextBox Style="{StaticResource SettingsSingleLineTextBox}" Height="30" Text="{Binding DockColumnGap, UpdateSourceTrigger=PropertyChanged}"/>
-                                        </StackPanel>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>

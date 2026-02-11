@@ -12,6 +12,8 @@
 #define MyAppURL "https://github.com/zhao-wuyan/xhMonitor"
 #define MyAppExeName "XhMonitor.Desktop.exe"
 #define MyAppServiceName "XhMonitor.Service.exe"
+#define DotNetDesktopRuntimeInstallerFileName "windowsdesktop-runtime-8.0.23-win-x64.exe"
+#define DotNetDesktopRuntimeDownloadUrl "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/windowsdesktop-runtime-8.0.23-win-x64.exe"
 
 [Setup]
 ; 应用程序信息
@@ -71,6 +73,8 @@ english.LaunchProgram=Launch %1
 english.AssocFileExtension=&Associate %1 with the %2 file extension
 english.StartupTask=Start automatically with Windows
 english.SystemSettings=System Settings:
+english.AutoInstallDotNetRuntime=Auto install .NET runtime
+english.AutoInstallDotNetRuntimeHint=Install .NET Desktop Runtime 8 silently if missing
 ; 中文消息（启用中文语言后生效）
 ; chinesesimplified.CreateDesktopIcon=创建桌面快捷方式(&D)
 ; chinesesimplified.CreateQuickLaunchIcon=创建快速启动栏快捷方式(&Q)
@@ -78,10 +82,16 @@ english.SystemSettings=System Settings:
 ; chinesesimplified.AssocFileExtension=将 %1 与 %2 文件扩展名关联
 ; chinesesimplified.StartupTask=开机自动启动
 ; chinesesimplified.SystemSettings=系统设置:
+chinesesimplified.SystemSettings=系统设置：
+chinesesimplified.AutoInstallDotNetRuntime=自动安装 .NET 运行环境
+chinesesimplified.AutoInstallDotNetRuntimeHint=若缺少 .NET Desktop Runtime 8，则静默安装后继续
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 ; Name: "startupicon"; Description: "{cm:StartupTask}"; GroupDescription: "{cm:SystemSettings}"; Flags: unchecked
+#ifdef IsLiteBuild
+Name: "autoinstalldotnetruntime"; Description: "{cm:AutoInstallDotNetRuntime}"; GroupDescription: "{cm:SystemSettings}"
+#endif
 
 [Files]
 ; 桌面应用程序
@@ -94,6 +104,11 @@ Source: "..\release\XhMonitor-v{#MyAppVersion}\Service\*"; DestDir: "{app}\Servi
 Source: "..\release\XhMonitor-v{#MyAppVersion}\启动服务.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\release\XhMonitor-v{#MyAppVersion}\停止服务.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\release\XhMonitor-v{#MyAppVersion}\README.txt"; DestDir: "{app}"; Flags: ignoreversion
+
+#ifdef IsLiteBuild
+; 轻量版：将 .NET Desktop Runtime 安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
+Source: "..\tools\RuntimePkg\{#DotNetDesktopRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy skipifsourcedoesntexist
+#endif
 
 [Icons]
 ; 开始菜单快捷方式
@@ -124,6 +139,9 @@ Type: filesandordirs; Name: "{app}\Service\*.db-shm"
 Type: filesandordirs; Name: "{app}\Service\*.db-wal"
 
 [Code]
+const
+  DotNetDesktopRuntimeSilentArgs = '/install /quiet /norestart';
+
 var
   RuntimePromptShown: Boolean;
 
@@ -236,6 +254,84 @@ begin
   Result := FileExists(ExpandConstant('{app}\Desktop\hostfxr.dll'));
 end;
 
+procedure ShowRuntimeMissingPrompt(); forward;
+
+function ShouldAutoInstallDotNetRuntime(): Boolean;
+begin
+#ifdef IsLiteBuild
+  Result := WizardIsTaskSelected('autoinstalldotnetruntime');
+#else
+  Result := False;
+#endif
+end;
+
+function InstallDotNetDesktopRuntimeIfNeeded(var NeedsRestart: Boolean): String;
+var
+  InstallerPath: String;
+  ResultCode: Integer;
+begin
+  Result := '';
+
+#ifdef IsLiteBuild
+  if not ShouldAutoInstallDotNetRuntime() then
+    exit;
+
+  if IsDotNetDesktopRuntime8Installed() then
+    exit;
+
+  Log('Auto-install .NET Desktop Runtime 8 requested and runtime is missing, start silent install.');
+
+  try
+    ExtractTemporaryFile('{#DotNetDesktopRuntimeInstallerFileName}');
+  except
+    Log('Failed to extract bundled .NET Desktop Runtime installer, fallback to download prompt.');
+    ShowRuntimeMissingPrompt();
+    exit;
+  end;
+
+  InstallerPath := ExpandConstant('{tmp}\{#DotNetDesktopRuntimeInstallerFileName}');
+  if not FileExists(InstallerPath) then
+  begin
+    Log('Bundled .NET Desktop Runtime installer not found, fallback to download prompt.');
+    ShowRuntimeMissingPrompt();
+    exit;
+  end;
+
+  if not Exec(InstallerPath, DotNetDesktopRuntimeSilentArgs, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    Log('Failed to execute bundled .NET Desktop Runtime installer, fallback to download prompt.');
+    ShowRuntimeMissingPrompt();
+    exit;
+  end;
+
+  if (ResultCode <> 0) and (ResultCode <> 3010) and (ResultCode <> 1641) then
+  begin
+    Log('Bundled .NET Desktop Runtime installer exit code: ' + IntToStr(ResultCode) + ', fallback to download prompt.');
+    ShowRuntimeMissingPrompt();
+    exit;
+  end;
+
+  if (ResultCode = 3010) or (ResultCode = 1641) then
+    NeedsRestart := True;
+
+  Sleep(1500);
+
+  if not IsDotNetDesktopRuntime8Installed() then
+  begin
+    Log('.NET Desktop Runtime still missing after silent install, fallback to download prompt.');
+    ShowRuntimeMissingPrompt();
+    exit;
+  end;
+
+  Log('.NET Desktop Runtime 8 silent installation completed.');
+#endif
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := InstallDotNetDesktopRuntimeIfNeeded(NeedsRestart);
+end;
+
 procedure OpenUrl(const Url: String);
 var
   ResultCode: Integer;
@@ -255,7 +351,7 @@ begin
     exit;
 
   RuntimePromptShown := True;
-  DotNetUrl := 'https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/windowsdesktop-runtime-8.0.23-win-x64.exe';
+  DotNetUrl := '{#DotNetDesktopRuntimeDownloadUrl}';
   FullInstallerUrl := '{#MyAppURL}/releases';
 
   if IsChineseSystemLanguage() then

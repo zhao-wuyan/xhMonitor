@@ -63,9 +63,15 @@ public partial class TaskbarMetricsWindow : Window
     private bool _isDragging;
     private WpfPoint _dragStartScreen;
     private WpfPoint _windowStart;
+    private bool _dragStartedFromDockedVisual;
     private bool _manualPlacement;
     private bool _isDockedVisual = true;
     private EdgeDockSide _currentDockSide = EdgeDockSide.Bottom;
+
+    /// <summary>
+    /// 从贴边状态拖拽并最终脱离贴边时触发。
+    /// </summary>
+    public event EventHandler? UndockedFromEdge;
 
     public TaskbarMetricsWindow(IServiceDiscovery serviceDiscovery)
     {
@@ -92,6 +98,56 @@ public partial class TaskbarMetricsWindow : Window
     public void AllowClose()
     {
         _allowClose = true;
+    }
+
+    /// <summary>
+    /// 用于“悬浮窗 -> 迷你贴边”切换时的位置接力：
+    /// 基于切换前悬浮窗几何信息计算贴边，不沿用历史迷你位置。
+    /// </summary>
+    public void ActivateDockFromAnchor(double anchorLeft, double anchorTop, double anchorWidth, double anchorHeight)
+    {
+        if (!double.IsFinite(anchorLeft) || !double.IsFinite(anchorTop) ||
+            !double.IsFinite(anchorWidth) || !double.IsFinite(anchorHeight) ||
+            anchorWidth <= 0 || anchorHeight <= 0)
+        {
+            ActivateDockFromCursorFallback();
+            return;
+        }
+
+        var anchorCenterX = anchorLeft + anchorWidth / 2.0;
+        var anchorCenterY = anchorTop + anchorHeight / 2.0;
+        var anchorPoint = new global::System.Drawing.Point(
+            (int)Math.Round(anchorCenterX),
+            (int)Math.Round(anchorCenterY));
+        var screen = WinFormsScreen.FromPoint(anchorPoint);
+
+        _manualPlacement = false;
+        _isDockedVisual = true;
+
+        var windowWidth = Math.Max(Width, ActualWidth);
+        var windowHeight = Math.Max(Height, ActualHeight);
+        Left = anchorCenterX - windowWidth / 2.0;
+        Top = anchorCenterY - windowHeight / 2.0;
+
+        var dockSide = GetNearestDockSide(screen, out _);
+        ApplyDockSide(dockSide, screen);
+    }
+
+    private void ActivateDockFromCursorFallback()
+    {
+        var screen = GetMouseScreen();
+        var cursor = WinFormsCursor.Position;
+
+        _manualPlacement = false;
+        _isDockedVisual = true;
+
+        var windowWidth = Math.Max(Width, ActualWidth);
+        var windowHeight = Math.Max(Height, ActualHeight);
+        Left = cursor.X - windowWidth / 2.0;
+        Top = cursor.Y - windowHeight / 2.0;
+
+        var dockSide = GetNearestDockSideByCursor(screen);
+        ApplyDockSide(dockSide, screen);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -174,6 +230,8 @@ public partial class TaskbarMetricsWindow : Window
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        _dragStartedFromDockedVisual = _isDockedVisual;
+
         if (_isDockedVisual)
         {
             var centerX = Left + Width / 2.0;
@@ -229,8 +287,13 @@ public partial class TaskbarMetricsWindow : Window
             _isDockedVisual = false;
             _manualPlacement = true;
             ApplyFloatingPlacement(targetScreen);
+            if (_dragStartedFromDockedVisual)
+            {
+                UndockedFromEdge?.Invoke(this, EventArgs.Empty);
+            }
         }
 
+        _dragStartedFromDockedVisual = false;
         ReassertTopMost();
         e.Handled = true;
     }
