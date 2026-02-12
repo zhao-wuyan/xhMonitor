@@ -1,0 +1,125 @@
+﻿{
+    "summary":  "本问题属于中等严重度的交互缺陷：左右贴边竖向窗口拖出时，窗口由竖转横会让鼠标脱离窗口可见区域。修复策略是在模式切换时保留鼠标锚点，而非按窗口中心重排位置。实现后可保证拖拽连续性，用户视觉与手感一致。",
+    "root_cause":  "Window_MouseLeftButtonDown 在 _isDockedVisual 分支中使用中心点重定位（centerX/centerY），没有使用鼠标按下点作为几何锚点，导致尺寸变化后鼠标相对位置丢失。",
+    "strategy":  "comprehensive_fix",
+    "tasks":  [
+                  {
+                      "id":  "FIX1",
+                      "title":  "修正贴边转悬浮时的鼠标锚点计算",
+                      "scope":  "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+                      "action":  "Fix",
+                      "description":  "将中心点重定位改为“归一化鼠标锚点”重定位，确保窗口转向后鼠标仍在窗口内。",
+                      "modification_points":  [
+                                                  {
+                                                      "file":  "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+                                                      "target":  "Window_MouseLeftButtonDown:233-252",
+                                                      "change":  "记录切换前按下点和旧尺寸，切换后按新尺寸回算 Left/Top 并复用原始屏幕锚点。"
+                                                  },
+                                                  {
+                                                      "file":  "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+                                                      "target":  "新增锚点计算辅助方法",
+                                                      "change":  "提取纯函数计算，便于复用与单元测试。"
+                                                  }
+                                              ],
+                      "implementation":  [
+                                             "在按下事件开头记录 cursorScreen 与 cursorLocal。",
+                                             "切换尺寸后通过归一化比率计算新窗口左上角，替换中心点定位。",
+                                             "将 _dragStartScreen 固定为切换前 cursorScreen，保持拖拽增量连续。"
+                                         ],
+                      "verification":  [
+                                           "从左/右贴边任意高度拖出时，鼠标始终在窗口内部。",
+                                           "顶部/中部/底部点击拖出三种场景都无“抓空”现象。"
+                                       ],
+                      "risk":  "low",
+                      "cli_execution_id":  "litefix-FIX1",
+                      "cli_execution":  {
+                                            "strategy":  "new"
+                                        }
+                  },
+                  {
+                      "id":  "FIX2",
+                      "title":  "补充锚点算法回归测试",
+                      "scope":  "XhMonitor.Desktop.Tests",
+                      "action":  "Add",
+                      "description":  "为新锚点算法添加单元测试，覆盖竖转横及边界点击场景。",
+                      "modification_points":  [
+                                                  {
+                                                      "file":  "XhMonitor.Desktop.Tests/TaskbarMetricsWindowDragAnchorTests.cs",
+                                                      "target":  "新增测试类",
+                                                      "change":  "验证顶部、中部、底部点击在尺寸切换后都保持鼠标落点在窗口范围内。"
+                                                  }
+                                              ],
+                      "implementation":  [
+                                             "为算法构造旧尺寸与新尺寸输入。",
+                                             "断言计算后的鼠标相对坐标位于 [0,newSize] 内。"
+                                         ],
+                      "verification":  [
+                                           "dotnet test 针对该测试类通过。"
+                                       ],
+                      "depends_on":  [
+                                         "FIX1"
+                                     ],
+                      "risk":  "low",
+                      "cli_execution_id":  "litefix-FIX2",
+                      "cli_execution":  {
+                                            "strategy":  "resume",
+                                            "resume_from":  "litefix-FIX1"
+                                        }
+                  }
+              ],
+    "flow_control":  {
+                         "execution_order":  [
+                                                 {
+                                                     "phase":  "sequential-1",
+                                                     "tasks":  [
+                                                                   "FIX1"
+                                                               ],
+                                                     "type":  "sequential"
+                                                 },
+                                                 {
+                                                     "phase":  "sequential-2",
+                                                     "tasks":  [
+                                                                   "FIX2"
+                                                               ],
+                                                     "type":  "sequential"
+                                                 }
+                                             ],
+                         "exit_conditions":  {
+                                                 "success":  "拖拽旋转后鼠标锚点连续，单元测试通过",
+                                                 "failure":  "仍可复现抓空或测试失败"
+                                             }
+                     },
+    "focus_paths":  [
+                        "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+                        "XhMonitor.Desktop.Tests/TaskbarMetricsWindowDragAnchorTests.cs"
+                    ],
+    "test_strategy":  {
+                          "scope":  "unit",
+                          "specific_tests":  [
+                                                 "XhMonitor.Desktop.Tests/TaskbarMetricsWindowDragAnchorTests.cs"
+                                             ],
+                          "manual_verification":  [
+                                                      "左贴边、右贴边各执行 3 次拖出验证。"
+                                                  ]
+                      },
+    "rollback_plan":  {
+                          "strategy":  "git_revert",
+                          "steps":  [
+                                        "回退 TaskbarMetricsWindow 相关改动并恢复原拖拽行为。"
+                                    ]
+                      },
+    "estimated_time":  "25 minutes",
+    "recommended_execution":  "Codex",
+    "severity":  "Medium",
+    "risk_level":  "low",
+    "_metadata":  {
+                      "timestamp":  "2026-02-12T10:24:14.7058516+08:00",
+                      "source":  "direct-planning",
+                      "planning_mode":  "direct",
+                      "diagnosis_angles":  [
+                                               "state-management",
+                                               "event-handling"
+                                           ],
+                      "duration_seconds":  420
+                  }
+}

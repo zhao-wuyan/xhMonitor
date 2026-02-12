@@ -308,6 +308,14 @@ public sealed class WindowManagementService : IWindowManagementService
             }
 
             var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>().ConfigureAwait(false);
+            if (payload?.TryGetValue(ConfigurationDefaults.Keys.Categories.Appearance, out var appearance) == true)
+            {
+                settings.OpacityPercent = ParseInt(
+                    appearance,
+                    ConfigurationDefaults.Keys.Appearance.Opacity,
+                    settings.OpacityPercent);
+            }
+
             if (payload?.TryGetValue(ConfigurationDefaults.Keys.Categories.Monitoring, out var monitoring) == true)
             {
                 settings.MonitorCpu = ParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorCpu, settings.MonitorCpu);

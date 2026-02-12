@@ -88,7 +88,9 @@ public partial class TaskbarMetricsWindow : Window
 
     public void ApplyDisplaySettings(TaskbarDisplaySettings settings)
     {
-        _viewModel.ApplySettings(settings);
+        var resolvedSettings = settings ?? new TaskbarDisplaySettings();
+        Opacity = resolvedSettings.ResolveWindowOpacity();
+        _viewModel.ApplySettings(resolvedSettings);
         if (!_manualPlacement)
         {
             RefreshPlacementToDockAnchor();
@@ -230,23 +232,31 @@ public partial class TaskbarMetricsWindow : Window
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        var cursorLocal = e.GetPosition(this);
+        var cursorScreen = PointToScreen(cursorLocal);
+
         _dragStartedFromDockedVisual = _isDockedVisual;
 
         if (_isDockedVisual)
         {
-            var centerX = Left + Width / 2.0;
-            var centerY = Top + Height / 2.0;
+            var oldWidth = ResolveWindowDimension(Width, ActualWidth, MinDockSideWidth);
+            var oldHeight = ResolveWindowDimension(Height, ActualHeight, MinDockSideHeight);
+
             _isDockedVisual = false;
             _viewModel.SetPresentationMode(_currentDockSide, isDocked: false);
             ApplyWindowSize(isDocked: false, _currentDockSide);
-            Left = centerX - Width / 2.0;
-            Top = centerY - Height / 2.0;
+
+            var newWidth = ResolveWindowDimension(Width, ActualWidth, MinFloatingWidth);
+            var newHeight = ResolveWindowDimension(Height, ActualHeight, MinFloatingHeight);
+            var topLeft = CalculateWindowTopLeftByDragAnchor(cursorScreen, cursorLocal, oldWidth, oldHeight, newWidth, newHeight);
+            Left = topLeft.X;
+            Top = topLeft.Y;
             ResetToNearestNonTaskbarOverlap(GetCurrentScreen());
         }
 
         _isDragging = true;
         _manualPlacement = true;
-        _dragStartScreen = PointToScreen(e.GetPosition(this));
+        _dragStartScreen = cursorScreen;
         _windowStart = new WpfPoint(Left, Top);
         CaptureMouse();
         ApplyOrganicVisualState(isDocked: false, _currentDockSide, isDragging: true);
@@ -558,6 +568,42 @@ public partial class TaskbarMetricsWindow : Window
         }
 
         return Math.Clamp(value, min, max);
+    }
+
+    internal static WpfPoint CalculateWindowTopLeftByDragAnchor(
+        WpfPoint cursorScreen,
+        WpfPoint cursorLocal,
+        double oldWidth,
+        double oldHeight,
+        double newWidth,
+        double newHeight)
+    {
+        var anchorX = ResolveAnchorRatio(cursorLocal.X, oldWidth);
+        var anchorY = ResolveAnchorRatio(cursorLocal.Y, oldHeight);
+        return new WpfPoint(
+            cursorScreen.X - newWidth * anchorX,
+            cursorScreen.Y - newHeight * anchorY);
+    }
+
+    internal static double ResolveWindowDimension(double width, double actualWidth, double fallback)
+    {
+        var value = Math.Max(width, actualWidth);
+        if (!double.IsFinite(value) || value <= 0)
+        {
+            return fallback;
+        }
+
+        return value;
+    }
+
+    private static double ResolveAnchorRatio(double cursorOffset, double sourceSize)
+    {
+        if (!double.IsFinite(cursorOffset) || !double.IsFinite(sourceSize) || sourceSize <= 0)
+        {
+            return 0.5;
+        }
+
+        return Math.Clamp(cursorOffset / sourceSize, 0.0, 1.0);
     }
 
     private void ReassertTopMost()

@@ -1,0 +1,60 @@
+﻿{
+    "symptom":  {
+                    "description":  "修复左右贴边竖向的时候，拖动悬浮窗脱离贴边由竖转横后鼠标抓空",
+                    "error_message":  null,
+                    "stack_trace":  null,
+                    "frequency":  "always",
+                    "user_impact":  "从左右贴边状态拖出时，窗口尺寸切换导致鼠标落点漂移，用户感知为“抓空”拖拽，交互不自然。"
+                },
+    "root_cause":  {
+                       "file":  "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+                       "line_range":  "233-248",
+                       "function":  "Window_MouseLeftButtonDown",
+                       "issue":  "从贴边模式切换到悬浮模式时，窗口位置按中心点重排（centerX/centerY），但未保留鼠标按下点的相对锚点，导致尺寸从“竖条”变“横条”后，鼠标常落在窗口外。",
+                       "confidence":  0.96,
+                       "category":  "logic_error"
+                   },
+    "affected_files":  [
+                           {
+                               "path":  "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+                               "relevance":  1,
+                               "rationale":  "包含拖拽开始、尺寸切换和起始锚点计算逻辑",
+                               "change_type":  "fix_target"
+                           },
+                           {
+                               "path":  "XhMonitor.Desktop.Tests/TaskbarMetricsWindowDragAnchorTests.cs",
+                               "relevance":  0.85,
+                               "rationale":  "补充锚点计算单元测试，防止回归",
+                               "change_type":  "test_coverage"
+                           }
+                       ],
+    "reproduction_steps":  [
+                               "启动贴边模式并将窗口吸附到左侧或右侧边缘（竖向显示）。",
+                               "在竖向窗口靠上或靠下位置按住鼠标左键开始拖动。",
+                               "观察窗口切换为横向后，鼠标不再位于窗口内部，出现“抓空”感。"
+                           ],
+    "fix_hints":  [
+                      {
+                          "description":  "切换尺寸时保持鼠标锚点",
+                          "approach":  "在切换前记录按下点在旧窗口中的归一化坐标（x/width, y/height），切换后按新尺寸反算 Left/Top，确保鼠标仍在窗口内部。",
+                          "risk":  "low"
+                      },
+                      {
+                          "description":  "稳定拖拽增量基准",
+                          "approach":  "拖拽起点使用切换前的屏幕坐标，避免依赖切换后的 e.GetPosition(this) 造成偏移。",
+                          "risk":  "low"
+                      }
+                  ],
+    "dependencies":  "仅涉及 TaskbarMetricsWindow 拖拽逻辑与新增纯逻辑测试，不影响服务端与数据层。",
+    "constraints":  "保持现有贴边吸附、自动对齐与视觉状态逻辑不变。",
+    "clarification_needs":  [
+
+                            ],
+    "_metadata":  {
+                      "timestamp":  "2026-02-12T10:24:14.7058516+08:00",
+                      "source":  "direct-diagnosis",
+                      "diagnosis_angle":  "state-management + event-handling",
+                      "severity":  "Medium",
+                      "execution_mode":  "A"
+                  }
+}

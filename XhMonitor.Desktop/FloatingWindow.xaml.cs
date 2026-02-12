@@ -14,6 +14,7 @@ using System.Collections.Specialized;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Extensions.DependencyInjection;
+using XhMonitor.Core.Configuration;
 using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.ViewModels;
 using WinFormsCursor = System.Windows.Forms.Cursor;
@@ -229,6 +230,7 @@ public partial class FloatingWindow : Window
             return;
         }
 
+        Opacity = settings.ResolveWindowOpacity();
         _viewModel.IsCpuVisible = settings.MonitorCpu;
         _viewModel.IsMemoryVisible = settings.MonitorMemory;
         _viewModel.IsGpuVisible = settings.MonitorGpu;
@@ -298,31 +300,28 @@ public partial class FloatingWindow : Window
             if (response.IsSuccessStatusCode)
             {
                 var settings = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, string>>>();
+                var displaySettings = new TaskbarDisplaySettings();
 
-                // 加载外观设置（透明度）
-                if (settings?.TryGetValue("Appearance", out var appearance) == true)
+                if (settings?.TryGetValue(ConfigurationDefaults.Keys.Categories.Appearance, out var appearance) == true)
                 {
-                    if (appearance.TryGetValue("Opacity", out var opacityStr) && int.TryParse(opacityStr, out var opacity))
-                    {
-                        // 将 20-100 的百分比值转换为 0.2-1.0 的 Opacity 值
-                        this.Opacity = Math.Clamp(opacity / 100.0, 0.2, 1.0);
-                        System.Diagnostics.Debug.WriteLine($"Applied window opacity: {this.Opacity}");
-                    }
+                    displaySettings.OpacityPercent = TryParseInt(
+                        appearance,
+                        ConfigurationDefaults.Keys.Appearance.Opacity,
+                        displaySettings.OpacityPercent);
                 }
 
-                // 加载监控设置
-                if (settings?.TryGetValue("Monitoring", out var monitoring) == true)
+                if (settings?.TryGetValue(ConfigurationDefaults.Keys.Categories.Monitoring, out var monitoring) == true)
                 {
-                    ApplyDisplaySettings(new TaskbarDisplaySettings
-                    {
-                        MonitorCpu = TryParseBool(monitoring, "MonitorCpu", _viewModel.IsCpuVisible),
-                        MonitorMemory = TryParseBool(monitoring, "MonitorMemory", _viewModel.IsMemoryVisible),
-                        MonitorGpu = TryParseBool(monitoring, "MonitorGpu", _viewModel.IsGpuVisible),
-                        MonitorVram = TryParseBool(monitoring, "MonitorVram", _viewModel.IsVramVisible),
-                        MonitorPower = TryParseBool(monitoring, "MonitorPower", _viewModel.IsPowerVisible),
-                        MonitorNetwork = TryParseBool(monitoring, "MonitorNetwork", _viewModel.IsNetworkVisible)
-                    });
+                    displaySettings.MonitorCpu = TryParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorCpu, _viewModel.IsCpuVisible);
+                    displaySettings.MonitorMemory = TryParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorMemory, _viewModel.IsMemoryVisible);
+                    displaySettings.MonitorGpu = TryParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorGpu, _viewModel.IsGpuVisible);
+                    displaySettings.MonitorVram = TryParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorVram, _viewModel.IsVramVisible);
+                    displaySettings.MonitorPower = TryParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorPower, _viewModel.IsPowerVisible);
+                    displaySettings.MonitorNetwork = TryParseBool(monitoring, ConfigurationDefaults.Keys.Monitoring.MonitorNetwork, _viewModel.IsNetworkVisible);
                 }
+
+                displaySettings.Normalize();
+                ApplyDisplaySettings(displaySettings);
             }
         }
         catch (Exception ex)
@@ -335,6 +334,13 @@ public partial class FloatingWindow : Window
     private static bool TryParseBool(Dictionary<string, string> values, string key, bool fallback)
     {
         return values.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
+            ? parsed
+            : fallback;
+    }
+
+    private static int TryParseInt(Dictionary<string, string> values, string key, int fallback)
+    {
+        return values.TryGetValue(key, out var raw) && int.TryParse(raw, out var parsed)
             ? parsed
             : fallback;
     }

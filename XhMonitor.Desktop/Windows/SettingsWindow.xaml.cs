@@ -122,12 +122,7 @@ public partial class SettingsWindow : Window
         var result = await _viewModel.SaveSettingsAsync();
         if (result.IsSuccess)
         {
-
-            // 立即应用透明度到悬浮窗
-            if (Owner is FloatingWindow floatingWindow)
-            {
-                floatingWindow.Opacity = Math.Clamp(_viewModel.Opacity / 100.0, 0.2, 1.0);
-            }
+            await ApplyDisplayModesAsync();
 
             // 如果管理员模式或局域网访问变更，需要重启
             if (adminModeChanged || lanAccessChanged)
@@ -209,8 +204,6 @@ public partial class SettingsWindow : Window
                 await ShowSaveSuccessHintAsync();
             }
 
-            await ApplyDisplayModesAsync();
-
             // 更新原始值，避免重复提示
             _viewModel.UpdateOriginalAdminMode();
             _viewModel.UpdateOriginalEnableLanAccess();
@@ -266,6 +259,7 @@ public partial class SettingsWindow : Window
         {
             EnableFloatingMode = _viewModel.EnableFloatingMode,
             EnableEdgeDockMode = _viewModel.EnableEdgeDockMode,
+            OpacityPercent = _viewModel.Opacity,
             MonitorCpu = _viewModel.MonitorCpu,
             MonitorMemory = _viewModel.MonitorMemory,
             MonitorGpu = _viewModel.MonitorGpu,

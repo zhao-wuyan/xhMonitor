@@ -6,9 +6,12 @@ public sealed class TaskbarDisplaySettings
 {
     public const string DockVisualStyleBar = "Bar";
     public const string DockVisualStyleText = "Text";
+    public const int MinOpacityPercent = 20;
+    public const int MaxOpacityPercent = 100;
 
     public bool EnableFloatingMode { get; set; } = ConfigurationDefaults.Monitoring.EnableFloatingMode;
     public bool EnableEdgeDockMode { get; set; } = ConfigurationDefaults.Monitoring.EnableEdgeDockMode;
+    public int OpacityPercent { get; set; } = ConfigurationDefaults.Appearance.Opacity;
 
     public bool MonitorCpu { get; set; } = ConfigurationDefaults.Monitoring.MonitorCpu;
     public bool MonitorMemory { get; set; } = ConfigurationDefaults.Monitoring.MonitorMemory;
@@ -30,6 +33,7 @@ public sealed class TaskbarDisplaySettings
 
     public void Normalize()
     {
+        OpacityPercent = Math.Clamp(OpacityPercent, MinOpacityPercent, MaxOpacityPercent);
         DockCpuLabel = NormalizeLabel(DockCpuLabel, ConfigurationDefaults.Monitoring.DockCpuLabel);
         DockMemoryLabel = NormalizeLabel(DockMemoryLabel, ConfigurationDefaults.Monitoring.DockMemoryLabel);
         DockGpuLabel = NormalizeLabel(DockGpuLabel, ConfigurationDefaults.Monitoring.DockGpuLabel);
@@ -39,6 +43,17 @@ public sealed class TaskbarDisplaySettings
         DockDownloadLabel = NormalizeLabel(DockDownloadLabel, ConfigurationDefaults.Monitoring.DockDownloadLabel);
         DockColumnGap = Math.Clamp(DockColumnGap, 0, 24);
         DockVisualStyle = NormalizeDockVisualStyle(DockVisualStyle);
+    }
+
+    public double ResolveWindowOpacity()
+    {
+        return ConvertOpacityPercentToWindowOpacity(OpacityPercent);
+    }
+
+    public static double ConvertOpacityPercentToWindowOpacity(int opacityPercent)
+    {
+        var clamped = Math.Clamp(opacityPercent, MinOpacityPercent, MaxOpacityPercent);
+        return clamped / 100.0;
     }
 
     private static string NormalizeLabel(string? value, string fallback)
