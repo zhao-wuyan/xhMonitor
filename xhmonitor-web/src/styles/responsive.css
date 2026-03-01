@@ -14,15 +14,20 @@
   height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   position: relative;
   isolation: isolate;
-  background: rgb(17 24 39);
+  background: transparent;
 }
 
-.xh-app-shell::before {
+#root {
+  isolation: isolate;
+}
+
+#root::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   background-image: var(--xh-bg-image, none);
   background-size: cover;
@@ -32,27 +37,27 @@
   transform: scale(1.08);
   opacity: 1;
   pointer-events: none;
-  z-index: 0;
+  z-index: -2;
 }
 
-.xh-app-shell::after {
+#root::after {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   background-image:
     linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(31, 41, 55, 0.92)),
     linear-gradient(rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)), rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)));
 }
 
-body.has-bg-image .xh-app-shell::after {
+body.has-bg-image #root::after {
   background-image:
     linear-gradient(135deg, rgba(17, 24, 39, 0.68), rgba(31, 41, 55, 0.62)),
     linear-gradient(rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)), rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)));
 }
 
-body.no-gradient .xh-app-shell::after {
+body.no-gradient #root::after {
   background-image: linear-gradient(rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)), rgba(0, 0, 0, var(--xh-bg-blur-opacity, 0.3)));
 }
 
@@ -953,21 +958,19 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
 
 .process-panel--scroll .table-scroll {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.process-panel--scroll .table-scroll.table-body-scroll {
+  max-height: var(--xh-process-scroll-max-height);
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
 
 .process-panel--scroll .table-scroll table {
   border-collapse: separate;
   border-spacing: 0;
-}
-
-.process-panel--scroll .table-body-scroll {
-  max-height: var(--xh-process-scroll-max-height);
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Process table cell styles (kept below once to avoid cascade confusion) */
@@ -1136,12 +1139,21 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   padding: 12px;
   color: var(--xh-color-text-secondary);
   font-weight: 600;
-  border-bottom: 1px solid var(--xh-color-glass-border);
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
   transition: color 0.2s;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--xh-color-glass-bg);
+  backdrop-filter: blur(var(--xh-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--xh-blur, 16px));
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 var(--xh-color-glass-border);
 }
+
+/* We remove the pseudo-element ::after since box-shadow handles the bottom border */
 
 .table-scroll th:hover {
   color: var(--xh-color-text-primary);

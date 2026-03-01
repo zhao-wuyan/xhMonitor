@@ -179,14 +179,11 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
         </div>
       </div>
 
-      <div className="table-scroll">
+      <div className={`table-scroll ${processOnlyScrollEnabled ? 'table-body-scroll' : ''}`}>
         <table>
-          <thead>
+          <thead className="sticky-header">
             {tableHeaderRow}
           </thead>
-        </table>
-        <div className="table-body-scroll">
-          <table>
           <tbody>
             {sortedAndFilteredProcesses.map((process) => (
               <tr key={process.processId}>
@@ -241,8 +238,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
               </tr>
             ))}
           </tbody>
-          </table>
-        </div>
+        </table>
       </div>
 
       {sortedAndFilteredProcesses.length === 0 && (
