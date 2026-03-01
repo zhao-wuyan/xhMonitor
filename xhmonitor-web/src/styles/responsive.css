@@ -1178,6 +1178,12 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* 方案 1：内容滚入表头区域时直接裁剪，避免透明叠加发深 */
+.process-panel--scroll .table-scroll.table-body-scroll tbody {
+  -webkit-clip-path: inset(var(--xh-process-scroll-clip-top, 0px) 0 0 0);
+  clip-path: inset(var(--xh-process-scroll-clip-top, 0px) 0 0 0);
+}
+
 @supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
   .mobile-nav,
   .settings-drawer,

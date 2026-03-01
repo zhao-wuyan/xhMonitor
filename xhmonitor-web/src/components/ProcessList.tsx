@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
@@ -157,11 +157,28 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
   );
 
   const processOnlyScrollEnabled = scrollMode === 'process' && processTableMaxHeight > 0;
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const processPanelClassName = `process-panel xh-glass-panel${processOnlyScrollEnabled ? ' process-panel--scroll' : ''}`;
   const processPanelStyle: (CSSProperties & { ['--xh-process-scroll-max-height']?: string }) | undefined =
     processOnlyScrollEnabled
       ? { ['--xh-process-scroll-max-height']: `${processTableMaxHeight}px` }
       : undefined;
+
+  useEffect(() => {
+    const tableScroll = tableScrollRef.current;
+    if (!tableScroll) return;
+    if (!processOnlyScrollEnabled) {
+      tableScroll.style.setProperty('--xh-process-scroll-clip-top', '0px');
+      return;
+    }
+
+    tableScroll.style.setProperty('--xh-process-scroll-clip-top', `${tableScroll.scrollTop}px`);
+  }, [processOnlyScrollEnabled, sortedAndFilteredProcesses.length]);
+
+  const handleTableScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (!processOnlyScrollEnabled) return;
+    event.currentTarget.style.setProperty('--xh-process-scroll-clip-top', `${event.currentTarget.scrollTop}px`);
+  };
 
   return (
     <div ref={ref} className={processPanelClassName} style={processPanelStyle}>
@@ -179,7 +196,11 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
         </div>
       </div>
 
-      <div className={`table-scroll ${processOnlyScrollEnabled ? 'table-body-scroll' : ''}`}>
+      <div
+        ref={tableScrollRef}
+        className={`table-scroll ${processOnlyScrollEnabled ? 'table-body-scroll' : ''}`}
+        onScroll={processOnlyScrollEnabled ? handleTableScroll : undefined}
+      >
         <table>
           <thead className="sticky-header">
             {tableHeaderRow}
