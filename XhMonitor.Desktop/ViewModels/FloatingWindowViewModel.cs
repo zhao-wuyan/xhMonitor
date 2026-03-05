@@ -605,6 +605,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
     public sealed class ProcessRowViewModel : INotifyPropertyChanged
     {
+        private const string LlamaPortKey = "llama_port";
+        private const string LlamaGenTpsComputeKey = "llama_gen_tps_compute";
+        private const string LlamaBusyPercentKey = "llama_busy_percent";
+        private const string LlamaReqProcessingKey = "llama_req_processing";
+        private const string LlamaReqDeferredKey = "llama_req_deferred";
+        private const string LlamaOutTokensTotalKey = "llama_out_tokens_total";
+
         public int ProcessId { get; }
 
         private string _processName = string.Empty;
@@ -643,6 +650,12 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         private bool _isPinned;
         public bool IsPinned { get => _isPinned; set => SetField(ref _isPinned, value); }
 
+        private bool _hasLlamaMetrics;
+        public bool HasLlamaMetrics { get => _hasLlamaMetrics; private set => SetField(ref _hasLlamaMetrics, value); }
+
+        private string _llamaMetricsText = string.Empty;
+        public string LlamaMetricsText { get => _llamaMetricsText; private set => SetField(ref _llamaMetricsText, value); }
+
         public ProcessRowViewModel(ProcessInfoDto dto)
         {
             ProcessId = dto.ProcessId;
@@ -666,6 +679,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             Memory = dto.Metrics.GetValueOrDefault("memory");
             Gpu = dto.Metrics.GetValueOrDefault("gpu");
             Vram = dto.Metrics.GetValueOrDefault("vram");
+
+            UpdateLlamaMetrics(dto.Metrics);
         }
 
         public void UpdateMetaFrom(ProcessMetaInfoDto dto)
@@ -678,6 +693,43 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 DisplayName = dto.DisplayName;
             else if (!string.IsNullOrEmpty(dto.ProcessName))
                 DisplayName = dto.ProcessName;
+        }
+
+        private void UpdateLlamaMetrics(Dictionary<string, double> metrics)
+        {
+            if (!metrics.TryGetValue(LlamaPortKey, out var portValue) || portValue <= 0)
+            {
+                HasLlamaMetrics = false;
+                LlamaMetricsText = string.Empty;
+                return;
+            }
+
+            var port = (int)Math.Round(portValue, MidpointRounding.AwayFromZero);
+            var genTpsCompute = metrics.TryGetValue(LlamaGenTpsComputeKey, out var tpsValue) ? tpsValue : (double?)null;
+            var busyPercent = metrics.TryGetValue(LlamaBusyPercentKey, out var busyValue) ? busyValue : (double?)null;
+            var reqProcessing = metrics.TryGetValue(LlamaReqProcessingKey, out var processingValue) ? processingValue : (double?)null;
+            var reqDeferred = metrics.TryGetValue(LlamaReqDeferredKey, out var deferredValue) ? deferredValue : (double?)null;
+            var outTokensTotal = metrics.TryGetValue(LlamaOutTokensTotalKey, out var outTokensValue) ? outTokensValue : (double?)null;
+
+            HasLlamaMetrics = true;
+            LlamaMetricsText = BuildLlamaMetricsLine(port, genTpsCompute, busyPercent, reqProcessing, reqDeferred, outTokensTotal);
+        }
+
+        private static string BuildLlamaMetricsLine(
+            int port,
+            double? genTpsCompute,
+            double? busyPercent,
+            double? reqProcessing,
+            double? reqDeferred,
+            double? outTokensTotal)
+        {
+            var genText = genTpsCompute.HasValue ? genTpsCompute.Value.ToString("0.0") : "--";
+            var busyText = busyPercent.HasValue ? busyPercent.Value.ToString("0") : "--";
+            var reqProcessingText = reqProcessing.HasValue ? reqProcessing.Value.ToString("0") : "--";
+            var reqDeferredText = reqDeferred.HasValue ? reqDeferred.Value.ToString("0") : "--";
+            var outTokensText = outTokensTotal.HasValue ? outTokensTotal.Value.ToString("0") : "--";
+
+            return $"Port {port}   Gen {genText} tok/s   Busy {busyText}%   Req {reqProcessingText}/{reqDeferredText}   Out {outTokensText}";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

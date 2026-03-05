@@ -183,7 +183,7 @@
 
         <!-- Pinned Card Template -->
         <DataTemplate x:Key="PinnedCardTemplate" DataType="{x:Type vm:FloatingWindowViewModel+ProcessRowViewModel}">
-            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="470" Height="28"
+            <Border Background="{StaticResource ColorPinnedBg}" CornerRadius="4" Margin="0,0,0,4" Width="470" MinHeight="28"
                     BorderBrush="{StaticResource ColorBorder}" BorderThickness="1">
                 <Grid>
                     <!-- Left Accent Border -->
@@ -199,48 +199,61 @@
                     </Border>
 
                     <Grid Margin="13,4,26,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                        <!-- 进程名称 (左侧省略) -->
-                        <TextBlock Grid.Column="0" Text="{Binding DisplayName, Converter={StaticResource MiddleEllipsisConverter}, ConverterParameter=28}"
-                                   Foreground="{StaticResource ColorTextMain}"
-                                   FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0">
-                            <TextBlock.ToolTip>
-                                <ToolTip MaxWidth="400">
-                                    <TextBlock Text="{Binding CommandLine}" TextWrapping="Wrap"/>
-                                </ToolTip>
-                            </TextBlock.ToolTip>
-                        </TextBlock>
+                        <!-- llama-server 性能扩展行（仅在有数据时显示） -->
+                        <TextBlock Grid.Row="0" Text="{Binding LlamaMetricsText}" TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding HasLlamaMetrics, Converter={StaticResource BoolToVisibility}}"
+                                   Foreground="{StaticResource ColorTextSub}"
+                                   FontSize="10" FontFamily="Consolas" Margin="0,0,0,2"/>
 
-                        <!-- CPU (对应主控栏第1列) -->
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <Run Text="CPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Cpu, StringFormat={}{0:F0}%, Mode=OneWay}" Foreground="{Binding Cpu, Converter={StaticResource ColorConverter}, Mode=OneWay}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                        </TextBlock>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <!-- RAM (对应主控栏第2列) -->
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <Run Text="RAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Memory, Converter={StaticResource MemoryConverter}, Mode=OneWay}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                        </TextBlock>
+                            <!-- 进程名称 (左侧省略) -->
+                            <TextBlock Grid.Column="0" Text="{Binding DisplayName, Converter={StaticResource MiddleEllipsisConverter}, ConverterParameter=28}"
+                                       Foreground="{StaticResource ColorTextMain}"
+                                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0">
+                                <TextBlock.ToolTip>
+                                    <ToolTip MaxWidth="400">
+                                        <TextBlock Text="{Binding CommandLine}" TextWrapping="Wrap"/>
+                                    </ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
 
-                        <!-- GPU (对应主控栏第3列) -->
-                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <Run Text="GPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Gpu, StringFormat={}{0:F0}%, Mode=OneWay}" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}, Mode=OneWay}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                        </TextBlock>
+                            <!-- CPU (对应主控栏第1列) -->
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Run Text="CPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                                <Run Text="{Binding Cpu, StringFormat={}{0:F0}%, Mode=OneWay}" Foreground="{Binding Cpu, Converter={StaticResource ColorConverter}, Mode=OneWay}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            </TextBlock>
 
-                        <!-- VRAM (对应主控栏第4列) -->
-                        <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <Run Text="VRAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
-                            <Run Text="{Binding Vram, Converter={StaticResource MemoryConverter}, Mode=OneWay}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
-                        </TextBlock>
+                            <!-- RAM (对应主控栏第2列) -->
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Run Text="RAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                                <Run Text="{Binding Memory, Converter={StaticResource MemoryConverter}, Mode=OneWay}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            </TextBlock>
+
+                            <!-- GPU (对应主控栏第3列) -->
+                            <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Run Text="GPU " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                                <Run Text="{Binding Gpu, StringFormat={}{0:F0}%, Mode=OneWay}" Foreground="{Binding Gpu, Converter={StaticResource ColorConverter}, Mode=OneWay}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            </TextBlock>
+
+                            <!-- VRAM (对应主控栏第4列) -->
+                            <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Run Text="VRAM " Foreground="{StaticResource ColorTextSub}" FontSize="10"/>
+                                <Run Text="{Binding Vram, Converter={StaticResource MemoryConverter}, Mode=OneWay}" Foreground="{StaticResource ColorCyan}" FontSize="11" FontWeight="Bold" FontFamily="Consolas"/>
+                            </TextBlock>
+                        </Grid>
                     </Grid>
                 </Grid>
             </Border>

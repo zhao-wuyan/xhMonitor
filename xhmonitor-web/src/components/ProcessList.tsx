@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { ProcessInfo, MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
@@ -33,6 +33,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
   const [sortField, setSortField] = useState<SortField>(DEFAULT_RESOURCE_SORT_FIELD);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedPid, setExpandedPid] = useState<number | null>(null);
 
   const orderedMetricMetadata = useMemo(() => {
     const rank = (metricId: string) => {
@@ -130,6 +131,25 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
     return null;
   };
 
+  const hasLlamaMetrics = (process: ProcessInfo): boolean => {
+    const port = process.metrics.llama_port;
+    return typeof port === 'number' && Number.isFinite(port) && port > 0;
+  };
+
+  const toggleExpanded = (pid: number) => {
+    setExpandedPid((prev) => (prev === pid ? null : pid));
+  };
+
+  const formatLlamaValue = (value: number | undefined, digits = 0): string => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
+    return value.toFixed(digits);
+  };
+
+  const formatLlamaInt = (value: number | undefined): string => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
+    return Math.round(value).toString();
+  };
+
   const tableHeaderRow = (
     <tr>
       <th
@@ -206,58 +226,118 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
             {tableHeaderRow}
           </thead>
           <tbody>
-            {sortedAndFilteredProcesses.map((process) => (
-              <tr key={process.processId}>
-                <td>
-                  <div className="proc-name-cell">
-                    <div className="proc-icon">
-                      {process.processName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="proc-info">
-                      <div className="proc-name" title={getProcessDisplayName(process)}>
-                        {getProcessDisplayName(process)}
-                      </div>
-                      <div className="proc-cmd" title={process.commandLine ?? ''}>
-                        {process.commandLine ?? ''}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="pid-cell">{process.processId}</td>
-                {orderedMetricMetadata.map((metric) => {
-                  const metricValue = process.metrics[metric.metricId];
-                  const color = colorMap[metric.metricId] || '#6b7280';
-                  const progressMax = getProgressMaxValue(metric);
-                  const widthPercent =
-                    metricValue !== undefined && progressMax != null && progressMax > 0
-                      ? Math.min((Math.max(metricValue, 0) / progressMax) * 100, 100)
-                      : 0;
+            {sortedAndFilteredProcesses.map((process) => {
+              const llamaAvailable = hasLlamaMetrics(process);
+              const isExpanded = expandedPid === process.processId;
+              const totalCols = 2 + orderedMetricMetadata.length;
 
-                  return (
-                    <td key={metric.metricId}>
-                      {metricValue !== undefined ? (
-                        <div className="metric-cell">
-                          <span className="metric-val" style={{ color }}>
-                            {formatValue(metricValue, metric.unit)}
-                          </span>
-                          <div className="progress-bg">
-                            <div
-                              className="progress-fill"
-                              style={{
-                                width: `${widthPercent}%`,
-                                backgroundColor: color
-                              }}
-                            />
+              return (
+                <Fragment key={process.processId}>
+                  <tr>
+                    <td>
+                      <div className="proc-name-cell">
+                        <div className="proc-icon">
+                          {process.processName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="proc-info">
+                          <div
+                            className={`proc-name${llamaAvailable ? ' proc-name--expandable' : ''}`}
+                            title={getProcessDisplayName(process)}
+                            onClick={llamaAvailable ? () => toggleExpanded(process.processId) : undefined}
+                            role={llamaAvailable ? 'button' : undefined}
+                            tabIndex={llamaAvailable ? 0 : undefined}
+                            onKeyDown={
+                              llamaAvailable
+                                ? (e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      toggleExpanded(process.processId);
+                                    }
+                                  }
+                                : undefined
+                            }
+                          >
+                            {getProcessDisplayName(process)}
+                            {llamaAvailable && (
+                              <span className="proc-name__expander" aria-hidden="true">
+                                {isExpanded ? '▾' : '▸'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="proc-cmd" title={process.commandLine ?? ''}>
+                            {process.commandLine ?? ''}
                           </div>
                         </div>
-                      ) : (
-                        <span style={{ color: 'var(--xh-color-text-secondary)', opacity: 0.5 }}>-</span>
-                      )}
+                      </div>
                     </td>
-                  );
-                })}
-              </tr>
-            ))}
+                    <td className="pid-cell">{process.processId}</td>
+                    {orderedMetricMetadata.map((metric) => {
+                      const metricValue = process.metrics[metric.metricId];
+                      const color = colorMap[metric.metricId] || '#6b7280';
+                      const progressMax = getProgressMaxValue(metric);
+                      const widthPercent =
+                        metricValue !== undefined && progressMax != null && progressMax > 0
+                          ? Math.min((Math.max(metricValue, 0) / progressMax) * 100, 100)
+                          : 0;
+
+                      return (
+                        <td key={metric.metricId}>
+                          {metricValue !== undefined ? (
+                            <div className="metric-cell">
+                              <span className="metric-val" style={{ color }}>
+                                {formatValue(metricValue, metric.unit)}
+                              </span>
+                              <div className="progress-bg">
+                                <div
+                                  className="progress-fill"
+                                  style={{
+                                    width: `${widthPercent}%`,
+                                    backgroundColor: color
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--xh-color-text-secondary)', opacity: 0.5 }}>-</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {llamaAvailable && isExpanded && (
+                    <tr className="proc-expand-row">
+                      <td colSpan={totalCols}>
+                        <div className="proc-expand-content">
+                          <span className="proc-expand-kv">
+                            <span className="proc-expand-k">Port</span>
+                            <span className="proc-expand-v">{formatLlamaInt(process.metrics.llama_port)}</span>
+                          </span>
+                          <span className="proc-expand-kv">
+                            <span className="proc-expand-k">Gen</span>
+                            <span className="proc-expand-v">{formatLlamaValue(process.metrics.llama_gen_tps_compute, 1)} tok/s</span>
+                          </span>
+                          <span className="proc-expand-kv">
+                            <span className="proc-expand-k">Busy</span>
+                            <span className="proc-expand-v">{formatLlamaValue(process.metrics.llama_busy_percent, 0)}%</span>
+                          </span>
+                          <span className="proc-expand-kv">
+                            <span className="proc-expand-k">Req</span>
+                            <span className="proc-expand-v">
+                              {formatLlamaValue(process.metrics.llama_req_processing, 0)}/{formatLlamaValue(process.metrics.llama_req_deferred, 0)}
+                            </span>
+                          </span>
+                          <span className="proc-expand-kv">
+                            <span className="proc-expand-k">Out</span>
+                            <span className="proc-expand-v">{formatLlamaValue(process.metrics.llama_out_tokens_total, 0)}</span>
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

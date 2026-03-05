@@ -133,6 +133,7 @@ public class WorkerTests
             hubContext: hubContext,
             systemMetricProvider: systemMetricProvider,
             processMetadataStore: Mock.Of<IProcessMetadataStore>(),
+            processMetricsEnrichers: Enumerable.Empty<IProcessMetricsEnricher>(),
             monitorOptions: monitorOptions);
     }
 

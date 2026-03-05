@@ -1014,6 +1014,50 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   font-size: 0.9rem;
 }
 
+.proc-name--expandable {
+  cursor: pointer;
+}
+
+.proc-name--expandable:hover {
+  text-decoration: underline;
+}
+
+.proc-name__expander {
+  margin-left: 6px;
+  color: var(--xh-color-text-secondary);
+  opacity: 0.85;
+}
+
+.proc-expand-row td {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.proc-expand-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  font-family: var(--xh-font-mono);
+  font-size: 0.8rem;
+}
+
+.proc-expand-kv {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.proc-expand-k {
+  color: var(--xh-color-text-secondary);
+  opacity: 0.9;
+}
+
+.proc-expand-v {
+  color: var(--xh-color-text-primary);
+}
+
 .proc-cmd {
   font-size: 0.75rem;
   color: var(--xh-color-text-secondary);

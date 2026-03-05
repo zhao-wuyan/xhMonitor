@@ -261,6 +261,12 @@ builder.Services.AddSingleton<ProcessScanner>();
 builder.Services.AddSingleton<PerformanceMonitor>();
 builder.Services.AddSingleton<IProcessMetadataStore, ProcessMetadataStore>();
 
+builder.Services.AddHttpClient("llama-metrics", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(1.5);
+});
+builder.Services.AddSingleton<IProcessMetricsEnricher, LlamaServerMetricsEnricher>();
+
 builder.Services.AddControllers();
 var signalRSection = builder.Configuration.GetSection("SignalR");
 var signalRMaximumReceiveMessageSize = signalRSection.GetValue<long?>("MaximumReceiveMessageSize");
