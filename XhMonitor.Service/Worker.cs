@@ -503,20 +503,28 @@ public class Worker : BackgroundService
 
         var gen = process.Metrics.TryGetValue(LlamaMetricKeys.GenTpsCompute, out var genMetric) ? genMetric.Value : double.NaN;
         var busy = process.Metrics.TryGetValue(LlamaMetricKeys.BusyPercent, out var busyMetric) ? busyMetric.Value : double.NaN;
+        var genLive = process.Metrics.TryGetValue(LlamaMetricKeys.GenTpsLive, out var genLiveMetric) ? genLiveMetric.Value : double.NaN;
+        var busyLive = process.Metrics.TryGetValue(LlamaMetricKeys.BusyPercentLive, out var busyLiveMetric) ? busyLiveMetric.Value : double.NaN;
         var processing = process.Metrics.TryGetValue(LlamaMetricKeys.ReqProcessing, out var processingMetric) ? processingMetric.Value : double.NaN;
         var deferred = process.Metrics.TryGetValue(LlamaMetricKeys.ReqDeferred, out var deferredMetric) ? deferredMetric.Value : double.NaN;
         var outTokens = process.Metrics.TryGetValue(LlamaMetricKeys.OutTokensTotal, out var outTokensMetric) ? outTokensMetric.Value : double.NaN;
+        var outTokensLive = process.Metrics.TryGetValue(LlamaMetricKeys.OutTokensLive, out var outTokensLiveMetric) ? outTokensLiveMetric.Value : double.NaN;
+        var decodeTotal = process.Metrics.TryGetValue(LlamaMetricKeys.DecodeTotal, out var decodeMetric) ? decodeMetric.Value : double.NaN;
 
-        values = new LlamaRealtimeValues(port, gen, busy, processing, deferred, outTokens);
+        values = new LlamaRealtimeValues(port, gen, busy, genLive, busyLive, processing, deferred, outTokens, outTokensLive, decodeTotal);
         return true;
     }
 
     private static bool HasAnyLlamaSampleData(ProcessMetrics process)
         => process.Metrics.ContainsKey(LlamaMetricKeys.GenTpsCompute)
            || process.Metrics.ContainsKey(LlamaMetricKeys.BusyPercent)
+           || process.Metrics.ContainsKey(LlamaMetricKeys.GenTpsLive)
+           || process.Metrics.ContainsKey(LlamaMetricKeys.BusyPercentLive)
            || process.Metrics.ContainsKey(LlamaMetricKeys.ReqProcessing)
            || process.Metrics.ContainsKey(LlamaMetricKeys.ReqDeferred)
-           || process.Metrics.ContainsKey(LlamaMetricKeys.OutTokensTotal);
+           || process.Metrics.ContainsKey(LlamaMetricKeys.OutTokensTotal)
+           || process.Metrics.ContainsKey(LlamaMetricKeys.OutTokensLive)
+           || process.Metrics.ContainsKey(LlamaMetricKeys.DecodeTotal);
 
     private static ProcessMetrics BuildLlamaProcessRecord(ProcessMetrics source, DateTime nowUtc)
     {
@@ -524,9 +532,13 @@ public class Worker : BackgroundService
         CopyMetric(source, metrics, LlamaMetricKeys.Port, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.GenTpsCompute, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.BusyPercent, nowUtc);
+        CopyMetric(source, metrics, LlamaMetricKeys.GenTpsLive, nowUtc);
+        CopyMetric(source, metrics, LlamaMetricKeys.BusyPercentLive, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.ReqProcessing, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.ReqDeferred, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.OutTokensTotal, nowUtc);
+        CopyMetric(source, metrics, LlamaMetricKeys.OutTokensLive, nowUtc);
+        CopyMetric(source, metrics, LlamaMetricKeys.DecodeTotal, nowUtc);
 
         return new ProcessMetrics
         {
@@ -582,9 +594,13 @@ public class Worker : BackgroundService
             SetMetric(process, LlamaMetricKeys.Port, cached.Port, string.Empty, "Port", now);
             SetMetricIfValid(process, LlamaMetricKeys.GenTpsCompute, cached.GenTpsCompute, "tok/s", "Gen TPS", now);
             SetMetricIfValid(process, LlamaMetricKeys.BusyPercent, cached.BusyPercent, "%", "Busy", now);
+            SetMetricIfValid(process, LlamaMetricKeys.GenTpsLive, cached.GenTpsLive, "tok/s", "Gen TPS Live", now);
+            SetMetricIfValid(process, LlamaMetricKeys.BusyPercentLive, cached.BusyPercentLive, "%", "Busy Live", now);
             SetMetricIfValid(process, LlamaMetricKeys.ReqProcessing, cached.RequestsProcessing, string.Empty, "Req Processing", now);
             SetMetricIfValid(process, LlamaMetricKeys.ReqDeferred, cached.RequestsDeferred, string.Empty, "Req Deferred", now);
             SetMetricIfValid(process, LlamaMetricKeys.OutTokensTotal, cached.OutTokensTotal, "tok", "Out Tokens", now);
+            SetMetricIfValid(process, LlamaMetricKeys.OutTokensLive, cached.OutTokensLive, "tok", "Out Tokens Live", now);
+            SetMetricIfValid(process, LlamaMetricKeys.DecodeTotal, cached.DecodeTotal, "calls", "Decode", now);
         }
     }
 
@@ -703,7 +719,11 @@ public class Worker : BackgroundService
         int Port,
         double GenTpsCompute,
         double BusyPercent,
+        double GenTpsLive,
+        double BusyPercentLive,
         double RequestsProcessing,
         double RequestsDeferred,
-        double OutTokensTotal);
+        double OutTokensTotal,
+        double OutTokensLive,
+        double DecodeTotal);
 }

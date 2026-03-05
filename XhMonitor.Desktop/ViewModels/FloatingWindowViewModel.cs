@@ -608,9 +608,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         private const string LlamaPortKey = "llama_port";
         private const string LlamaGenTpsComputeKey = "llama_gen_tps_compute";
         private const string LlamaBusyPercentKey = "llama_busy_percent";
+        private const string LlamaGenTpsLiveKey = "llama_gen_tps_live";
+        private const string LlamaBusyPercentLiveKey = "llama_busy_percent_live";
         private const string LlamaReqProcessingKey = "llama_req_processing";
         private const string LlamaReqDeferredKey = "llama_req_deferred";
         private const string LlamaOutTokensTotalKey = "llama_out_tokens_total";
+        private const string LlamaOutTokensLiveKey = "llama_out_tokens_live";
+        private const string LlamaDecodeTotalKey = "llama_decode_total";
 
         public int ProcessId { get; }
 
@@ -706,30 +710,63 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
             var port = (int)Math.Round(portValue, MidpointRounding.AwayFromZero);
             var genTpsCompute = metrics.TryGetValue(LlamaGenTpsComputeKey, out var tpsValue) ? tpsValue : (double?)null;
+            var genTpsLive = metrics.TryGetValue(LlamaGenTpsLiveKey, out var tpsLiveValue) ? tpsLiveValue : (double?)null;
             var busyPercent = metrics.TryGetValue(LlamaBusyPercentKey, out var busyValue) ? busyValue : (double?)null;
+            var busyPercentLive = metrics.TryGetValue(LlamaBusyPercentLiveKey, out var busyLiveValue) ? busyLiveValue : (double?)null;
             var reqProcessing = metrics.TryGetValue(LlamaReqProcessingKey, out var processingValue) ? processingValue : (double?)null;
             var reqDeferred = metrics.TryGetValue(LlamaReqDeferredKey, out var deferredValue) ? deferredValue : (double?)null;
             var outTokensTotal = metrics.TryGetValue(LlamaOutTokensTotalKey, out var outTokensValue) ? outTokensValue : (double?)null;
+            var outTokensLive = metrics.TryGetValue(LlamaOutTokensLiveKey, out var outTokensLiveValue) ? outTokensLiveValue : (double?)null;
+            var decodeTotal = metrics.TryGetValue(LlamaDecodeTotalKey, out var decodeValue) ? decodeValue : (double?)null;
 
             HasLlamaMetrics = true;
-            LlamaMetricsText = BuildLlamaMetricsLine(port, genTpsCompute, busyPercent, reqProcessing, reqDeferred, outTokensTotal);
+            LlamaMetricsText = BuildLlamaMetricsLine(
+                port,
+                genTpsCompute,
+                genTpsLive,
+                busyPercent,
+                busyPercentLive,
+                reqProcessing,
+                reqDeferred,
+                outTokensTotal,
+                outTokensLive,
+                decodeTotal);
         }
 
         private static string BuildLlamaMetricsLine(
             int port,
             double? genTpsCompute,
+            double? genTpsLive,
             double? busyPercent,
+            double? busyPercentLive,
             double? reqProcessing,
             double? reqDeferred,
-            double? outTokensTotal)
+            double? outTokensTotal,
+            double? outTokensLive,
+            double? decodeTotal)
         {
-            var genText = genTpsCompute.HasValue ? genTpsCompute.Value.ToString("0.0") : "--";
-            var busyText = busyPercent.HasValue ? busyPercent.Value.ToString("0") : "--";
+            var genComputeText = genTpsCompute.HasValue ? genTpsCompute.Value.ToString("0.0") : "--";
+            var genLiveText = genTpsLive.HasValue ? genTpsLive.Value.ToString("0.0") : "--";
+            var genText = genTpsLive.HasValue && genTpsCompute.HasValue && !genComputeText.Equals(genLiveText, StringComparison.Ordinal)
+                ? $"{genComputeText}~{genLiveText}"
+                : (genTpsLive.HasValue ? genLiveText : genComputeText);
+
+            var busyComputeText = busyPercent.HasValue ? busyPercent.Value.ToString("0") : "--";
+            var busyLiveText = busyPercentLive.HasValue ? busyPercentLive.Value.ToString("0") : "--";
+            var busyText = busyPercentLive.HasValue && busyPercent.HasValue && !busyComputeText.Equals(busyLiveText, StringComparison.Ordinal)
+                ? $"{busyComputeText}~{busyLiveText}"
+                : (busyPercentLive.HasValue ? busyLiveText : busyComputeText);
+
             var reqProcessingText = reqProcessing.HasValue ? reqProcessing.Value.ToString("0") : "--";
             var reqDeferredText = reqDeferred.HasValue ? reqDeferred.Value.ToString("0") : "--";
-            var outTokensText = outTokensTotal.HasValue ? outTokensTotal.Value.ToString("0") : "--";
+            var outRawText = outTokensTotal.HasValue ? outTokensTotal.Value.ToString("0") : "--";
+            var outLiveText = outTokensLive.HasValue ? outTokensLive.Value.ToString("0") : "--";
+            var outTokensText = outTokensLive.HasValue && outTokensTotal.HasValue && !outRawText.Equals(outLiveText, StringComparison.Ordinal)
+                ? $"{outRawText}~{outLiveText}"
+                : (outTokensLive.HasValue ? outLiveText : outRawText);
+            var decodeText = decodeTotal.HasValue ? decodeTotal.Value.ToString("0") : "--";
 
-            return $"Port {port}   Gen {genText} tok/s   Busy {busyText}%   Req {reqProcessingText}/{reqDeferredText}   Out {outTokensText}";
+            return $"Port {port}   Gen {genText} tok/s   Busy {busyText}%   Req {reqProcessingText}/{reqDeferredText}   Out {outTokensText}   Dec {decodeText}";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

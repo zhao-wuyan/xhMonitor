@@ -169,6 +169,7 @@ await connection.start();
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
 | `Monitor:IntervalSeconds` | `3` | Service 进程采集间隔（秒） |
+| `Monitor:LlamaMetricsIntervalSeconds` | `1` | llama-server（`/metrics`） 采样间隔（秒），`0` 表示禁用 |
 | `Monitor:Keywords` | 示例见 `appsettings.json` | 目标进程过滤关键词 |
 | `Server:Port` | `35179` | Service HTTP/SignalR 服务端口 |
 | `SignalR:*BufferSize` | `1048576` | SignalR 缓冲上限，影响峰值内存 |
@@ -177,6 +178,53 @@ await connection.start();
 
 完整配置说明（含全部字段）请看：`docs/appsettings-reference.md`  
 配置边界说明请看：[Configuration Boundaries](XhMonitor.Service/docs/configuration-boundaries.md)
+
+### llama-server（llama.cpp） 指标说明
+
+启用条件：
+- 启动 `llama-server` 时带上 `--metrics`，并指定 `--port <PORT>`（或 `--port=<PORT>`）。
+- `Monitor:LlamaMetricsIntervalSeconds` > 0（默认 `1` 秒）。
+
+Desktop 的进程行会显示一行类似：
+
+`Port 1234   Gen 43.9 tok/s   Busy 87%   Req 1/0   Out 3071   Dec 3584`
+
+| 字段 | 指标键 | 说明 | 来源 |
+|------|--------|------|------|
+| `Port` | `llama_port` | metrics 端口（从进程命令行解析） | `--port` |
+| `Gen` | `llama_gen_tps_compute` | 生成吞吐（tok/s） | 计算得出 |
+| `Busy` | `llama_busy_percent` | 推理忙碌程度（%） | 计算得出 |
+| `Req` | `llama_req_processing` / `llama_req_deferred` | 正在处理 / 排队请求数 | `llamacpp:requests_processing` / `llamacpp:requests_deferred` |
+| `Out` | `llama_out_tokens_total` | 累计生成 token 数 | `llamacpp:tokens_predicted_total` |
+| `Dec` | `llama_decode_total` | 累计 `llama_decode()` 调用次数 | `llamacpp:n_decode_total` |
+
+实时显示说明（Desktop）：
+- 部分 `llama-server` 构建下，`llamacpp:tokens_predicted_total` / `llamacpp:tokens_predicted_seconds_total` 可能在推理过程中不连续更新，导致 `Gen` / `Busy` / `Out` 看起来“卡住”。
+- 为了让推理过程中也能看到变化，Desktop 会在数值后用 `~` 追加一组 **live 估算值**：
+  - `llama_out_tokens_live`：基于 `Δ(llamacpp:n_decode_total)` 的累计估算。
+  - `llama_gen_tps_live`：`Δ(llama_out_tokens_live) / Δ(wall_seconds)`。
+  - `llama_busy_percent_live`：当 `llama_gen_tps_live > 0` 时为 `100`，否则为 `0`。
+- 当原始指标恢复更新或推理进入空闲（两次采样无增量）时，live 估算会回落到原始值（避免长期保留上一次的估算导致误读）。
+
+计算方式（需要两次采样的增量）：
+- 相关原始指标含义：
+  - `llamacpp:tokens_predicted_total`：累计生成的 token 数（counter，单调递增，重启后从 0 开始）。
+  - `llamacpp:tokens_predicted_seconds_total`：llama-server 统计的“生成阶段”累计耗时（秒，counter，单调递增，重启后从 0 开始）。
+  - `wall_seconds`：两次采样间的真实经过时间（秒），不是 llama 的 Prometheus 指标；由 Service 侧用 `Stopwatch` 计算。
+- 记号说明：
+  - `ΔX`：两次采样的差值（`X(t1) - X(t0)`）。
+  - `clamp(x, 0, 100)`：将 `x` 限制在 `0` 到 `100` 之间，避免异常值导致显示越界。
+- 记第 1 次采样为 `t0`，第 2 次采样为 `t1`：
+  - `T0` = `llamacpp:tokens_predicted_total(t0)`，`T1` = `llamacpp:tokens_predicted_total(t1)`
+  - `S0` = `llamacpp:tokens_predicted_seconds_total(t0)`，`S1` = `llamacpp:tokens_predicted_seconds_total(t1)`
+  - `W` 为两次采样间的墙钟耗时（秒）：`W = wall_seconds(t1) - wall_seconds(t0)`
+- 增量：`ΔT = T1 - T0`，`ΔS = S1 - S0`
+- `Gen(tok/s)`：`ΔT / ΔS`
+- `Busy(%)`：`clamp(ΔS / W * 100, 0, 100)`
+
+注意：
+- 第一次采样或计数器重置（例如 `llama-server` 重启）时，`Gen` / `Busy` 可能显示为 `--`。
+- 当两次采样间无增量时，`Gen` / `Busy` 会归 `0`（避免长时间保留上一次的非 0 值导致误读；不依赖 `Req` 指标是否可靠）。
 
 ## API Reference
 

@@ -51,6 +51,7 @@ public class LlamaServerMetricsParsingTests
                    # TYPE llamacpp:tokens_predicted_total counter
                    llamacpp:tokens_predicted_total 1000
                    llamacpp:tokens_predicted_seconds_total 10
+                   llamacpp:n_decode_total 1234
                    llamacpp:requests_processing 1
                    llamacpp:requests_deferred 2
                    """;
@@ -58,6 +59,7 @@ public class LlamaServerMetricsParsingTests
         LlamaPrometheusTextParser.TryParse(text.AsSpan(), out var snapshot).Should().BeTrue();
         snapshot.TokensPredictedTotal.Should().Be(1000);
         snapshot.TokensPredictedSecondsTotal.Should().Be(10);
+        snapshot.DecodeTotal.Should().Be(1234);
         snapshot.RequestsProcessing.Should().Be(1);
         snapshot.RequestsDeferred.Should().Be(2);
     }
@@ -131,5 +133,45 @@ public class LlamaServerMetricsParsingTests
             genTpsCompute: out _,
             busyPercent: out _).Should().BeFalse();
     }
-}
 
+    [Fact]
+    public void DerivedMetricsCalculator_WhenIdleAndNotBusy_ShouldReturnZero()
+    {
+        var ticksPerSecond = Stopwatch.Frequency;
+        var prevTicks = 1000L;
+        var curTicks = prevTicks + ticksPerSecond;
+
+        LlamaDerivedMetricsCalculator.TryComputeOrZeroWhenIdle(
+            previousTokensPredictedTotal: 1000,
+            previousTokensPredictedSecondsTotal: 10,
+            previousWallTicks: prevTicks,
+            currentTokensPredictedTotal: 1000,
+            currentTokensPredictedSecondsTotal: 10,
+            currentWallTicks: curTicks,
+            isBusy: false,
+            genTpsCompute: out var genTps,
+            busyPercent: out var busy).Should().BeTrue();
+
+        genTps.Should().Be(0);
+        busy.Should().Be(0);
+    }
+
+    [Fact]
+    public void DerivedMetricsCalculator_WhenIdleButBusy_ShouldReturnFalse()
+    {
+        var ticksPerSecond = Stopwatch.Frequency;
+        var prevTicks = 1000L;
+        var curTicks = prevTicks + ticksPerSecond;
+
+        LlamaDerivedMetricsCalculator.TryComputeOrZeroWhenIdle(
+            previousTokensPredictedTotal: 1000,
+            previousTokensPredictedSecondsTotal: 10,
+            previousWallTicks: prevTicks,
+            currentTokensPredictedTotal: 1000,
+            currentTokensPredictedSecondsTotal: 10,
+            currentWallTicks: curTicks,
+            isBusy: true,
+            genTpsCompute: out _,
+            busyPercent: out _).Should().BeFalse();
+    }
+}
