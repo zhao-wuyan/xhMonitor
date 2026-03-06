@@ -46,9 +46,21 @@ export const MetricChart = ({ data, metricId, title, unit, color }: MetricChartP
         textStyle: {
           color: '#f3f4f6',
         },
-        formatter: (params: any) => {
-          const param = params[0];
-          return `${param.name}<br/>${param.seriesName}: ${param.value}${unit}`;
+        formatter: (params: unknown) => {
+          const first = Array.isArray(params) ? params[0] : params;
+          if (!first || typeof first !== 'object') return '';
+
+          const { name, seriesName, value } = first as {
+            name?: unknown;
+            seriesName?: unknown;
+            value?: unknown;
+          };
+
+          const resolvedName = typeof name === 'string' ? name : '';
+          const resolvedSeriesName = typeof seriesName === 'string' ? seriesName : '';
+          const resolvedValue = value == null ? '' : String(value);
+
+          return `${resolvedName}<br/>${resolvedSeriesName}: ${resolvedValue}${unit}`;
         },
       },
       grid: {

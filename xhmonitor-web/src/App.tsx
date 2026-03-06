@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Settings } from 'lucide-react';
-import { LayoutProvider, useLayout } from './contexts/LayoutContext';
+import { LayoutProvider } from './contexts/LayoutContext';
+import { useLayout } from './contexts/useLayout';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
-import { MetricsHubProvider, useMetricsHubContext } from './contexts/MetricsHubContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { MetricsHubProvider } from './contexts/MetricsHubContext';
+import { useMetricsHubContext } from './contexts/useMetricsHubContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/useAuth';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { useAdaptiveScroll } from './hooks/useAdaptiveScroll';
 import { t } from './i18n';
@@ -58,7 +61,6 @@ function AppShell() {
     const media = window.matchMedia('(max-width: 1023px)');
     const handler = (event: MediaQueryListEvent) => setIsCompactWidth(event.matches);
 
-    setIsCompactWidth(media.matches);
     media.addEventListener('change', handler);
     return () => media.removeEventListener('change', handler);
   }, []);

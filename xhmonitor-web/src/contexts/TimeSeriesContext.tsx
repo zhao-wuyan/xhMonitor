@@ -1,8 +1,6 @@
-import { createContext, useContext } from 'react';
+import { TimeSeriesContext } from './useTimeSeriesContext';
 import { useTimeSeries as useTimeSeriesHook } from '../hooks/useTimeSeries';
-import type { TimeSeriesResult, TimeSeriesOptions } from '../hooks/useTimeSeries';
-
-const TimeSeriesContext = createContext<TimeSeriesResult | null>(null);
+import type { TimeSeriesOptions } from '../hooks/useTimeSeries';
 
 interface TimeSeriesProviderProps {
   children: React.ReactNode;
@@ -16,12 +14,4 @@ export const TimeSeriesProvider = ({ children, options }: TimeSeriesProviderProp
       {children}
     </TimeSeriesContext.Provider>
   );
-};
-
-export const useTimeSeries = () => {
-  const context = useContext(TimeSeriesContext);
-  if (!context) {
-    throw new Error('useTimeSeries must be used within TimeSeriesProvider');
-  }
-  return context;
 };

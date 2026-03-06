@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useMemo, useRef } from 'react';
-import { useTimeSeries } from '../contexts/TimeSeriesContext';
+import { useTimeSeries } from '../contexts/useTimeSeriesContext';
 import MiniChartModule from '../../components/charts/MiniChart.js';
 
 export type ChartFormatFn = (value: number) => string;
@@ -50,19 +50,22 @@ const ChartCanvasBase = ({
   const safeId = useMemo(() => rawId.replace(/[:]/g, ''), [rawId]);
   const canvasId = useMemo(() => `xh-chart-canvas-${safeId}`, [safeId]);
   const containerId = useMemo(() => `xh-chart-container-${safeId}`, [safeId]);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const chartRef = useRef<MiniChartInstance | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastFrameRef = useRef(0);
-  const pendingDataRef = useRef<number[] | null>(null);
-  const maxValueRef = useRef(maxValue);
-  const refreshHzRef = useRef(clampRefreshHz(refreshHz));
 
   const resolvedFormat = useMemo<ChartFormatFn>(() => {
     if (formatFn) return formatFn;
     return (value) => `${value.toFixed(0)}%`;
   }, [formatFn]);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<MiniChartInstance | null>(null);
+  const colorRef = useRef(color);
+  const formatFnRef = useRef(resolvedFormat);
+  const rafRef = useRef<number | null>(null);
+  const lastFrameRef = useRef(0);
+  const pendingDataRef = useRef<number[] | null>(null);
+  const maxValueRef = useRef(maxValue);
+  const refreshHzRef = useRef(clampRefreshHz(refreshHz));
 
   const seriesData = data ?? getSeriesData(seriesKey);
 
@@ -85,7 +88,7 @@ const ChartCanvasBase = ({
 
     if (!ChartCtor) return;
 
-    const chart = new ChartCtor(canvasId, containerId, color, resolvedFormat);
+    const chart = new ChartCtor(canvasId, containerId, colorRef.current, formatFnRef.current);
     chartRef.current = chart;
 
     return () => {
@@ -99,6 +102,8 @@ const ChartCanvasBase = ({
   }, [canvasId, containerId]);
 
   useEffect(() => {
+    colorRef.current = color;
+    formatFnRef.current = resolvedFormat;
     if (!chartRef.current) return;
     chartRef.current.color = color;
     chartRef.current.formatFn = resolvedFormat;

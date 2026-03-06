@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { ChangeEventHandler } from 'react';
-import { useLayout } from '../contexts/LayoutContext';
+import { useLayout } from '../contexts/useLayout';
 import { useTheme } from '../hooks/useTheme';
 import { t } from '../i18n';
 import { clearBackgroundImage, saveBackgroundImageBlob } from '../utils/backgroundImageStore';

@@ -1,4 +1,5 @@
 import * as LucideIcons from 'lucide-react';
+import type { ComponentType, SVGProps } from 'react';
 import type { MetricMetadata } from '../types';
 import { formatPercent, formatBytes } from '../utils';
 import { t } from '../i18n';
@@ -11,9 +12,11 @@ interface SystemSummaryProps {
 }
 
 export const SystemSummary = ({ summary, metricMetadata, colorMap, iconMap }: SystemSummaryProps) => {
-  const getIcon = (iconName: string) => {
-    const Icon = (LucideIcons as any)[iconName] || LucideIcons.Activity;
-    return Icon;
+  type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+
+  const getIcon = (iconName: string): IconComponent => {
+    const icons = LucideIcons as unknown as Record<string, IconComponent>;
+    return icons[iconName] ?? LucideIcons.Activity;
   };
 
   const formatValue = (value: number, unit: string): string => {
