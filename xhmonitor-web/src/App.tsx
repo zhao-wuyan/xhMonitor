@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Settings } from 'lucide-react';
 import { LayoutProvider, useLayout } from './contexts/LayoutContext';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
+import { MetricsHubProvider, useMetricsHubContext } from './contexts/MetricsHubContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useMetricsHub } from './hooks/useMetricsHub';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { useAdaptiveScroll } from './hooks/useAdaptiveScroll';
 import { t } from './i18n';
 import { formatMegabytesParts, formatMegabytesLabel, formatNetworkRateLabel, formatNetworkRateParts } from './utils';
 import type { SystemUsage } from './types';
+import type { TimeSeriesOptions } from './hooks/useTimeSeries';
 
 // New components
 import { StatCard } from './components/StatCard';
@@ -22,7 +23,7 @@ import { AccessKeyScreen } from './pages/AccessKeyScreen';
 import { APP_VERSION_TAG } from './version';
 
 function AppShell() {
-  const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected, error } = useMetricsHubContext();
   const { config, loading: configLoading } = useMetricConfig();
   const { layoutState } = useLayout();
   const shellRef = useRef<HTMLDivElement>(null);
@@ -324,13 +325,19 @@ function AppShell() {
   );
 }
 
-function AppContent() {
+function AppContent({ timeSeriesOptions }: { timeSeriesOptions: TimeSeriesOptions }) {
   const { requiresAccessKey, authEpoch } = useAuth();
   if (requiresAccessKey) {
     return <AccessKeyScreen />;
   }
 
-  return <AppShell key={authEpoch} />;
+  return (
+    <MetricsHubProvider key={authEpoch}>
+      <TimeSeriesProvider options={timeSeriesOptions}>
+        <AppShell />
+      </TimeSeriesProvider>
+    </MetricsHubProvider>
+  );
 }
 
 function App() {
@@ -352,9 +359,7 @@ function App() {
   return (
     <AuthProvider>
       <LayoutProvider>
-        <TimeSeriesProvider options={timeSeriesOptions}>
-          <AppContent />
-        </TimeSeriesProvider>
+        <AppContent timeSeriesOptions={timeSeriesOptions} />
       </LayoutProvider>
     </AuthProvider>
   );

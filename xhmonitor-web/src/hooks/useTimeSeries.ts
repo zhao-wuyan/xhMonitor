@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SystemUsage } from '../types';
-import { useMetricsHub } from './useMetricsHub';
+import { useMetricsHubContext } from '../contexts/MetricsHubContext';
 
 export interface TimeSeriesOptions {
   maxLength?: number;
@@ -48,7 +48,7 @@ const pushValue = (series: number[], value: number, maxLength: number): number[]
 };
 
 export const useTimeSeries = (options: TimeSeriesOptions = {}): TimeSeriesResult => {
-  const { systemUsage } = useMetricsHub();
+  const { systemUsage } = useMetricsHubContext();
   const maxLength = options.maxLength ?? 60;
   const selectors = useMemo(() => options.selectors ?? DEFAULT_SELECTORS, [options.selectors]);
   const [series, setSeries] = useState<Record<string, number[]>>(() =>
