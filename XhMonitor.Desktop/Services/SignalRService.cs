@@ -12,7 +12,6 @@ public class SignalRService : IAsyncDisposable
     private readonly string _hubUrl;
     private const string DefaultHubUrl = "http://localhost:35179/hubs/metrics";
 
-    public event Action<MetricsDataDto>? MetricsReceived;
     public event Action<HardwareLimitsDto>? HardwareLimitsReceived;
     public event Action<SystemUsageDto>? SystemUsageReceived;
     public event Action<ProcessDataDto>? ProcessDataReceived;
@@ -100,20 +99,6 @@ public class SignalRService : IAsyncDisposable
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to deserialize process metadata: {ex.Message}");
                 _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "ProcessMetadata");
-            }
-        });
-
-        _connection.On<JsonElement>("metrics.latest", (data) =>
-        {
-            try
-            {
-                var metrics = DeserializePayload<MetricsDataDto>(data, jsonOptions);
-                if (metrics != null) MetricsReceived?.Invoke(metrics);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to deserialize metrics: {ex.Message}");
-                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "metrics.latest");
             }
         });
 

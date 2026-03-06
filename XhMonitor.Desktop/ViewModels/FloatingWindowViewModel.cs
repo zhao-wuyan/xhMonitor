@@ -181,7 +181,6 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     {
         serviceDiscovery ??= new ServiceDiscovery();
         _signalRService = new SignalRService(serviceDiscovery.SignalRUrl);
-        _signalRService.MetricsReceived += OnMetricsReceived;
         _signalRService.HardwareLimitsReceived += OnHardwareLimitsReceived;
         _signalRService.SystemUsageReceived += OnSystemUsageReceived;
         _signalRService.ProcessDataReceived += OnProcessDataReceived;
@@ -366,46 +365,6 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         }
     }
 
-    private void OnMetricsReceived(MetricsDataDto data)
-    {
-        var dispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (dispatcher == null || dispatcher.HasShutdownStarted) return;
-
-        _ = dispatcher.BeginInvoke(new Action(() =>
-        {
-            if (data.SystemStats != null)
-            {
-                TotalCpu = data.SystemStats.TotalCpu;
-                TotalGpu = data.SystemStats.TotalGpu;
-                TotalMemory = data.SystemStats.TotalMemory;
-                TotalVram = data.SystemStats.TotalVram;
-                MaxMemory = data.SystemStats.MaxMemory;
-                MaxVram = data.SystemStats.MaxVram;
-                TotalPower = data.SystemStats.TotalPower;
-                MaxPower = data.SystemStats.MaxPower;
-            }
-            else
-            {
-                double totalCpu = 0, totalMemory = 0, totalGpu = 0, totalVram = 0;
-
-                foreach (var p in data.Processes)
-                {
-                    totalCpu += GetMetricValue(p, "cpu");
-                    totalMemory += GetMetricValue(p, "memory");
-                    totalGpu += GetMetricValue(p, "gpu");
-                    totalVram += GetMetricValue(p, "vram");
-                }
-
-                TotalCpu = totalCpu;
-                TotalMemory = totalMemory;
-                TotalGpu = totalGpu;
-                TotalVram = totalVram;
-            }
-
-            QueueProcessRefresh(data.Processes);
-        }));
-    }
-
     private void QueueProcessRefresh(IReadOnlyList<ProcessInfoDto> processes)
     {
         if (!_enableProcessRefreshThrottling)
@@ -463,6 +422,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         _pendingProcesses = null;
         _lastProcessRefreshUtc = DateTime.UtcNow;
 
+        if (!IsDetailsVisible)
+        {
+            SyncPinnedProcessRows(processes);
+            SyncPinnedCollection();
+            return;
+        }
+
         SyncProcessIndex(processes);
 
         var orderedAll = processes
@@ -513,6 +479,47 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         {
             _processIndex.Remove(id);
             _pinnedProcessIds.Remove(id);
+        }
+    }
+
+    private void SyncPinnedProcessRows(IEnumerable<ProcessInfoDto> processes)
+    {
+        if (_pinnedProcessIds.Count == 0)
+        {
+            return;
+        }
+
+        var seenPinned = new HashSet<int>();
+
+        foreach (var p in processes)
+        {
+            if (!_pinnedProcessIds.Contains(p.ProcessId))
+            {
+                continue;
+            }
+
+            seenPinned.Add(p.ProcessId);
+
+            if (!_processIndex.TryGetValue(p.ProcessId, out var row))
+            {
+                row = new ProcessRowViewModel(p);
+                _processIndex[p.ProcessId] = row;
+            }
+            else
+            {
+                row.UpdateFrom(p);
+            }
+            row.IsPinned = true;
+        }
+
+        foreach (var id in _pinnedProcessIds.Where(id => !seenPinned.Contains(id)).ToList())
+        {
+            _pinnedProcessIds.Remove(id);
+            if (_processIndex.TryGetValue(id, out var row))
+            {
+                row.IsPinned = false;
+                _processIndex.Remove(id);
+            }
         }
     }
 
@@ -578,16 +585,12 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         }
     }
 
-    private static double GetMetricValue(ProcessInfoDto dto, string key)
-        => dto.Metrics.GetValueOrDefault(key);
-
     public async ValueTask DisposeAsync()
     {
         _processRefreshTimer.Stop();
         _processRefreshTimer.Tick -= OnProcessRefreshTimerTick;
         _pendingProcesses = null;
 
-        _signalRService.MetricsReceived -= OnMetricsReceived;
         _signalRService.HardwareLimitsReceived -= OnHardwareLimitsReceived;
         _signalRService.SystemUsageReceived -= OnSystemUsageReceived;
         _signalRService.ProcessDataReceived -= OnProcessDataReceived;

@@ -76,6 +76,10 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         @"^([+-]?\d+(?:\.\d+)?)(.*)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+    private const int TextMeasureCacheMaxEntries = 2048;
+    private static readonly object TextMeasureCacheLock = new();
+    private static readonly Dictionary<TextMeasureKey, TextMeasureResult> TextMeasureCache = new();
+
     private static readonly WpfBrush NetworkLabelBrush = CreateBrush(0x56, 0xB4, 0xE9);
     private static readonly WpfBrush CpuLabelBrush = CreateBrush(0xD5, 0x5E, 0x00);
     private static readonly WpfBrush MemoryLabelBrush = CreateBrush(0xF0, 0xE4, 0x42);
@@ -103,6 +107,20 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
     private bool _powerAvailable;
     private EdgeDockSide _dockSide = EdgeDockSide.Bottom;
     private bool _isDocked = true;
+
+    private bool _hasLayoutSnapshot;
+    private bool _lastLayoutIsVertical;
+    private bool _lastLayoutUseBarVisual;
+    private double _lastLayoutGap;
+    private ColumnLayoutMetricKey[] _lastLayoutMetricKeys = Array.Empty<ColumnLayoutMetricKey>();
+    private int _columnLayoutRebuildCount;
+
+    private double _cachedExpectedMaxMemoryValue;
+    private string _cachedExpectedMaxMemoryText = string.Empty;
+    private double _cachedExpectedMaxVramValue;
+    private string _cachedExpectedMaxVramText = string.Empty;
+    private double _cachedExpectedMaxPowerValue;
+    private string _cachedExpectedMaxPowerText = string.Empty;
 
     private double _windowWidth = 260;
     public double WindowWidth
@@ -205,37 +223,40 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         var dispatcher = WpfApplication.Current?.Dispatcher;
         if (dispatcher == null || dispatcher.HasShutdownStarted)
         {
+            ApplySystemUsage(data);
             return;
         }
 
-        _ = dispatcher.BeginInvoke(new Action(() =>
+        _ = dispatcher.BeginInvoke(new Action(() => ApplySystemUsage(data)));
+    }
+
+    private void ApplySystemUsage(SystemUsageDto data)
+    {
+        _totalCpu = data.TotalCpu;
+        _totalMemory = data.TotalMemory;
+        _totalGpu = data.TotalGpu;
+        _totalVram = data.TotalVram;
+        _totalPower = data.TotalPower;
+        _uploadSpeed = data.UploadSpeed;
+        _downloadSpeed = data.DownloadSpeed;
+        _powerAvailable = data.PowerAvailable;
+
+        if (data.MaxMemory > 0)
         {
-            _totalCpu = data.TotalCpu;
-            _totalMemory = data.TotalMemory;
-            _totalGpu = data.TotalGpu;
-            _totalVram = data.TotalVram;
-            _totalPower = data.TotalPower;
-            _uploadSpeed = data.UploadSpeed;
-            _downloadSpeed = data.DownloadSpeed;
-            _powerAvailable = data.PowerAvailable;
+            _maxMemory = data.MaxMemory;
+        }
 
-            if (data.MaxMemory > 0)
-            {
-                _maxMemory = data.MaxMemory;
-            }
+        if (data.MaxPower > 0)
+        {
+            _maxPower = data.MaxPower;
+        }
 
-            if (data.MaxPower > 0)
-            {
-                _maxPower = data.MaxPower;
-            }
+        if (data.MaxVram > 0)
+        {
+            _maxVram = data.MaxVram;
+        }
 
-            if (data.MaxVram > 0)
-            {
-                _maxVram = data.MaxVram;
-            }
-
-            RebuildColumns();
-        }));
+        RebuildColumns();
     }
 
     private void OnHardwareLimitsReceived(HardwareLimitsDto data)
@@ -243,23 +264,26 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         var dispatcher = WpfApplication.Current?.Dispatcher;
         if (dispatcher == null || dispatcher.HasShutdownStarted)
         {
+            ApplyHardwareLimits(data);
             return;
         }
 
-        _ = dispatcher.BeginInvoke(new Action(() =>
+        _ = dispatcher.BeginInvoke(new Action(() => ApplyHardwareLimits(data)));
+    }
+
+    private void ApplyHardwareLimits(HardwareLimitsDto data)
+    {
+        if (data.MaxMemory > 0)
         {
-            if (data.MaxMemory > 0)
-            {
-                _maxMemory = data.MaxMemory;
-            }
+            _maxMemory = data.MaxMemory;
+        }
 
-            if (data.MaxVram > 0)
-            {
-                _maxVram = data.MaxVram;
-            }
+        if (data.MaxVram > 0)
+        {
+            _maxVram = data.MaxVram;
+        }
 
-            RebuildColumns();
-        }));
+        RebuildColumns();
     }
 
     private void RebuildColumns()
@@ -272,6 +296,17 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
 
         var isVertical = _isDocked && _dockSide is EdgeDockSide.Left or EdgeDockSide.Right;
         var useBarVisual = IsBarVisualStyle();
+        var gap = ResolveGap(isVertical);
+
+        var layoutInputsUnchanged = LayoutInputsUnchanged(metrics, isVertical, useBarVisual, gap);
+        if (layoutInputsUnchanged && Columns.Count == metrics.Count)
+        {
+            UpdateColumns(metrics, isVertical, useBarVisual, gap);
+            return;
+        }
+
+        _columnLayoutRebuildCount++;
+
         PanelOrientation = isVertical ? WpfOrientation.Vertical : WpfOrientation.Horizontal;
         LabelFontSize = LabelFontSizeValue;
         ValueFontSize = ValueFontSizeValue;
@@ -283,7 +318,6 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         WindowPadding = isVertical
             ? new Thickness(sideDockLeftPadding, sideDockVerticalPadding, sideDockRightPadding, sideDockVerticalPadding)
             : new Thickness(HorizontalModeHorizontalPadding, UnifiedVerticalPadding, HorizontalModeHorizontalPadding, UnifiedVerticalPadding);
-        var gap = ResolveGap(isVertical);
 
         var desired = new List<TaskbarMetricColumn>(metrics.Count);
         double maxColumnWidth = 0;
@@ -396,6 +430,110 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         SyncColumns(desired);
     }
 
+    private void UpdateColumns(IReadOnlyList<MetricItem> metrics, bool isVertical, bool useBarVisual, double gap)
+    {
+        for (var i = 0; i < metrics.Count; i++)
+        {
+            var metric = metrics[i];
+            var labelCurrent = useBarVisual
+                ? NormalizeInlineText(metric.LabelText)
+                : BuildDisplayText(metric.LabelText, isVertical);
+            var barUnitCurrent = useBarVisual
+                ? BuildBarUnitText(metric, isVertical, useMaxValue: false)
+                : string.Empty;
+            var valueCurrent = useBarVisual
+                ? BuildBarValueText(metric, isVertical)
+                : BuildDisplayText(metric.ValueText, isVertical);
+
+            var margin = isVertical
+                ? new Thickness(0, 0, 0, i == metrics.Count - 1 ? 0 : gap)
+                : new Thickness(0, 0, i == metrics.Count - 1 ? 0 : gap, 0);
+
+            var column = Columns[i];
+            column.LabelText = labelCurrent;
+            column.ValueText = valueCurrent;
+            column.LabelBrush = metric.LabelBrush;
+            column.LabelMargin = useBarVisual
+                ? new Thickness(0)
+                : (isVertical
+                    ? new Thickness(0, 0, 0, LabelValueGap)
+                    : new Thickness(0, 0, LabelValueGap, 0));
+            column.IsVertical = isVertical;
+            column.UseBarVisual = useBarVisual;
+            column.IsBarMetric = useBarVisual && metric.IsBarMetric;
+            column.BarTrackWidth = isVertical ? BarTrackWidthVertical : BarTrackWidthHorizontal;
+            column.BarTrackHeight = isVertical ? BarTrackHeightVertical : BarTrackHeightHorizontal;
+            column.BarFillLength = useBarVisual && metric.IsBarMetric
+                ? CalculateBarFillLength(metric.FillPercent, isVertical)
+                : 0;
+            column.BarDisplayText = useBarVisual && metric.IsBarMetric
+                ? FormatBarPercent(metric.FillPercent, includeSuffix: !isVertical)
+                : string.Empty;
+            column.BarUnitText = useBarVisual ? barUnitCurrent : string.Empty;
+            column.BarTextBrush = useBarVisual && metric.IsBarMetric
+                ? ResolveBarTextBrush(metric, isVertical)
+                : BarTextLightBrush;
+            column.Margin = margin;
+        }
+    }
+
+    private bool LayoutInputsUnchanged(IReadOnlyList<MetricItem> metrics, bool isVertical, bool useBarVisual, double gap)
+    {
+        var metricKeys = new ColumnLayoutMetricKey[metrics.Count];
+
+        for (var i = 0; i < metrics.Count; i++)
+        {
+            var metric = metrics[i];
+            metricKeys[i] = new ColumnLayoutMetricKey(
+                metric.LabelText,
+                metric.LabelMaxText,
+                metric.ValueMaxText,
+                metric.IsBarMetric,
+                ExtractUnitToken(metric.ValueText));
+        }
+
+        if (!_hasLayoutSnapshot)
+        {
+            UpdateLayoutSnapshot(isVertical, useBarVisual, gap, metricKeys);
+            return false;
+        }
+
+        if (_lastLayoutIsVertical != isVertical ||
+            _lastLayoutUseBarVisual != useBarVisual ||
+            _lastLayoutGap != gap ||
+            _lastLayoutMetricKeys.Length != metricKeys.Length)
+        {
+            UpdateLayoutSnapshot(isVertical, useBarVisual, gap, metricKeys);
+            return false;
+        }
+
+        for (var i = 0; i < metricKeys.Length; i++)
+        {
+            if (!_lastLayoutMetricKeys[i].Equals(metricKeys[i]))
+            {
+                UpdateLayoutSnapshot(isVertical, useBarVisual, gap, metricKeys);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void UpdateLayoutSnapshot(bool isVertical, bool useBarVisual, double gap, ReadOnlySpan<ColumnLayoutMetricKey> metricKeys)
+    {
+        _lastLayoutIsVertical = isVertical;
+        _lastLayoutUseBarVisual = useBarVisual;
+        _lastLayoutGap = gap;
+
+        if (_lastLayoutMetricKeys.Length != metricKeys.Length)
+        {
+            _lastLayoutMetricKeys = new ColumnLayoutMetricKey[metricKeys.Length];
+        }
+
+        metricKeys.CopyTo(_lastLayoutMetricKeys);
+        _hasLayoutSnapshot = true;
+    }
+
     private double ResolveGap(bool isVertical)
     {
         var configured = Math.Clamp(_displaySettings.DockColumnGap, 0, 24);
@@ -459,12 +597,13 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
 
         if (_displaySettings.MonitorMemory && IsFiniteNonNegative(_totalMemory))
         {
-            var memoryPercent = CalculateUsagePercent(_totalMemory, GetExpectedMaxMemory());
+            var expectedMaxMemory = GetExpectedMaxMemory();
+            var memoryPercent = CalculateUsagePercent(_totalMemory, expectedMaxMemory);
             items.Add(new MetricItem(
                 _displaySettings.DockMemoryLabel,
                 CompactUnitFormatter.FormatMemoryFromMegabytes(_totalMemory),
                 _displaySettings.DockMemoryLabel,
-                CompactUnitFormatter.FormatMemoryFromMegabytes(GetExpectedMaxMemory()),
+                GetCachedMaxMemoryText(expectedMaxMemory),
                 MemoryLabelBrush,
                 true,
                 memoryPercent));
@@ -484,12 +623,13 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
 
         if (_displaySettings.MonitorVram && HasVramMetricData())
         {
-            var vramPercent = CalculateUsagePercent(_totalVram, GetExpectedMaxVram());
+            var expectedMaxVram = GetExpectedMaxVram();
+            var vramPercent = CalculateUsagePercent(_totalVram, expectedMaxVram);
             items.Add(new MetricItem(
                 _displaySettings.DockVramLabel,
                 CompactUnitFormatter.FormatMemoryFromMegabytes(_totalVram),
                 _displaySettings.DockVramLabel,
-                CompactUnitFormatter.FormatMemoryFromMegabytes(GetExpectedMaxVram()),
+                GetCachedMaxVramText(expectedMaxVram),
                 VramLabelBrush,
                 true,
                 vramPercent));
@@ -497,18 +637,52 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
 
         if (_displaySettings.MonitorPower && _powerAvailable && IsFiniteNonNegative(_totalPower))
         {
-            var powerPercent = CalculateUsagePercent(_totalPower, GetExpectedMaxPower());
+            var expectedMaxPower = GetExpectedMaxPower();
+            var powerPercent = CalculateUsagePercent(_totalPower, expectedMaxPower);
             items.Add(new MetricItem(
                 _displaySettings.DockPowerLabel,
                 CompactUnitFormatter.FormatPower(_totalPower),
                 _displaySettings.DockPowerLabel,
-                CompactUnitFormatter.FormatPower(GetExpectedMaxPower()),
+                GetCachedMaxPowerText(expectedMaxPower),
                 PowerLabelBrush,
                 true,
                 powerPercent));
         }
 
         return items;
+    }
+
+    private string GetCachedMaxMemoryText(double expectedMaxMemory)
+    {
+        if (!expectedMaxMemory.Equals(_cachedExpectedMaxMemoryValue) || string.IsNullOrEmpty(_cachedExpectedMaxMemoryText))
+        {
+            _cachedExpectedMaxMemoryValue = expectedMaxMemory;
+            _cachedExpectedMaxMemoryText = CompactUnitFormatter.FormatMemoryFromMegabytes(expectedMaxMemory);
+        }
+
+        return _cachedExpectedMaxMemoryText;
+    }
+
+    private string GetCachedMaxVramText(double expectedMaxVram)
+    {
+        if (!expectedMaxVram.Equals(_cachedExpectedMaxVramValue) || string.IsNullOrEmpty(_cachedExpectedMaxVramText))
+        {
+            _cachedExpectedMaxVramValue = expectedMaxVram;
+            _cachedExpectedMaxVramText = CompactUnitFormatter.FormatMemoryFromMegabytes(expectedMaxVram);
+        }
+
+        return _cachedExpectedMaxVramText;
+    }
+
+    private string GetCachedMaxPowerText(double expectedMaxPower)
+    {
+        if (!expectedMaxPower.Equals(_cachedExpectedMaxPowerValue) || string.IsNullOrEmpty(_cachedExpectedMaxPowerText))
+        {
+            _cachedExpectedMaxPowerValue = expectedMaxPower;
+            _cachedExpectedMaxPowerText = CompactUnitFormatter.FormatPower(expectedMaxPower);
+        }
+
+        return _cachedExpectedMaxPowerText;
     }
 
     private bool HasVramMetricData()
@@ -865,21 +1039,32 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
     }
 
     private static double MeasureTextWidth(string text, Typeface typeface, double fontSize)
-    {
-        var formatted = new FormattedText(
-            text,
-            CultureInfo.CurrentUICulture,
-            WpfFlowDirection.LeftToRight,
-            typeface,
-            fontSize,
-            WpfBrushes.White,
-            1.0);
-
-        return formatted.WidthIncludingTrailingWhitespace;
-    }
+        => MeasureText(text, typeface, fontSize).Width;
 
     private static double MeasureTextHeight(string text, Typeface typeface, double fontSize)
+        => MeasureText(text, typeface, fontSize).Height;
+
+    private static TextMeasureResult MeasureText(string text, Typeface typeface, double fontSize)
     {
+        text ??= string.Empty;
+
+        var key = new TextMeasureKey(
+            text,
+            typeface.FontFamily.Source,
+            typeface.Style,
+            typeface.Weight,
+            typeface.Stretch,
+            fontSize,
+            CultureInfo.CurrentUICulture.Name);
+
+        lock (TextMeasureCacheLock)
+        {
+            if (TextMeasureCache.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+        }
+
         var formatted = new FormattedText(
             text,
             CultureInfo.CurrentUICulture,
@@ -889,7 +1074,19 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
             WpfBrushes.White,
             1.0);
 
-        return formatted.Height;
+        var measured = new TextMeasureResult(formatted.WidthIncludingTrailingWhitespace, formatted.Height);
+
+        lock (TextMeasureCacheLock)
+        {
+            if (TextMeasureCache.Count >= TextMeasureCacheMaxEntries)
+            {
+                TextMeasureCache.Clear();
+            }
+
+            TextMeasureCache[key] = measured;
+        }
+
+        return measured;
     }
 
     private static void SyncColumns(ObservableCollection<TaskbarMetricColumn> collection, IList<TaskbarMetricColumn> desired)
@@ -999,6 +1196,24 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         WpfBrush LabelBrush,
         bool IsBarMetric,
         double FillPercent);
+
+    private readonly record struct ColumnLayoutMetricKey(
+        string LabelText,
+        string LabelMaxText,
+        string ValueMaxText,
+        bool IsBarMetric,
+        string UnitToken);
+
+    private readonly record struct TextMeasureKey(
+        string Text,
+        string FontFamilySource,
+        System.Windows.FontStyle Style,
+        FontWeight Weight,
+        FontStretch Stretch,
+        double FontSize,
+        string CultureName);
+
+    private readonly record struct TextMeasureResult(double Width, double Height);
 
     private readonly record struct MetricLayout(double Width, double Height);
 }

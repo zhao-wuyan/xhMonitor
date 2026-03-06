@@ -193,7 +193,7 @@ http://localhost:WebPort
 ### FloatingWindowViewModel
 
 - 职责：悬浮窗的全量数据状态和进程列表管理
-- SignalR 订阅：`MetricsReceived`、`SystemUsageReceived`、`HardwareLimitsReceived`、`ProcessDataReceived`、`ProcessMetaReceived`、`ConnectionStateChanged`
+- SignalR 订阅：`SystemUsageReceived`、`HardwareLimitsReceived`、`ProcessDataReceived`、`ProcessMetaReceived`、`ConnectionStateChanged`
 - 进程列表维护：`_processIndex`（Dictionary keyed by PID）、`TopProcesses`（内存+显存前5）、`PinnedProcesses`（置顶）、`AllProcesses`（全量）
 - 进程刷新节流：`DispatcherTimer` + 可配置间隔（默认 150ms），由 `UiOptimizationOptions` 控制
 - 面板状态：`Collapsed` / `Expanded` / `Locked` / `Clickthrough`
@@ -215,7 +215,6 @@ http://localhost:WebPort
 | `ReceiveSystemUsage` | `SystemUsageReceived` | `SystemUsageDto`（CPU/内存/GPU/显存/功耗/网速/电源方案） |
 | `ReceiveProcessMetrics` | `ProcessDataReceived` | `ProcessDataDto`（进程指标列表） |
 | `ReceiveProcessMetadata` | `ProcessMetaReceived` | `ProcessMetaDto`（进程元数据：名称/命令行/DisplayName） |
-| `metrics.latest` | `MetricsReceived` | `MetricsDataDto`（聚合数据，含 SystemStats + Processes） |
 
 特性：
 - `WithAutomaticReconnect()` 自动重连

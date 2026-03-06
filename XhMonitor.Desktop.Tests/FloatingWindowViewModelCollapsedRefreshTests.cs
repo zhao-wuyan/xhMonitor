@@ -1,0 +1,129 @@
+using System.Reflection;
+using FluentAssertions;
+using Microsoft.Extensions.Options;
+using XhMonitor.Desktop.Configuration;
+using XhMonitor.Desktop.Models;
+using XhMonitor.Desktop.Services;
+using XhMonitor.Desktop.ViewModels;
+using Xunit;
+
+namespace XhMonitor.Desktop.Tests;
+
+public class FloatingWindowViewModelCollapsedRefreshTests
+{
+    private sealed class FakeServiceDiscovery : IServiceDiscovery
+    {
+        public string ApiBaseUrl { get; init; } = "http://localhost:35179";
+        public string SignalRUrl { get; init; } = "http://localhost:35179/hubs/metrics";
+        public int ApiPort { get; init; } = 35179;
+        public int SignalRPort { get; init; } = 35179;
+        public int WebPort { get; init; } = 35180;
+    }
+
+    [Fact]
+    public void DoneWhen_Collapsed_ShouldSkipAllProcessCollectionSync_ButKeepPinnedUpdated()
+    {
+        var vm = new FloatingWindowViewModel(
+            new FakeServiceDiscovery(),
+            Options.Create(new UiOptimizationOptions { EnableProcessRefreshThrottling = false }));
+
+        vm.OnBarPointerEnter();
+        vm.IsDetailsVisible.Should().BeTrue();
+
+        var initial = new List<ProcessInfoDto>
+        {
+            new()
+            {
+                ProcessId = 1,
+                ProcessName = "pinned",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 100
+                }
+            },
+            new()
+            {
+                ProcessId = 2,
+                ProcessName = "regular",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 200
+                }
+            }
+        };
+
+        QueueProcessRefresh(vm, initial);
+
+        vm.AllProcesses.Select(row => row.ProcessId).Should().Equal(2, 1);
+        vm.TopProcesses.Select(row => row.ProcessId).Should().Equal(2, 1);
+
+        var pinnedRow = vm.AllProcesses.Single(row => row.ProcessId == 1);
+        var regularRow = vm.AllProcesses.Single(row => row.ProcessId == 2);
+
+        vm.TogglePin(pinnedRow);
+        vm.PinnedProcesses.Select(row => row.ProcessId).Should().Equal(1);
+
+        var pinnedMemoryBefore = pinnedRow.Memory;
+        var regularMemoryBefore = regularRow.Memory;
+
+        vm.OnBarPointerLeave();
+        vm.IsDetailsVisible.Should().BeFalse();
+
+        var updated = new List<ProcessInfoDto>
+        {
+            new()
+            {
+                ProcessId = 1,
+                ProcessName = "pinned",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 1000
+                }
+            },
+            new()
+            {
+                ProcessId = 2,
+                ProcessName = "regular",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 300
+                }
+            },
+            new()
+            {
+                ProcessId = 3,
+                ProcessName = "new",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 500
+                }
+            }
+        };
+
+        QueueProcessRefresh(vm, updated);
+
+        vm.AllProcesses.Should().HaveCount(2);
+        vm.AllProcesses.Select(row => row.ProcessId).Should().Equal(2, 1);
+        vm.TopProcesses.Should().HaveCount(2);
+        vm.TopProcesses.Select(row => row.ProcessId).Should().Equal(2, 1);
+
+        regularRow.Memory.Should().Be(regularMemoryBefore);
+        pinnedRow.Memory.Should().NotBe(pinnedMemoryBefore);
+        pinnedRow.Memory.Should().Be(1000);
+
+        vm.PinnedProcesses.Should().HaveCount(1);
+        vm.PinnedProcesses[0].ProcessId.Should().Be(1);
+        vm.PinnedProcesses[0].Memory.Should().Be(1000);
+    }
+
+    private static void QueueProcessRefresh(FloatingWindowViewModel vm, IReadOnlyList<ProcessInfoDto> processes)
+    {
+        var method = typeof(FloatingWindowViewModel).GetMethod(
+            "QueueProcessRefresh",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        method.Should().NotBeNull();
+
+        method!.Invoke(vm, new object[] { processes });
+    }
+}
+

@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Core.Configuration;
 using XhMonitor.Desktop.Models;
 using XhMonitor.Desktop.ViewModels;
+using ScrollBar = System.Windows.Controls.Primitives.ScrollBar;
 using WinFormsCursor = System.Windows.Forms.Cursor;
 using WinFormsScreen = System.Windows.Forms.Screen;
 
@@ -28,6 +29,7 @@ public partial class FloatingWindow : Window
     private const long WS_EX_TRANSPARENT = 0x20L;
     private const double DRAG_THRESHOLD = 5.0; // 拖动阈值(像素)
     private const double EDGE_DOCK_SNAP_DISTANCE = 24.0; // 贴边触发的近边阈值(像素)
+    private const string ScrollViewerVerticalScrollBarPartName = "PART_VerticalScrollBar";
 
     private readonly FloatingWindowViewModel _viewModel;
     private readonly WindowPositionStore _positionStore;
@@ -55,7 +57,9 @@ public partial class FloatingWindow : Window
 
     // 滚动条隐藏相关
     private DispatcherTimer? _scrollBarHideTimer;
-    private double _lastVerticalOffset;
+    private ScrollViewer? _cachedScrollBarOwner;
+    private ScrollBar? _cachedVerticalScrollBar;
+    private ScrollBar? _activeVerticalScrollBar;
 
     public bool IsClickThroughEnabled { get; private set; }
 
@@ -933,35 +937,59 @@ public partial class FloatingWindow : Window
         timer.Start();
     }
 
+    private ScrollBar? GetOrCacheVerticalScrollBar(ScrollViewer scrollViewer)
+    {
+        if (ReferenceEquals(scrollViewer, _cachedScrollBarOwner))
+        {
+            return _cachedVerticalScrollBar;
+        }
+
+        scrollViewer.ApplyTemplate();
+        var scrollBar = scrollViewer.Template.FindName(ScrollViewerVerticalScrollBarPartName, scrollViewer) as ScrollBar;
+        scrollBar ??= FindVisualChild<ScrollBar>(scrollViewer);
+
+        _cachedScrollBarOwner = scrollViewer;
+        _cachedVerticalScrollBar = scrollBar;
+        return scrollBar;
+    }
+
+    private void EnsureScrollBarHideTimer()
+    {
+        if (_scrollBarHideTimer != null)
+        {
+            return;
+        }
+
+        _scrollBarHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        _scrollBarHideTimer.Tick += (_, _) =>
+        {
+            _scrollBarHideTimer?.Stop();
+            if (_activeVerticalScrollBar != null)
+            {
+                _activeVerticalScrollBar.Opacity = 0;
+                _activeVerticalScrollBar = null;
+            }
+        };
+    }
+
     private void ProcessScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         // 只在垂直滚动位置变化时处理
-        if (Math.Abs(e.VerticalOffset - _lastVerticalOffset) < 0.1) return;
-        _lastVerticalOffset = e.VerticalOffset;
+        if (Math.Abs(e.VerticalChange) < 0.1) return;
 
-        if (sender is not ScrollViewer scrollViewer) return;
+        if (e.OriginalSource is not ScrollViewer scrollViewer) return;
+        if (sender is ScrollViewer senderScrollViewer && !ReferenceEquals(senderScrollViewer, scrollViewer)) return;
 
         // 找到滚动条并显示
-        var scrollBar = FindVisualChild<System.Windows.Controls.Primitives.ScrollBar>(scrollViewer);
-        if (scrollBar != null)
-        {
-            scrollBar.Opacity = 1;
-        }
+        var scrollBar = GetOrCacheVerticalScrollBar(scrollViewer);
+        if (scrollBar == null) return;
+
+        scrollBar.Opacity = 1;
+        _activeVerticalScrollBar = scrollBar;
 
         // 重置隐藏计时器
-        _scrollBarHideTimer?.Stop();
-        _scrollBarHideTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(600)
-        };
-        _scrollBarHideTimer.Tick += (s, args) =>
-        {
-            _scrollBarHideTimer?.Stop();
-            if (scrollBar != null)
-            {
-                scrollBar.Opacity = 0;
-            }
-        };
+        EnsureScrollBarHideTimer();
+        _scrollBarHideTimer!.Stop();
         _scrollBarHideTimer.Start();
     }
 

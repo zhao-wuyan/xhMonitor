@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Lock, Unlock, MousePointer2, WifiOff } from 'lucide-react';
 import { useMetricsHub } from '../../hooks/useMetricsHub';
 import { useMetricConfig } from '../../hooks/useMetricConfig';
 import { useWidgetConfig } from '../../hooks/useWidgetConfig';
-import { calculateSystemSummary, formatPercent, formatBytes } from '../../utils';
+import { calculateSystemSummary, formatPercent, formatBytes, selectTopNProcessesByMetric } from '../../utils';
 import { t } from '../../i18n';
 import type { ProcessInfo } from '../../types';
 
@@ -14,35 +14,24 @@ export const FloatingWidget = () => {
   const { config } = useMetricConfig();
   const { isMetricClickEnabled, getMetricAction } = useWidgetConfig();
   const [state, setState] = useState<WidgetState>('collapsed');
-  const [isHovering, setIsHovering] = useState(false);
+  const processes = metricsData?.processes;
+
+  const summaryMetricIds = useMemo(() => {
+    if (!config) return [];
+    return config.metadata.slice(0, 5).map((metric) => metric.metricId);
+  }, [config]);
 
   // 计算系统总占用
   const summary = useMemo(() => {
-    if (!metricsData) return null;
-    return calculateSystemSummary(metricsData.processes, systemUsage);
-  }, [metricsData, systemUsage]);
+    if (!processes || summaryMetricIds.length === 0) return null;
+    return calculateSystemSummary(processes, systemUsage, summaryMetricIds);
+  }, [processes, systemUsage, summaryMetricIds]);
 
-  // 获取前5个进程（按 CPU 占用排序）
+  // 获取前5个进程（按 CPU 占用排序），避免全量排序
   const top5Processes = useMemo(() => {
-    if (!metricsData?.processes) return [];
-
-    return [...metricsData.processes]
-      .sort((a, b) => {
-        const aCpu = a.metrics['cpu'] ?? 0;
-        const bCpu = b.metrics['cpu'] ?? 0;
-        return bCpu - aCpu;
-      })
-      .slice(0, 5);
-  }, [metricsData]);
-
-  // 状态转换逻辑
-  useEffect(() => {
-    if (state === 'collapsed' && isHovering) {
-      setState('expanded');
-    } else if (state === 'expanded' && !isHovering) {
-      setState('collapsed');
-    }
-  }, [isHovering, state]);
+    if (state === 'collapsed' || !processes) return [];
+    return selectTopNProcessesByMetric(processes, 'cpu', 5);
+  }, [processes, state]);
 
   // 处理背景区域点击（锁定展开状态）
   const handleBackgroundClick = (e: React.MouseEvent) => {
@@ -138,8 +127,16 @@ export const FloatingWidget = () => {
   return (
     <div
       className={`widget-container ${state}`}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+      onMouseEnter={() => {
+        if (state === 'collapsed') {
+          setState('expanded');
+        }
+      }}
+      onMouseLeave={() => {
+        if (state === 'expanded') {
+          setState('collapsed');
+        }
+      }}
       onClick={handleBackgroundClick}
       style={{
         position: 'fixed',
@@ -259,9 +256,9 @@ export const FloatingWidget = () => {
             flexDirection: 'column',
             gap: '8px'
           }}>
-            {top5Processes.map((process, index) => (
+            {top5Processes.map((process) => (
               <div
-                key={`${process.processId}-${index}`}
+                key={process.processId}
                 className="process-row"
                 onClick={(e) => handleProcessClick(process, e)}
                 style={{

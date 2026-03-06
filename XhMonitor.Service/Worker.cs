@@ -37,6 +37,7 @@ public class Worker : BackgroundService
             SingleReader = true,
             SingleWriter = true
         });
+    private long _lastProcessSnapshotEnqueuedUtcTicks = DateTime.MinValue.Ticks;
 
     public Worker(
         ILogger<Worker> logger,
@@ -352,6 +353,7 @@ public class Worker : BackgroundService
                 });
             }
 
+            RecordProcessSnapshotEnqueuedUtc(DateTime.UtcNow);
             EnqueueProcessSnapshot(BuildProcessSnapshot(metrics, timestamp));
 
             lock (_latestProcessMetricsLock)
@@ -372,6 +374,44 @@ public class Worker : BackgroundService
         }
     }
 
+    internal static bool ShouldEnqueueLlamaTriggeredProcessSnapshot(DateTime lastSnapshotUtc, DateTime nowUtc, TimeSpan throttleWindow)
+    {
+        if (throttleWindow <= TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        return (nowUtc - lastSnapshotUtc) >= throttleWindow;
+    }
+
+    private void RecordProcessSnapshotEnqueuedUtc(DateTime nowUtc)
+        => Interlocked.Exchange(ref _lastProcessSnapshotEnqueuedUtcTicks, nowUtc.Ticks);
+
+    private bool TryAcquireLlamaSnapshotEnqueuePermit(DateTime nowUtc, TimeSpan throttleWindow)
+    {
+        if (throttleWindow <= TimeSpan.Zero)
+        {
+            RecordProcessSnapshotEnqueuedUtc(nowUtc);
+            return true;
+        }
+
+        while (true)
+        {
+            var lastTicks = Interlocked.Read(ref _lastProcessSnapshotEnqueuedUtcTicks);
+            var lastSnapshotUtc = new DateTime(lastTicks, DateTimeKind.Utc);
+
+            if (!ShouldEnqueueLlamaTriggeredProcessSnapshot(lastSnapshotUtc, nowUtc, throttleWindow))
+            {
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(ref _lastProcessSnapshotEnqueuedUtcTicks, nowUtc.Ticks, lastTicks) == lastTicks)
+            {
+                return true;
+            }
+        }
+    }
+
     private async Task RunLlamaMetricsLoopAsync(CancellationToken stoppingToken)
     {
         if (_llamaMetricsEnricher == null || _llamaMetricsIntervalSeconds <= 0)
@@ -380,6 +420,7 @@ public class Worker : BackgroundService
         }
 
         var interval = TimeSpan.FromSeconds(_llamaMetricsIntervalSeconds);
+        var snapshotThrottleWindow = TimeSpan.FromSeconds(_processIntervalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -396,6 +437,7 @@ public class Worker : BackgroundService
                     await _llamaMetricsEnricher.EnrichAsync(snapshot, stoppingToken);
 
                     var now = DateTime.Now;
+                    var nowUtc = now.ToUniversalTime();
                     var (shouldPush, recordsToPersist) = PrepareLlamaRealtimeUpdates(snapshot);
 
                     if (recordsToPersist.Count > 0)
@@ -403,7 +445,7 @@ public class Worker : BackgroundService
                         await _repository.SaveMetricsAsync(recordsToPersist, now, stoppingToken);
                     }
 
-                    if (shouldPush)
+                    if (shouldPush && TryAcquireLlamaSnapshotEnqueuePermit(nowUtc, snapshotThrottleWindow))
                     {
                         EnqueueProcessSnapshot(BuildProcessSnapshot(snapshot, now));
                     }

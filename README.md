@@ -152,12 +152,10 @@ const connection = new signalR.HubConnectionBuilder()
   .withAutomaticReconnect()
   .build();
 
-connection.on("metrics.latest", (data) => {
-  console.log(`Received ${data.processCount} processes`);
-  data.processes.forEach(p => {
-    console.log(`${p.processName}: CPU=${p.metrics.cpu.value}%`);
-  });
-});
+connection.on("ReceiveSystemUsage", (data) => console.log("ReceiveSystemUsage", data));
+connection.on("ReceiveHardwareLimits", (data) => console.log("ReceiveHardwareLimits", data));
+connection.on("ReceiveProcessMetrics", (data) => console.log("ReceiveProcessMetrics", data));
+connection.on("ReceiveProcessMetadata", (data) => console.log("ReceiveProcessMetadata", data));
 
 await connection.start();
 ```
@@ -282,7 +280,10 @@ GET /config/health
 **Hub URL**: `http://localhost:35179/hubs/metrics`
 
 **事件**：
-- `metrics.latest` - 根据 `Monitor:IntervalSeconds` 配置的间隔推送最新指标数据（默认 1 秒）
+- `ReceiveHardwareLimits` - 硬件上限（内存 / 显存）
+- `ReceiveSystemUsage` - 系统总览（CPU / 内存 / GPU / 显存 / 功耗 / 网速 / 电源方案）
+- `ReceiveProcessMetrics` - 进程指标列表
+- `ReceiveProcessMetadata` - 进程元数据（名称 / 命令行 / DisplayName）
 
 ## Architecture
 

@@ -276,28 +276,40 @@
         </Border>
 
         <!-- Monitor Bar -->
-        <Border x:Name="MonitorBar" Grid.Row="1" CornerRadius="8"
-                BorderThickness="1" Padding="14,6"
-                HorizontalAlignment="Center" VerticalAlignment="Top"
-                MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
-                PreviewMouseLeftButtonDown="MonitorBar_PreviewMouseDown"
-                PreviewMouseMove="MonitorBar_PreviewMouseMove"
-                PreviewMouseLeftButtonUp="MonitorBar_PreviewMouseUp">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Background" Value="{StaticResource ColorBackground}"/>
-                    <Setter Property="BorderBrush" Value="{StaticResource ColorBorder}"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsLocked}" Value="True">
-                            <Setter Property="BorderBrush" Value="{StaticResource ColorGreen}"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="32" ShadowDepth="8" Opacity="0.4" Direction="270"/>
-            </Border.Effect>
-            <Grid>
+        <Grid Grid.Row="1"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top">
+            <Border CornerRadius="8"
+                    BorderThickness="1"
+                    IsHitTestVisible="False"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{StaticResource ColorBackground}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource ColorBorder}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                <Setter Property="BorderBrush" Value="{StaticResource ColorGreen}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="5" Opacity="0.26" Direction="270" RenderingBias="Performance"/>
+                </Border.Effect>
+            </Border>
+
+            <Border x:Name="MonitorBar"
+                    CornerRadius="8"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="14,6"
+                    MouseEnter="MonitorBar_MouseEnter" MouseLeave="MonitorBar_MouseLeave"
+                    PreviewMouseLeftButtonDown="MonitorBar_PreviewMouseDown"
+                    PreviewMouseMove="MonitorBar_PreviewMouseMove"
+                    PreviewMouseLeftButtonUp="MonitorBar_PreviewMouseUp">
+                <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/> <!-- NET -->
                     <ColumnDefinition Width="Auto"/> <!-- Div -->
@@ -473,7 +485,8 @@
                     </Border.Style>
                 </Border>
             </Grid>
-        </Border>
+            </Border>
+        </Grid>
 
         <!-- Pinned Stack - 通过Grid.Row动态定位 -->
         <ItemsControl x:Name="PinnedStack" Grid.Row="2"
@@ -492,11 +505,25 @@
         <Popup x:Name="DetailsPopup" PlacementTarget="{Binding ElementName=MonitorBar}"
                Placement="Custom" StaysOpen="True" AllowsTransparency="True"
                IsOpen="{Binding IsDetailsVisible, Mode=OneWay}">
-            <Border Background="#F0141414" CornerRadius="8" BorderBrush="{StaticResource ColorBorder}"
-                    BorderThickness="1" Padding="8" MinWidth="360" MaxHeight="300">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="60" ShadowDepth="20" Opacity="0.6" Direction="270"/>
-                </Border.Effect>
+            <Grid>
+                <Border Background="#F0141414"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource ColorBorder}"
+                        BorderThickness="1"
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="24" ShadowDepth="8" Opacity="0.28" Direction="270" RenderingBias="Performance"/>
+                    </Border.Effect>
+                </Border>
+
+                <Border Background="Transparent"
+                        CornerRadius="8"
+                        BorderThickness="0"
+                        Padding="8"
+                        MinWidth="360"
+                        MaxHeight="300">
 
                 <Grid>
                     <Grid.RowDefinitions>
@@ -531,91 +558,124 @@
 
                     <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource ColorBorder}" Margin="0,4,0,6"/>
 
-                    <!-- Process List (可滚动，滚动时显示滚动条) -->
-                    <ScrollViewer x:Name="ProcessScrollViewer" Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="260"
-                                  HorizontalScrollBarVisibility="Disabled"
-                                  ScrollChanged="ProcessScrollViewer_ScrollChanged">
-                        <ScrollViewer.Resources>
-                            <Style x:Key="ScrollBarPageButton" TargetType="{x:Type RepeatButton}">
-                                <Setter Property="OverridesDefaultStyle" Value="true"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Focusable" Value="false"/>
-                                <Setter Property="IsTabStop" Value="false"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type RepeatButton}">
-                                            <Rectangle Fill="{TemplateBinding Background}"/>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
+                    <!-- Process List（虚拟化，滚动时显示滚动条） -->
+                    <ListBox x:Name="ProcessList" Grid.Row="2"
+                             ItemsSource="{Binding AllProcesses}"
+                             ItemTemplate="{StaticResource ProcessRowTemplate}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             MaxHeight="260"
+                             Focusable="False"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.CanContentScroll="True"
+                             VirtualizingStackPanel.IsVirtualizing="True"
+                             VirtualizingStackPanel.VirtualizationMode="Recycling">
+                        <ListBox.Resources>
+                            <Style TargetType="{x:Type ScrollViewer}">
+                                <Style.Resources>
+                                    <Style x:Key="ScrollBarPageButton" TargetType="{x:Type RepeatButton}">
+                                        <Setter Property="OverridesDefaultStyle" Value="true"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Focusable" Value="false"/>
+                                        <Setter Property="IsTabStop" Value="false"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                    <Rectangle Fill="{TemplateBinding Background}"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
 
-                            <Style x:Key="ScrollThumbs" TargetType="{x:Type Thumb}">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Thumb}">
-                                            <Border CornerRadius="2" Background="{TemplateBinding Background}"/>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
+                                    <Style x:Key="ScrollThumbs" TargetType="{x:Type Thumb}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type Thumb}">
+                                                    <Border CornerRadius="2" Background="{TemplateBinding Background}"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
 
-                            <Style x:Key="OverlayScrollBar" TargetType="{x:Type ScrollBar}">
-                                <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
-                                <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
-                                <Setter Property="Width" Value="4"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="Transparent"/>
-                                <Setter Property="Opacity" Value="0"/>
+                                    <Style x:Key="OverlayScrollBar" TargetType="{x:Type ScrollBar}">
+                                        <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+                                        <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+                                        <Setter Property="Width" Value="4"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="Transparent"/>
+                                        <Setter Property="Opacity" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type ScrollBar}">
+                                                    <Grid x:Name="Bg" SnapsToDevicePixels="true" Width="{TemplateBinding Width}">
+                                                        <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
+                                                            <Track.DecreaseRepeatButton>
+                                                                <RepeatButton Style="{StaticResource ScrollBarPageButton}" Command="{x:Static ScrollBar.PageUpCommand}"/>
+                                                            </Track.DecreaseRepeatButton>
+                                                            <Track.IncreaseRepeatButton>
+                                                                <RepeatButton Style="{StaticResource ScrollBarPageButton}" Command="{x:Static ScrollBar.PageDownCommand}"/>
+                                                            </Track.IncreaseRepeatButton>
+                                                            <Track.Thumb>
+                                                                <Thumb Style="{StaticResource ScrollThumbs}" Background="#66FFFFFF"/>
+                                                            </Track.Thumb>
+                                                        </Track>
+                                                    </Grid>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Style.Resources>
+
+                                <EventSetter Event="ScrollChanged" Handler="ProcessScrollViewer_ScrollChanged"/>
+
                                 <Setter Property="Template">
                                     <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type ScrollBar}">
-                                            <Grid x:Name="Bg" SnapsToDevicePixels="true" Width="{TemplateBinding Width}">
-                                                <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
-                                                    <Track.DecreaseRepeatButton>
-                                                        <RepeatButton Style="{StaticResource ScrollBarPageButton}" Command="{x:Static ScrollBar.PageUpCommand}"/>
-                                                    </Track.DecreaseRepeatButton>
-                                                    <Track.IncreaseRepeatButton>
-                                                        <RepeatButton Style="{StaticResource ScrollBarPageButton}" Command="{x:Static ScrollBar.PageDownCommand}"/>
-                                                    </Track.IncreaseRepeatButton>
-                                                    <Track.Thumb>
-                                                        <Thumb Style="{StaticResource ScrollThumbs}" Background="#66FFFFFF"/>
-                                                    </Track.Thumb>
-                                                </Track>
+                                        <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                                            <Grid>
+                                                <ScrollContentPresenter Margin="0"/>
+                                                <ScrollBar x:Name="PART_VerticalScrollBar"
+                                                           Style="{StaticResource OverlayScrollBar}"
+                                                           HorizontalAlignment="Right"
+                                                           Value="{TemplateBinding VerticalOffset}"
+                                                           Maximum="{TemplateBinding ScrollableHeight}"
+                                                           ViewportSize="{TemplateBinding ViewportHeight}"
+                                                           Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
                                             </Grid>
                                         </ControlTemplate>
                                     </Setter.Value>
                                 </Setter>
                             </Style>
-                        </ScrollViewer.Resources>
+                        </ListBox.Resources>
 
-                        <!-- 自定义 ScrollViewer 模板：滚动时显示滚动条 -->
-                        <ScrollViewer.Template>
-                            <ControlTemplate TargetType="{x:Type ScrollViewer}">
-                                <Grid>
-                                    <ScrollContentPresenter Margin="0"/>
-                                    <ScrollBar x:Name="PART_VerticalScrollBar"
-                                               Style="{StaticResource OverlayScrollBar}"
-                                               HorizontalAlignment="Right"
-                                               Value="{TemplateBinding VerticalOffset}"
-                                               Maximum="{TemplateBinding ScrollableHeight}"
-                                               ViewportSize="{TemplateBinding ViewportHeight}"
-                                               Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
-                                </Grid>
-                            </ControlTemplate>
-                        </ScrollViewer.Template>
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
 
-                        <ItemsControl x:Name="ProcessList" ItemsSource="{Binding AllProcesses}"
-                                      ItemTemplate="{StaticResource ProcessRowTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Vertical"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </ScrollViewer>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListBoxItem}">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                            <ContentPresenter/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
                 </Grid>
-            </Border>
+                </Border>
+            </Grid>
         </Popup>
     </Grid>
 </Window>
