@@ -52,6 +52,19 @@ public interface IMetricsClient
     Task ReceiveProcessMetrics(object data);
 
     /// <summary>
+    /// 接收轻量进程实时指标数据（Top-N + Pinned 等裁剪后的进程快照）
+    /// </summary>
+    /// <param name="data">
+    /// 数据结构：
+    /// <list type="bullet">
+    /// <item><description><c>Timestamp</c>: 时间戳</description></item>
+    /// <item><description><c>ProcessCount</c>: 进程数量（当前 payload 内包含的进程数）</description></item>
+    /// <item><description><c>Processes</c>: 进程列表（包含 <c>ProcessId</c> / <c>ProcessName</c> / <c>Metrics</c> 字典）</description></item>
+    /// </list>
+    /// </param>
+    Task ReceiveProcessMetricsLite(object data);
+
+    /// <summary>
     /// 接收进程元数据（命令行/显示名等）
     /// </summary>
     /// <param name="data">

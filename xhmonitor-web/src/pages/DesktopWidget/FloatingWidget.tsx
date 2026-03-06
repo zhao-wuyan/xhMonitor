@@ -10,7 +10,7 @@ import type { ProcessInfo } from '../../types';
 type WidgetState = 'collapsed' | 'expanded' | 'locked' | 'clickthrough';
 
 export const FloatingWidget = () => {
-  const { metricsData, systemUsage, isConnected } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected } = useMetricsHub({ processMetricsMode: 'lite' });
   const { config } = useMetricConfig();
   const { isMetricClickEnabled, getMetricAction } = useWidgetConfig();
   const [state, setState] = useState<WidgetState>('collapsed');

@@ -215,12 +215,16 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     {
         if (CurrentPanelState == PanelState.Collapsed)
             CurrentPanelState = PanelState.Expanded;
+
+        SyncProcessMetricsSubscription();
     }
 
     public void OnBarPointerLeave()
     {
         if (CurrentPanelState == PanelState.Expanded)
             CurrentPanelState = PanelState.Collapsed;
+
+        SyncProcessMetricsSubscription();
     }
 
     public void OnBarClick()
@@ -243,12 +247,15 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     {
         _stateBeforeClickthrough = CurrentPanelState;
         CurrentPanelState = PanelState.Clickthrough;
+        SyncProcessMetricsSubscription();
     }
 
     public void ExitClickthrough()
     {
         if (CurrentPanelState == PanelState.Clickthrough)
             CurrentPanelState = _stateBeforeClickthrough;
+
+        SyncProcessMetricsSubscription();
     }
 
     public void TogglePin(ProcessRowViewModel? row)
@@ -263,6 +270,16 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             row.IsPinned = true;
         }
         SyncPinnedCollection();
+        _ = _signalRService.UpdatePinnedProcessIdsAsync(_pinnedProcessIds);
+    }
+
+    private void SyncProcessMetricsSubscription()
+    {
+        var mode = IsDetailsVisible
+            ? SignalRService.ProcessMetricsSubscriptionMode.Full
+            : SignalRService.ProcessMetricsSubscriptionMode.Lite;
+
+        _ = _signalRService.SetProcessMetricsSubscriptionAsync(mode, _pinnedProcessIds);
     }
 
     private void OnConnectionStateChanged(bool connected)
@@ -333,6 +350,11 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             {
                 await _signalRService.ConnectAsync();
                 System.Diagnostics.Debug.WriteLine($"Successfully connected to SignalR on attempt {attempt}");
+                await _signalRService.SetProcessMetricsSubscriptionAsync(
+                    IsDetailsVisible
+                        ? SignalRService.ProcessMetricsSubscriptionMode.Full
+                        : SignalRService.ProcessMetricsSubscriptionMode.Lite,
+                    _pinnedProcessIds);
                 return;
             }
             catch (Exception ex)

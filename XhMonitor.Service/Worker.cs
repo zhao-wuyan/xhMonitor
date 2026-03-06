@@ -19,6 +19,7 @@ public class Worker : BackgroundService
     private readonly IHubContext<MetricsHub, IMetricsClient> _hubContext;
     private readonly ISystemMetricProvider _systemMetricProvider;
     private readonly IProcessMetadataStore _processMetadataStore;
+    private readonly IProcessMetricsSubscriptionStore _processMetricsSubscriptionStore;
     private readonly IProcessMetricsEnricher[] _processMetricsEnrichers;
     private readonly LlamaServerMetricsEnricher? _llamaMetricsEnricher;
     private readonly int _processIntervalSeconds;
@@ -31,11 +32,11 @@ public class Worker : BackgroundService
     private IReadOnlyList<ProcessMetrics>? _latestProcessMetrics;
     private readonly object _llamaCacheLock = new();
     private readonly Dictionary<int, LlamaRealtimeValues> _llamaLastPublished = new();
-    private readonly Channel<ProcessSnapshot> _processSnapshotChannel =
-        Channel.CreateBounded<ProcessSnapshot>(new BoundedChannelOptions(1)
+    private readonly Channel<ProcessPushItem> _processPushChannel =
+        Channel.CreateBounded<ProcessPushItem>(new BoundedChannelOptions(1)
         {
             SingleReader = true,
-            SingleWriter = true
+            SingleWriter = false
         });
     private long _lastProcessSnapshotEnqueuedUtcTicks = DateTime.MinValue.Ticks;
 
@@ -46,6 +47,7 @@ public class Worker : BackgroundService
         IHubContext<MetricsHub, IMetricsClient> hubContext,
         ISystemMetricProvider systemMetricProvider,
         IProcessMetadataStore processMetadataStore,
+        IProcessMetricsSubscriptionStore processMetricsSubscriptionStore,
         IEnumerable<IProcessMetricsEnricher> processMetricsEnrichers,
         IOptions<MonitorSettings> monitorOptions)
     {
@@ -55,6 +57,7 @@ public class Worker : BackgroundService
         _hubContext = hubContext;
         _systemMetricProvider = systemMetricProvider;
         _processMetadataStore = processMetadataStore;
+        _processMetricsSubscriptionStore = processMetricsSubscriptionStore;
         var enrichers = processMetricsEnrichers as IProcessMetricsEnricher[] ?? processMetricsEnrichers.ToArray();
         _llamaMetricsEnricher = enrichers.OfType<LlamaServerMetricsEnricher>().FirstOrDefault();
         _processMetricsEnrichers = enrichers.Where(e => e is not LlamaServerMetricsEnricher).ToArray();
@@ -131,7 +134,7 @@ public class Worker : BackgroundService
             }
         }
 
-        _processSnapshotChannel.Writer.TryComplete();
+        _processPushChannel.Writer.TryComplete();
         await Task.WhenAll(vramTask, systemUsageTask, processPushTask);
         _logger.LogInformation("XhMonitor service stopped");
     }
@@ -353,8 +356,12 @@ public class Worker : BackgroundService
                 });
             }
 
-            RecordProcessSnapshotEnqueuedUtc(DateTime.UtcNow);
-            EnqueueProcessSnapshot(BuildProcessSnapshot(metrics, timestamp));
+            var pushItem = BuildProcessPushItem(metrics, timestamp);
+            if (pushItem != null)
+            {
+                RecordProcessSnapshotEnqueuedUtc(DateTime.UtcNow);
+                EnqueueProcessPushItem(pushItem);
+            }
 
             lock (_latestProcessMetricsLock)
             {
@@ -445,9 +452,15 @@ public class Worker : BackgroundService
                         await _repository.SaveMetricsAsync(recordsToPersist, now, stoppingToken);
                     }
 
-                    if (shouldPush && TryAcquireLlamaSnapshotEnqueuePermit(nowUtc, snapshotThrottleWindow))
+                    if (shouldPush &&
+                        HasAnyProcessPushSubscribers() &&
+                        TryAcquireLlamaSnapshotEnqueuePermit(nowUtc, snapshotThrottleWindow))
                     {
-                        EnqueueProcessSnapshot(BuildProcessSnapshot(snapshot, now));
+                        var pushItem = BuildProcessPushItem(snapshot, now);
+                        if (pushItem != null)
+                        {
+                            EnqueueProcessPushItem(pushItem);
+                        }
                     }
                 }
             }
@@ -694,18 +707,165 @@ public class Worker : BackgroundService
         };
     }
 
+    private bool HasAnyProcessPushSubscribers()
+        => _processMetricsSubscriptionStore.HasFullSubscribers || _processMetricsSubscriptionStore.HasLiteSubscribers;
+
+    private ProcessPushItem? BuildProcessPushItem(IReadOnlyList<ProcessMetrics> metrics, DateTime timestamp)
+    {
+        var hasFullSubscribers = _processMetricsSubscriptionStore.HasFullSubscribers;
+        var liteSubscriptions = _processMetricsSubscriptionStore.GetLiteSubscriptionsSnapshot();
+
+        if (!hasFullSubscribers && liteSubscriptions.Count == 0)
+        {
+            return null;
+        }
+
+        ProcessSnapshot? fullSnapshot = null;
+        if (hasFullSubscribers)
+        {
+            fullSnapshot = BuildProcessSnapshot(metrics, timestamp);
+        }
+
+        var liteSnapshots = new List<LiteSnapshot>();
+        if (liteSubscriptions.Count > 0)
+        {
+            var topProcesses = SelectTopNProcessesByMetric(metrics, "cpu", 5);
+
+            Dictionary<int, ProcessMetrics>? processIndex = null;
+            if (liteSubscriptions.Any(s => s.PinnedProcessIds.Count > 0))
+            {
+                processIndex = metrics.ToDictionary(m => m.Info.ProcessId);
+            }
+
+            foreach (var subscription in liteSubscriptions)
+            {
+                var selected = new List<ProcessMetrics>(topProcesses.Count + subscription.PinnedProcessIds.Count);
+                var included = new HashSet<int>();
+
+                foreach (var process in topProcesses)
+                {
+                    if (included.Add(process.Info.ProcessId))
+                    {
+                        selected.Add(process);
+                    }
+                }
+
+                if (processIndex != null && subscription.PinnedProcessIds.Count > 0)
+                {
+                    foreach (var pid in subscription.PinnedProcessIds)
+                    {
+                        if (!included.Add(pid))
+                        {
+                            continue;
+                        }
+
+                        if (processIndex.TryGetValue(pid, out var process))
+                        {
+                            selected.Add(process);
+                        }
+                    }
+                }
+
+                if (selected.Count == 0)
+                {
+                    continue;
+                }
+
+                liteSnapshots.Add(new LiteSnapshot
+                {
+                    ConnectionId = subscription.ConnectionId,
+                    Snapshot = BuildProcessSnapshot(selected, timestamp)
+                });
+            }
+        }
+
+        if (fullSnapshot == null && liteSnapshots.Count == 0)
+        {
+            return null;
+        }
+
+        return new ProcessPushItem
+        {
+            FullSnapshot = fullSnapshot,
+            LiteSnapshots = liteSnapshots
+        };
+    }
+
+    private static List<ProcessMetrics> SelectTopNProcessesByMetric(
+        IReadOnlyList<ProcessMetrics> metrics,
+        string metricId,
+        int n)
+    {
+        if (metrics.Count == 0 || n <= 0)
+        {
+            return new List<ProcessMetrics>();
+        }
+
+        static int Compare((ProcessMetrics Process, double Value) a, (ProcessMetrics Process, double Value) b)
+        {
+            var valueCompare = b.Value.CompareTo(a.Value);
+            if (valueCompare != 0)
+            {
+                return valueCompare;
+            }
+
+            return a.Process.Info.ProcessId.CompareTo(b.Process.Info.ProcessId);
+        }
+
+        var top = new List<(ProcessMetrics Process, double Value)>(Math.Min(n, metrics.Count));
+
+        foreach (var process in metrics)
+        {
+            var value = TryGetMetricValue(process, metricId);
+            top.Add((process, value));
+            top.Sort(Compare);
+
+            if (top.Count > n)
+            {
+                top.RemoveAt(top.Count - 1);
+            }
+        }
+
+        return top.Select(item => item.Process).ToList();
+    }
+
+    private static double TryGetMetricValue(ProcessMetrics process, string metricId)
+        => process.Metrics.TryGetValue(metricId, out var metricValue) ? metricValue.Value : 0.0;
+
     private async Task RunProcessPushLoopAsync(CancellationToken stoppingToken)
     {
         try
         {
-            await foreach (var snapshot in _processSnapshotChannel.Reader.ReadAllAsync(stoppingToken))
+            await foreach (var pushItem in _processPushChannel.Reader.ReadAllAsync(stoppingToken))
             {
-                await _hubContext.Clients.All.ReceiveProcessMetrics(new ProcessMetricsEnvelope
+                var pushTasks = new List<Task>();
+
+                if (pushItem.FullSnapshot != null)
                 {
-                    Timestamp = snapshot.Timestamp,
-                    ProcessCount = snapshot.ProcessCount,
-                    Processes = snapshot.Processes
-                });
+                    pushTasks.Add(_hubContext.Clients
+                        .Group(MetricsHubGroups.ProcessMetricsFull)
+                        .ReceiveProcessMetrics(pushItem.FullSnapshot));
+                }
+
+                if (pushItem.LiteSnapshots is { Count: > 0 })
+                {
+                    foreach (var lite in pushItem.LiteSnapshots)
+                    {
+                        if (string.IsNullOrWhiteSpace(lite.ConnectionId))
+                        {
+                            continue;
+                        }
+
+                        pushTasks.Add(_hubContext.Clients
+                            .Client(lite.ConnectionId)
+                            .ReceiveProcessMetricsLite(lite.Snapshot));
+                    }
+                }
+
+                if (pushTasks.Count > 0)
+                {
+                    await Task.WhenAll(pushTasks);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -713,11 +873,11 @@ public class Worker : BackgroundService
         }
     }
 
-    private void EnqueueProcessSnapshot(ProcessSnapshot snapshot)
+    private void EnqueueProcessPushItem(ProcessPushItem snapshot)
     {
-        while (!_processSnapshotChannel.Writer.TryWrite(snapshot))
+        while (!_processPushChannel.Writer.TryWrite(snapshot))
         {
-            _processSnapshotChannel.Reader.TryRead(out _);
+            _processPushChannel.Reader.TryRead(out _);
         }
     }
 
@@ -728,11 +888,16 @@ public class Worker : BackgroundService
         public List<ProcessMetricSnapshot> Processes { get; init; } = new();
     }
 
-    private sealed class ProcessMetricsEnvelope
+    private sealed class ProcessPushItem
     {
-        public DateTime Timestamp { get; init; }
-        public int ProcessCount { get; init; }
-        public List<ProcessMetricSnapshot> Processes { get; init; } = new();
+        public ProcessSnapshot? FullSnapshot { get; init; }
+        public List<LiteSnapshot> LiteSnapshots { get; init; } = new();
+    }
+
+    private sealed class LiteSnapshot
+    {
+        public string ConnectionId { get; init; } = string.Empty;
+        public ProcessSnapshot Snapshot { get; init; } = new();
     }
 
     private sealed class ProcessMetricSnapshot

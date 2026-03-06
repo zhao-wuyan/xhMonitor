@@ -11,6 +11,8 @@ public class SignalRService : IAsyncDisposable
     private readonly ILogger<SignalRService>? _logger;
     private readonly string _hubUrl;
     private const string DefaultHubUrl = "http://localhost:35179/hubs/metrics";
+    private ProcessMetricsSubscriptionMode _processMetricsSubscriptionMode = ProcessMetricsSubscriptionMode.Full;
+    private int[] _pinnedProcessIds = Array.Empty<int>();
 
     public event Action<HardwareLimitsDto>? HardwareLimitsReceived;
     public event Action<SystemUsageDto>? SystemUsageReceived;
@@ -88,6 +90,20 @@ public class SignalRService : IAsyncDisposable
             }
         });
 
+        _connection.On<JsonElement>("ReceiveProcessMetricsLite", (data) =>
+        {
+            try
+            {
+                var dto = DeserializePayload<ProcessDataDto>(data, jsonOptions);
+                if (dto != null) ProcessDataReceived?.Invoke(dto);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to deserialize process data (lite): {ex.Message}");
+                _logger?.LogError(ex, "Failed to deserialize {MessageType} from SignalR hub", "ProcessMetricsLite");
+            }
+        });
+
         _connection.On<JsonElement>("ReceiveProcessMetadata", (data) =>
         {
             try
@@ -108,9 +124,10 @@ public class SignalRService : IAsyncDisposable
             return Task.CompletedTask;
         };
 
-        _connection.Reconnected += _ =>
+        _connection.Reconnected += connectionId =>
         {
             ConnectionStateChanged?.Invoke(true);
+            _ = ApplyProcessMetricsSubscriptionAsync();
             return Task.CompletedTask;
         };
 
@@ -122,6 +139,7 @@ public class SignalRService : IAsyncDisposable
 
         await _connection.StartAsync();
         ConnectionStateChanged?.Invoke(true);
+        await ApplyProcessMetricsSubscriptionAsync().ConfigureAwait(false);
     }
 
     internal static T? DeserializePayload<T>(JsonElement data, JsonSerializerOptions jsonOptions)
@@ -164,5 +182,61 @@ public class SignalRService : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await DisconnectAsync();
+    }
+
+    public async Task SetProcessMetricsSubscriptionAsync(
+        ProcessMetricsSubscriptionMode mode,
+        IReadOnlyCollection<int>? pinnedProcessIds = null)
+    {
+        _processMetricsSubscriptionMode = mode;
+        if (pinnedProcessIds != null)
+        {
+            _pinnedProcessIds = NormalizePinnedProcessIds(pinnedProcessIds);
+        }
+
+        await ApplyProcessMetricsSubscriptionAsync().ConfigureAwait(false);
+    }
+
+    public async Task UpdatePinnedProcessIdsAsync(IReadOnlyCollection<int> pinnedProcessIds)
+    {
+        _pinnedProcessIds = NormalizePinnedProcessIds(pinnedProcessIds);
+
+        if (_processMetricsSubscriptionMode == ProcessMetricsSubscriptionMode.Lite)
+        {
+            await ApplyProcessMetricsSubscriptionAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static int[] NormalizePinnedProcessIds(IReadOnlyCollection<int> pinnedProcessIds)
+        => pinnedProcessIds.Count == 0
+            ? Array.Empty<int>()
+            : pinnedProcessIds.Where(id => id > 0).Distinct().OrderBy(id => id).ToArray();
+
+    private async Task ApplyProcessMetricsSubscriptionAsync()
+    {
+        var connection = _connection;
+        if (connection == null || connection.State != HubConnectionState.Connected)
+        {
+            return;
+        }
+
+        var mode = _processMetricsSubscriptionMode == ProcessMetricsSubscriptionMode.Lite ? "lite" : "full";
+
+        try
+        {
+            await connection
+                .InvokeAsync("SetProcessMetricsSubscription", mode, _pinnedProcessIds)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "Failed to apply process metrics subscription: {Mode}", mode);
+        }
+    }
+
+    public enum ProcessMetricsSubscriptionMode
+    {
+        Full,
+        Lite
     }
 }

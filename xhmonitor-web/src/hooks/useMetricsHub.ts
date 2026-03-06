@@ -6,13 +6,16 @@ import { getAccessKey } from '../config/accessKey';
 
 const HUB_URL = METRICS_HUB_URL;
 
-export const useMetricsHub = () => {
+export type ProcessMetricsSubscriptionMode = 'full' | 'lite';
+
+export const useMetricsHub = (options?: { processMetricsMode?: ProcessMetricsSubscriptionMode }) => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
   const [systemUsage, setSystemUsage] = useState<SystemUsage | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const metaMapRef = useRef<Map<number, ProcessMetaData['processes'][number]>>(new Map());
+  const processMetricsMode = options?.processMetricsMode ?? 'full';
 
   const mergeMeta = useCallback((processes: ProcessInfo[]): ProcessInfo[] => {
     if (metaMapRef.current.size === 0) return processes;
@@ -54,6 +57,14 @@ export const useMetricsHub = () => {
         setIsConnected(true);
         setError(null);
         console.log('SignalR Connected');
+
+        if (processMetricsMode === 'lite') {
+          try {
+            await connection.invoke('SetProcessMetricsSubscription', 'lite', []);
+          } catch (err) {
+            console.debug('Failed to set lite process subscription:', err);
+          }
+        }
       } catch (err) {
         try {
           const unauthorized =
@@ -76,12 +87,15 @@ export const useMetricsHub = () => {
       }
     };
 
-    connection.on('ReceiveProcessMetrics', (data: MetricsData) => {
+    const handleProcessMetrics = (data: MetricsData) => {
       setMetricsData({
         ...data,
         processes: mergeMeta(data.processes)
       });
-    });
+    };
+
+    connection.on('ReceiveProcessMetrics', handleProcessMetrics);
+    connection.on('ReceiveProcessMetricsLite', handleProcessMetrics);
 
     connection.on('ReceiveProcessMetadata', (data: ProcessMetaData) => {
       data.processes.forEach((p) => {
@@ -147,9 +161,17 @@ export const useMetricsHub = () => {
       setError('reconnecting');
     });
 
-    connection.onreconnected(() => {
+    connection.onreconnected(async () => {
       setIsConnected(true);
       setError(null);
+
+      if (processMetricsMode === 'lite') {
+        try {
+          await connection.invoke('SetProcessMetricsSubscription', 'lite', []);
+        } catch (err) {
+          console.debug('Failed to set lite process subscription after reconnect:', err);
+        }
+      }
     });
 
     connection.onclose(() => {
@@ -158,7 +180,7 @@ export const useMetricsHub = () => {
     });
 
     startConnection();
-  }, [connection]);
+  }, [connection, mergeMeta, processMetricsMode]);
 
   const disconnect = useCallback(async () => {
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
