@@ -6,13 +6,32 @@ import { getAccessKey } from '../config/accessKey';
 
 const HUB_URL = METRICS_HUB_URL;
 
-export const useMetricsHub = () => {
-  const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
+export type ProcessMetricsSubscriptionMode = 'full' | 'lite';
+
+export const useMetricsHub = (options?: { processMetricsMode?: ProcessMetricsSubscriptionMode }) => {
+  const [connection] = useState(() => {
+    return new signalR.HubConnectionBuilder()
+      .withUrl(HUB_URL, {
+        accessTokenFactory: () => getAccessKey(),
+      })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
+  });
   const [metricsData, setMetricsData] = useState<MetricsData | null>(null);
   const [systemUsage, setSystemUsage] = useState<SystemUsage | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const metaMapRef = useRef<Map<number, ProcessMetaData['processes'][number]>>(new Map());
+  const systemUsageListenersRef = useRef<Set<(usage: SystemUsage) => void>>(new Set());
+  const processMetricsMode = options?.processMetricsMode ?? 'full';
+
+  const subscribeSystemUsage = useCallback((listener: (usage: SystemUsage) => void) => {
+    systemUsageListenersRef.current.add(listener);
+    return () => {
+      systemUsageListenersRef.current.delete(listener);
+    };
+  }, []);
 
   const mergeMeta = useCallback((processes: ProcessInfo[]): ProcessInfo[] => {
     if (metaMapRef.current.size === 0) return processes;
@@ -28,26 +47,14 @@ export const useMetricsHub = () => {
   }, []);
 
   useEffect(() => {
-    const newConnection = new signalR.HubConnectionBuilder()
-      .withUrl(HUB_URL, {
-        accessTokenFactory: () => getAccessKey(),
-      })
-      .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
-      .build();
-
-    setConnection(newConnection);
-
     return () => {
-      if (newConnection.state === signalR.HubConnectionState.Connected) {
-        newConnection.stop();
+      if (connection.state === signalR.HubConnectionState.Connected) {
+        connection.stop();
       }
     };
-  }, []);
+  }, [connection]);
 
   useEffect(() => {
-    if (!connection) return;
-
     const startConnection = async () => {
       try {
         await connection.start();
@@ -76,12 +83,15 @@ export const useMetricsHub = () => {
       }
     };
 
-    connection.on('ReceiveProcessMetrics', (data: MetricsData) => {
+    const handleProcessMetrics = (data: MetricsData) => {
       setMetricsData({
         ...data,
         processes: mergeMeta(data.processes)
       });
-    });
+    };
+
+    connection.on('ReceiveProcessMetrics', handleProcessMetrics);
+    connection.on('ReceiveProcessMetricsLite', handleProcessMetrics);
 
     connection.on('ReceiveProcessMetadata', (data: ProcessMetaData) => {
       data.processes.forEach((p) => {
@@ -140,6 +150,13 @@ export const useMetricsHub = () => {
         powerSchemeIndex: powerSchemeRaw == null ? null : Number(powerSchemeRaw),
       };
       setSystemUsage(usage);
+      systemUsageListenersRef.current.forEach((listener) => {
+        try {
+          listener(usage);
+        } catch (err) {
+          console.debug('SystemUsage listener error:', err);
+        }
+      });
     });
 
     connection.onreconnecting(() => {
@@ -158,7 +175,22 @@ export const useMetricsHub = () => {
     });
 
     startConnection();
-  }, [connection]);
+  }, [connection, mergeMeta]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+    if (processMetricsMode !== 'lite') return;
+
+    const setMode = async () => {
+      try {
+        await connection.invoke('SetProcessMetricsSubscription', 'lite', []);
+      } catch (err) {
+        console.debug('Failed to set lite process subscription:', err);
+      }
+    };
+
+    void setMode();
+  }, [connection, isConnected, processMetricsMode]);
 
   const disconnect = useCallback(async () => {
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
@@ -173,5 +205,6 @@ export const useMetricsHub = () => {
     isConnected,
     error,
     disconnect,
+    subscribeSystemUsage,
   };
 };

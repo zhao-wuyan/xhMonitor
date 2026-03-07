@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLayout } from '../contexts/LayoutContext';
+import { useLayout } from '../contexts/useLayout';
 import type { DiskUsage } from '../types';
 
 interface DiskWidgetProps {

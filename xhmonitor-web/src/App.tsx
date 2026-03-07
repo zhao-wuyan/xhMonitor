@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, Settings } from 'lucide-react';
-import { LayoutProvider, useLayout } from './contexts/LayoutContext';
+import { LayoutProvider } from './contexts/LayoutContext';
+import { useLayout } from './contexts/useLayout';
 import { TimeSeriesProvider } from './contexts/TimeSeriesContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useMetricsHub } from './hooks/useMetricsHub';
+import { MetricsHubProvider } from './contexts/MetricsHubContext';
+import { useMetricsHubContext } from './contexts/useMetricsHubContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/useAuth';
 import { useMetricConfig } from './hooks/useMetricConfig';
 import { useAdaptiveScroll } from './hooks/useAdaptiveScroll';
 import { t } from './i18n';
 import { formatMegabytesParts, formatMegabytesLabel, formatNetworkRateLabel, formatNetworkRateParts } from './utils';
 import type { SystemUsage } from './types';
+import type { TimeSeriesOptions } from './hooks/useTimeSeries';
 
 // New components
 import { StatCard } from './components/StatCard';
@@ -22,7 +26,7 @@ import { AccessKeyScreen } from './pages/AccessKeyScreen';
 import { APP_VERSION_TAG } from './version';
 
 function AppShell() {
-  const { metricsData, systemUsage, isConnected, error } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected, error } = useMetricsHubContext();
   const { config, loading: configLoading } = useMetricConfig();
   const { layoutState } = useLayout();
   const shellRef = useRef<HTMLDivElement>(null);
@@ -57,7 +61,6 @@ function AppShell() {
     const media = window.matchMedia('(max-width: 1023px)');
     const handler = (event: MediaQueryListEvent) => setIsCompactWidth(event.matches);
 
-    setIsCompactWidth(media.matches);
     media.addEventListener('change', handler);
     return () => media.removeEventListener('change', handler);
   }, []);
@@ -324,13 +327,19 @@ function AppShell() {
   );
 }
 
-function AppContent() {
+function AppContent({ timeSeriesOptions }: { timeSeriesOptions: TimeSeriesOptions }) {
   const { requiresAccessKey, authEpoch } = useAuth();
   if (requiresAccessKey) {
     return <AccessKeyScreen />;
   }
 
-  return <AppShell key={authEpoch} />;
+  return (
+    <MetricsHubProvider key={authEpoch}>
+      <TimeSeriesProvider options={timeSeriesOptions}>
+        <AppShell />
+      </TimeSeriesProvider>
+    </MetricsHubProvider>
+  );
 }
 
 function App() {
@@ -352,9 +361,7 @@ function App() {
   return (
     <AuthProvider>
       <LayoutProvider>
-        <TimeSeriesProvider options={timeSeriesOptions}>
-          <AppContent />
-        </TimeSeriesProvider>
+        <AppContent timeSeriesOptions={timeSeriesOptions} />
       </LayoutProvider>
     </AuthProvider>
   );

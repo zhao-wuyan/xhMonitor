@@ -5,7 +5,7 @@ import { calculateSystemSummary } from '../../utils';
 import { t } from '../../i18n';
 
 export const TaskbarWidget = () => {
-  const { metricsData, systemUsage, isConnected } = useMetricsHub();
+  const { metricsData, systemUsage, isConnected } = useMetricsHub({ processMetricsMode: 'lite' });
   const { config } = useMetricConfig();
 
   // 计算系统总占用

@@ -21,16 +21,23 @@
         SnapsToDevicePixels="True">
 
     <Grid Background="Transparent">
-        <Border x:Name="ChromeBorder"
-                CornerRadius="6"
-                Background="#99101012"
-                BorderBrush="#1AFFFFFF"
-                BorderThickness="1"
-                IsHitTestVisible="False"
-                Padding="{Binding WindowPadding}"
-                SnapsToDevicePixels="True"
-                TextOptions.TextFormattingMode="Display">
-            <ItemsControl ItemsSource="{Binding Columns}">
+        <Grid SnapsToDevicePixels="True"
+              TextOptions.TextFormattingMode="Display">
+            <Border x:Name="ChromeBorder"
+                    CornerRadius="6"
+                    Background="#99101012"
+                    BorderBrush="#1AFFFFFF"
+                    BorderThickness="1"
+                    IsHitTestVisible="False"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    SnapsToDevicePixels="True"/>
+
+            <Border Padding="{Binding WindowPadding}"
+                    Background="Transparent"
+                    IsHitTestVisible="False"
+                    SnapsToDevicePixels="True">
+                <ItemsControl ItemsSource="{Binding Columns}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="{Binding DataContext.PanelOrientation, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
@@ -238,7 +245,8 @@
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+                </ItemsControl>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

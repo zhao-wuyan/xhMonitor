@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SystemUsage } from '../types';
-import { useMetricsHub } from './useMetricsHub';
+import { useMetricsHubContext } from '../contexts/useMetricsHubContext';
 
 export interface TimeSeriesOptions {
   maxLength?: number;
@@ -48,7 +48,7 @@ const pushValue = (series: number[], value: number, maxLength: number): number[]
 };
 
 export const useTimeSeries = (options: TimeSeriesOptions = {}): TimeSeriesResult => {
-  const { systemUsage } = useMetricsHub();
+  const { subscribeSystemUsage } = useMetricsHubContext();
   const maxLength = options.maxLength ?? 60;
   const selectors = useMemo(() => options.selectors ?? DEFAULT_SELECTORS, [options.selectors]);
   const [series, setSeries] = useState<Record<string, number[]>>(() =>
@@ -56,49 +56,44 @@ export const useTimeSeries = (options: TimeSeriesOptions = {}): TimeSeriesResult
   );
 
   useEffect(() => {
-    setSeries((prev) => {
-      const next: Record<string, number[]> = {};
-      let changed = false;
+    return subscribeSystemUsage((usage) => {
+      setSeries((prev) => {
+        const next = { ...prev };
 
-      Object.keys(selectors).forEach((key) => {
-        const prevSeries = prev[key] ?? [];
-        let updated = prevSeries;
+        Object.keys(selectors).forEach((key) => {
+          const value = selectors[key](usage);
+          const prevSeries = prev[key] ?? new Array(maxLength).fill(0);
+          next[key] = pushValue(prevSeries, value, maxLength);
+        });
 
-        if (prevSeries.length !== maxLength) {
-          if (prevSeries.length > maxLength) {
-            updated = prevSeries.slice(prevSeries.length - maxLength);
-          } else {
-            const padding = new Array(maxLength - prevSeries.length).fill(0);
-            updated = [...padding, ...prevSeries];
-          }
-        }
-
-        next[key] = updated;
-        if (updated !== prevSeries) changed = true;
+        return next;
       });
-
-      return changed ? next : prev;
     });
-  }, [maxLength, selectors]);
+  }, [maxLength, selectors, subscribeSystemUsage]);
 
-  useEffect(() => {
-    if (!systemUsage) return;
+  const seriesView = useMemo(() => {
+    const keys = new Set<string>([...Object.keys(series), ...Object.keys(selectors)]);
+    const normalized: Record<string, number[]> = {};
 
-    setSeries((prev) => {
-      const next: Record<string, number[]> = {};
-      let changed = false;
+    keys.forEach((key) => {
+      const values = series[key] ?? [];
 
-      Object.keys(selectors).forEach((key) => {
-        const value = selectors[key](systemUsage);
-        const prevSeries = prev[key] ?? new Array(maxLength).fill(0);
-        const updated = pushValue(prevSeries, value, maxLength);
-        next[key] = updated;
-        if (updated !== prevSeries) changed = true;
-      });
+      if (values.length === maxLength) {
+        normalized[key] = values;
+        return;
+      }
 
-      return changed ? next : prev;
+      if (values.length > maxLength) {
+        normalized[key] = values.slice(values.length - maxLength);
+        return;
+      }
+
+      const padding = new Array(maxLength - values.length).fill(0);
+      normalized[key] = [...padding, ...values];
     });
-  }, [systemUsage, selectors, maxLength]);
+
+    return normalized;
+  }, [maxLength, selectors, series]);
 
   const addDataPoint = useCallback(
     (key: string, value: number) => {
@@ -115,11 +110,11 @@ export const useTimeSeries = (options: TimeSeriesOptions = {}): TimeSeriesResult
   );
 
   const getSeriesData = useCallback((key: string) => {
-    return series[key] ?? [];
-  }, [series]);
+    return seriesView[key] ?? [];
+  }, [seriesView]);
 
   return {
-    series,
+    series: seriesView,
     addDataPoint,
     getSeriesData,
   };

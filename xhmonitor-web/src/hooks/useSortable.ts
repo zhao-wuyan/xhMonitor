@@ -417,7 +417,7 @@ export const useSortable = (
       forceFallback: true,
       fallbackOnBody: true,
       fallbackTolerance: 8,
-      onMove: (_evt, _originalEvent) => {
+      onMove: () => {
         schedulePreviewSync('onMove');
       },
       onChange: () => {

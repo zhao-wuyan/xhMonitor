@@ -1,15 +1,8 @@
-import { createContext, useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useLayoutState } from '../hooks/useLayoutState';
-import type { LayoutState, LayoutStateUpdate } from '../hooks/useLayoutState';
-
-interface LayoutContextValue {
-  layoutState: LayoutState;
-  updateLayout: (update: LayoutStateUpdate) => void;
-  resetLayout: () => void;
-}
-
-const LayoutContext = createContext<LayoutContextValue | undefined>(undefined);
+import { LayoutContext } from './useLayout';
+import type { LayoutContextValue } from './useLayout';
 
 interface LayoutProviderProps {
   children: ReactNode;
@@ -18,7 +11,7 @@ interface LayoutProviderProps {
 export const LayoutProvider = ({ children }: LayoutProviderProps) => {
   const { layoutState, updateLayout, resetLayout } = useLayoutState();
 
-  const value = useMemo(
+  const value = useMemo<LayoutContextValue>(
     () => ({
       layoutState,
       updateLayout,
@@ -28,12 +21,4 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
   );
 
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;
-};
-
-export const useLayout = () => {
-  const context = useContext(LayoutContext);
-  if (!context) {
-    throw new Error('useLayout must be used within a LayoutProvider');
-  }
-  return context;
 };

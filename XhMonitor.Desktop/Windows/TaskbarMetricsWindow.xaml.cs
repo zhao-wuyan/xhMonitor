@@ -473,7 +473,7 @@ public partial class TaskbarMetricsWindow : Window
             ChromeBorder.BorderBrush = ActiveFloatingBorderBrush;
             ChromeBorder.BorderThickness = new Thickness(1);
             ChromeBorder.CornerRadius = new CornerRadius(6);
-            ChromeBorder.Effect = CreateShadowEffect(WpfColors.Black, shadowDepth: 8, direction: 270, blurRadius: 24, opacity: 0.55);
+            ChromeBorder.Effect = CreateShadowEffect(WpfColors.Black, shadowDepth: 6, direction: 270, blurRadius: 18, opacity: 0.38);
             return;
         }
 
@@ -483,7 +483,7 @@ public partial class TaskbarMetricsWindow : Window
             ChromeBorder.BorderBrush = FloatingBorderBrush;
             ChromeBorder.BorderThickness = new Thickness(1);
             ChromeBorder.CornerRadius = new CornerRadius(6);
-            ChromeBorder.Effect = CreateShadowEffect(WpfColors.Black, shadowDepth: 8, direction: 270, blurRadius: 24, opacity: 0.45);
+            ChromeBorder.Effect = CreateShadowEffect(WpfColors.Black, shadowDepth: 5, direction: 270, blurRadius: 18, opacity: 0.28);
             return;
         }
 
@@ -494,39 +494,47 @@ public partial class TaskbarMetricsWindow : Window
                 ChromeBorder.CornerRadius = new CornerRadius(0, 0, 8, 8);
                 ChromeBorder.BorderBrush = TopBottomDockBorderBrush;
                 ChromeBorder.BorderThickness = new Thickness(0, 2, 0, 0);
-                ChromeBorder.Effect = CreateShadowEffect(TopBottomGlowColor, shadowDepth: 4, direction: 270, blurRadius: 20, opacity: 0.4);
+                ChromeBorder.Effect = CreateShadowEffect(TopBottomGlowColor, shadowDepth: 3, direction: 270, blurRadius: 12, opacity: 0.28);
                 break;
             case EdgeDockSide.Bottom:
                 ChromeBorder.CornerRadius = new CornerRadius(8, 8, 0, 0);
                 ChromeBorder.BorderBrush = TopBottomDockBorderBrush;
                 ChromeBorder.BorderThickness = new Thickness(0, 0, 0, 2);
-                ChromeBorder.Effect = CreateShadowEffect(TopBottomGlowColor, shadowDepth: 4, direction: 90, blurRadius: 20, opacity: 0.4);
+                ChromeBorder.Effect = CreateShadowEffect(TopBottomGlowColor, shadowDepth: 3, direction: 90, blurRadius: 12, opacity: 0.28);
                 break;
             case EdgeDockSide.Left:
                 ChromeBorder.CornerRadius = new CornerRadius(0, 8, 8, 0);
                 ChromeBorder.BorderBrush = SideDockBorderBrush;
                 ChromeBorder.BorderThickness = new Thickness(2, 0, 0, 0);
-                ChromeBorder.Effect = CreateShadowEffect(SideGlowColor, shadowDepth: 4, direction: 0, blurRadius: 20, opacity: 0.4);
+                ChromeBorder.Effect = CreateShadowEffect(SideGlowColor, shadowDepth: 3, direction: 0, blurRadius: 12, opacity: 0.28);
                 break;
             default:
                 ChromeBorder.CornerRadius = new CornerRadius(8, 0, 0, 8);
                 ChromeBorder.BorderBrush = SideDockBorderBrush;
                 ChromeBorder.BorderThickness = new Thickness(0, 0, 2, 0);
-                ChromeBorder.Effect = CreateShadowEffect(SideGlowColor, shadowDepth: 4, direction: 180, blurRadius: 20, opacity: 0.4);
+                ChromeBorder.Effect = CreateShadowEffect(SideGlowColor, shadowDepth: 3, direction: 180, blurRadius: 12, opacity: 0.28);
                 break;
         }
     }
 
     private static DropShadowEffect CreateShadowEffect(WpfColor color, double shadowDepth, double direction, double blurRadius, double opacity)
     {
-        return new DropShadowEffect
+        var effect = new DropShadowEffect
         {
             Color = color,
             ShadowDepth = shadowDepth,
             Direction = direction,
             BlurRadius = blurRadius,
-            Opacity = opacity
+            Opacity = opacity,
+            RenderingBias = RenderingBias.Performance
         };
+
+        if (effect.CanFreeze)
+        {
+            effect.Freeze();
+        }
+
+        return effect;
     }
 
     private void ResetToNearestNonTaskbarOverlap(WinFormsScreen screen)

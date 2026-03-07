@@ -1,16 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { getAccessKey, onAccessKeyChanged } from '../config/accessKey';
+import { AuthContext } from './useAuth';
+import type { AuthState } from './useAuth';
 
 const AUTH_REQUIRED_EVENT = 'xh-auth-required';
-
-interface AuthState {
-  requiresAccessKey: boolean;
-  authEpoch: number;
-  clearAuthRequired: () => void;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [requiresAccessKey, setRequiresAccessKey] = useState(false);
@@ -45,12 +39,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return ctx;
-};
-

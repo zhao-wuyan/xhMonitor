@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useLayout } from '../contexts/LayoutContext';
+import { useLayout } from '../contexts/useLayout';
 import type { LayoutState } from './useLayoutState';
 
 const COLOR_KEYS = ['cpu', 'ram', 'gpu', 'vram', 'net', 'pwr'] as const;

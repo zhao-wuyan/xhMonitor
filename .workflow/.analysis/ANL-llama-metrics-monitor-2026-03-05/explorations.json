@@ -1,0 +1,76 @@
+{
+  "session_id": "ANL-llama-metrics-monitor-2026-03-05",
+  "timestamp": "2026-03-05T09:32:14+08:00",
+  "topic": "llama.cpp（llama-server.exe）/metrics 运行监控",
+  "dimensions": [
+    "architecture",
+    "implementation",
+    "performance",
+    "decision"
+  ],
+  "sources": [
+    {
+      "type": "file",
+      "file": "XhMonitor.Service/Worker.cs",
+      "summary": "采集/写库/推送的主链路，适合作为模型指标注入点。"
+    },
+    {
+      "type": "file",
+      "file": "XhMonitor.Service/Core/ProcessScanner.cs",
+      "summary": "提供 commandLine + 关键字过滤 + displayName 解析，能可靠识别 llama-server 进程与其命令行参数。"
+    },
+    {
+      "type": "file",
+      "file": "XhMonitor.Service/appsettings.json",
+      "summary": "已配置 llama-server displayName 规则（从 gguf 路径提取模型名）。"
+    },
+    {
+      "type": "file",
+      "file": "XhMonitor.Desktop/FloatingWindow.xaml",
+      "summary": "PinnedCardTemplate 可扩展为“卡片上方额外一行”，满足需求描述。"
+    },
+    {
+      "type": "file",
+      "file": "xhmonitor-web/src/components/ProcessList.tsx",
+      "summary": "需要新增展开行能力；当前无二级行渲染。"
+    }
+  ],
+  "key_findings": [
+    {
+      "finding": "数据通道已统一在 service：采集 -> SQLite -> SignalR；web/desktop 都走同一套实时推送。",
+      "impact": "llama 监控优先放在 service 端集中实现，可复用持久化、聚合、推送，避免两端各自 curl 与重复逻辑。",
+      "confidence": "high"
+    },
+    {
+      "finding": "llama-server 友好名解析规则已存在，可直接作为“模型名称”。",
+      "impact": "无需额外设计 modelName 的解析，后续展示可直接用 DisplayName。",
+      "confidence": "high"
+    },
+    {
+      "finding": "现有 IMetricProvider 模型为单指标返回，不适合直接承载一次 /metrics 多指标抓取。",
+      "impact": "需要新增批量采集/后处理（推荐），或拆成多个 provider + 共享缓存（次选）。",
+      "confidence": "high"
+    },
+    {
+      "finding": "Desktop pinned 卡片 UI 可通过 DataTemplate 根容器扩展实现“上方一行”。",
+      "impact": "满足“在钉住信息上方扩展处一行显示模型性能参数”的交互要求，改动范围可控。",
+      "confidence": "high"
+    },
+    {
+      "finding": "Web ProcessList 需要实现展开行；可通过在 tbody 内插入额外 tr（colSpan）实现，不依赖表头列布局。",
+      "impact": "满足“单击进程名称展开一行，布局不跟随表头”的要求。",
+      "confidence": "high"
+    }
+  ],
+  "discussion_points": [
+    "service 端是否必须“按需采集”（仅展开/钉住才采集），还是对 llama-server 常驻采集即可？（性能权衡）",
+    "tokens/s 口径：按采样间隔 wall-clock 计算的瞬时值 vs. 按 predicted_seconds_total 计算的“纯推理吞吐”。",
+    "展示字段最终定稿：建议先确定 4-6 个字段，避免 UI 过载与 DB 体积膨胀。"
+  ],
+  "open_questions": [
+    "llama-server 命令行端口参数可能形式（--port/--port=/ -p）是否需要覆盖？默认端口是否固定？",
+    "/metrics 是否始终为 Prometheus 文本格式？是否存在 JSON 转义版本（历史 bug）需要兼容？",
+    "未来“多类型进程监控方式”是否希望走插件化（类似 IMetricProvider），还是仅内建少量适配器即可？"
+  ]
+}
+

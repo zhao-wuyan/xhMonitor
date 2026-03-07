@@ -18,4 +18,10 @@ public sealed class MonitorSettings
     /// </summary>
     [Range(1, 3600)]
     public int SystemUsageIntervalSeconds { get; set; } = 1;
+
+    /// <summary>
+    /// llama-server (/metrics) 采样间隔（秒）。0 表示禁用。
+    /// </summary>
+    [Range(0, 3600)]
+    public int LlamaMetricsIntervalSeconds { get; set; } = 1;
 }

@@ -1,0 +1,44 @@
+{
+  "iteration": 1,
+  "timestamp": "2026-03-05T00:00:00+08:00",
+  "bug": "日志中 llama /metrics 返回在变（例如 llamacpp:n_decode_total），但 Desktop 的 llama 指标不实时变化；只有 AI 回复完成时才跳一下。",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "description": "Desktop 未订阅到包含 llama 指标的 SignalR 事件（订阅缺失或事件名不一致）。",
+      "testable_condition": "确认 Desktop UI 展示来源的 ViewModel 是否依赖 ProcessDataReceived，并检查 SignalRService 是否收到 ReceiveProcessMetrics。",
+      "logging_point": "XhMonitor.Desktop/Services/SignalRService.cs (events wiring) / FloatingWindowViewModel.OnProcessDataReceived",
+      "evidence_criteria": {
+        "confirm": "未注册或未触发 ReceiveProcessMetrics → ProcessDataReceived",
+        "reject": "事件正常触发且 ProcessInfoDto.Metrics 中含 llama_* 键"
+      },
+      "likelihood": 2,
+      "status": "pending"
+    },
+    {
+      "id": "H2",
+      "description": "Service 的 llama 高频采集 loop 只在特定字段变化时推送；日志变化的指标未参与变化检测，导致 shouldPush=false。",
+      "testable_condition": "检查 PrepareLlamaRealtimeUpdates/TryGetLlamaValuesChanged 比较字段与解析字段是否覆盖日志变化项（如 n_decode_total）。",
+      "logging_point": "XhMonitor.Service/Worker.cs:PrepareLlamaRealtimeUpdates + TryGetLlamaValuesChanged；XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs:LlamaPrometheusTextParser",
+      "evidence_criteria": {
+        "confirm": "变化检测字段不含 n_decode_total 且解析器不解析该指标",
+        "reject": "变化检测字段已覆盖并能触发 shouldPush"
+      },
+      "likelihood": 1,
+      "status": "pending"
+    },
+    {
+      "id": "H3",
+      "description": "Desktop 展示的 Port/Gen/Busy/Req/Out 本身只在回复结束时变化，因此看起来不实时。",
+      "testable_condition": "对比多次 /metrics 采样：tokens_predicted_total/seconds_total 在生成过程中是否逐步变化；若不变则 Desktop 文本不会变。",
+      "logging_point": "llama /metrics 文本（服务端日志已打印） + Desktop ProcessRowViewModel.BuildLlamaMetricsLine",
+      "evidence_criteria": {
+        "confirm": "生成过程中 tokens_predicted_total 等字段不变，仅 n_decode_total 变化",
+        "reject": "tokens_predicted_total 逐步增长但 Desktop 未刷新"
+      },
+      "likelihood": 1,
+      "status": "pending"
+    }
+  ]
+}
+

@@ -1,0 +1,114 @@
+{
+  "project_type": "dotnet + react",
+  "timestamp": "2026-03-05T09:32:14+08:00",
+  "topic": "llama.cpp（llama-server.exe）/metrics 运行监控",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "relevance": 0.95,
+      "summary": "服务端主循环：采集进程指标、写入 SQLite、通过 SignalR 推送 ReceiveProcessMetrics/ReceiveProcessMetadata；适合在 CollectAllAsync 与 SaveMetricsAsync 之间插入“模型性能采集/差值计算/写库”的后处理。"
+    },
+    {
+      "path": "XhMonitor.Service/Core/PerformanceMonitor.cs",
+      "relevance": 0.8,
+      "summary": "并行扫描进程并按 provider 列表逐个 CollectAsync；IMetricProvider 仅支持单指标返回（对多指标的 /metrics 抓取不友好）。"
+    },
+    {
+      "path": "XhMonitor.Service/Core/ProcessScanner.cs",
+      "relevance": 0.95,
+      "summary": "扫描进程并读取 CommandLine（带 30s 缓存）+ 关键字过滤；同时调用 IProcessNameResolver 生成 DisplayName。"
+    },
+    {
+      "path": "XhMonitor.Core/Services/ProcessNameResolver.cs",
+      "relevance": 0.75,
+      "summary": "根据 appsettings.json 的 ProcessNameRules 从命令行提取友好名称；已包含 llama-server 规则，能从 -m/--model 的路径提取模型目录名并格式化 DisplayName。"
+    },
+    {
+      "path": "XhMonitor.Service/appsettings.json",
+      "relevance": 0.75,
+      "summary": "Monitor:Keywords 默认包含 llama-server；Monitor:ProcessNameRules 已配置 llama-server 显示名解析。"
+    },
+    {
+      "path": "XhMonitor.Service/Data/Repositories/MetricRepository.cs",
+      "relevance": 0.9,
+      "summary": "将每个 ProcessMetrics 的 Metrics(Dictionary<string, MetricValue>) 序列化为 JSON 存入 ProcessMetricRecords；新增指标键不会触发迁移。"
+    },
+    {
+      "path": "XhMonitor.Core/Entities/ProcessMetricRecord.cs",
+      "relevance": 0.7,
+      "summary": "原始采样表结构：ProcessId/ProcessName/CommandLine/DisplayName/Timestamp/MetricsJson；无单独 port 字段，但可通过 CommandLine 解析或写入一个数值型指标保存 port。"
+    },
+    {
+      "path": "XhMonitor.Service/Controllers/ConfigController.cs",
+      "relevance": 0.6,
+      "summary": "/api/v1/config/metrics 的元数据来自 MetricProviderRegistry（IMetricProvider 列表）；如果模型指标不走 IMetricProvider，需要单独提供展示所需的标签/单位（或后续扩展元数据来源）。"
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "relevance": 0.9,
+      "summary": "桌面端进程行/钉住逻辑：右键 TogglePin；ProcessRowViewModel 当前仅映射 cpu/memory/gpu/vram，需要扩展以展示模型性能行（可基于 metrics 字典 + commandLine）。"
+    },
+    {
+      "path": "XhMonitor.Desktop/FloatingWindow.xaml",
+      "relevance": 0.9,
+      "summary": "PinnedCardTemplate 为固定高度 28 的卡片；PinnedStack 为 ItemsControl。可把 PinnedCardTemplate 根改成 StackPanel，在卡片上方新增一行 TextBlock 作为“模型性能扩展行”。"
+    },
+    {
+      "path": "xhmonitor-web/src/components/ProcessList.tsx",
+      "relevance": 0.9,
+      "summary": "Web 端进程表目前不支持展开行；可在 tbody 中为每个进程插入额外 <tr><td colSpan=...> 作为展开区域，展示模型性能信息。"
+    }
+  ],
+  "patterns": [
+    {
+      "pattern": "统一数据通道：Service 采集 -> SQLite 持久化 -> SignalR 推送",
+      "files": [
+        "XhMonitor.Service/Worker.cs",
+        "XhMonitor.Service/Data/Repositories/MetricRepository.cs",
+        "xhmonitor-web/src/hooks/useMetricsHub.ts",
+        "XhMonitor.Desktop/Services/SignalRService.cs"
+      ],
+      "description": "Web 与 Desktop 均通过 SignalR 获取实时数据，历史数据走 REST；适合把 llama 监控也纳入 Service 统一采集，避免两端重复 curl 与跨域/权限问题。"
+    },
+    {
+      "pattern": "进程元信息单独推送（命令行/友好名）",
+      "files": [
+        "XhMonitor.Service/Core/ProcessMetadataStore.cs",
+        "XhMonitor.Service/Worker.cs"
+      ],
+      "description": "CommandLine 与 DisplayName 通过 ReceiveProcessMetadata 增量推送；可在 UI 侧用命令行检测 --metrics/port 并决定显示/提示。"
+    },
+    {
+      "pattern": "IMetricProvider 单指标模型",
+      "files": [
+        "XhMonitor.Core/Interfaces/IMetricProvider.cs",
+        "XhMonitor.Service/Core/BuiltInMetricProviderFactory.cs"
+      ],
+      "description": "现有 provider 每次只返回一个 MetricValue；对 Prometheus /metrics 一次返回多指标的场景，需要额外的“批量采集 + 多指标写入”机制，或通过共享缓存拆成多个 provider。"
+    }
+  ],
+  "constraints": [
+    "性能与内存：/metrics 抓取必须限流、短超时、按需解析最小指标集合，且状态缓存需按 pid 清理。",
+    "扩展性：未来可能存在多种进程类型（不同协议/不同端点）需要监控，建议抽象“监控适配器/采集器”而非在 UI 或 provider 里硬编码。"
+  ],
+  "integration_points": [
+    {
+      "location": "XhMonitor.Service/Worker.cs:SendProcessDataAsync",
+      "description": "在 CollectAllAsync 后、SaveMetricsAsync 前插入“模型性能采集与差值计算”，把结果写回 ProcessMetrics.Metrics，随后沿用现有写库与推送逻辑。"
+    },
+    {
+      "location": "XhMonitor.Desktop/FloatingWindow.xaml:PinnedCardTemplate",
+      "description": "把 DataTemplate 根容器扩成两行：上方可选模型性能行，下方保持原卡片布局不变。"
+    },
+    {
+      "location": "xhmonitor-web/src/components/ProcessList.tsx",
+      "description": "为每行进程增加可展开的详情行（不依赖表头列布局），仅在点击进程名时渲染；展示与 desktop 相同字段。"
+    }
+  ],
+  "key_findings": [
+    "项目已具备：进程关键字过滤（默认包含 llama-server）、DisplayName 解析规则（已从 gguf 路径提取模型名）、SQLite 持久化与 SignalR 实时推送。",
+    "service 端写库与推送都基于 ProcessMetrics.Metrics（key -> MetricValue / double），因此“把 llama 指标写进 Metrics 字典”即可天然获得：持久化、历史接口、聚合与实时推送复用。",
+    "IMetricProvider 一次只能返回一个指标；若直接走 provider 注册多个 llama 指标，会导致重复 HTTP 抓取风险，需要共享缓存或引入批量采集后处理。"
+  ]
+}
+

@@ -83,6 +83,20 @@ export const i18n = {
     Process: '进程',
     PID: '进程ID',
 
+    // llama-server 指标提示
+    llama_tip_port: 'llama-server 启动参数 --port；用于访问 http://127.0.0.1:<port>/metrics。',
+    llama_tip_gen:
+      '生成阶段吞吐（采样区间，t/s，t=token）：token 增量 ÷ 生成耗时增量。\n若显示 a~b：左 a 为计算值（按生成耗时），右 b 为 live 估算（按实际经过时间）。',
+    llama_tip_busy:
+      '生成阶段利用率（采样区间，%）：生成耗时增量 ÷ 实际经过时间增量。\n若显示 a~b：左 a 为计算值，右 b 为 live 估算。',
+    llama_tip_req: '请求数：processing/deferred。\nprocessing=正在处理；deferred=排队/延迟。',
+    llama_tip_out:
+      '累计已生成 token 数（t=token；重启归 0），来自 llamacpp:tokens_predicted_total。\n显示会用 k/m/b 简写：1k=1e3，1m=1e6，1b=1e9。\n若显示 a~b：左 a 为原始累计值，右 b 为 live 估算。',
+    llama_tip_avg:
+      '显示为 PAvg/GAvg（单位 t/s，t=token）。\nPAvg=提示词（prompt）累计平均吞吐，来自 llamacpp:prompt_tokens_seconds。\nGAvg=生成（gen）累计平均吞吐，来自 llamacpp:predicted_tokens_seconds。',
+    llama_tip_pavg: 'PAvg：累计平均 prompt 吞吐，来自 llamacpp:prompt_tokens_seconds（单位 t/s，t=token）。',
+    llama_tip_gavg: 'GAvg：累计平均生成吞吐，来自 llamacpp:predicted_tokens_seconds（单位 t/s，t=token）。',
+
     // 加载状态
     'Loading configuration...': '正在加载配置...',
     'Failed to load metric configuration': '加载指标配置失败，请检查后端是否运行',
@@ -174,6 +188,20 @@ export const i18n = {
     'Search processes...': 'Search processes...',
     Process: 'Process',
     PID: 'PID',
+
+    // llama-server metric tooltips
+    llama_tip_port: 'llama-server arg --port; used for http://127.0.0.1:<port>/metrics.',
+    llama_tip_gen:
+      'Gen throughput (sample window, t/s; t=token): token delta / gen-seconds delta.\nIf shown as a~b: a=compute (by gen time), b=live estimate (by real elapsed time).',
+    llama_tip_busy:
+      'Gen utilization (sample window, %): gen-seconds delta / real elapsed time delta.\nIf shown as a~b: a=compute, b=live estimate.',
+    llama_tip_req: 'Requests: processing/deferred.\nprocessing=in progress; deferred=queued/delayed.',
+    llama_tip_out:
+      'Total generated tokens (t=token; resets on restart), from llamacpp:tokens_predicted_total.\nUses k/m/b: 1k=1e3, 1m=1e6, 1b=1e9.\nIf shown as a~b: a=raw total, b=live estimate.',
+    llama_tip_avg:
+      'Shown as PAvg/GAvg (t/s; t=token).\nPAvg=cumulative avg prompt throughput, from llamacpp:prompt_tokens_seconds.\nGAvg=cumulative avg gen throughput, from llamacpp:predicted_tokens_seconds.',
+    llama_tip_pavg: 'PAvg: cumulative avg prompt throughput, from llamacpp:prompt_tokens_seconds (t/s; t=token).',
+    llama_tip_gavg: 'GAvg: cumulative avg gen throughput, from llamacpp:predicted_tokens_seconds (t/s; t=token).',
 
     // 加载状态
     'Loading configuration...': 'Loading configuration...',

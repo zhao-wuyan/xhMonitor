@@ -1,6 +1,6 @@
-import { Children, isValidElement, useEffect, useMemo, useRef, useState } from 'react';
+import { Children, isValidElement, useCallback, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { useLayout } from '../contexts/LayoutContext';
+import { useLayout } from '../contexts/useLayout';
 import { useSortable } from '../hooks/useSortable';
 
 interface DraggableGridProps {
@@ -14,11 +14,27 @@ export const DraggableGrid = ({ children, className, enableDrag = true }: Dragga
   const containerRef = useRef<HTMLElement | null>(null);
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
 
+  const handlePreviewOrderChange = useCallback(
+    (order: string[] | null) => {
+      if (!order) {
+        setPreviewOrder(null);
+        return;
+      }
+
+      const stableOrder = layoutState.cardOrder;
+      const isStableOrder =
+        order.length === stableOrder.length && order.every((id, index) => id === stableOrder[index]);
+
+      setPreviewOrder(isStableOrder ? null : order);
+    },
+    [layoutState.cardOrder]
+  );
+
   useSortable(containerRef, {
     disabled: !enableDrag,
     mode: layoutState.dragMode,
     onOrderChange: (order) => updateLayout({ cardOrder: order }),
-    onPreviewOrderChange: (order) => setPreviewOrder(order),
+    onPreviewOrderChange: handlePreviewOrderChange,
   });
 
   const gridStyle = useMemo(
@@ -29,17 +45,6 @@ export const DraggableGrid = ({ children, className, enableDrag = true }: Dragga
       }) as CSSProperties,
     [layoutState.gridColumns, layoutState.gaps.grid]
   );
-
-  useEffect(() => {
-    if (!previewOrder) return;
-    const stableOrder = layoutState.cardOrder;
-    if (
-      previewOrder.length === stableOrder.length &&
-      previewOrder.every((id, index) => id === stableOrder[index])
-    ) {
-      setPreviewOrder(null);
-    }
-  }, [previewOrder, layoutState.cardOrder]);
 
   const orderedChildren = useMemo(() => {
     const items = Children.toArray(children);
