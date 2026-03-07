@@ -1065,13 +1065,11 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
 }
 
 .xh-tooltip-bubble {
-  position: absolute;
-  z-index: 60;
-  left: 50%;
-  top: -8px;
+  position: fixed;
+  z-index: 9999;
   transform: translate(-50%, -100%);
 
-  max-width: min(520px, 80vw);
+  max-width: min(1040px, 80vw);
   padding: 8px 10px;
   border-radius: 10px;
 
