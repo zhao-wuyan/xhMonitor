@@ -888,32 +888,32 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 new()
                 {
                     DisplayText = $"Port {port}",
-                    Tooltip = $"Port: {port}\n--port（/metrics 端口）"
+                    Tooltip = $"Port: {port}\nllama-server 启动参数 --port；用于访问 http://127.0.0.1:<port>/metrics。"
                 },
                 new()
                 {
                     DisplayText = $"Gen {genText} t/s",
-                    Tooltip = $"Gen: {genText} t/s\n生成吞吐：token 增量 ÷ 生成耗时增量（~ 为按墙钟估算）"
+                    Tooltip = $"Gen: {genText} t/s\n生成阶段吞吐（采样区间，t/s，t=token）：token 增量 ÷ 生成耗时增量。\n若显示 a~b：左 a 为计算值（按生成耗时），右 b 为 live 估算（按实际经过时间）。"
                 },
                 new()
                 {
                     DisplayText = $"Busy {busyText}%",
-                    Tooltip = $"Busy: {busyText}%\n推理忙碌：生成耗时增量 ÷ 墙钟时间增量"
+                    Tooltip = $"Busy: {busyText}%\n生成阶段利用率（采样区间，%）：生成耗时增量 ÷ 实际经过时间增量。\n若显示 a~b：左 a 为计算值，右 b 为 live 估算。"
                 },
                 new()
                 {
                     DisplayText = $"Req {reqProcessingText}/{reqDeferredText}",
-                    Tooltip = $"Req: {reqProcessingText}/{reqDeferredText}\n请求数：处理中/排队"
+                    Tooltip = $"Req: {reqProcessingText}/{reqDeferredText}\n请求数：processing/deferred。\nprocessing=正在处理；deferred=排队/延迟。"
                 },
                 new()
                 {
                     DisplayText = $"Out {outTokensText}",
-                    Tooltip = $"Out: {outExactText} t\n累计生成 token（重启归 0）"
+                    Tooltip = $"Out: {outExactText} t\n累计已生成 token 数（t=token；重启归 0），来自 llamacpp:tokens_predicted_total。\n显示会用 k/m/b 简写：1k=1e3，1m=1e6，1b=1e9。\n若显示 a~b：左 a 为原始累计值，右 b 为 live 估算。"
                 },
                 new()
                 {
                     DisplayText = $"Avg {avgCompactText} t/s",
-                    Tooltip = $"Avg: {avgExactText} t/s\n累计平均吞吐：P=提示词处理，G=生成"
+                    Tooltip = $"Avg: {avgExactText} t/s\n显示为 PAvg/GAvg（单位 t/s，t=token）。\nPAvg=提示词（prompt）累计平均吞吐，来自 llamacpp:prompt_tokens_seconds。\nGAvg=生成（gen）累计平均吞吐，来自 llamacpp:predicted_tokens_seconds。"
                 }
             };
         }
