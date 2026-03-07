@@ -1071,7 +1071,7 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   top: -8px;
   transform: translate(-50%, -100%);
 
-  max-width: 280px;
+  max-width: min(520px, 80vw);
   padding: 8px 10px;
   border-radius: 10px;
 

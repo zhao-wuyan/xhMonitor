@@ -151,22 +151,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
     return `${value.toFixed(1)} t/s`;
   };
 
-  const formatLlamaTpsCompactValue = (value: number | undefined): string => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
-
-    const abs = Math.abs(value);
-    if (abs < 1000) return trimTrailingZero(value.toFixed(1));
-    if (abs < 1_000_000) return `${trimTrailingZero((value / 1_000).toFixed(1))}k`;
-    if (abs < 1_000_000_000) return `${trimTrailingZero((value / 1_000_000).toFixed(1))}m`;
-    return `${trimTrailingZero((value / 1_000_000_000).toFixed(1))}b`;
-  };
-
   const formatLlamaInt = (value: number | undefined): string => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
-    return Math.round(value).toString();
-  };
-
-  const formatLlamaIntExact = (value: number | undefined): string => {
     if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
     return Math.round(value).toString();
   };
@@ -343,7 +328,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                       <td colSpan={totalCols}>
                         <div className="proc-expand-content">
                           <HoverTooltip
-                            content={`Port: ${formatLlamaInt(process.metrics.llama_port)}\n${t('llama_tip_port')}`}
+                            content={t('llama_tip_port')}
                             className="proc-expand-kv"
                           >
                             <span className="proc-expand-k">Port</span>
@@ -351,21 +336,21 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                           </HoverTooltip>
 
                           <HoverTooltip
-                            content={`Gen: ${formatLlamaValue(process.metrics.llama_gen_tps_compute, 1)} t/s\n${t('llama_tip_gen')}`}
+                            content={t('llama_tip_gen')}
                             className="proc-expand-kv"
                           >
                             <span className="proc-expand-k">Gen</span>
                             <span className="proc-expand-v">{formatLlamaTps(process.metrics.llama_gen_tps_compute)}</span>
                           </HoverTooltip>
                           <HoverTooltip
-                            content={`Busy: ${formatLlamaValue(process.metrics.llama_busy_percent, 1)}%\n${t('llama_tip_busy')}`}
+                            content={t('llama_tip_busy')}
                             className="proc-expand-kv"
                           >
                             <span className="proc-expand-k">Busy</span>
                             <span className="proc-expand-v">{formatLlamaValue(process.metrics.llama_busy_percent, 0)}%</span>
                           </HoverTooltip>
                           <HoverTooltip
-                            content={`Req: ${formatLlamaValue(process.metrics.llama_req_processing, 0)}/${formatLlamaValue(process.metrics.llama_req_deferred, 0)}\n${t('llama_tip_req')}`}
+                            content={t('llama_tip_req')}
                             className="proc-expand-kv"
                           >
                             <span className="proc-expand-k">Req</span>
@@ -374,7 +359,7 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                             </span>
                           </HoverTooltip>
                           <HoverTooltip
-                            content={`Out: ${formatLlamaIntExact(process.metrics.llama_out_tokens_total)} t\n${t('llama_tip_out')}`}
+                            content={t('llama_tip_out')}
                             className="proc-expand-kv"
                           >
                             <span className="proc-expand-k">Out</span>
@@ -382,13 +367,19 @@ export const ProcessList = forwardRef<HTMLDivElement, ProcessListProps & Process
                           </HoverTooltip>
 
                           <HoverTooltip
-                            content={`Avg: ${formatLlamaValue(process.metrics.llama_prompt_tps_avg, 1)}/${formatLlamaValue(process.metrics.llama_gen_tps_avg, 1)} t/s\n${t('llama_tip_avg')}`}
+                            content={t('llama_tip_pavg')}
                             className="proc-expand-kv"
                           >
-                            <span className="proc-expand-k">Avg</span>
-                            <span className="proc-expand-v">
-                              {formatLlamaTpsCompactValue(process.metrics.llama_prompt_tps_avg)}/{formatLlamaTpsCompactValue(process.metrics.llama_gen_tps_avg)} t/s
-                            </span>
+                            <span className="proc-expand-k">PAvg</span>
+                            <span className="proc-expand-v">{formatLlamaTps(process.metrics.llama_prompt_tps_avg)}</span>
+                          </HoverTooltip>
+
+                          <HoverTooltip
+                            content={t('llama_tip_gavg')}
+                            className="proc-expand-kv"
+                          >
+                            <span className="proc-expand-k">GAvg</span>
+                            <span className="proc-expand-v">{formatLlamaTps(process.metrics.llama_gen_tps_avg)}</span>
                           </HoverTooltip>
                         </div>
                       </td>

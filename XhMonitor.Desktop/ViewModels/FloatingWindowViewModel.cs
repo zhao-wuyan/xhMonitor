@@ -825,7 +825,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             var genAvgCompact = FormatTpsCompactValue(genTpsAvg);
             var avgText = $"{promptAvgCompact}/{genAvgCompact}";
 
-            return $"Port {port}   Gen {genText} t/s   Busy {busyText}%   Req {reqProcessingText}/{reqDeferredText}   Out {outTokensText}   Avg {avgText} t/s";
+            return $"Port {port}   Gen {genText} t/s   Req {reqProcessingText}/{reqDeferredText}/{busyText}   Out {outTokensText}   Avg {avgText} t/s";
         }
 
         private static IReadOnlyList<LlamaMetricItem> BuildLlamaMetricsItems(
@@ -897,13 +897,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 },
                 new()
                 {
-                    DisplayText = $"Busy {busyText}%",
-                    Tooltip = $"Busy: {busyText}%\n生成阶段利用率（采样区间，%）：生成耗时增量 ÷ 实际经过时间增量。\n若显示 a~b：左 a 为计算值，右 b 为 live 估算。"
-                },
-                new()
-                {
-                    DisplayText = $"Req {reqProcessingText}/{reqDeferredText}",
-                    Tooltip = $"Req: {reqProcessingText}/{reqDeferredText}\n请求数：processing/deferred。\nprocessing=正在处理；deferred=排队/延迟。"
+                    DisplayText = $"Req {reqProcessingText}/{reqDeferredText}/{busyText}",
+                    Tooltip = $"Req: {reqProcessingText}/{reqDeferredText}/{busyText}\n请求数：processing/deferred。\nprocessing=正在处理；deferred=排队/延迟。\nBusy：生成阶段利用率（采样区间，%）：生成耗时增量 ÷ 实际经过时间增量。\n若显示 a~b：左 a 为计算值，右 b 为 live 估算。"
                 },
                 new()
                 {
