@@ -51,6 +51,8 @@ public class LlamaServerMetricsParsingTests
                    # TYPE llamacpp:tokens_predicted_total counter
                    llamacpp:tokens_predicted_total 1000
                    llamacpp:tokens_predicted_seconds_total 10
+                   llamacpp:prompt_tokens_seconds 12.3
+                   llamacpp:predicted_tokens_seconds 45.6
                    llamacpp:n_decode_total 1234
                    llamacpp:requests_processing 1
                    llamacpp:requests_deferred 2
@@ -59,6 +61,8 @@ public class LlamaServerMetricsParsingTests
         LlamaPrometheusTextParser.TryParse(text.AsSpan(), out var snapshot).Should().BeTrue();
         snapshot.TokensPredictedTotal.Should().Be(1000);
         snapshot.TokensPredictedSecondsTotal.Should().Be(10);
+        snapshot.PromptTokensPerSecond.Should().Be(12.3);
+        snapshot.PredictedTokensPerSecond.Should().Be(45.6);
         snapshot.DecodeTotal.Should().Be(1234);
         snapshot.RequestsProcessing.Should().Be(1);
         snapshot.RequestsDeferred.Should().Be(2);

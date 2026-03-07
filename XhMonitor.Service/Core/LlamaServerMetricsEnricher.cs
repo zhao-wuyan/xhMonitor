@@ -87,6 +87,16 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
                 SetMetric(processMetrics, LlamaMetricKeys.ReqDeferred, snapshot.RequestsDeferred.Value, string.Empty, "Req Deferred");
             }
 
+            if (snapshot.PromptTokensPerSecond.HasValue)
+            {
+                SetMetric(processMetrics, LlamaMetricKeys.PromptTpsAvg, snapshot.PromptTokensPerSecond.Value, "tok/s", "Prompt TPS Avg");
+            }
+
+            if (snapshot.PredictedTokensPerSecond.HasValue)
+            {
+                SetMetric(processMetrics, LlamaMetricKeys.GenTpsAvg, snapshot.PredictedTokensPerSecond.Value, "tok/s", "Gen TPS Avg");
+            }
+
             if (snapshot.TokensPredictedTotal.HasValue)
             {
                 SetMetric(processMetrics, LlamaMetricKeys.OutTokensTotal, snapshot.TokensPredictedTotal.Value, "tok", "Out Tokens");
@@ -296,6 +306,8 @@ internal static class LlamaMetricKeys
 {
     public const string Port = "llama_port";
     public const string GenTpsCompute = "llama_gen_tps_compute";
+    public const string GenTpsAvg = "llama_gen_tps_avg";
+    public const string PromptTpsAvg = "llama_prompt_tps_avg";
     public const string BusyPercent = "llama_busy_percent";
     public const string GenTpsLive = "llama_gen_tps_live";
     public const string BusyPercentLive = "llama_busy_percent_live";
@@ -345,6 +357,8 @@ internal readonly struct LlamaPrometheusSnapshot
 {
     public double? TokensPredictedTotal { get; init; }
     public double? TokensPredictedSecondsTotal { get; init; }
+    public double? PredictedTokensPerSecond { get; init; }
+    public double? PromptTokensPerSecond { get; init; }
     public double? RequestsProcessing { get; init; }
     public double? RequestsDeferred { get; init; }
     public double? DecodeTotal { get; init; }
@@ -354,6 +368,8 @@ internal static class LlamaPrometheusTextParser
 {
     private const string TokensPredictedTotalName = "llamacpp:tokens_predicted_total";
     private const string TokensPredictedSecondsTotalName = "llamacpp:tokens_predicted_seconds_total";
+    private const string PredictedTokensPerSecondName = "llamacpp:predicted_tokens_seconds";
+    private const string PromptTokensPerSecondName = "llamacpp:prompt_tokens_seconds";
     private const string RequestsProcessingName = "llamacpp:requests_processing";
     private const string RequestsDeferredName = "llamacpp:requests_deferred";
     private const string DecodeTotalName = "llamacpp:n_decode_total";
@@ -362,6 +378,8 @@ internal static class LlamaPrometheusTextParser
     {
         double? tokensPredictedTotal = null;
         double? tokensPredictedSecondsTotal = null;
+        double? predictedTokensPerSecond = null;
+        double? promptTokensPerSecond = null;
         double? requestsProcessing = null;
         double? requestsDeferred = null;
         double? decodeTotal = null;
@@ -410,6 +428,14 @@ internal static class LlamaPrometheusTextParser
             {
                 tokensPredictedSecondsTotal = value;
             }
+            else if (nameSpan.SequenceEqual(PredictedTokensPerSecondName))
+            {
+                predictedTokensPerSecond = value;
+            }
+            else if (nameSpan.SequenceEqual(PromptTokensPerSecondName))
+            {
+                promptTokensPerSecond = value;
+            }
             else if (nameSpan.SequenceEqual(RequestsProcessingName))
             {
                 requestsProcessing = value;
@@ -428,6 +454,8 @@ internal static class LlamaPrometheusTextParser
         {
             TokensPredictedTotal = tokensPredictedTotal,
             TokensPredictedSecondsTotal = tokensPredictedSecondsTotal,
+            PredictedTokensPerSecond = predictedTokensPerSecond,
+            PromptTokensPerSecond = promptTokensPerSecond,
             RequestsProcessing = requestsProcessing,
             RequestsDeferred = requestsDeferred,
             DecodeTotal = decodeTotal
@@ -435,6 +463,8 @@ internal static class LlamaPrometheusTextParser
 
         return tokensPredictedTotal.HasValue
                || tokensPredictedSecondsTotal.HasValue
+               || predictedTokensPerSecond.HasValue
+               || promptTokensPerSecond.HasValue
                || requestsProcessing.HasValue
                || requestsDeferred.HasValue
                || decodeTotal.HasValue;

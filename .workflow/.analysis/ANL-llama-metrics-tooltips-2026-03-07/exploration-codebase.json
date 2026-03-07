@@ -1,0 +1,36 @@
+{
+  "project_type": "dotnet + react",
+  "timestamp": "2026-03-07T14:41:58+08:00",
+  "topic": "llama 指标 UI：隐藏 Dec；新增累计平均 Gen/Prompt；Desktop + Web tooltip",
+  "relevant_files": [
+    {
+      "path": "XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs",
+      "summary": "解析 llama-server /metrics（Prometheus text），写入 llama_* 指标并派生 Gen/Busy/Live 等。"
+    },
+    {
+      "path": "XhMonitor.Service/Worker.cs",
+      "summary": "llama 高频采集循环 + 变化检测 gating + 缓存回填（ApplyLlamaCachedMetrics）+ SignalR 推送。"
+    },
+    {
+      "path": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "summary": "Pinned 进程的 llama 指标格式化（LlamaMetricsText），用于 Desktop 展示。"
+    },
+    {
+      "path": "XhMonitor.Desktop/FloatingWindow.xaml",
+      "summary": "PinnedCardTemplate 展示 llama 指标行（当前绑定 LlamaMetricsText）。"
+    },
+    {
+      "path": "xhmonitor-web/src/components/ProcessList.tsx",
+      "summary": "Web 进程列表展开行展示 llama 指标（Port/Gen/Busy/Req/Out）。"
+    },
+    {
+      "path": "xhmonitor-web/src/styles/responsive.css",
+      "summary": "Web 进程列表与展开行样式（.proc-expand-*），适合补 tooltip 样式。"
+    },
+    {
+      "path": "XhMonitor.Tests/Services/LlamaServerMetricsParsingTests.cs",
+      "summary": "Prometheus 解析与派生计算单测；需补充对新 gauges 的解析测试。"
+    }
+  ]
+}
+

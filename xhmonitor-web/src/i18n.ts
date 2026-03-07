@@ -83,6 +83,14 @@ export const i18n = {
     Process: '进程',
     PID: '进程ID',
 
+    // llama-server 指标提示
+    llama_tip_port: '--port（/metrics 端口）',
+    llama_tip_gen: '生成吞吐：token 增量 ÷ 生成耗时增量（~ 为按墙钟估算）',
+    llama_tip_busy: '推理忙碌：生成耗时增量 ÷ 墙钟时间增量',
+    llama_tip_req: '请求数：处理中/排队',
+    llama_tip_out: '累计生成 token（重启归 0）',
+    llama_tip_avg: '累计平均吞吐：P=提示词处理，G=生成',
+
     // 加载状态
     'Loading configuration...': '正在加载配置...',
     'Failed to load metric configuration': '加载指标配置失败，请检查后端是否运行',
@@ -174,6 +182,14 @@ export const i18n = {
     'Search processes...': 'Search processes...',
     Process: 'Process',
     PID: 'PID',
+
+    // llama-server metric tooltips
+    llama_tip_port: '--port (/metrics port)',
+    llama_tip_gen: 'Generation throughput: token delta / gen-seconds delta (~ uses wall time)',
+    llama_tip_busy: 'Utilization: gen-seconds delta / wall-seconds delta',
+    llama_tip_req: 'Requests: processing/deferred',
+    llama_tip_out: 'Total generated tokens (resets on restart)',
+    llama_tip_avg: 'Cumulative average throughput: P=prompt, G=gen',
 
     // 加载状态
     'Loading configuration...': 'Loading configuration...',

@@ -107,6 +107,31 @@ public partial class FloatingWindow : Window
         LocationChanged += OnLocationChanged;
     }
 
+    private void LlamaMetricTextBlock_ToolTipOpening(object sender, ToolTipEventArgs e)
+    {
+        if (sender is not TextBlock textBlock)
+        {
+            return;
+        }
+
+        if (textBlock.DataContext is not FloatingWindowViewModel.ProcessRowViewModel.LlamaMetricItem item)
+        {
+            return;
+        }
+
+        if (textBlock.ToolTip is not System.Windows.Controls.ToolTip tooltip)
+        {
+            return;
+        }
+
+        tooltip.Content = new TextBlock
+        {
+            Text = item.Tooltip,
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 420
+        };
+    }
+
     private CustomPopupPlacement[] OnCustomPopupPlacement(System.Windows.Size popupSize, System.Windows.Size targetSize, System.Windows.Point offset)
     {
         // Center the popup horizontally relative to the target

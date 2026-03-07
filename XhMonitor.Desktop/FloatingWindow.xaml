@@ -205,10 +205,30 @@
                         </Grid.RowDefinitions>
 
                         <!-- llama-server 性能扩展行（仅在有数据时显示） -->
-                        <TextBlock Grid.Row="0" Text="{Binding LlamaMetricsText}" TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding HasLlamaMetrics, Converter={StaticResource BoolToVisibility}}"
-                                   Foreground="{StaticResource ColorTextSub}"
-                                   FontSize="10" FontFamily="Consolas" Margin="0,0,0,2"/>
+                        <ItemsControl Grid.Row="0"
+                                      ItemsSource="{Binding LlamaMetricsItems}"
+                                      Visibility="{Binding HasLlamaMetrics, Converter={StaticResource BoolToVisibility}}"
+                                      Margin="0,0,0,2">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                     <TextBlock Text="{Binding DisplayText}"
+                                               Foreground="{StaticResource ColorTextSub}"
+                                               FontSize="10" FontFamily="Consolas"
+                                               Margin="0,0,12,0"
+                                               ToolTipService.InitialShowDelay="200"
+                                               ToolTipOpening="LlamaMetricTextBlock_ToolTipOpening">
+                                         <TextBlock.ToolTip>
+                                            <ToolTip Placement="Mouse" MaxWidth="420"/>
+                                         </TextBlock.ToolTip>
+                                     </TextBlock>
+                                 </DataTemplate>
+                             </ItemsControl.ItemTemplate>
+                         </ItemsControl>
 
                         <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>

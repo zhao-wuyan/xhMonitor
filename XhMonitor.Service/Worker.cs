@@ -556,6 +556,8 @@ public class Worker : BackgroundService
 
         var port = (int)Math.Round(portMetric.Value, MidpointRounding.AwayFromZero);
 
+        var promptTpsAvg = process.Metrics.TryGetValue(LlamaMetricKeys.PromptTpsAvg, out var promptTpsMetric) ? promptTpsMetric.Value : double.NaN;
+        var genTpsAvg = process.Metrics.TryGetValue(LlamaMetricKeys.GenTpsAvg, out var genTpsAvgMetric) ? genTpsAvgMetric.Value : double.NaN;
         var gen = process.Metrics.TryGetValue(LlamaMetricKeys.GenTpsCompute, out var genMetric) ? genMetric.Value : double.NaN;
         var busy = process.Metrics.TryGetValue(LlamaMetricKeys.BusyPercent, out var busyMetric) ? busyMetric.Value : double.NaN;
         var genLive = process.Metrics.TryGetValue(LlamaMetricKeys.GenTpsLive, out var genLiveMetric) ? genLiveMetric.Value : double.NaN;
@@ -566,12 +568,14 @@ public class Worker : BackgroundService
         var outTokensLive = process.Metrics.TryGetValue(LlamaMetricKeys.OutTokensLive, out var outTokensLiveMetric) ? outTokensLiveMetric.Value : double.NaN;
         var decodeTotal = process.Metrics.TryGetValue(LlamaMetricKeys.DecodeTotal, out var decodeMetric) ? decodeMetric.Value : double.NaN;
 
-        values = new LlamaRealtimeValues(port, gen, busy, genLive, busyLive, processing, deferred, outTokens, outTokensLive, decodeTotal);
+        values = new LlamaRealtimeValues(port, promptTpsAvg, genTpsAvg, gen, busy, genLive, busyLive, processing, deferred, outTokens, outTokensLive, decodeTotal);
         return true;
     }
 
     private static bool HasAnyLlamaSampleData(ProcessMetrics process)
-        => process.Metrics.ContainsKey(LlamaMetricKeys.GenTpsCompute)
+        => process.Metrics.ContainsKey(LlamaMetricKeys.PromptTpsAvg)
+           || process.Metrics.ContainsKey(LlamaMetricKeys.GenTpsAvg)
+           || process.Metrics.ContainsKey(LlamaMetricKeys.GenTpsCompute)
            || process.Metrics.ContainsKey(LlamaMetricKeys.BusyPercent)
            || process.Metrics.ContainsKey(LlamaMetricKeys.GenTpsLive)
            || process.Metrics.ContainsKey(LlamaMetricKeys.BusyPercentLive)
@@ -585,6 +589,8 @@ public class Worker : BackgroundService
     {
         var metrics = new Dictionary<string, MetricValue>();
         CopyMetric(source, metrics, LlamaMetricKeys.Port, nowUtc);
+        CopyMetric(source, metrics, LlamaMetricKeys.PromptTpsAvg, nowUtc);
+        CopyMetric(source, metrics, LlamaMetricKeys.GenTpsAvg, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.GenTpsCompute, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.BusyPercent, nowUtc);
         CopyMetric(source, metrics, LlamaMetricKeys.GenTpsLive, nowUtc);
@@ -647,6 +653,8 @@ public class Worker : BackgroundService
 
             var now = DateTime.UtcNow;
             SetMetric(process, LlamaMetricKeys.Port, cached.Port, string.Empty, "Port", now);
+            SetMetricIfValid(process, LlamaMetricKeys.PromptTpsAvg, cached.PromptTpsAvg, "tok/s", "Prompt TPS Avg", now);
+            SetMetricIfValid(process, LlamaMetricKeys.GenTpsAvg, cached.GenTpsAvg, "tok/s", "Gen TPS Avg", now);
             SetMetricIfValid(process, LlamaMetricKeys.GenTpsCompute, cached.GenTpsCompute, "tok/s", "Gen TPS", now);
             SetMetricIfValid(process, LlamaMetricKeys.BusyPercent, cached.BusyPercent, "%", "Busy", now);
             SetMetricIfValid(process, LlamaMetricKeys.GenTpsLive, cached.GenTpsLive, "tok/s", "Gen TPS Live", now);
@@ -924,6 +932,8 @@ public class Worker : BackgroundService
 
     private readonly record struct LlamaRealtimeValues(
         int Port,
+        double PromptTpsAvg,
+        double GenTpsAvg,
         double GenTpsCompute,
         double BusyPercent,
         double GenTpsLive,

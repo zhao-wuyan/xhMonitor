@@ -632,6 +632,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     {
         private const string LlamaPortKey = "llama_port";
         private const string LlamaGenTpsComputeKey = "llama_gen_tps_compute";
+        private const string LlamaGenTpsAvgKey = "llama_gen_tps_avg";
+        private const string LlamaPromptTpsAvgKey = "llama_prompt_tps_avg";
         private const string LlamaBusyPercentKey = "llama_busy_percent";
         private const string LlamaGenTpsLiveKey = "llama_gen_tps_live";
         private const string LlamaBusyPercentLiveKey = "llama_busy_percent_live";
@@ -639,7 +641,6 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         private const string LlamaReqDeferredKey = "llama_req_deferred";
         private const string LlamaOutTokensTotalKey = "llama_out_tokens_total";
         private const string LlamaOutTokensLiveKey = "llama_out_tokens_live";
-        private const string LlamaDecodeTotalKey = "llama_decode_total";
 
         public int ProcessId { get; }
 
@@ -684,6 +685,15 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
         private string _llamaMetricsText = string.Empty;
         public string LlamaMetricsText { get => _llamaMetricsText; private set => SetField(ref _llamaMetricsText, value); }
+
+        private IReadOnlyList<LlamaMetricItem> _llamaMetricsItems = Array.Empty<LlamaMetricItem>();
+        public IReadOnlyList<LlamaMetricItem> LlamaMetricsItems { get => _llamaMetricsItems; private set => SetField(ref _llamaMetricsItems, value); }
+
+        public sealed class LlamaMetricItem
+        {
+            public required string DisplayText { get; init; }
+            public required string Tooltip { get; init; }
+        }
 
         public ProcessRowViewModel(ProcessInfoDto dto)
         {
@@ -730,10 +740,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             {
                 HasLlamaMetrics = false;
                 LlamaMetricsText = string.Empty;
+                LlamaMetricsItems = Array.Empty<LlamaMetricItem>();
                 return;
             }
 
             var port = (int)Math.Round(portValue, MidpointRounding.AwayFromZero);
+            var promptTpsAvg = metrics.TryGetValue(LlamaPromptTpsAvgKey, out var promptTpsValue) ? promptTpsValue : (double?)null;
+            var genTpsAvg = metrics.TryGetValue(LlamaGenTpsAvgKey, out var genTpsAvgValue) ? genTpsAvgValue : (double?)null;
             var genTpsCompute = metrics.TryGetValue(LlamaGenTpsComputeKey, out var tpsValue) ? tpsValue : (double?)null;
             var genTpsLive = metrics.TryGetValue(LlamaGenTpsLiveKey, out var tpsLiveValue) ? tpsLiveValue : (double?)null;
             var busyPercent = metrics.TryGetValue(LlamaBusyPercentKey, out var busyValue) ? busyValue : (double?)null;
@@ -742,11 +755,12 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             var reqDeferred = metrics.TryGetValue(LlamaReqDeferredKey, out var deferredValue) ? deferredValue : (double?)null;
             var outTokensTotal = metrics.TryGetValue(LlamaOutTokensTotalKey, out var outTokensValue) ? outTokensValue : (double?)null;
             var outTokensLive = metrics.TryGetValue(LlamaOutTokensLiveKey, out var outTokensLiveValue) ? outTokensLiveValue : (double?)null;
-            var decodeTotal = metrics.TryGetValue(LlamaDecodeTotalKey, out var decodeValue) ? decodeValue : (double?)null;
 
             HasLlamaMetrics = true;
             LlamaMetricsText = BuildLlamaMetricsLine(
                 port,
+                promptTpsAvg,
+                genTpsAvg,
                 genTpsCompute,
                 genTpsLive,
                 busyPercent,
@@ -754,12 +768,26 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 reqProcessing,
                 reqDeferred,
                 outTokensTotal,
-                outTokensLive,
-                decodeTotal);
+                outTokensLive);
+
+            LlamaMetricsItems = BuildLlamaMetricsItems(
+                port,
+                promptTpsAvg,
+                genTpsAvg,
+                genTpsCompute,
+                genTpsLive,
+                busyPercent,
+                busyPercentLive,
+                reqProcessing,
+                reqDeferred,
+                outTokensTotal,
+                outTokensLive);
         }
 
         private static string BuildLlamaMetricsLine(
             int port,
+            double? promptTpsAvg,
+            double? genTpsAvg,
             double? genTpsCompute,
             double? genTpsLive,
             double? busyPercent,
@@ -767,8 +795,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             double? reqProcessing,
             double? reqDeferred,
             double? outTokensTotal,
-            double? outTokensLive,
-            double? decodeTotal)
+            double? outTokensLive)
         {
             var genComputeText = genTpsCompute.HasValue ? genTpsCompute.Value.ToString("0.0") : "--";
             var genLiveText = genTpsLive.HasValue ? genTpsLive.Value.ToString("0.0") : "--";
@@ -784,15 +811,211 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
             var reqProcessingText = reqProcessing.HasValue ? reqProcessing.Value.ToString("0") : "--";
             var reqDeferredText = reqDeferred.HasValue ? reqDeferred.Value.ToString("0") : "--";
-            var outRawText = outTokensTotal.HasValue ? outTokensTotal.Value.ToString("0") : "--";
-            var outLiveText = outTokensLive.HasValue ? outTokensLive.Value.ToString("0") : "--";
-            var outTokensText = outTokensLive.HasValue && outTokensTotal.HasValue && !outRawText.Equals(outLiveText, StringComparison.Ordinal)
+            var outRawText = FormatTokenCountCompact(outTokensTotal);
+            var outLiveText = FormatTokenCountCompact(outTokensLive);
+            var outTokensText = outTokensLive.HasValue
+                                && outTokensTotal.HasValue
+                                && !outRawText.Equals("--", StringComparison.Ordinal)
+                                && !outLiveText.Equals("--", StringComparison.Ordinal)
+                                && !outRawText.Equals(outLiveText, StringComparison.Ordinal)
                 ? $"{outRawText}~{outLiveText}"
                 : (outTokensLive.HasValue ? outLiveText : outRawText);
-            var decodeText = decodeTotal.HasValue ? decodeTotal.Value.ToString("0") : "--";
 
-            return $"Port {port}   Gen {genText} tok/s   Busy {busyText}%   Req {reqProcessingText}/{reqDeferredText}   Out {outTokensText}   Dec {decodeText}";
+            var promptAvgCompact = FormatTpsCompactValue(promptTpsAvg);
+            var genAvgCompact = FormatTpsCompactValue(genTpsAvg);
+            var avgText = $"{promptAvgCompact}/{genAvgCompact}";
+
+            return $"Port {port}   Gen {genText} t/s   Busy {busyText}%   Req {reqProcessingText}/{reqDeferredText}   Out {outTokensText}   Avg {avgText} t/s";
         }
+
+        private static IReadOnlyList<LlamaMetricItem> BuildLlamaMetricsItems(
+            int port,
+            double? promptTpsAvg,
+            double? genTpsAvg,
+            double? genTpsCompute,
+            double? genTpsLive,
+            double? busyPercent,
+            double? busyPercentLive,
+            double? reqProcessing,
+            double? reqDeferred,
+            double? outTokensTotal,
+            double? outTokensLive)
+        {
+            var genComputeText = genTpsCompute.HasValue ? genTpsCompute.Value.ToString("0.0") : "--";
+            var genLiveText = genTpsLive.HasValue ? genTpsLive.Value.ToString("0.0") : "--";
+            var genText = genTpsLive.HasValue && genTpsCompute.HasValue && !genComputeText.Equals(genLiveText, StringComparison.Ordinal)
+                ? $"{genComputeText}~{genLiveText}"
+                : (genTpsLive.HasValue ? genLiveText : genComputeText);
+
+            var busyComputeText = busyPercent.HasValue ? busyPercent.Value.ToString("0") : "--";
+            var busyLiveText = busyPercentLive.HasValue ? busyPercentLive.Value.ToString("0") : "--";
+            var busyText = busyPercentLive.HasValue && busyPercent.HasValue && !busyComputeText.Equals(busyLiveText, StringComparison.Ordinal)
+                ? $"{busyComputeText}~{busyLiveText}"
+                : (busyPercentLive.HasValue ? busyLiveText : busyComputeText);
+
+            var reqProcessingText = reqProcessing.HasValue ? reqProcessing.Value.ToString("0") : "--";
+            var reqDeferredText = reqDeferred.HasValue ? reqDeferred.Value.ToString("0") : "--";
+            var outRawText = FormatTokenCountCompact(outTokensTotal);
+            var outLiveText = FormatTokenCountCompact(outTokensLive);
+            var outTokensText = outTokensLive.HasValue
+                                && outTokensTotal.HasValue
+                                && !outRawText.Equals("--", StringComparison.Ordinal)
+                                && !outLiveText.Equals("--", StringComparison.Ordinal)
+                                && !outRawText.Equals(outLiveText, StringComparison.Ordinal)
+                ? $"{outRawText}~{outLiveText}"
+                : (outTokensLive.HasValue ? outLiveText : outRawText);
+
+            var promptAvgCompact = FormatTpsCompactValue(promptTpsAvg);
+            var genAvgCompact = FormatTpsCompactValue(genTpsAvg);
+            var avgCompactText = $"{promptAvgCompact}/{genAvgCompact}";
+
+            var promptAvgExact = FormatTpsExactValue(promptTpsAvg);
+            var genAvgExact = FormatTpsExactValue(genTpsAvg);
+            var avgExactText = $"{promptAvgExact}/{genAvgExact}";
+
+            var outTotalExact = FormatTokenCountExact(outTokensTotal);
+            var outLiveExact = FormatTokenCountExact(outTokensLive);
+            var outExactText = outTokensLive.HasValue
+                               && outTokensTotal.HasValue
+                               && !outTotalExact.Equals("--", StringComparison.Ordinal)
+                               && !outLiveExact.Equals("--", StringComparison.Ordinal)
+                               && !outTotalExact.Equals(outLiveExact, StringComparison.Ordinal)
+                ? $"{outTotalExact}~{outLiveExact}"
+                : (outTokensLive.HasValue ? outLiveExact : outTotalExact);
+
+            return new List<LlamaMetricItem>
+            {
+                new()
+                {
+                    DisplayText = $"Port {port}",
+                    Tooltip = $"Port: {port}\n--port（/metrics 端口）"
+                },
+                new()
+                {
+                    DisplayText = $"Gen {genText} t/s",
+                    Tooltip = $"Gen: {genText} t/s\n生成吞吐：token 增量 ÷ 生成耗时增量（~ 为按墙钟估算）"
+                },
+                new()
+                {
+                    DisplayText = $"Busy {busyText}%",
+                    Tooltip = $"Busy: {busyText}%\n推理忙碌：生成耗时增量 ÷ 墙钟时间增量"
+                },
+                new()
+                {
+                    DisplayText = $"Req {reqProcessingText}/{reqDeferredText}",
+                    Tooltip = $"Req: {reqProcessingText}/{reqDeferredText}\n请求数：处理中/排队"
+                },
+                new()
+                {
+                    DisplayText = $"Out {outTokensText}",
+                    Tooltip = $"Out: {outExactText} t\n累计生成 token（重启归 0）"
+                },
+                new()
+                {
+                    DisplayText = $"Avg {avgCompactText} t/s",
+                    Tooltip = $"Avg: {avgExactText} t/s\n累计平均吞吐：P=提示词处理，G=生成"
+                }
+            };
+        }
+
+        private static string FormatTpsCompactValue(double? value)
+        {
+            if (!value.HasValue)
+            {
+                return "--";
+            }
+
+            var num = value.Value;
+            if (double.IsNaN(num) || double.IsInfinity(num))
+            {
+                return "--";
+            }
+
+            var abs = Math.Abs(num);
+            if (abs < 1000)
+            {
+                return TrimTrailingZero(num.ToString("0.0"));
+            }
+
+            if (abs < 1_000_000)
+            {
+                return $"{TrimTrailingZero((num / 1_000).ToString("0.0"))}k";
+            }
+
+            if (abs < 1_000_000_000)
+            {
+                return $"{TrimTrailingZero((num / 1_000_000).ToString("0.0"))}m";
+            }
+
+            return $"{TrimTrailingZero((num / 1_000_000_000).ToString("0.0"))}b";
+        }
+
+        private static string FormatTpsExactValue(double? value)
+        {
+            if (!value.HasValue)
+            {
+                return "--";
+            }
+
+            var num = value.Value;
+            if (double.IsNaN(num) || double.IsInfinity(num))
+            {
+                return "--";
+            }
+
+            return TrimTrailingZero(num.ToString("0.0"));
+        }
+
+        private static string FormatTokenCountExact(double? value)
+        {
+            if (!value.HasValue)
+            {
+                return "--";
+            }
+
+            var num = value.Value;
+            if (double.IsNaN(num) || double.IsInfinity(num))
+            {
+                return "--";
+            }
+
+            return Math.Round(num, MidpointRounding.AwayFromZero).ToString("0");
+        }
+
+        private static string FormatTokenCountCompact(double? value)
+        {
+            if (!value.HasValue)
+            {
+                return "--";
+            }
+
+            var num = value.Value;
+            if (double.IsNaN(num) || double.IsInfinity(num))
+            {
+                return "--";
+            }
+
+            var abs = Math.Abs(num);
+            if (abs < 1000)
+            {
+                return Math.Round(num, MidpointRounding.AwayFromZero).ToString("0");
+            }
+
+            if (abs < 1_000_000)
+            {
+                return $"{TrimTrailingZero((num / 1_000).ToString("0.0"))}k";
+            }
+
+            if (abs < 1_000_000_000)
+            {
+                return $"{TrimTrailingZero((num / 1_000_000).ToString("0.0"))}m";
+            }
+
+            return $"{TrimTrailingZero((num / 1_000_000_000).ToString("0.0"))}b";
+        }
+
+        private static string TrimTrailingZero(string text)
+            => text.EndsWith(".0", StringComparison.Ordinal) ? text[..^2] : text;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
