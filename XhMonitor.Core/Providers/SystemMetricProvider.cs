@@ -57,6 +57,21 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         "Write Rate",
         "Write Speed"
     ];
+
+    private static readonly string[] DiskTotalSpaceSensorNamePatterns =
+    [
+        "Total Space",
+        "Total Size",
+        "Total Capacity"
+    ];
+
+    private static readonly string[] DiskFreeSpaceSensorNamePatterns =
+    [
+        "Free Space",
+        "Available Space",
+        "Available",
+        "Free"
+    ];
     private readonly HashSet<string> _verifiedPhysicalAdapters = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _verificationLock = new(1, 1);
     private bool _disposed;
@@ -615,6 +630,21 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         return (readSpeed, writeSpeed);
     }
 
+    private static float? MaxNullable(float? left, float? right)
+    {
+        if (!left.HasValue)
+        {
+            return right;
+        }
+
+        if (!right.HasValue)
+        {
+            return left;
+        }
+
+        return left.Value >= right.Value ? left : right;
+    }
+
     private static (long? TotalBytes, long? UsedBytes) GetDiskCapacityFromLhm(
         IReadOnlyList<SensorReading> dataSensors,
         IReadOnlyList<SensorReading> smallDataSensors,
@@ -625,17 +655,13 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             return (null, null);
         }
 
-        var totalSpaceGb = FindDiskSensorValue(
-            [.. dataSensors, .. smallDataSensors],
-            diskName,
-            ["Total Space", "Total Size", "Total Capacity"],
-            requirePositive: true);
+        var totalSpaceGb = MaxNullable(
+            FindDiskSensorValue(dataSensors, diskName, DiskTotalSpaceSensorNamePatterns, requirePositive: true),
+            FindDiskSensorValue(smallDataSensors, diskName, DiskTotalSpaceSensorNamePatterns, requirePositive: true));
 
-        var freeSpaceGb = FindDiskSensorValue(
-            [.. dataSensors, .. smallDataSensors],
-            diskName,
-            ["Free Space", "Available Space", "Available", "Free"],
-            requirePositive: false);
+        var freeSpaceGb = MaxNullable(
+            FindDiskSensorValue(dataSensors, diskName, DiskFreeSpaceSensorNamePatterns, requirePositive: false),
+            FindDiskSensorValue(smallDataSensors, diskName, DiskFreeSpaceSensorNamePatterns, requirePositive: false));
 
         long? totalBytes = null;
         if (totalSpaceGb.HasValue && totalSpaceGb.Value > 0)

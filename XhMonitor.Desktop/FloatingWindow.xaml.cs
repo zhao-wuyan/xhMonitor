@@ -415,6 +415,9 @@ public partial class FloatingWindow : Window
     {
         if (e.ChangedButton != MouseButton.Left) return;
 
+        // 防御：DragMove 可能导致 MouseUp 丢失，避免把下一次点击的 MouseUp 误吞掉。
+        _dragReleaseHandled = false;
+
         // 记录拖动起点
         _dragStartPoint = e.GetPosition(this);
         _isDragging = false;
@@ -1175,6 +1178,12 @@ public partial class FloatingWindow : Window
 
         _isDragging = false;
         _dragReleaseHandled = true;
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            // DragMove 可能吞掉 PreviewMouseUp，导致 _dragReleaseHandled 残留到下一次点击。
+            // 下一次点击的 MouseUp 被吞掉后，长按计时器无法被停止，进而被误判为长按。
+            _dragReleaseHandled = false;
+        }), DispatcherPriority.Background);
         StopLongPressTimer();
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 拖动结束");
 
