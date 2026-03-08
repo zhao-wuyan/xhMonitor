@@ -332,6 +332,58 @@ public class SystemMetricProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_ComputesDiskBytes_WhenFreeSpaceProvidedBySmallData()
+    {
+        const float totalSpaceGb = 512.0f;
+        const float freeSpaceGb = 256.0f;
+        var expectedTotalBytes = (long)Math.Round(totalSpaceGb * 1024.0 * 1024.0 * 1024.0);
+        var expectedFreeBytes = (long)Math.Round(freeSpaceGb * 1024.0 * 1024.0 * 1024.0);
+        var expectedUsedBytes = expectedTotalBytes - expectedFreeBytes;
+
+        var dataSensors = new List<SensorReading>
+        {
+            new(HardwareType.Storage, "Hybrid SSD", SensorType.Data, "Total Space", totalSpaceGb),
+        };
+
+        var smallDataSensors = new List<SensorReading>
+        {
+            new(HardwareType.Storage, "Hybrid SSD", SensorType.SmallData, "Free Space", freeSpaceGb),
+        };
+
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager
+            .Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), It.IsAny<SensorType>()))
+            .Returns((IReadOnlyCollection<HardwareType> types, SensorType sensorType) =>
+            {
+                if (!types.Contains(HardwareType.Storage))
+                {
+                    return new List<SensorReading>();
+                }
+
+                return sensorType switch
+                {
+                    SensorType.Data => dataSensors,
+                    SensorType.SmallData => smallDataSensors,
+                    _ => new List<SensorReading>()
+                };
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object);
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.Disks.Should().HaveCount(1);
+        var disk = usage.Disks.Single();
+        disk.Name.Should().Be("Hybrid SSD");
+        disk.TotalBytes.Should().Be(expectedTotalBytes);
+        disk.UsedBytes.Should().Be(expectedUsedBytes);
+    }
+
+    [Fact]
     public async Task DoneWhen_GetSystemUsageAsync_OnlyReportsTotalBytes_WhenFreeSpaceMissing()
     {
         const float totalSpaceGb = 4096.0f;
