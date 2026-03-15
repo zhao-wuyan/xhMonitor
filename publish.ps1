@@ -203,6 +203,7 @@ if (-not $SkipService) {
         $publishArgs += "win-x64"
         $publishArgs += "--self-contained"
         $publishArgs += "false"
+        $publishArgs += "-p:Version=$Version"
     } else {
         # 完整模式：包含运行时，单文件
         $publishArgs += "-r"
@@ -247,6 +248,7 @@ if (-not $SkipDesktop) {
         $publishArgs += "win-x64"
         $publishArgs += "--self-contained"
         $publishArgs += "false"
+        $publishArgs += "-p:Version=$Version"
     } else {
         # 完整模式：包含运行时，单文件
         $publishArgs += "-r"
