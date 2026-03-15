@@ -75,18 +75,55 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     private readonly HashSet<string> _verifiedPhysicalAdapters = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _verificationLock = new(1, 1);
     private bool _disposed;
+    private int _networkDiagnosticsLogged;
+    private int _networkUnavailableLogged;
+    private int _networkSensorsMissingLogged;
+
+    private enum NetworkAdapterCategory
+    {
+        Physical,
+        Virtual,
+        Unknown
+    }
+
+    private enum NetworkAdapterAggregationMode
+    {
+        Sum,
+        Max
+    }
+
+    private sealed record NetworkAdapterThroughput(
+        string HardwareName,
+        double UploadBytesPerSecond,
+        double DownloadBytesPerSecond,
+        NetworkAdapterCategory Category);
 
     public SystemMetricProvider(
         IEnumerable<IMetricProvider> providers,
         ILogger<SystemMetricProvider>? logger = null,
         ILibreHardwareManager? hardwareManager = null,
-        IPowerProvider? powerProvider = null)
+        IPowerProvider? powerProvider = null,
+        IReadOnlyCollection<string>? verifiedPhysicalAdapterSignatures = null)
     {
         _logger = logger;
         _providers = BuildProviderMap(providers, logger);
         _hardwareManager = hardwareManager;
         _powerProvider = powerProvider;
-        StartPhysicalAdapterVerification();
+
+        if (verifiedPhysicalAdapterSignatures != null)
+        {
+            foreach (var signature in verifiedPhysicalAdapterSignatures
+                         .Where(s => !string.IsNullOrWhiteSpace(s))
+                         .Select(s => s.Trim())
+                         .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                _verifiedPhysicalAdapters.Add(signature);
+            }
+        }
+        else
+        {
+            StartPhysicalAdapterVerification();
+        }
     }
 
     private void StartPhysicalAdapterVerification()
@@ -332,7 +369,7 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     {
         try
         {
-            List<string> adapterNames = [];
+            List<string> adapterSignatures = [];
             foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (adapter.NetworkInterfaceType != NetworkInterfaceType.Ethernet &&
@@ -341,12 +378,16 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(adapter.Name))
+                if (!string.IsNullOrWhiteSpace(adapter.Name))
                 {
-                    continue;
+                    adapterSignatures.Add(adapter.Name);
                 }
 
-                adapterNames.Add(adapter.Name);
+                if (!string.IsNullOrWhiteSpace(adapter.Description) &&
+                    !string.Equals(adapter.Description, adapter.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    adapterSignatures.Add(adapter.Description);
+                }
             }
 
             List<string> verifiedAdapters = [];
@@ -354,9 +395,9 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             try
             {
                 _verifiedPhysicalAdapters.Clear();
-                foreach (var name in adapterNames)
+                foreach (var signature in adapterSignatures.Distinct(StringComparer.OrdinalIgnoreCase))
                 {
-                    _verifiedPhysicalAdapters.Add(name);
+                    _verifiedPhysicalAdapters.Add(signature);
                 }
 
                 verifiedAdapters.AddRange(_verifiedPhysicalAdapters);
@@ -368,7 +409,7 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
 
             if (verifiedAdapters.Count > 0)
             {
-                _logger?.LogInformation("[SystemMetricProvider] Verified physical adapters: {Adapters}",
+                _logger?.LogInformation("[SystemMetricProvider] Verified physical adapter signatures: {Adapters}",
                     string.Join(", ", verifiedAdapters));
             }
             else
@@ -405,7 +446,26 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         _verificationLock.Wait();
         try
         {
-            return _verifiedPhysicalAdapters.Contains(hardwareName);
+            if (_verifiedPhysicalAdapters.Contains(hardwareName))
+            {
+                return true;
+            }
+
+            foreach (var signature in _verifiedPhysicalAdapters)
+            {
+                if (string.IsNullOrWhiteSpace(signature))
+                {
+                    continue;
+                }
+
+                if (hardwareName.Contains(signature, StringComparison.OrdinalIgnoreCase) ||
+                    signature.Contains(hardwareName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         finally
         {
@@ -440,6 +500,8 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         EnsureHardwareManagerInitialized();
         if (_hardwareManager == null || !_hardwareManager.IsAvailable)
         {
+            LogNetworkUnavailableOnce();
+            LogNetworkDiagnosticsOnce([], [], NetworkAdapterCategory.Unknown, NetworkAdapterAggregationMode.Sum, [], null);
             return (0.0, 0.0);
         }
 
@@ -451,27 +513,22 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
 
             if (sensors.Count == 0)
             {
+                LogNetworkSensorsMissingOnce();
+                LogNetworkDiagnosticsOnce([], [], NetworkAdapterCategory.Unknown, NetworkAdapterAggregationMode.Sum, [], null);
                 return (0.0, 0.0);
             }
 
-            double uploadBytesPerSecond = 0.0;
-            double downloadBytesPerSecond = 0.0;
-            var hasVerifiedAdapters = HasVerifiedPhysicalAdapters();
-
+            var adapterSensors = new Dictionary<string, (double UploadBytesPerSecond, double DownloadBytesPerSecond)>(StringComparer.OrdinalIgnoreCase);
             foreach (var sensor in sensors)
             {
-                if (IsVirtualAdapter(sensor.HardwareName))
+                if (string.IsNullOrWhiteSpace(sensor.HardwareName))
                 {
-                    _logger?.LogDebug("[SystemMetricProvider] Skip virtual adapter: {HardwareName}, Sensor={SensorName}",
-                        sensor.HardwareName, sensor.Name);
                     continue;
                 }
 
-                if (hasVerifiedAdapters && !IsPhysicalAdapterVerified(sensor.HardwareName))
+                if (!adapterSensors.TryGetValue(sensor.HardwareName, out var existing))
                 {
-                    _logger?.LogDebug("[SystemMetricProvider] Skip unverified adapter: {HardwareName}, Sensor={SensorName}",
-                        sensor.HardwareName, sensor.Name);
-                    continue;
+                    existing = (0.0, 0.0);
                 }
 
                 if (sensor.Value <= 0)
@@ -481,13 +538,59 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
 
                 if (ContainsAny(sensor.Name, UploadSensorNamePatterns))
                 {
-                    uploadBytesPerSecond += sensor.Value;
+                    existing.UploadBytesPerSecond += sensor.Value;
                 }
                 else if (ContainsAny(sensor.Name, DownloadSensorNamePatterns))
                 {
-                    downloadBytesPerSecond += sensor.Value;
+                    existing.DownloadBytesPerSecond += sensor.Value;
                 }
+
+                adapterSensors[sensor.HardwareName] = existing;
             }
+
+            if (adapterSensors.Count == 0)
+            {
+                LogNetworkSensorsMissingOnce();
+                LogNetworkDiagnosticsOnce(sensors, [], NetworkAdapterCategory.Unknown, NetworkAdapterAggregationMode.Sum, [], null);
+                return (0.0, 0.0);
+            }
+
+            var adapters = new List<NetworkAdapterThroughput>(adapterSensors.Count);
+            foreach (var entry in adapterSensors)
+            {
+                var category = GetNetworkAdapterCategory(entry.Key);
+                adapters.Add(new NetworkAdapterThroughput(entry.Key, entry.Value.UploadBytesPerSecond, entry.Value.DownloadBytesPerSecond, category));
+            }
+
+            var physicalAdapters = adapters.Where(a => a.Category == NetworkAdapterCategory.Physical).ToList();
+            var virtualAdapters = adapters.Where(a => a.Category == NetworkAdapterCategory.Virtual).ToList();
+            var unknownAdapters = adapters.Where(a => a.Category == NetworkAdapterCategory.Unknown).ToList();
+
+            IReadOnlyList<NetworkAdapterThroughput> selectedAdapters;
+            NetworkAdapterCategory selectedCategory;
+            if (physicalAdapters.Count > 0)
+            {
+                selectedAdapters = physicalAdapters;
+                selectedCategory = NetworkAdapterCategory.Physical;
+            }
+            else if (virtualAdapters.Count > 0)
+            {
+                selectedAdapters = virtualAdapters;
+                selectedCategory = NetworkAdapterCategory.Virtual;
+            }
+            else
+            {
+                selectedAdapters = unknownAdapters;
+                selectedCategory = NetworkAdapterCategory.Unknown;
+            }
+
+            var aggregationMode = selectedCategory == NetworkAdapterCategory.Virtual
+                ? NetworkAdapterAggregationMode.Max
+                : NetworkAdapterAggregationMode.Sum;
+
+            var (uploadBytesPerSecond, downloadBytesPerSecond, primaryAdapter) = AggregateNetworkThroughput(selectedAdapters, aggregationMode);
+
+            LogNetworkDiagnosticsOnce(sensors, adapters, selectedCategory, aggregationMode, selectedAdapters, primaryAdapter);
 
             return (
                 ConvertThroughputToMbps(uploadBytesPerSecond),
@@ -497,6 +600,193 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         {
             _logger?.LogError(ex, "[SystemMetricProvider] Failed to read network throughput via LibreHardwareMonitor");
             return (0.0, 0.0);
+        }
+    }
+
+    private NetworkAdapterCategory GetNetworkAdapterCategory(string hardwareName)
+    {
+        if (IsVirtualAdapter(hardwareName))
+        {
+            return NetworkAdapterCategory.Virtual;
+        }
+
+        if (IsPhysicalAdapterVerified(hardwareName))
+        {
+            return NetworkAdapterCategory.Physical;
+        }
+
+        return NetworkAdapterCategory.Unknown;
+    }
+
+    private static (double UploadBytesPerSecond, double DownloadBytesPerSecond, NetworkAdapterThroughput? PrimaryAdapter) AggregateNetworkThroughput(
+        IReadOnlyList<NetworkAdapterThroughput> adapters,
+        NetworkAdapterAggregationMode mode)
+    {
+        if (adapters == null || adapters.Count == 0)
+        {
+            return (0.0, 0.0, null);
+        }
+
+        if (mode == NetworkAdapterAggregationMode.Sum)
+        {
+            double totalUpload = 0.0;
+            double totalDownload = 0.0;
+            foreach (var adapter in adapters)
+            {
+                totalUpload += adapter.UploadBytesPerSecond;
+                totalDownload += adapter.DownloadBytesPerSecond;
+            }
+
+            return (totalUpload, totalDownload, null);
+        }
+
+        // Max: pick the single adapter with the highest total throughput to avoid double counting on virtual networks.
+        NetworkAdapterThroughput? best = null;
+        var bestTotal = double.MinValue;
+        foreach (var adapter in adapters)
+        {
+            var total = adapter.UploadBytesPerSecond + adapter.DownloadBytesPerSecond;
+            if (total > bestTotal)
+            {
+                bestTotal = total;
+                best = adapter;
+            }
+        }
+
+        if (best == null)
+        {
+            return (0.0, 0.0, null);
+        }
+
+        return (best.UploadBytesPerSecond, best.DownloadBytesPerSecond, best);
+    }
+
+    private void LogNetworkUnavailableOnce()
+    {
+        if (_logger == null)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _networkUnavailableLogged, 1) == 1)
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "[SystemMetricProvider] LibreHardwareMonitor is not available. Network throughput will be reported as 0. " +
+            "If this persists, try running the service as Administrator.");
+    }
+
+    private void LogNetworkSensorsMissingOnce()
+    {
+        if (_logger == null)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _networkSensorsMissingLogged, 1) == 1)
+        {
+            return;
+        }
+
+        _logger.LogWarning(
+            "[SystemMetricProvider] No network throughput sensors detected via LibreHardwareMonitor (HardwareType.Network/SensorType.Throughput). " +
+            "Network throughput will be reported as 0.");
+    }
+
+    private void LogNetworkDiagnosticsOnce(
+        IReadOnlyList<SensorReading> sensors,
+        IReadOnlyList<NetworkAdapterThroughput> allAdapters,
+        NetworkAdapterCategory selectedCategory,
+        NetworkAdapterAggregationMode aggregationMode,
+        IReadOnlyList<NetworkAdapterThroughput> selectedAdapters,
+        NetworkAdapterThroughput? primaryAdapter)
+    {
+        if (_logger == null)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _networkDiagnosticsLogged, 1) == 1)
+        {
+            return;
+        }
+
+        try
+        {
+            var osAdapters = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(adapter => !string.IsNullOrWhiteSpace(adapter.Name))
+                .Select(adapter =>
+                {
+                    var name = adapter.Name.Trim();
+                    var desc = string.IsNullOrWhiteSpace(adapter.Description) ? string.Empty : adapter.Description.Trim();
+                    return $"Name='{name}', Type={adapter.NetworkInterfaceType}, Status={adapter.OperationalStatus}, Desc='{desc}'";
+                })
+                .ToList();
+
+            if (osAdapters.Count > 0)
+            {
+                _logger.LogInformation("[SystemMetricProvider] Network interfaces (OS): {Adapters}", string.Join(" | ", osAdapters));
+            }
+            else
+            {
+                _logger.LogInformation("[SystemMetricProvider] Network interfaces (OS): none");
+            }
+
+            if (sensors.Count > 0)
+            {
+                var sensorSummary = sensors
+                    .Where(s => !string.IsNullOrWhiteSpace(s.HardwareName))
+                    .GroupBy(s => s.HardwareName, StringComparer.OrdinalIgnoreCase)
+                    .Select(group =>
+                    {
+                        var names = group.Select(s => s.Name).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase);
+                        return $"{group.Key}: [{string.Join(", ", names)}]";
+                    })
+                    .ToList();
+
+                _logger.LogInformation("[SystemMetricProvider] Network throughput sensors (LHM): {Sensors}",
+                    string.Join(" | ", sensorSummary));
+            }
+            else
+            {
+                _logger.LogInformation("[SystemMetricProvider] Network throughput sensors (LHM): none");
+            }
+
+            if (allAdapters.Count > 0)
+            {
+                var categorized = allAdapters.Select(a =>
+                {
+                    var up = ConvertThroughputToMbps(a.UploadBytesPerSecond);
+                    var down = ConvertThroughputToMbps(a.DownloadBytesPerSecond);
+                    return $"{a.Category}:{a.HardwareName} (Up={up:0.###}MB/s, Down={down:0.###}MB/s)";
+                }).ToList();
+
+                _logger.LogInformation("[SystemMetricProvider] Network adapters categorized: {Adapters}", string.Join(" | ", categorized));
+            }
+
+            if (selectedAdapters.Count > 0)
+            {
+                var selectedNames = selectedAdapters.Select(a => a.HardwareName).ToList();
+                _logger.LogInformation(
+                    "[SystemMetricProvider] Network throughput selection: Category={Category}, Aggregation={Aggregation}, Selected={Adapters}, Primary={Primary}",
+                    selectedCategory,
+                    aggregationMode,
+                    string.Join(", ", selectedNames),
+                    primaryAdapter?.HardwareName ?? "(none)");
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "[SystemMetricProvider] Network throughput selection: Category={Category}, Aggregation={Aggregation}, Selected=(none)",
+                    selectedCategory,
+                    aggregationMode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[SystemMetricProvider] Failed to log network diagnostics");
         }
     }
 

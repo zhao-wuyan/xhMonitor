@@ -20,7 +20,8 @@ public class SystemMetricProviderTests : IDisposable
     {
         _provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
-            logger: null);
+            logger: null,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
     }
 
     [Fact]
@@ -175,7 +176,8 @@ public class SystemMetricProviderTests : IDisposable
 
         using var provider = new SystemMetricProvider(
             new[] { cpuProvider.Object, gpuProvider.Object, vramProvider.Object },
-            logger: null);
+            logger: null,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var limits = await provider.GetHardwareLimitsAsync();
         var usage = await provider.GetSystemUsageAsync();
@@ -206,7 +208,8 @@ public class SystemMetricProviderTests : IDisposable
         using var provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
             logger: null,
-            hardwareManager: hardwareManager.Object);
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
@@ -215,26 +218,81 @@ public class SystemMetricProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task DoneWhen_GetSystemUsageAsync_ExcludesVirtualAdapters()
+    public async Task DoneWhen_GetSystemUsageAsync_FallsBackToVirtualAdapters_WhenNoPhysicalAdaptersMatched()
     {
         var hardwareManager = new Mock<ILibreHardwareManager>();
         hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
         hardwareManager.Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), SensorType.Throughput))
             .Returns(new List<SensorReading>
             {
+                // Virtual adapters only → should not report 0 anymore. Pick the max(total) adapter to avoid double counting.
                 new(HardwareType.Network, "Hyper-V Virtual Ethernet Adapter", SensorType.Throughput, "Download Speed", 2 * 1024 * 1024f),
-                new(HardwareType.Network, "VPN Adapter", SensorType.Throughput, "Upload Speed", 1024 * 1024f)
+                new(HardwareType.Network, "Hyper-V Virtual Ethernet Adapter", SensorType.Throughput, "Upload Speed", 0.2f * 1024 * 1024f),
+                new(HardwareType.Network, "VPN Adapter", SensorType.Throughput, "Download Speed", 0.1f * 1024 * 1024f),
+                new(HardwareType.Network, "VPN Adapter", SensorType.Throughput, "Upload Speed", 1 * 1024 * 1024f)
             });
 
         using var provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
             logger: null,
-            hardwareManager: hardwareManager.Object);
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
-        usage.DownloadSpeed.Should().Be(0.0);
-        usage.UploadSpeed.Should().Be(0.0);
+        // VPN total=1.1MB/s < Hyper-V total=2.2MB/s, so select Hyper-V (Up=0.2, Down=2.0)
+        usage.DownloadSpeed.Should().Be(2.0);
+        usage.UploadSpeed.Should().BeApproximately(0.2, 0.00001);
+    }
+
+    [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_PrefersPhysicalAdapters_OverVirtualAdapters()
+    {
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager.Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), SensorType.Throughput))
+            .Returns(new List<SensorReading>
+            {
+                new(HardwareType.Network, "Test Physical NIC", SensorType.Throughput, "Download Speed", 3 * 1024 * 1024f),
+                new(HardwareType.Network, "Test Physical NIC", SensorType.Throughput, "Upload Speed", 1024 * 1024f),
+                new(HardwareType.Network, "Hyper-V Virtual Ethernet Adapter", SensorType.Throughput, "Download Speed", 9 * 1024 * 1024f),
+                new(HardwareType.Network, "Hyper-V Virtual Ethernet Adapter", SensorType.Throughput, "Upload Speed", 9 * 1024 * 1024f)
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: new[] { "Test Physical NIC" });
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.DownloadSpeed.Should().Be(3.0);
+        usage.UploadSpeed.Should().Be(1.0);
+    }
+
+    [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_FallsBackToUnknownAdapters_WhenNoPhysicalOrVirtualMatched()
+    {
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager.Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), SensorType.Throughput))
+            .Returns(new List<SensorReading>
+            {
+                new(HardwareType.Network, "Some Adapter", SensorType.Throughput, "Download Speed", 4 * 1024 * 1024f),
+                new(HardwareType.Network, "Some Adapter", SensorType.Throughput, "Upload Speed", 2 * 1024 * 1024f)
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.DownloadSpeed.Should().Be(4.0);
+        usage.UploadSpeed.Should().Be(2.0);
     }
 
     [Fact]
@@ -268,7 +326,8 @@ public class SystemMetricProviderTests : IDisposable
         using var provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
             logger: null,
-            hardwareManager: hardwareManager.Object);
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
@@ -320,7 +379,8 @@ public class SystemMetricProviderTests : IDisposable
         using var provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
             logger: null,
-            hardwareManager: hardwareManager.Object);
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
@@ -372,7 +432,8 @@ public class SystemMetricProviderTests : IDisposable
         using var provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
             logger: null,
-            hardwareManager: hardwareManager.Object);
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
@@ -415,7 +476,8 @@ public class SystemMetricProviderTests : IDisposable
         using var provider = new SystemMetricProvider(
             Array.Empty<IMetricProvider>(),
             logger: null,
-            hardwareManager: hardwareManager.Object);
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
@@ -436,7 +498,8 @@ public class SystemMetricProviderTests : IDisposable
             Array.Empty<IMetricProvider>(),
             logger: null,
             hardwareManager: null,
-            powerProvider: powerProvider.Object);
+            powerProvider: powerProvider.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
@@ -463,7 +526,8 @@ public class SystemMetricProviderTests : IDisposable
             Array.Empty<IMetricProvider>(),
             logger: null,
             hardwareManager: null,
-            powerProvider: powerProvider.Object);
+            powerProvider: powerProvider.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
 
         var usage = await provider.GetSystemUsageAsync();
 
