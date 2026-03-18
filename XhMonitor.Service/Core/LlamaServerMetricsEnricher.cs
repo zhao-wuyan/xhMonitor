@@ -41,6 +41,13 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
 
             if (!TryGetLlamaMetricsPort(processMetrics.Info, out var port))
             {
+                if (string.Equals(processMetrics.Info.ProcessName, LlamaProcessName, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogDebug(
+                        "llama-server 进程未解析到 metrics 端口，跳过 enrich。PID={ProcessId}, CommandLine={CommandLine}",
+                        processMetrics.Info.ProcessId,
+                        processMetrics.Info.CommandLine);
+                }
                 continue;
             }
 
@@ -216,6 +223,7 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
 
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogDebug("llama metrics 请求返回非成功状态码。Port={Port}, StatusCode={StatusCode}", port, (int)response.StatusCode);
                 return null;
             }
 
@@ -227,6 +235,7 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
         }
         catch
         {
+            _logger.LogDebug("llama metrics 请求失败。Port={Port}", port);
             return null;
         }
     }
@@ -246,12 +255,7 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
             return false;
         }
 
-        if (!LlamaServerCommandLineParser.HasMetricsFlag(commandLine))
-        {
-            return false;
-        }
-
-        return LlamaServerCommandLineParser.TryParsePort(commandLine, out port);
+        return LlamaServerCommandLineParser.TryResolveMetricsPort(commandLine, out port);
     }
 
     private void CleanupStates(HashSet<int> livePids)
@@ -320,13 +324,32 @@ internal static class LlamaMetricKeys
 
 internal static class LlamaServerCommandLineParser
 {
+    internal const int DefaultPort = 8080;
+
     private static readonly Regex MetricsFlagRegex =
         new(@"(?:^|\s)--metrics(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex PortRegex =
-        new(@"(?:^|\s)--port(?:\s+|=)(\d{1,5})(?=\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(@"(?:^|\s)(?:--port|-p)(?:\s+|=)(\d{1,5})(?=\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public static bool HasMetricsFlag(string commandLine) => MetricsFlagRegex.IsMatch(commandLine);
+
+    public static bool TryResolveMetricsPort(string commandLine, out int port)
+    {
+        if (TryParsePort(commandLine, out port))
+        {
+            return true;
+        }
+
+        if (HasMetricsFlag(commandLine))
+        {
+            port = DefaultPort;
+            return true;
+        }
+
+        port = default;
+        return false;
+    }
 
     public static bool TryParsePort(string commandLine, out int port)
     {

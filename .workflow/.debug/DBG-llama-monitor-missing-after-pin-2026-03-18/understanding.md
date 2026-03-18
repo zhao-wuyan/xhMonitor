@@ -104,3 +104,39 @@
 1. `lite` 模式下只传 PID 的 pin，对会频繁重启的本地服务类进程不够稳。
 2. `ReceiveProcessMetadata` 是天然的“进程重生通知”，适合做 PID 重绑。
 3. web 端 `full` 订阅不应该承担修复 desktop pin 丢失的职责，问题应在 desktop 自身闭环。
+
+### Iteration 4 - Port Close Logic Review (2026-03-18 01:05 +08:00)
+
+#### New Evidence
+
+- `RunLlamaMetricsLoopAsync()` 每秒取当前 `_latestProcessMetrics` 快照重新尝试 enrich，不存在“端口失败一次就停掉该进程监控”的状态机。
+- `FetchMetricsTextAsync()` 访问失败时只返回 `null`，`EnrichSingleAsync()` 直接 `return`，不会把该 PID 标记为禁用。
+- 真正的状态清理只发生在：
+  - 该 PID 不再出现在当前进程快照中时，`LlamaServerMetricsEnricher.CleanupStates()` 清理 `_states`；
+  - `Worker.PrepareLlamaRealtimeUpdates()` 在 live llama PID 集合里清理 `_llamaLastPublished`。
+
+#### Corrected Understanding
+
+- ~~端口关闭后可能触发了某个“停止后不再恢复”的逻辑~~ → 当前代码里没有这种永久停监控逻辑；失败只影响当前一次 `/metrics` 拉取。
+
+#### Current Investigation Focus
+
+如果参数确实不变而且重启后长期不恢复，那么更可能是：
+
+1. 新启动的 llama 进程没有重新进入 `SendProcessDataAsync()` 的进程快照；
+2. 或者进程已进入快照，但新的 `/metrics` 拉取持续失败。
+
+### Iteration 5 - Runtime Diagnostic Instrumentation (2026-03-18 01:20 +08:00)
+
+#### Fix Applied
+
+- 在 `XhMonitor.Service/Core/ProcessScanner.cs` 添加 llama 定向日志：
+  - 命令行为空/读取失败时记录 PID；
+  - 扫描命中后记录 `MatchedKeywords`、`ShouldFilter` 和 `CommandLine`。
+- 在 `XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs` 添加 llama 定向日志：
+  - 未解析到 metrics 端口时记录 PID 和命令行；
+  - 请求 `/metrics` 返回非 2xx 或请求失败时记录端口。
+
+#### Verification Results
+
+- `dotnet test XhMonitor.Tests/XhMonitor.Tests.csproj --filter "FullyQualifiedName~ProcessScannerTests|FullyQualifiedName~LlamaServerMetricsParsingTests"`：通过。
