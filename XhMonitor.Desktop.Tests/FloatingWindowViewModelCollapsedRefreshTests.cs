@@ -116,10 +116,90 @@ public class FloatingWindowViewModelCollapsedRefreshTests
         vm.PinnedProcesses[0].Memory.Should().Be(1000);
     }
 
+    [Fact]
+    public void DoneWhen_PinnedProcessRestarts_MetadataMatches_ShouldRebindPinToNewProcessId()
+    {
+        var vm = new FloatingWindowViewModel(
+            new FakeServiceDiscovery(),
+            Options.Create(new UiOptimizationOptions { EnableProcessRefreshThrottling = false }));
+
+        vm.OnBarPointerEnter();
+
+        var initial = new List<ProcessInfoDto>
+        {
+            new()
+            {
+                ProcessId = 101,
+                ProcessName = "llama-server",
+                CommandLine = "llama-server.exe --metrics --port 8080 -m models\\qwen\\model.gguf",
+                DisplayName = "llama-server: qwen",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 256
+                }
+            }
+        };
+
+        QueueProcessRefresh(vm, initial);
+
+        var pinnedRow = vm.AllProcesses.Single(row => row.ProcessId == 101);
+        vm.TogglePin(pinnedRow);
+        vm.PinnedProcesses.Select(row => row.ProcessId).Should().Equal(101);
+
+        vm.OnBarPointerLeave();
+        vm.IsDetailsVisible.Should().BeFalse();
+
+        QueueProcessRefresh(vm, Array.Empty<ProcessInfoDto>());
+        vm.PinnedProcesses.Should().BeEmpty();
+
+        SyncProcessMeta(vm, new List<ProcessMetaInfoDto>
+        {
+            new()
+            {
+                ProcessId = 202,
+                ProcessName = "llama-server",
+                CommandLine = "llama-server.exe --metrics --port 8081 -m models\\qwen\\model.gguf",
+                DisplayName = "llama-server: qwen"
+            }
+        });
+
+        vm.PinnedProcesses.Select(row => row.ProcessId).Should().Equal(202);
+        vm.PinnedProcesses[0].IsPinned.Should().BeTrue();
+
+        QueueProcessRefresh(vm, new List<ProcessInfoDto>
+        {
+            new()
+            {
+                ProcessId = 202,
+                ProcessName = "llama-server",
+                Metrics = new Dictionary<string, double>
+                {
+                    ["memory"] = 768,
+                    ["llama_port"] = 8081
+                }
+            }
+        });
+
+        vm.PinnedProcesses.Should().HaveCount(1);
+        vm.PinnedProcesses[0].ProcessId.Should().Be(202);
+        vm.PinnedProcesses[0].Memory.Should().Be(768);
+        vm.PinnedProcesses[0].HasLlamaMetrics.Should().BeTrue();
+    }
+
     private static void QueueProcessRefresh(FloatingWindowViewModel vm, IReadOnlyList<ProcessInfoDto> processes)
     {
         var method = typeof(FloatingWindowViewModel).GetMethod(
             "QueueProcessRefresh",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        method.Should().NotBeNull();
+
+        method!.Invoke(vm, new object[] { processes });
+    }
+
+    private static void SyncProcessMeta(FloatingWindowViewModel vm, IReadOnlyList<ProcessMetaInfoDto> processes)
+    {
+        var method = typeof(FloatingWindowViewModel).GetMethod(
+            "SyncProcessMeta",
             BindingFlags.Instance | BindingFlags.NonPublic);
         method.Should().NotBeNull();
 
