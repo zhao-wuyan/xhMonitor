@@ -1,0 +1,55 @@
+{
+  "iteration": 2,
+  "timestamp": "2026-03-18T00:10:00+08:00",
+  "bug": "桌面端右键钉住 llama 进程后，后续即使满足 llama 指标采集条件，也可能看不到 llama 运行指标。",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "description": "pin 只绑定旧 PID，llama-server 重启后新 PID 无法自动接管，导致 lite 模式下看不到该进程指标。",
+      "testable_condition": "检查 Desktop pin 是否仅保存 ProcessId，以及 lite 快照是否只按 pinned PID 补充进程。",
+      "logging_point": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs, XhMonitor.Service/Worker.cs",
+      "evidence_criteria": {
+        "confirm": "TogglePin 仅保存 ProcessId，且 BuildProcessPushItem(lite) 只包含 Top5 + pinned PID。",
+        "reject": "存在按进程身份或命令行自动把 pin 迁移到新 PID 的逻辑。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H2",
+      "description": "Service 只有在启动时发现 llama 才会持续监控，启动时没跑 llama 会导致后续不再采集。",
+      "testable_condition": "检查 Service 进程扫描与 llama enrich loop 是否持续运行。",
+      "logging_point": "XhMonitor.Service/Worker.cs",
+      "evidence_criteria": {
+        "confirm": "进程扫描或 llama enrich 只在启动阶段执行一次。",
+        "reject": "扫描和 enrich loop 按固定周期持续执行。"
+      },
+      "likelihood": 2,
+      "status": "rejected"
+    },
+    {
+      "id": "H3",
+      "description": "web 端开始获取进程数据会自动唤醒 desktop 的 llama 监控。",
+      "testable_condition": "检查 MetricsHub 是否按连接分别保存 subscription，以及 web full 订阅是否会改动 desktop lite 订阅。",
+      "logging_point": "XhMonitor.Service/Hubs/MetricsHub.cs, xhmonitor-web/src/hooks/useMetricsHub.ts",
+      "evidence_criteria": {
+        "confirm": "web 连接建立后会直接更新 desktop 连接的订阅模式或 pinned PID。",
+        "reject": "subscription 以 connectionId 为粒度隔离管理。"
+      },
+      "likelihood": 2,
+      "status": "rejected"
+    }
+  ],
+  "corrections": [
+    {
+      "wrong_assumption": "llama 监控可能只在启动时注册一次",
+      "corrected_to": "Service 会持续扫描进程并持续运行 llama enrich loop",
+      "reason": "Worker 中存在固定周期的 SendProcessDataAsync() 与 RunLlamaMetricsLoopAsync()"
+    },
+    {
+      "wrong_assumption": "web 端 full 订阅会顺带唤醒 desktop 的 llama 监控",
+      "corrected_to": "SignalR subscription 按连接隔离，web 不会修改 desktop 的 lite/full 或 pin 选择",
+      "reason": "MetricsHub 使用 connectionId 存储订阅状态"
+    }
+  ]
+}

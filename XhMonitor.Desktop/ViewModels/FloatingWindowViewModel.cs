@@ -16,6 +16,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     private readonly SignalRService _signalRService;
     private readonly Dictionary<int, ProcessRowViewModel> _processIndex = new();
     private readonly HashSet<int> _pinnedProcessIds = new();
+    private readonly List<PinnedProcessBinding> _pinnedBindings = new();
     private readonly DispatcherTimer _processRefreshTimer;
     private readonly TimeSpan _processRefreshInterval;
     private readonly bool _enableProcessRefreshThrottling;
@@ -262,15 +263,18 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     {
         if (row == null) return;
 
-        if (_pinnedProcessIds.Remove(row.ProcessId))
-            row.IsPinned = false;
+        var existingBinding = FindPinnedBindingForRow(row);
+        if (existingBinding != null && existingBinding.BoundProcessId == row.ProcessId)
+        {
+            RemovePinnedProcessBinding(existingBinding);
+        }
         else
         {
-            _pinnedProcessIds.Add(row.ProcessId);
-            row.IsPinned = true;
+            AddOrRebindPinnedProcess(row, existingBinding);
         }
+
         SyncPinnedCollection();
-        _ = _signalRService.UpdatePinnedProcessIdsAsync(_pinnedProcessIds);
+        NotifyPinnedProcessIdsChanged();
     }
 
     private void SyncProcessMetricsSubscription()
@@ -443,15 +447,24 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         var processes = _pendingProcesses;
         _pendingProcesses = null;
         _lastProcessRefreshUtc = DateTime.UtcNow;
+        var pinnedIdsChanged = false;
 
         if (!IsDetailsVisible)
         {
-            SyncPinnedProcessRows(processes);
+            pinnedIdsChanged = SyncPinnedProcessRows(processes);
+            RefreshPinnedBindingsFromCurrentRows();
+            pinnedIdsChanged |= TryRebindPinnedProcesses();
             SyncPinnedCollection();
+            if (pinnedIdsChanged)
+            {
+                NotifyPinnedProcessIdsChanged();
+            }
             return;
         }
 
-        SyncProcessIndex(processes);
+        pinnedIdsChanged = SyncProcessIndex(processes);
+        RefreshPinnedBindingsFromCurrentRows();
+        pinnedIdsChanged |= TryRebindPinnedProcesses();
 
         var orderedAll = processes
             .Select(p => _processIndex[p.ProcessId])
@@ -463,6 +476,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         SyncCollectionOrder(AllProcesses, orderedAll);
         SyncCollectionOrder(TopProcesses, orderedTop);
         SyncPinnedCollection();
+        if (pinnedIdsChanged)
+        {
+            NotifyPinnedProcessIdsChanged();
+        }
     }
 
     internal static int NormalizeProcessRefreshIntervalMs(int intervalMs)
@@ -478,9 +495,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     internal static bool ShouldApplyRefreshImmediately(DateTime nowUtc, DateTime lastRefreshUtc, TimeSpan refreshInterval)
         => (nowUtc - lastRefreshUtc) >= refreshInterval;
 
-    private void SyncProcessIndex(IEnumerable<ProcessInfoDto> processes)
+    private bool SyncProcessIndex(IEnumerable<ProcessInfoDto> processes)
     {
         var seen = new HashSet<int>();
+        var pinnedIdsChanged = false;
 
         foreach (var p in processes)
         {
@@ -499,19 +517,22 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
         foreach (var id in _processIndex.Keys.Where(id => !seen.Contains(id)).ToList())
         {
+            pinnedIdsChanged |= ClearPinnedProcessBinding(id);
             _processIndex.Remove(id);
-            _pinnedProcessIds.Remove(id);
         }
+
+        return pinnedIdsChanged;
     }
 
-    private void SyncPinnedProcessRows(IEnumerable<ProcessInfoDto> processes)
+    private bool SyncPinnedProcessRows(IEnumerable<ProcessInfoDto> processes)
     {
         if (_pinnedProcessIds.Count == 0)
         {
-            return;
+            return false;
         }
 
         var seenPinned = new HashSet<int>();
+        var pinnedIdsChanged = false;
 
         foreach (var p in processes)
         {
@@ -536,13 +557,14 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
         foreach (var id in _pinnedProcessIds.Where(id => !seenPinned.Contains(id)).ToList())
         {
-            _pinnedProcessIds.Remove(id);
+            pinnedIdsChanged |= ClearPinnedProcessBinding(id);
             if (_processIndex.TryGetValue(id, out var row))
             {
-                row.IsPinned = false;
                 _processIndex.Remove(id);
             }
         }
+
+        return pinnedIdsChanged;
     }
 
     private void SyncProcessMeta(IEnumerable<ProcessMetaInfoDto> processes)
@@ -564,6 +586,15 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             {
                 row.UpdateMetaFrom(p);
             }
+
+            row.IsPinned = _pinnedProcessIds.Contains(p.ProcessId);
+        }
+
+        RefreshPinnedBindingsFromCurrentRows();
+        if (TryRebindPinnedProcesses())
+        {
+            SyncPinnedCollection();
+            NotifyPinnedProcessIdsChanged();
         }
     }
 
@@ -575,6 +606,147 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             .ToList();
         SyncCollectionOrder(PinnedProcesses, orderedPinned!);
     }
+
+    private void AddOrRebindPinnedProcess(ProcessRowViewModel row, PinnedProcessBinding? existingBinding)
+    {
+        var binding = existingBinding ?? PinnedProcessBinding.Create(row);
+        if (existingBinding == null)
+        {
+            _pinnedBindings.Add(binding);
+        }
+
+        BindPinnedProcess(binding, row.ProcessId);
+    }
+
+    private PinnedProcessBinding? FindPinnedBindingForRow(ProcessRowViewModel row)
+        => _pinnedBindings.FirstOrDefault(binding => binding.BoundProcessId == row.ProcessId)
+           ?? _pinnedBindings.FirstOrDefault(binding => binding.MatchesPinnedIdentity(
+               row.ProcessName,
+               row.DisplayName,
+               row.CommandLine));
+
+    private void RemovePinnedProcessBinding(PinnedProcessBinding binding)
+    {
+        if (!_pinnedBindings.Remove(binding))
+        {
+            return;
+        }
+
+        if (binding.BoundProcessId is int processId)
+        {
+            _pinnedProcessIds.Remove(processId);
+            if (_processIndex.TryGetValue(processId, out var row))
+            {
+                row.IsPinned = false;
+            }
+        }
+    }
+
+    private void BindPinnedProcess(PinnedProcessBinding binding, int processId)
+    {
+        if (binding.BoundProcessId is int previousProcessId && previousProcessId != processId)
+        {
+            _pinnedProcessIds.Remove(previousProcessId);
+            if (_processIndex.TryGetValue(previousProcessId, out var previousRow))
+            {
+                previousRow.IsPinned = false;
+            }
+        }
+
+        ProcessRowViewModel? row = null;
+        if (_processIndex.TryGetValue(processId, out var existingRow))
+        {
+            row = existingRow;
+            row.IsPinned = true;
+        }
+
+        binding.BindTo(processId, row);
+        _pinnedProcessIds.Add(processId);
+    }
+
+    private bool ClearPinnedProcessBinding(int processId)
+    {
+        var changed = _pinnedProcessIds.Remove(processId);
+        var binding = _pinnedBindings.FirstOrDefault(item => item.BoundProcessId == processId);
+        if (binding == null)
+        {
+            return changed;
+        }
+
+        binding.Unbind();
+        return true;
+    }
+
+    private void RefreshPinnedBindingsFromCurrentRows()
+    {
+        foreach (var binding in _pinnedBindings)
+        {
+            if (binding.BoundProcessId is not int processId)
+            {
+                continue;
+            }
+
+            if (_processIndex.TryGetValue(processId, out var row))
+            {
+                binding.RefreshIdentity(row);
+            }
+        }
+    }
+
+    private bool TryRebindPinnedProcesses()
+    {
+        var pinnedIdsChanged = false;
+
+        foreach (var binding in _pinnedBindings)
+        {
+            if (binding.BoundProcessId is int processId && _processIndex.ContainsKey(processId))
+            {
+                continue;
+            }
+
+            var candidate = FindPinnedProcessRebindCandidate(binding);
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            BindPinnedProcess(binding, candidate.ProcessId);
+            pinnedIdsChanged = true;
+        }
+
+        return pinnedIdsChanged;
+    }
+
+    private ProcessRowViewModel? FindPinnedProcessRebindCandidate(PinnedProcessBinding binding)
+    {
+        var matches = _processIndex.Values
+            .Where(row => !row.IsPinned)
+            .Select(row => new
+            {
+                Row = row,
+                Score = binding.GetRebindScore(row)
+            })
+            .Where(item => item.Score > 0)
+            .OrderByDescending(item => item.Score)
+            .ThenBy(item => item.Row.ProcessId)
+            .Take(2)
+            .ToList();
+
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
+        if (matches.Count > 1 && matches[0].Score == matches[1].Score)
+        {
+            return null;
+        }
+
+        return matches[0].Row;
+    }
+
+    private void NotifyPinnedProcessIdsChanged()
+        => _ = _signalRService.UpdatePinnedProcessIdsAsync(_pinnedProcessIds);
 
     private static void SyncCollectionOrder(ObservableCollection<ProcessRowViewModel> collection, IList<ProcessRowViewModel> desired)
     {
@@ -626,6 +798,98 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private sealed class PinnedProcessBinding
+    {
+        private PinnedProcessBinding(string processName, string displayName, string commandLine, int boundProcessId)
+        {
+            ProcessName = processName;
+            DisplayName = displayName;
+            CommandLine = commandLine;
+            BoundProcessId = boundProcessId;
+        }
+
+        public string ProcessName { get; private set; }
+        public string DisplayName { get; private set; }
+        public string CommandLine { get; private set; }
+        public int? BoundProcessId { get; private set; }
+
+        public static PinnedProcessBinding Create(ProcessRowViewModel row)
+            => new(row.ProcessName, row.DisplayName, row.CommandLine, row.ProcessId);
+
+        public void BindTo(int processId, ProcessRowViewModel? row)
+        {
+            BoundProcessId = processId;
+            if (row != null)
+            {
+                RefreshIdentity(row);
+            }
+        }
+
+        public void Unbind()
+            => BoundProcessId = null;
+
+        public void RefreshIdentity(ProcessRowViewModel row)
+        {
+            ProcessName = row.ProcessName;
+            DisplayName = row.DisplayName;
+            CommandLine = row.CommandLine;
+        }
+
+        public bool MatchesPinnedIdentity(string processName, string displayName, string commandLine)
+        {
+            if (!MatchesProcessName(processName))
+            {
+                return false;
+            }
+
+            if (HasExactCommandLine(commandLine))
+            {
+                return true;
+            }
+
+            return HasMeaningfulDisplayName(DisplayName, ProcessName)
+                   && HasMeaningfulDisplayName(displayName, processName)
+                   && TextEquals(DisplayName, displayName);
+        }
+
+        public int GetRebindScore(ProcessRowViewModel row)
+        {
+            if (!MatchesProcessName(row.ProcessName))
+            {
+                return 0;
+            }
+
+            if (HasExactCommandLine(row.CommandLine))
+            {
+                return 3;
+            }
+
+            if (HasMeaningfulDisplayName(DisplayName, ProcessName)
+                && HasMeaningfulDisplayName(row.DisplayName, row.ProcessName)
+                && TextEquals(DisplayName, row.DisplayName))
+            {
+                return 2;
+            }
+
+            return 0;
+        }
+
+        private bool MatchesProcessName(string processName)
+            => TextEquals(ProcessName, processName);
+
+        private bool HasExactCommandLine(string commandLine)
+            => !string.IsNullOrWhiteSpace(CommandLine)
+               && !string.IsNullOrWhiteSpace(commandLine)
+               && TextEquals(CommandLine, commandLine);
+
+        private static bool HasMeaningfulDisplayName(string displayName, string processName)
+            => !string.IsNullOrWhiteSpace(displayName)
+               && !TextEquals(displayName, processName);
+
+        private static bool TextEquals(string left, string right)
+            => string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     public sealed class ProcessRowViewModel : INotifyPropertyChanged
