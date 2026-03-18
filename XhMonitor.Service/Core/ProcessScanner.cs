@@ -186,6 +186,7 @@ public class ProcessScanner
         var pid = process.Id;
         var processName = process.ProcessName;
         string? commandLine = null;
+        var isLlamaProcess = string.Equals(processName, "llama-server", StringComparison.OrdinalIgnoreCase);
         _logger.LogTrace("进入ProcessSingleProcess");
 
         if (_commandLineCache.TryGetValue(pid, out var cacheEntry) && cacheEntry.ExpiresAtUtc > scanTimestamp)
@@ -215,6 +216,10 @@ public class ProcessScanner
 
             if (commandLine == null)
             {
+                if (isLlamaProcess)
+                {
+                    _logger.LogDebug("llama-server 进程命令行为空，跳过采集。PID={ProcessId}", pid);
+                }
                 return;
             }
 
@@ -223,6 +228,10 @@ public class ProcessScanner
 
         if (commandLine == null)
         {
+            if (isLlamaProcess)
+            {
+                _logger.LogDebug("llama-server 进程命令行读取失败，跳过采集。PID={ProcessId}", pid);
+            }
             return;
         }
 
@@ -233,6 +242,16 @@ public class ProcessScanner
         lock (_keywordsLock)
         {
             shouldFilter = (_includeKeywords.Count != 0 || _excludeKeywords.Count != 0) && matchedKeywords.Count <= 0;
+        }
+
+        if (isLlamaProcess)
+        {
+            _logger.LogDebug(
+                "llama-server 扫描结果：PID={ProcessId}, MatchedKeywords=[{MatchedKeywords}], ShouldFilter={ShouldFilter}, CommandLine={CommandLine}",
+                pid,
+                string.Join(", ", matchedKeywords),
+                shouldFilter,
+                commandLine);
         }
 
         if (shouldFilter) return;

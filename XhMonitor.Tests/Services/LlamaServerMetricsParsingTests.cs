@@ -30,8 +30,18 @@ public class LlamaServerMetricsParsingTests
         LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics --port=2345", out var port2).Should().BeTrue();
         port2.Should().Be(2345);
 
-        LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics --port 65535", out var port3).Should().BeTrue();
-        port3.Should().Be(65535);
+        LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics -p 3456", out var port3).Should().BeTrue();
+        port3.Should().Be(3456);
+
+        LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics --port 65535", out var port4).Should().BeTrue();
+        port4.Should().Be(65535);
+    }
+
+    [Fact]
+    public void TryResolveMetricsPort_WithoutExplicitPortButWithMetrics_ShouldFallbackToDefaultPort()
+    {
+        LlamaServerCommandLineParser.TryResolveMetricsPort("llama-server.exe --metrics", out var port).Should().BeTrue();
+        port.Should().Be(LlamaServerCommandLineParser.DefaultPort);
     }
 
     [Fact]
