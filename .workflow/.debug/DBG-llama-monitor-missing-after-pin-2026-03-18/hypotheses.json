@@ -1,0 +1,196 @@
+{
+  "iteration": 10,
+  "timestamp": "2026-03-19T16:40:00+08:00",
+  "bug": "桌面端右键钉住 llama 进程后，后续即使满足 llama 指标采集条件，也可能看不到 llama 运行指标。",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "description": "pin 只绑定旧 PID，llama-server 重启后新 PID 无法自动接管，导致 lite 模式下看不到该进程指标。",
+      "testable_condition": "检查 Desktop pin 是否仅保存 ProcessId，以及 lite 快照是否只按 pinned PID 补充进程。",
+      "logging_point": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs, XhMonitor.Service/Worker.cs",
+      "evidence_criteria": {
+        "confirm": "TogglePin 仅保存 ProcessId，且 BuildProcessPushItem(lite) 只包含 Top5 + pinned PID。",
+        "reject": "存在按进程身份或命令行自动把 pin 迁移到新 PID 的逻辑。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H2",
+      "description": "Service 只有在启动时发现 llama 才会持续监控，启动时没跑 llama 会导致后续不再采集。",
+      "testable_condition": "检查 Service 进程扫描与 llama enrich loop 是否持续运行。",
+      "logging_point": "XhMonitor.Service/Worker.cs",
+      "evidence_criteria": {
+        "confirm": "进程扫描或 llama enrich 只在启动阶段执行一次。",
+        "reject": "扫描和 enrich loop 按固定周期持续执行。"
+      },
+      "likelihood": 2,
+      "status": "rejected"
+    },
+    {
+      "id": "H3",
+      "description": "web 端开始获取进程数据会自动唤醒 desktop 的 llama 监控。",
+      "testable_condition": "检查 MetricsHub 是否按连接分别保存 subscription，以及 web full 订阅是否会改动 desktop lite 订阅。",
+      "logging_point": "XhMonitor.Service/Hubs/MetricsHub.cs, xhmonitor-web/src/hooks/useMetricsHub.ts",
+      "evidence_criteria": {
+        "confirm": "web 连接建立后会直接更新 desktop 连接的订阅模式或 pinned PID。",
+        "reject": "subscription 以 connectionId 为粒度隔离管理。"
+      },
+      "likelihood": 2,
+      "status": "rejected"
+    },
+    {
+      "id": "H4",
+      "description": "重启后的新 PID 虽然进入了主采集和数据库，但没有进入 llama runtime cache，因此主链路持续拿不到 llama_port 和 llama_*。",
+      "testable_condition": "对比日志与数据库，检查新旧 PID 的主记录里是否出现 llama_port / llama_*。",
+      "logging_point": "XhMonitor.Service/Worker.cs:487, XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs",
+      "evidence_criteria": {
+        "confirm": "旧 PID 很快出现 llama_port，而新 PID 连续多轮落库都没有 llama_port / llama_*。",
+        "reject": "新 PID 在落库后的下一轮很快出现 llama_port。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H5",
+      "description": "新 PID 在 RunLlamaMetricsLoopAsync 看到的快照与 ProcessScanner 日志不一致（例如 loop 内未命中 TryGetLlamaMetricsPort，或首次 cache 写入被跳过 / 立即清理）。",
+      "testable_condition": "在 llama loop 内补首轮日志，记录 PID、CommandLineLength、Port 解析结果和 _llamaLastPublished 首次写入 / 清理。",
+      "logging_point": "XhMonitor.Service/Worker.cs:487-544, XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs:27-60",
+      "evidence_criteria": {
+        "confirm": "新 PID 在 loop 内没有建立 cache，或建立后立即被清理。",
+        "reject": "llama loop 在新 PID 出现前已经退出，因此根本没有机会处理新快照。"
+      },
+      "likelihood": 1,
+      "status": "rejected"
+    },
+    {
+      "id": "H6",
+      "description": "llama `/metrics` 请求超时会以 `OperationCanceledException` 形式向上冒泡，并被 `RunLlamaMetricsLoopAsync()` 当成服务停止取消，导致整条 loop 永久退出。",
+      "testable_condition": "核对最后一条 llama 日志时间、HttpClient timeout 配置，以及 `FetchMetricsTextAsync()` / `RunLlamaMetricsLoopAsync()` 的取消处理代码。",
+      "logging_point": "XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs, XhMonitor.Service/Worker.cs, XhMonitor.Service/Program.cs",
+      "evidence_criteria": {
+        "confirm": "llama 相关日志在某个时间点后整体消失，而主采集仍继续；代码中 timeout 路径会触发 OperationCanceledException 并 break loop。",
+        "reject": "timeout 仅影响单次请求，不会向上导致 loop 退出。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H7",
+      "description": "Desktop 第二次看到新 PID 时，进程列表缺少 CommandLine / DisplayName，不是 metadata 被覆盖，而是 `ReceiveProcessMetrics` 主快照本身没带这两个字段。",
+      "testable_condition": "检查 `Worker.BuildProcessSnapshot()` 输出字段，以及 `FloatingWindowViewModel` 是否用 `ProcessData` 创建新的 `ProcessRowViewModel`。",
+      "logging_point": "XhMonitor.Service/Worker.cs, XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "evidence_criteria": {
+        "confirm": "主快照只包含 ProcessId/ProcessName/Metrics；Desktop 的 ProcessInfoDto 却有 CommandLine/DisplayName，导致新行初始值为空。",
+        "reject": "主快照已经包含 CommandLine/DisplayName，问题仅发生在 Desktop 本地覆盖逻辑。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    }
+  ],
+  "runtimeFindings": [
+    {
+      "source": "XhMonitor.Service/logs/xhmonitor-20260319.log",
+      "finding": "未出现命令行为空、命令行读取失败、未解析到 metrics 端口、ShouldFilter=true 这些定向日志；新 PID 212268、142084、134812 都持续以完整命令行、ShouldFilter=false 被扫描到。"
+    },
+    {
+      "source": "XhMonitor.Service/xhmonitor.db",
+      "finding": "PID 212268 在 14:39:34 之前能正常落库 llama_port=1234；PID 142084 和 134812 的主记录持续出现，但 llama_port / llama_* 始终为空。"
+    },
+    {
+      "source": "XhMonitor.Service/logs/xhmonitor-20260319.log",
+      "finding": "最后一条 llama 相关日志停在 14:39:37.476 的 Port=1278 501；此后主采集日志继续出现，但整份日志里再也没有任何 llama metrics / loop / cache 日志。"
+    },
+    {
+      "source": "XhMonitor.Service/Program.cs + XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs + XhMonitor.Service/Worker.cs",
+      "finding": "llama-metrics HttpClient timeout 为 1.5 s；FetchMetricsTextAsync() 原实现会重抛 OperationCanceledException；RunLlamaMetricsLoopAsync() 原实现对任意 OperationCanceledException 直接 break。"
+    },
+    {
+      "source": "XhMonitor.Core/Interop/ProcessCommandLineReader.cs",
+      "finding": "当前实现通过 NtQueryInformationProcess + ReadProcessMemory 直接读取 PEB，不依赖 cmd.exe 或 wmic。"
+    },
+    {
+      "source": "XhMonitor.Service/Worker.cs + XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "finding": "Worker 原来的 ProcessSnapshot 只带 ProcessId/ProcessName/Metrics；Desktop 的 ProcessRowViewModel 却会直接用 ProcessData 新建行，因此新 PID 在 metadata 未及时到达前天然没有 CommandLine/DisplayName。"
+    }
+  ],
+  "corrections": [
+    {
+      "wrong_assumption": "llama 监控可能只在启动时注册一次",
+      "corrected_to": "Service 会持续扫描进程并持续运行 llama enrich loop",
+      "reason": "Worker 中存在固定周期的 SendProcessDataAsync() 与 RunLlamaMetricsLoopAsync()"
+    },
+    {
+      "wrong_assumption": "web 端 full 订阅会顺带唤醒 desktop 的 llama 监控",
+      "corrected_to": "SignalR subscription 按连接隔离，web 不会修改 desktop 的 lite/full 或 pin 选择",
+      "reason": "MetricsHub 使用 connectionId 存储订阅状态"
+    },
+    {
+      "wrong_assumption": "当前复现主要还是新 PID 被关键字过滤，或命令行读取失败导致",
+      "corrected_to": "在 xhmonitor-20260319.log 里，新 PID 已持续通过扫描与过滤阶段；问题发生在主快照之后的 llama loop 阶段",
+      "reason": "日志与数据库对照显示：新 PID 主记录持续落库，但没有 llama_port / llama_*"
+    },
+    {
+      "wrong_assumption": "新 PID 已经进入 llama loop，只是在 port 解析或 cache 建立处发生了分叉",
+      "corrected_to": "当前复现里更直接的断点是：某次 timeout 让 llama loop 整体退出，后续新 PID 根本没有机会再进入 loop",
+      "reason": "14:39:37.476 之后整份日志再没有任何 llama loop / cache / metrics 日志，但主采集仍持续运行"
+    },
+    {
+      "wrong_assumption": "用户提到的 cmd 获取失败为空，和当前 Service 代码路径是同一件事",
+      "corrected_to": "当前 Service 命令行读取实现不走 cmd.exe；本次提供的 Service 日志里也没有命令行为空 / 读取失败定向日志",
+      "reason": "ProcessCommandLineReader 直接读取 PEB，且日志检索未命中相关消息"
+    },
+    {
+      "wrong_assumption": "desktop 第二次打开后不显示命令行，主要是 ProcessMeta 异步消息偶发没补上",
+      "corrected_to": "更直接的问题是主快照本身没携带 CommandLine/DisplayName，UI 先天依赖两路消息拼装",
+      "reason": "Worker.BuildProcessSnapshot() 原实现缺失这两个字段，而 Desktop 在 SyncProcessRows() 中直接依据 ProcessData 创建行"
+    },
+    {
+      "wrong_assumption": "之前为 debug 加上的 pin 自动重绑机制需要保留在正式行为里",
+      "corrected_to": "当前产品决策是不保留自动重绑；llama 重启后需要用户重新钉住新 PID",
+      "reason": "用户明确要求移除“记住钉住 llama 并自动接管新 PID”的机制"
+    }
+  ],
+  "fixesApplied": [
+    {
+      "file": "XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs",
+      "change": "将 HttpClient timeout 导致的 OperationCanceledException 识别为超时日志并返回 null，不再向上中断 llama loop。"
+    },
+    {
+      "file": "XhMonitor.Service/Worker.cs",
+      "change": "RunLlamaMetricsLoopAsync() 仅在 stoppingToken 真正取消时才 break；对意外的 OperationCanceledException 记录调试日志。"
+    },
+    {
+      "file": "XhMonitor.Tests/Services/LlamaServerMetricsParsingTests.cs",
+      "change": "新增 timeout 回归测试，验证 EnrichAsync() 遇到请求超时不会把取消传播为失败。"
+    },
+    {
+      "file": "XhMonitor.Service/Worker.cs",
+      "change": "ProcessSnapshot / ProcessMetricSnapshot 现在只会对 metadata 发生变化的 PID 在 ProcessData 中顺带携带 CommandLine 和 DisplayName。"
+    },
+    {
+      "file": "XhMonitor.Desktop/Models/ProcessInfoDto.cs",
+      "change": "新增显式 HasMeta 字段，让 Desktop 能区分“当前还没拿到 metadata”和“metadata 已同步但字段可能为空”。"
+    },
+    {
+      "file": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "change": "ProcessRowViewModel 新增 HasMeta 状态；无 metadata 的 ProcessData 不会把状态误置为已同步，收到 ProcessMeta 或 piggyback metadata 后再切为 true。"
+    },
+    {
+      "file": "XhMonitor.Tests/Services/WorkerTests.cs",
+      "change": "新增 BuildProcessSnapshot 回归测试，分别验证“变化 PID 会携带 metadata”和“稳定 PID 不会重复携带 metadata”。"
+    },
+    {
+      "file": "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs",
+      "change": "新增 HasMeta 状态流转回归测试，覆盖 metadata 延迟补齐与 piggyback metadata 两条路径。"
+    },
+    {
+      "file": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "change": "移除 PinnedProcessBinding 与自动重绑逻辑，pin 恢复为仅绑定当前 ProcessId；旧 PID 消失后不再自动接管新 PID。"
+    },
+    {
+      "file": "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs",
+      "change": "将 llama 重启后的用例改为验证“pin 被清空，用户必须重新钉住新 PID”。"
+    }
+  ]
+}

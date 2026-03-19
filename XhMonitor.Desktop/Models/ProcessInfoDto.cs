@@ -10,6 +10,9 @@ public class ProcessInfoDto
     [JsonPropertyName("processName")]
     public string ProcessName { get; set; } = string.Empty;
 
+    [JsonPropertyName("hasMeta")]
+    public bool HasMeta { get; set; }
+
     [JsonPropertyName("commandLine")]
     public string CommandLine { get; set; } = string.Empty;
 

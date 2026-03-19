@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Channels;
 using System.Threading;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using XhMonitor.Core.Interfaces;
@@ -32,6 +33,7 @@ public class Worker : BackgroundService
     private IReadOnlyList<ProcessMetrics>? _latestProcessMetrics;
     private readonly object _llamaCacheLock = new();
     private readonly Dictionary<int, LlamaRealtimeValues> _llamaLastPublished = new();
+    private readonly Dictionary<int, LlamaLoopDebugState> _llamaLoopDebugStates = new();
     private readonly Channel<ProcessPushItem> _processPushChannel =
         Channel.CreateBounded<ProcessPushItem>(new BoundedChannelOptions(1)
         {
@@ -356,7 +358,11 @@ public class Worker : BackgroundService
                 });
             }
 
-            var pushItem = BuildProcessPushItem(metrics, timestamp);
+            var metadataProcessIds = metaUpdates.Count > 0
+                ? metaUpdates.Select(update => update.ProcessId).ToHashSet()
+                : null;
+
+            var pushItem = BuildProcessPushItem(metrics, timestamp, metadataProcessIds);
             if (pushItem != null)
             {
                 RecordProcessSnapshotEnqueuedUtc(DateTime.UtcNow);
@@ -442,6 +448,7 @@ public class Worker : BackgroundService
                 if (snapshot != null)
                 {
                     await _llamaMetricsEnricher.EnrichAsync(snapshot, stoppingToken);
+                    LogLlamaLoopSnapshotState(snapshot);
 
                     var now = DateTime.Now;
                     var nowUtc = now.ToUniversalTime();
@@ -464,9 +471,13 @@ public class Worker : BackgroundService
                     }
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogDebug(ex, "Llama metrics loop canceled unexpectedly");
             }
             catch (Exception ex)
             {
@@ -498,16 +509,21 @@ public class Worker : BackgroundService
             }
 
             liveLlamaPids.Add(process.Info.ProcessId);
+            var hasAnySampleData = HasAnyLlamaSampleData(process);
 
-            if (!TryGetLlamaValuesChanged(process.Info.ProcessId, current))
+            if (!TryGetLlamaValuesChanged(process.Info.ProcessId, current, hasAnySampleData))
             {
                 continue;
             }
 
             shouldPush = true;
 
-            if (!HasAnyLlamaSampleData(process))
+            if (!hasAnySampleData)
             {
+                _logger.LogDebug(
+                    "llama realtime 当前仅建立 cache，暂无样本指标。PID={ProcessId}, Port={Port}",
+                    process.Info.ProcessId,
+                    current.Port);
                 continue;
             }
 
@@ -518,26 +534,43 @@ public class Worker : BackgroundService
         {
             foreach (var pid in _llamaLastPublished.Keys.Where(pid => !liveLlamaPids.Contains(pid)).ToList())
             {
+                var removed = _llamaLastPublished[pid];
                 _llamaLastPublished.Remove(pid);
+                _logger.LogDebug(
+                    "llama cache 清理旧 PID。PID={ProcessId}, Port={Port}, HasSampleData={HasSampleData}",
+                    pid,
+                    removed.Port,
+                    HasAnyLlamaSampleData(removed));
             }
         }
 
         return (shouldPush, records);
     }
 
-    private bool TryGetLlamaValuesChanged(int processId, LlamaRealtimeValues current)
+    private bool TryGetLlamaValuesChanged(int processId, LlamaRealtimeValues current, bool hasAnySampleData)
     {
         lock (_llamaCacheLock)
         {
             if (!_llamaLastPublished.TryGetValue(processId, out var previous))
             {
                 _llamaLastPublished[processId] = current;
+                _logger.LogDebug(
+                    "llama cache 首次写入。PID={ProcessId}, Port={Port}, HasSampleData={HasSampleData}",
+                    processId,
+                    current.Port,
+                    hasAnySampleData);
                 return true;
             }
 
             if (!previous.Equals(current))
             {
                 _llamaLastPublished[processId] = current;
+                _logger.LogDebug(
+                    "llama cache 更新。PID={ProcessId}, Port={Port}, HasSampleData={HasSampleData}, ChangedFields=[{ChangedFields}]",
+                    processId,
+                    current.Port,
+                    hasAnySampleData,
+                    DescribeChangedLlamaFields(previous, current));
                 return true;
             }
 
@@ -688,7 +721,161 @@ public class Worker : BackgroundService
         };
     }
 
-    private static ProcessSnapshot BuildProcessSnapshot(IReadOnlyList<ProcessMetrics> metrics, DateTime timestamp)
+    private void LogLlamaLoopSnapshotState(IReadOnlyList<ProcessMetrics> snapshot)
+    {
+        var liveLlamaPids = new HashSet<int>();
+
+        foreach (var process in snapshot)
+        {
+            if (!string.Equals(process.Info.ProcessName, "llama-server", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            liveLlamaPids.Add(process.Info.ProcessId);
+
+            var commandLine = process.Info.CommandLine ?? string.Empty;
+            var commandLineLength = commandLine.Length;
+            var resolvedPort = 0;
+            var commandLinePortResolved = !string.IsNullOrWhiteSpace(commandLine)
+                                          && LlamaServerCommandLineParser.TryResolveMetricsPort(commandLine, out resolvedPort);
+            var hasPortMetric = process.Metrics.TryGetValue(LlamaMetricKeys.Port, out var portMetric)
+                                && portMetric is not null
+                                && portMetric.Value > 0;
+            var port = 0;
+            if (hasPortMetric && portMetric is not null)
+            {
+                port = (int)Math.Round(portMetric.Value, MidpointRounding.AwayFromZero);
+            }
+            var llamaMetricKeys = string.Join(", ",
+                process.Metrics.Keys
+                    .Where(static key => key.StartsWith("llama_", StringComparison.Ordinal))
+                    .OrderBy(static key => key));
+            var hasAnySampleData = HasAnyLlamaSampleData(process);
+
+            var current = new LlamaLoopDebugState(
+                CommandLineLength: commandLineLength,
+                CommandLinePortResolved: commandLinePortResolved,
+                ResolvedPort: commandLinePortResolved ? resolvedPort : 0,
+                HasPortMetric: hasPortMetric,
+                PortMetric: port,
+                HasSampleData: hasAnySampleData,
+                LlamaMetricKeys: llamaMetricKeys);
+
+            if (_llamaLoopDebugStates.TryGetValue(process.Info.ProcessId, out var previous)
+                && previous.Equals(current))
+            {
+                continue;
+            }
+
+            _llamaLoopDebugStates[process.Info.ProcessId] = current;
+            _logger.LogDebug(
+                "llama loop 快照：PID={ProcessId}, DisplayName={DisplayName}, CommandLineLength={CommandLineLength}, CommandLinePortResolved={CommandLinePortResolved}, ResolvedPort={ResolvedPort}, HasPortMetric={HasPortMetric}, PortMetric={PortMetric}, HasSampleData={HasSampleData}, LlamaMetricKeys=[{LlamaMetricKeys}]",
+                process.Info.ProcessId,
+                process.Info.DisplayName,
+                current.CommandLineLength,
+                current.CommandLinePortResolved,
+                current.ResolvedPort,
+                current.HasPortMetric,
+                current.PortMetric,
+                current.HasSampleData,
+                current.LlamaMetricKeys);
+        }
+
+        foreach (var pid in _llamaLoopDebugStates.Keys.Where(pid => !liveLlamaPids.Contains(pid)).ToList())
+        {
+            _llamaLoopDebugStates.Remove(pid);
+            _logger.LogDebug("llama loop 快照移除旧 PID。PID={ProcessId}", pid);
+        }
+    }
+
+    private static bool HasAnyLlamaSampleData(LlamaRealtimeValues values)
+        => IsFiniteValue(values.PromptTpsAvg)
+           || IsFiniteValue(values.GenTpsAvg)
+           || IsFiniteValue(values.GenTpsCompute)
+           || IsFiniteValue(values.BusyPercent)
+           || IsFiniteValue(values.GenTpsLive)
+           || IsFiniteValue(values.BusyPercentLive)
+           || IsFiniteValue(values.RequestsProcessing)
+           || IsFiniteValue(values.RequestsDeferred)
+           || IsFiniteValue(values.OutTokensTotal)
+           || IsFiniteValue(values.OutTokensLive)
+           || IsFiniteValue(values.DecodeTotal);
+
+    private static bool IsFiniteValue(double value)
+        => !double.IsNaN(value) && !double.IsInfinity(value);
+
+    private static string DescribeChangedLlamaFields(LlamaRealtimeValues previous, LlamaRealtimeValues current)
+    {
+        var changed = new List<string>();
+
+        if (previous.Port != current.Port)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.Port));
+        }
+
+        if (previous.PromptTpsAvg != current.PromptTpsAvg)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.PromptTpsAvg));
+        }
+
+        if (previous.GenTpsAvg != current.GenTpsAvg)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.GenTpsAvg));
+        }
+
+        if (previous.GenTpsCompute != current.GenTpsCompute)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.GenTpsCompute));
+        }
+
+        if (previous.BusyPercent != current.BusyPercent)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.BusyPercent));
+        }
+
+        if (previous.GenTpsLive != current.GenTpsLive)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.GenTpsLive));
+        }
+
+        if (previous.BusyPercentLive != current.BusyPercentLive)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.BusyPercentLive));
+        }
+
+        if (previous.RequestsProcessing != current.RequestsProcessing)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.RequestsProcessing));
+        }
+
+        if (previous.RequestsDeferred != current.RequestsDeferred)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.RequestsDeferred));
+        }
+
+        if (previous.OutTokensTotal != current.OutTokensTotal)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.OutTokensTotal));
+        }
+
+        if (previous.OutTokensLive != current.OutTokensLive)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.OutTokensLive));
+        }
+
+        if (previous.DecodeTotal != current.DecodeTotal)
+        {
+            changed.Add(nameof(LlamaRealtimeValues.DecodeTotal));
+        }
+
+        return string.Join(", ", changed);
+    }
+
+    private static ProcessSnapshot BuildProcessSnapshot(
+        IReadOnlyList<ProcessMetrics> metrics,
+        DateTime timestamp,
+        IReadOnlySet<int>? metadataProcessIds = null)
     {
         var snapshotProcesses = new List<ProcessMetricSnapshot>(metrics.Count);
         foreach (var metric in metrics)
@@ -699,10 +886,14 @@ public class Worker : BackgroundService
                 metricValues[metricId] = metricValue.Value;
             }
 
+            var includeMetadata = metadataProcessIds?.Contains(metric.Info.ProcessId) == true;
             snapshotProcesses.Add(new ProcessMetricSnapshot
             {
                 ProcessId = metric.Info.ProcessId,
                 ProcessName = metric.Info.ProcessName,
+                HasMeta = includeMetadata,
+                CommandLine = includeMetadata ? metric.Info.CommandLine ?? string.Empty : null,
+                DisplayName = includeMetadata ? metric.Info.DisplayName ?? string.Empty : null,
                 Metrics = metricValues
             });
         }
@@ -718,7 +909,10 @@ public class Worker : BackgroundService
     private bool HasAnyProcessPushSubscribers()
         => _processMetricsSubscriptionStore.HasFullSubscribers || _processMetricsSubscriptionStore.HasLiteSubscribers;
 
-    private ProcessPushItem? BuildProcessPushItem(IReadOnlyList<ProcessMetrics> metrics, DateTime timestamp)
+    private ProcessPushItem? BuildProcessPushItem(
+        IReadOnlyList<ProcessMetrics> metrics,
+        DateTime timestamp,
+        IReadOnlySet<int>? metadataProcessIds = null)
     {
         var hasFullSubscribers = _processMetricsSubscriptionStore.HasFullSubscribers;
         var liteSubscriptions = _processMetricsSubscriptionStore.GetLiteSubscriptionsSnapshot();
@@ -731,7 +925,7 @@ public class Worker : BackgroundService
         ProcessSnapshot? fullSnapshot = null;
         if (hasFullSubscribers)
         {
-            fullSnapshot = BuildProcessSnapshot(metrics, timestamp);
+            fullSnapshot = BuildProcessSnapshot(metrics, timestamp, metadataProcessIds);
         }
 
         var liteSnapshots = new List<LiteSnapshot>();
@@ -782,7 +976,7 @@ public class Worker : BackgroundService
                 liteSnapshots.Add(new LiteSnapshot
                 {
                     ConnectionId = subscription.ConnectionId,
-                    Snapshot = BuildProcessSnapshot(selected, timestamp)
+                    Snapshot = BuildProcessSnapshot(selected, timestamp, metadataProcessIds)
                 });
             }
         }
@@ -912,6 +1106,12 @@ public class Worker : BackgroundService
     {
         public int ProcessId { get; init; }
         public string ProcessName { get; init; } = string.Empty;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool HasMeta { get; init; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? CommandLine { get; init; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? DisplayName { get; init; }
         public Dictionary<string, double> Metrics { get; init; } = new();
     }
 
@@ -943,4 +1143,13 @@ public class Worker : BackgroundService
         double OutTokensTotal,
         double OutTokensLive,
         double DecodeTotal);
+
+    private readonly record struct LlamaLoopDebugState(
+        int CommandLineLength,
+        bool CommandLinePortResolved,
+        int ResolvedPort,
+        bool HasPortMetric,
+        int PortMetric,
+        bool HasSampleData,
+        string LlamaMetricKeys);
 }

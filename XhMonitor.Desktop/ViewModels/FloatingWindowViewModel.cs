@@ -263,14 +263,17 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         if (row == null) return;
 
         if (_pinnedProcessIds.Remove(row.ProcessId))
+        {
             row.IsPinned = false;
+        }
         else
         {
             _pinnedProcessIds.Add(row.ProcessId);
             row.IsPinned = true;
         }
+
         SyncPinnedCollection();
-        _ = _signalRService.UpdatePinnedProcessIdsAsync(_pinnedProcessIds);
+        NotifyPinnedProcessIdsChanged();
     }
 
     private void SyncProcessMetricsSubscription()
@@ -443,15 +446,20 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         var processes = _pendingProcesses;
         _pendingProcesses = null;
         _lastProcessRefreshUtc = DateTime.UtcNow;
+        var pinnedIdsChanged = false;
 
         if (!IsDetailsVisible)
         {
-            SyncPinnedProcessRows(processes);
+            pinnedIdsChanged = SyncPinnedProcessRows(processes);
             SyncPinnedCollection();
+            if (pinnedIdsChanged)
+            {
+                NotifyPinnedProcessIdsChanged();
+            }
             return;
         }
 
-        SyncProcessIndex(processes);
+        pinnedIdsChanged = SyncProcessIndex(processes);
 
         var orderedAll = processes
             .Select(p => _processIndex[p.ProcessId])
@@ -463,6 +471,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         SyncCollectionOrder(AllProcesses, orderedAll);
         SyncCollectionOrder(TopProcesses, orderedTop);
         SyncPinnedCollection();
+        if (pinnedIdsChanged)
+        {
+            NotifyPinnedProcessIdsChanged();
+        }
     }
 
     internal static int NormalizeProcessRefreshIntervalMs(int intervalMs)
@@ -478,9 +490,10 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
     internal static bool ShouldApplyRefreshImmediately(DateTime nowUtc, DateTime lastRefreshUtc, TimeSpan refreshInterval)
         => (nowUtc - lastRefreshUtc) >= refreshInterval;
 
-    private void SyncProcessIndex(IEnumerable<ProcessInfoDto> processes)
+    private bool SyncProcessIndex(IEnumerable<ProcessInfoDto> processes)
     {
         var seen = new HashSet<int>();
+        var pinnedIdsChanged = false;
 
         foreach (var p in processes)
         {
@@ -499,19 +512,22 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
         foreach (var id in _processIndex.Keys.Where(id => !seen.Contains(id)).ToList())
         {
+            pinnedIdsChanged |= ClearPinnedProcessBinding(id);
             _processIndex.Remove(id);
-            _pinnedProcessIds.Remove(id);
         }
+
+        return pinnedIdsChanged;
     }
 
-    private void SyncPinnedProcessRows(IEnumerable<ProcessInfoDto> processes)
+    private bool SyncPinnedProcessRows(IEnumerable<ProcessInfoDto> processes)
     {
         if (_pinnedProcessIds.Count == 0)
         {
-            return;
+            return false;
         }
 
         var seenPinned = new HashSet<int>();
+        var pinnedIdsChanged = false;
 
         foreach (var p in processes)
         {
@@ -536,13 +552,14 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
 
         foreach (var id in _pinnedProcessIds.Where(id => !seenPinned.Contains(id)).ToList())
         {
-            _pinnedProcessIds.Remove(id);
+            pinnedIdsChanged |= ClearPinnedProcessBinding(id);
             if (_processIndex.TryGetValue(id, out var row))
             {
-                row.IsPinned = false;
                 _processIndex.Remove(id);
             }
         }
+
+        return pinnedIdsChanged;
     }
 
     private void SyncProcessMeta(IEnumerable<ProcessMetaInfoDto> processes)
@@ -564,6 +581,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             {
                 row.UpdateMetaFrom(p);
             }
+
+            row.IsPinned = _pinnedProcessIds.Contains(p.ProcessId);
         }
     }
 
@@ -575,6 +594,19 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             .ToList();
         SyncCollectionOrder(PinnedProcesses, orderedPinned!);
     }
+
+    private bool ClearPinnedProcessBinding(int processId)
+    {
+        var changed = _pinnedProcessIds.Remove(processId);
+        if (_processIndex.TryGetValue(processId, out var row))
+        {
+            row.IsPinned = false;
+        }
+        return changed;
+    }
+
+    private void NotifyPinnedProcessIdsChanged()
+        => _ = _signalRService.UpdatePinnedProcessIdsAsync(_pinnedProcessIds);
 
     private static void SyncCollectionOrder(ObservableCollection<ProcessRowViewModel> collection, IList<ProcessRowViewModel> desired)
     {
@@ -665,6 +697,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             private set => SetField(ref _displayName, value);
         }
 
+        private bool _hasMeta;
+        public bool HasMeta
+        {
+            get => _hasMeta;
+            private set => SetField(ref _hasMeta, value);
+        }
+
         private double _cpu;
         public double Cpu { get => _cpu; private set => SetField(ref _cpu, value); }
 
@@ -701,6 +740,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             _processName = dto.ProcessName;
             _commandLine = dto.CommandLine;
             _displayName = !string.IsNullOrEmpty(dto.DisplayName) ? dto.DisplayName : dto.ProcessName;
+            _hasMeta = ResolveHasMeta(dto);
             UpdateFrom(dto);
         }
 
@@ -714,6 +754,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 DisplayName = dto.DisplayName;
             else if (string.IsNullOrEmpty(DisplayName) && !string.IsNullOrEmpty(dto.ProcessName))
                 DisplayName = dto.ProcessName;
+            if (ResolveHasMeta(dto))
+                HasMeta = true;
             Cpu = dto.Metrics.GetValueOrDefault("cpu");
             Memory = dto.Metrics.GetValueOrDefault("memory");
             Gpu = dto.Metrics.GetValueOrDefault("gpu");
@@ -732,7 +774,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 DisplayName = dto.DisplayName;
             else if (!string.IsNullOrEmpty(dto.ProcessName))
                 DisplayName = dto.ProcessName;
+            HasMeta = true;
         }
+
+        private static bool ResolveHasMeta(ProcessInfoDto dto)
+            => dto.HasMeta
+               || !string.IsNullOrEmpty(dto.CommandLine)
+               || !string.IsNullOrEmpty(dto.DisplayName);
 
         private void UpdateLlamaMetrics(Dictionary<string, double> metrics)
         {

@@ -1,5 +1,9 @@
 using System.Diagnostics;
+using System.Net;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using XhMonitor.Core.Models;
 using XhMonitor.Service.Core;
 
 namespace XhMonitor.Tests.Services;
@@ -30,8 +34,18 @@ public class LlamaServerMetricsParsingTests
         LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics --port=2345", out var port2).Should().BeTrue();
         port2.Should().Be(2345);
 
-        LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics --port 65535", out var port3).Should().BeTrue();
-        port3.Should().Be(65535);
+        LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics -p 3456", out var port3).Should().BeTrue();
+        port3.Should().Be(3456);
+
+        LlamaServerCommandLineParser.TryParsePort("llama-server.exe --metrics --port 65535", out var port4).Should().BeTrue();
+        port4.Should().Be(65535);
+    }
+
+    [Fact]
+    public void TryResolveMetricsPort_WithoutExplicitPortButWithMetrics_ShouldFallbackToDefaultPort()
+    {
+        LlamaServerCommandLineParser.TryResolveMetricsPort("llama-server.exe --metrics", out var port).Should().BeTrue();
+        port.Should().Be(LlamaServerCommandLineParser.DefaultPort);
     }
 
     [Fact]
@@ -177,5 +191,48 @@ public class LlamaServerMetricsParsingTests
             isBusy: true,
             genTpsCompute: out _,
             busyPercent: out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task EnrichAsync_WhenMetricsRequestTimesOut_ShouldNotPropagateCancellation()
+    {
+        var httpClient = new HttpClient(new TimeoutHttpMessageHandler())
+        {
+            Timeout = TimeSpan.FromMilliseconds(50)
+        };
+        var httpClientFactory = new StubHttpClientFactory(httpClient);
+        var enricher = new LlamaServerMetricsEnricher(
+            httpClientFactory,
+            Mock.Of<ILogger<LlamaServerMetricsEnricher>>());
+
+        var processMetrics = new ProcessMetrics
+        {
+            Info = new ProcessInfo
+            {
+                ProcessId = 1234,
+                ProcessName = "llama-server",
+                DisplayName = "llama-server: timeout-test",
+                CommandLine = "llama-server.exe --metrics --port 1234"
+            },
+            Metrics = new Dictionary<string, MetricValue>(),
+            Timestamp = DateTime.UtcNow
+        };
+
+        Func<Task> act = () => enricher.EnrichAsync([processMetrics], CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+        processMetrics.Metrics.Should().ContainKey(LlamaMetricKeys.Port);
+        processMetrics.Metrics[LlamaMetricKeys.Port].Value.Should().Be(1234);
+    }
+
+    private sealed class StubHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => httpClient;
+    }
+
+    private sealed class TimeoutHttpMessageHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromException<HttpResponseMessage>(new TaskCanceledException("Simulated timeout"));
     }
 }
