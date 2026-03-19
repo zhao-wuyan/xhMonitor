@@ -1,6 +1,6 @@
 {
-  "iteration": 2,
-  "timestamp": "2026-03-18T00:10:00+08:00",
+  "iteration": 8,
+  "timestamp": "2026-03-19T15:05:00+08:00",
   "bug": "桌面端右键钉住 llama 进程后，后续即使满足 llama 指标采集条件，也可能看不到 llama 运行指标。",
   "hypotheses": [
     {
@@ -38,6 +38,64 @@
       },
       "likelihood": 2,
       "status": "rejected"
+    },
+    {
+      "id": "H4",
+      "description": "重启后的新 PID 虽然进入了主采集和数据库，但没有进入 llama runtime cache，因此主链路持续拿不到 llama_port 和 llama_*。",
+      "testable_condition": "对比日志与数据库，检查新旧 PID 的主记录里是否出现 llama_port / llama_*。",
+      "logging_point": "XhMonitor.Service/Worker.cs:487, XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs",
+      "evidence_criteria": {
+        "confirm": "旧 PID 很快出现 llama_port，而新 PID 连续多轮落库都没有 llama_port / llama_*。",
+        "reject": "新 PID 在落库后的下一轮很快出现 llama_port。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H5",
+      "description": "新 PID 在 RunLlamaMetricsLoopAsync 看到的快照与 ProcessScanner 日志不一致（例如 loop 内未命中 TryGetLlamaMetricsPort，或首次 cache 写入被跳过 / 立即清理）。",
+      "testable_condition": "在 llama loop 内补首轮日志，记录 PID、CommandLineLength、Port 解析结果和 _llamaLastPublished 首次写入 / 清理。",
+      "logging_point": "XhMonitor.Service/Worker.cs:487-544, XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs:27-60",
+      "evidence_criteria": {
+        "confirm": "新 PID 在 loop 内没有建立 cache，或建立后立即被清理。",
+        "reject": "llama loop 在新 PID 出现前已经退出，因此根本没有机会处理新快照。"
+      },
+      "likelihood": 1,
+      "status": "rejected"
+    },
+    {
+      "id": "H6",
+      "description": "llama `/metrics` 请求超时会以 `OperationCanceledException` 形式向上冒泡，并被 `RunLlamaMetricsLoopAsync()` 当成服务停止取消，导致整条 loop 永久退出。",
+      "testable_condition": "核对最后一条 llama 日志时间、HttpClient timeout 配置，以及 `FetchMetricsTextAsync()` / `RunLlamaMetricsLoopAsync()` 的取消处理代码。",
+      "logging_point": "XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs, XhMonitor.Service/Worker.cs, XhMonitor.Service/Program.cs",
+      "evidence_criteria": {
+        "confirm": "llama 相关日志在某个时间点后整体消失，而主采集仍继续；代码中 timeout 路径会触发 OperationCanceledException 并 break loop。",
+        "reject": "timeout 仅影响单次请求，不会向上导致 loop 退出。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    }
+  ],
+  "runtimeFindings": [
+    {
+      "source": "XhMonitor.Service/logs/xhmonitor-20260319.log",
+      "finding": "未出现命令行为空、命令行读取失败、未解析到 metrics 端口、ShouldFilter=true 这些定向日志；新 PID 212268、142084、134812 都持续以完整命令行、ShouldFilter=false 被扫描到。"
+    },
+    {
+      "source": "XhMonitor.Service/xhmonitor.db",
+      "finding": "PID 212268 在 14:39:34 之前能正常落库 llama_port=1234；PID 142084 和 134812 的主记录持续出现，但 llama_port / llama_* 始终为空。"
+    },
+    {
+      "source": "XhMonitor.Service/logs/xhmonitor-20260319.log",
+      "finding": "最后一条 llama 相关日志停在 14:39:37.476 的 Port=1278 501；此后主采集日志继续出现，但整份日志里再也没有任何 llama metrics / loop / cache 日志。"
+    },
+    {
+      "source": "XhMonitor.Service/Program.cs + XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs + XhMonitor.Service/Worker.cs",
+      "finding": "llama-metrics HttpClient timeout 为 1.5 s；FetchMetricsTextAsync() 原实现会重抛 OperationCanceledException；RunLlamaMetricsLoopAsync() 原实现对任意 OperationCanceledException 直接 break。"
+    },
+    {
+      "source": "XhMonitor.Core/Interop/ProcessCommandLineReader.cs",
+      "finding": "当前实现通过 NtQueryInformationProcess + ReadProcessMemory 直接读取 PEB，不依赖 cmd.exe 或 wmic。"
     }
   ],
   "corrections": [
@@ -50,6 +108,35 @@
       "wrong_assumption": "web 端 full 订阅会顺带唤醒 desktop 的 llama 监控",
       "corrected_to": "SignalR subscription 按连接隔离，web 不会修改 desktop 的 lite/full 或 pin 选择",
       "reason": "MetricsHub 使用 connectionId 存储订阅状态"
+    },
+    {
+      "wrong_assumption": "当前复现主要还是新 PID 被关键字过滤，或命令行读取失败导致",
+      "corrected_to": "在 xhmonitor-20260319.log 里，新 PID 已持续通过扫描与过滤阶段；问题发生在主快照之后的 llama loop 阶段",
+      "reason": "日志与数据库对照显示：新 PID 主记录持续落库，但没有 llama_port / llama_*"
+    },
+    {
+      "wrong_assumption": "新 PID 已经进入 llama loop，只是在 port 解析或 cache 建立处发生了分叉",
+      "corrected_to": "当前复现里更直接的断点是：某次 timeout 让 llama loop 整体退出，后续新 PID 根本没有机会再进入 loop",
+      "reason": "14:39:37.476 之后整份日志再没有任何 llama loop / cache / metrics 日志，但主采集仍持续运行"
+    },
+    {
+      "wrong_assumption": "用户提到的 cmd 获取失败为空，和当前 Service 代码路径是同一件事",
+      "corrected_to": "当前 Service 命令行读取实现不走 cmd.exe；本次提供的 Service 日志里也没有命令行为空 / 读取失败定向日志",
+      "reason": "ProcessCommandLineReader 直接读取 PEB，且日志检索未命中相关消息"
+    }
+  ],
+  "fixesApplied": [
+    {
+      "file": "XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs",
+      "change": "将 HttpClient timeout 导致的 OperationCanceledException 识别为超时日志并返回 null，不再向上中断 llama loop。"
+    },
+    {
+      "file": "XhMonitor.Service/Worker.cs",
+      "change": "RunLlamaMetricsLoopAsync() 仅在 stoppingToken 真正取消时才 break；对意外的 OperationCanceledException 记录调试日志。"
+    },
+    {
+      "file": "XhMonitor.Tests/Services/LlamaServerMetricsParsingTests.cs",
+      "change": "新增 timeout 回归测试，验证 EnrichAsync() 遇到请求超时不会把取消传播为失败。"
     }
   ]
 }

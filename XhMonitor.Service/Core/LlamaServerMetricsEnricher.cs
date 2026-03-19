@@ -229,6 +229,14 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
 
             return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogDebug(
+                "llama metrics 请求超时。Port={Port}, TimeoutMs={TimeoutMs}",
+                port,
+                _httpClient.Timeout.TotalMilliseconds);
+            return null;
+        }
         catch (OperationCanceledException)
         {
             throw;
