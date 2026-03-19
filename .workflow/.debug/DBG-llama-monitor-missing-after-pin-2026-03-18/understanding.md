@@ -372,14 +372,29 @@
 #### Fix Applied
 
 - 修改 `XhMonitor.Service/Worker.cs`
-  - `BuildProcessSnapshot()` 现在把 `metric.Info.CommandLine` 和 `metric.Info.DisplayName` 一并放进 `ProcessMetricSnapshot`
-  - `ProcessMetricSnapshot` 新增：
+  - `BuildProcessSnapshot()` 现在支持按 PID 选择性携带 metadata
+  - 只有“新 PID / 元数据发生变化”的那一轮 `ProcessData` 才会顺带携带：
+    - `HasMeta=true`
     - `CommandLine`
     - `DisplayName`
+  - 稳定 PID 的常规高频快照仍然只推指标，避免每轮重复推整段命令行
+- 修改 `XhMonitor.Desktop/Models/ProcessInfoDto.cs`
+  - 新增 `HasMeta`
+- 修改 `XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs`
+  - `ProcessRowViewModel` 新增显式状态 `HasMeta`
+  - `ProcessData` 仅含指标时保持 `HasMeta=false`
+  - `ProcessMeta` 或 piggyback metadata 到达后切换为 `HasMeta=true`
 - 修改 `XhMonitor.Tests/Services/WorkerTests.cs`
-  - 新增 `DoneWhen_BuildProcessSnapshot_IncludesCommandLineAndDisplayName`
+  - 新增：
+    - `DoneWhen_BuildProcessSnapshot_IncludesCommandLineAndDisplayNameForMetadataPids`
+    - `DoneWhen_BuildProcessSnapshot_OmitsCommandLineAndDisplayNameForStablePids`
+- 修改 `XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs`
+  - 新增 `HasMeta` 状态流转测试：
+    - 无 metadata 的 `ProcessData` 建行后保持 `HasMeta=false`
+    - `ProcessMeta` 到达后切换为 `HasMeta=true`
+    - piggyback metadata 的 `ProcessData` 可直接建立 `HasMeta=true`
 
 #### Verification Results
 
-- `dotnet test XhMonitor.Tests/XhMonitor.Tests.csproj --filter "FullyQualifiedName~WorkerTests|FullyQualifiedName~LlamaServerMetricsParsingTests|FullyQualifiedName~ProcessScannerTests"`：通过（23 / 23）。
-- `dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj --filter "FullyQualifiedName~FloatingWindowViewModelCollapsedRefreshTests"`：通过（2 / 2）。
+- `dotnet test XhMonitor.Tests/XhMonitor.Tests.csproj --filter "FullyQualifiedName~WorkerTests|FullyQualifiedName~ProcessScannerTests|FullyQualifiedName~LlamaServerMetricsParsingTests"`：通过（24 / 24）。
+- `dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj --filter "FullyQualifiedName~FloatingWindowViewModelCollapsedRefreshTests"`：通过（4 / 4）。

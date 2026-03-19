@@ -1,6 +1,6 @@
 {
-  "iteration": 8,
-  "timestamp": "2026-03-19T15:25:00+08:00",
+  "iteration": 9,
+  "timestamp": "2026-03-19T16:05:00+08:00",
   "bug": "桌面端右键钉住 llama 进程后，后续即使满足 llama 指标采集条件，也可能看不到 llama 运行指标。",
   "hypotheses": [
     {
@@ -161,11 +161,23 @@
     },
     {
       "file": "XhMonitor.Service/Worker.cs",
-      "change": "ProcessSnapshot / ProcessMetricSnapshot 现在会随 ProcessData 一起携带 CommandLine 和 DisplayName。"
+      "change": "ProcessSnapshot / ProcessMetricSnapshot 现在只会对 metadata 发生变化的 PID 在 ProcessData 中顺带携带 CommandLine 和 DisplayName。"
+    },
+    {
+      "file": "XhMonitor.Desktop/Models/ProcessInfoDto.cs",
+      "change": "新增显式 HasMeta 字段，让 Desktop 能区分“当前还没拿到 metadata”和“metadata 已同步但字段可能为空”。"
+    },
+    {
+      "file": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "change": "ProcessRowViewModel 新增 HasMeta 状态；无 metadata 的 ProcessData 不会把状态误置为已同步，收到 ProcessMeta 或 piggyback metadata 后再切为 true。"
     },
     {
       "file": "XhMonitor.Tests/Services/WorkerTests.cs",
-      "change": "新增 BuildProcessSnapshot 回归测试，验证主快照包含 CommandLine 和 DisplayName。"
+      "change": "新增 BuildProcessSnapshot 回归测试，分别验证“变化 PID 会携带 metadata”和“稳定 PID 不会重复携带 metadata”。"
+    },
+    {
+      "file": "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs",
+      "change": "新增 HasMeta 状态流转回归测试，覆盖 metadata 延迟补齐与 piggyback metadata 两条路径。"
     }
   ]
 }

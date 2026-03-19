@@ -120,7 +120,7 @@ public class WorkerTests
     }
 
     [Fact]
-    public void DoneWhen_BuildProcessSnapshot_IncludesCommandLineAndDisplayName()
+    public void DoneWhen_BuildProcessSnapshot_IncludesCommandLineAndDisplayNameForMetadataPids()
     {
         var timestamp = new DateTime(2026, 3, 19, 15, 30, 0, DateTimeKind.Utc);
         var metrics = new List<ProcessMetrics>
@@ -145,14 +145,51 @@ public class WorkerTests
         var method = typeof(Worker).GetMethod("BuildProcessSnapshot", BindingFlags.Static | BindingFlags.NonPublic);
         method.Should().NotBeNull();
 
-        var snapshot = method!.Invoke(null, new object[] { metrics, timestamp });
+        var snapshot = method!.Invoke(null, new object[] { metrics, timestamp, new HashSet<int> { 1234 } });
         snapshot.Should().NotBeNull();
 
         var processes = GetAnonymousObjectList(snapshot!, "Processes");
         processes.Should().HaveCount(1);
         GetAnonymousString(processes[0], "ProcessName").Should().Be("llama-server");
+        GetAnonymousBool(processes[0], "HasMeta").Should().BeTrue();
         GetAnonymousString(processes[0], "CommandLine").Should().Be("llama-server.exe --metrics --port 1234 -m model.gguf");
         GetAnonymousString(processes[0], "DisplayName").Should().Be("llama-server: qwen");
+    }
+
+    [Fact]
+    public void DoneWhen_BuildProcessSnapshot_OmitsCommandLineAndDisplayNameForStablePids()
+    {
+        var timestamp = new DateTime(2026, 3, 19, 15, 31, 0, DateTimeKind.Utc);
+        var metrics = new List<ProcessMetrics>
+        {
+            new()
+            {
+                Info = new ProcessInfo
+                {
+                    ProcessId = 1234,
+                    ProcessName = "llama-server",
+                    CommandLine = "llama-server.exe --metrics --port 1234 -m model.gguf",
+                    DisplayName = "llama-server: qwen"
+                },
+                Metrics = new Dictionary<string, MetricValue>
+                {
+                    ["cpu"] = new() { Value = 12.3, Timestamp = timestamp }
+                },
+                Timestamp = timestamp
+            }
+        };
+
+        var method = typeof(Worker).GetMethod("BuildProcessSnapshot", BindingFlags.Static | BindingFlags.NonPublic);
+        method.Should().NotBeNull();
+
+        var snapshot = method!.Invoke(null, new object?[] { metrics, timestamp, null });
+        snapshot.Should().NotBeNull();
+
+        var processes = GetAnonymousObjectList(snapshot!, "Processes");
+        processes.Should().HaveCount(1);
+        GetAnonymousBool(processes[0], "HasMeta").Should().BeFalse();
+        GetAnonymousNullableString(processes[0], "CommandLine").Should().BeNull();
+        GetAnonymousNullableString(processes[0], "DisplayName").Should().BeNull();
     }
 
     private static Worker CreateWorker(IHubContext<MetricsHub, IMetricsClient> hubContext, ISystemMetricProvider systemMetricProvider)
@@ -221,6 +258,20 @@ public class WorkerTests
         var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
         prop.Should().NotBeNull();
         return (string)prop!.GetValue(obj)!;
+    }
+
+    private static bool GetAnonymousBool(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        prop.Should().NotBeNull();
+        return (bool)prop!.GetValue(obj)!;
+    }
+
+    private static string? GetAnonymousNullableString(object obj, string propertyName)
+    {
+        var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        prop.Should().NotBeNull();
+        return (string?)prop!.GetValue(obj);
     }
 
     private static long? GetAnonymousNullableLong(object obj, string propertyName)

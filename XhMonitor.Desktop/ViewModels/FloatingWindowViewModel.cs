@@ -929,6 +929,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             private set => SetField(ref _displayName, value);
         }
 
+        private bool _hasMeta;
+        public bool HasMeta
+        {
+            get => _hasMeta;
+            private set => SetField(ref _hasMeta, value);
+        }
+
         private double _cpu;
         public double Cpu { get => _cpu; private set => SetField(ref _cpu, value); }
 
@@ -965,6 +972,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             _processName = dto.ProcessName;
             _commandLine = dto.CommandLine;
             _displayName = !string.IsNullOrEmpty(dto.DisplayName) ? dto.DisplayName : dto.ProcessName;
+            _hasMeta = ResolveHasMeta(dto);
             UpdateFrom(dto);
         }
 
@@ -978,6 +986,8 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 DisplayName = dto.DisplayName;
             else if (string.IsNullOrEmpty(DisplayName) && !string.IsNullOrEmpty(dto.ProcessName))
                 DisplayName = dto.ProcessName;
+            if (ResolveHasMeta(dto))
+                HasMeta = true;
             Cpu = dto.Metrics.GetValueOrDefault("cpu");
             Memory = dto.Metrics.GetValueOrDefault("memory");
             Gpu = dto.Metrics.GetValueOrDefault("gpu");
@@ -996,7 +1006,13 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
                 DisplayName = dto.DisplayName;
             else if (!string.IsNullOrEmpty(dto.ProcessName))
                 DisplayName = dto.ProcessName;
+            HasMeta = true;
         }
+
+        private static bool ResolveHasMeta(ProcessInfoDto dto)
+            => dto.HasMeta
+               || !string.IsNullOrEmpty(dto.CommandLine)
+               || !string.IsNullOrEmpty(dto.DisplayName);
 
         private void UpdateLlamaMetrics(Dictionary<string, double> metrics)
         {

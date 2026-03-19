@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Channels;
 using System.Threading;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using XhMonitor.Core.Interfaces;
@@ -357,7 +358,11 @@ public class Worker : BackgroundService
                 });
             }
 
-            var pushItem = BuildProcessPushItem(metrics, timestamp);
+            var metadataProcessIds = metaUpdates.Count > 0
+                ? metaUpdates.Select(update => update.ProcessId).ToHashSet()
+                : null;
+
+            var pushItem = BuildProcessPushItem(metrics, timestamp, metadataProcessIds);
             if (pushItem != null)
             {
                 RecordProcessSnapshotEnqueuedUtc(DateTime.UtcNow);
@@ -867,7 +872,10 @@ public class Worker : BackgroundService
         return string.Join(", ", changed);
     }
 
-    private static ProcessSnapshot BuildProcessSnapshot(IReadOnlyList<ProcessMetrics> metrics, DateTime timestamp)
+    private static ProcessSnapshot BuildProcessSnapshot(
+        IReadOnlyList<ProcessMetrics> metrics,
+        DateTime timestamp,
+        IReadOnlySet<int>? metadataProcessIds = null)
     {
         var snapshotProcesses = new List<ProcessMetricSnapshot>(metrics.Count);
         foreach (var metric in metrics)
@@ -878,12 +886,14 @@ public class Worker : BackgroundService
                 metricValues[metricId] = metricValue.Value;
             }
 
+            var includeMetadata = metadataProcessIds?.Contains(metric.Info.ProcessId) == true;
             snapshotProcesses.Add(new ProcessMetricSnapshot
             {
                 ProcessId = metric.Info.ProcessId,
                 ProcessName = metric.Info.ProcessName,
-                CommandLine = metric.Info.CommandLine ?? string.Empty,
-                DisplayName = metric.Info.DisplayName ?? string.Empty,
+                HasMeta = includeMetadata,
+                CommandLine = includeMetadata ? metric.Info.CommandLine ?? string.Empty : null,
+                DisplayName = includeMetadata ? metric.Info.DisplayName ?? string.Empty : null,
                 Metrics = metricValues
             });
         }
@@ -899,7 +909,10 @@ public class Worker : BackgroundService
     private bool HasAnyProcessPushSubscribers()
         => _processMetricsSubscriptionStore.HasFullSubscribers || _processMetricsSubscriptionStore.HasLiteSubscribers;
 
-    private ProcessPushItem? BuildProcessPushItem(IReadOnlyList<ProcessMetrics> metrics, DateTime timestamp)
+    private ProcessPushItem? BuildProcessPushItem(
+        IReadOnlyList<ProcessMetrics> metrics,
+        DateTime timestamp,
+        IReadOnlySet<int>? metadataProcessIds = null)
     {
         var hasFullSubscribers = _processMetricsSubscriptionStore.HasFullSubscribers;
         var liteSubscriptions = _processMetricsSubscriptionStore.GetLiteSubscriptionsSnapshot();
@@ -912,7 +925,7 @@ public class Worker : BackgroundService
         ProcessSnapshot? fullSnapshot = null;
         if (hasFullSubscribers)
         {
-            fullSnapshot = BuildProcessSnapshot(metrics, timestamp);
+            fullSnapshot = BuildProcessSnapshot(metrics, timestamp, metadataProcessIds);
         }
 
         var liteSnapshots = new List<LiteSnapshot>();
@@ -963,7 +976,7 @@ public class Worker : BackgroundService
                 liteSnapshots.Add(new LiteSnapshot
                 {
                     ConnectionId = subscription.ConnectionId,
-                    Snapshot = BuildProcessSnapshot(selected, timestamp)
+                    Snapshot = BuildProcessSnapshot(selected, timestamp, metadataProcessIds)
                 });
             }
         }
@@ -1093,8 +1106,12 @@ public class Worker : BackgroundService
     {
         public int ProcessId { get; init; }
         public string ProcessName { get; init; } = string.Empty;
-        public string CommandLine { get; init; } = string.Empty;
-        public string DisplayName { get; init; } = string.Empty;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool HasMeta { get; init; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? CommandLine { get; init; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? DisplayName { get; init; }
         public Dictionary<string, double> Metrics { get; init; } = new();
     }
 
