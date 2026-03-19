@@ -46,6 +46,20 @@ jobs:
           cache: npm
           cache-dependency-path: xhmonitor-web/package-lock.json
 
+      - name: Sync version to Directory.Build.props
+        shell: pwsh
+        run: |
+          $buildPropsPath = "Directory.Build.props"
+          [xml]$buildProps = Get-Content $buildPropsPath
+
+          # 更新版本号
+          $buildProps.Project.PropertyGroup.Version = $env:VERSION
+          $buildProps.Project.PropertyGroup.AssemblyVersion = "$env:VERSION.0"
+          $buildProps.Project.PropertyGroup.FileVersion = "$env:VERSION.0"
+
+          $buildProps.Save("$PWD\$buildPropsPath")
+          Write-Host "Updated Directory.Build.props to version $env:VERSION"
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
