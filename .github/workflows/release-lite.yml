@@ -130,6 +130,19 @@ jobs:
           }
           Write-Host "Lite-Net8 Installer: $setupPath"
 
+      # 保存 Lite 产物到临时目录（publish.ps1 会清理 release 目录）
+      - name: Backup Lite artifacts
+        shell: pwsh
+        run: |
+          $backupDir = "release-lite-backup"
+          New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+
+          Move-Item "release\XhMonitor-v$env:VERSION-Lite.zip" $backupDir -Force
+          Move-Item "release\XhMonitor-v$env:VERSION-Lite-Setup.exe" $backupDir -Force
+          Move-Item "release\XhMonitor-v$env:VERSION-Lite-Net8-Setup.exe" $backupDir -Force
+
+          Write-Host "Backed up Lite artifacts to $backupDir"
+
       # ===========================================
       # Build 3: Full (self-contained)
       # ===========================================
@@ -158,6 +171,17 @@ jobs:
             throw "Full Installer not found: $setupPath"
           }
           Write-Host "Full Installer: $setupPath"
+
+      # 恢复 Lite 产物
+      - name: Restore Lite artifacts
+        shell: pwsh
+        run: |
+          $backupDir = "release-lite-backup"
+
+          Move-Item "$backupDir\*" "release\" -Force
+          Remove-Item $backupDir -Force -Recurse
+
+          Write-Host "Restored Lite artifacts"
 
       # ===========================================
       # Upload all assets
