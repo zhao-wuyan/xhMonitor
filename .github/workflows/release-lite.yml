@@ -76,6 +76,26 @@ jobs:
             Write-Host "ChineseSimplified.isl already exists"
           }
 
+      - name: Download .NET Desktop Runtime for bundling
+        shell: pwsh
+        run: |
+          $runtimeDir = "tools\RuntimePkg"
+          $runtimeFile = "windowsdesktop-runtime-8.0.23-win-x64.exe"
+          $runtimeUrl = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/$runtimeFile"
+
+          New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
+          $runtimePath = Join-Path $runtimeDir $runtimeFile
+
+          Write-Host "Downloading .NET Desktop Runtime 8.0.23..."
+          Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimePath
+
+          if (Test-Path $runtimePath) {
+            $size = (Get-Item $runtimePath).Length / 1MB
+            Write-Host "Downloaded: $runtimePath ($([math]::Round($size, 2)) MB)"
+          } else {
+            throw "Failed to download .NET Desktop Runtime"
+          }
+
       - name: Build lite installer
         shell: pwsh
         run: |
