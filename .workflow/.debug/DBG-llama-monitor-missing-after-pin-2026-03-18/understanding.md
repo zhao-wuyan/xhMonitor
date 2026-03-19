@@ -398,3 +398,27 @@
 
 - `dotnet test XhMonitor.Tests/XhMonitor.Tests.csproj --filter "FullyQualifiedName~WorkerTests|FullyQualifiedName~ProcessScannerTests|FullyQualifiedName~LlamaServerMetricsParsingTests"`：通过（24 / 24）。
 - `dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj --filter "FullyQualifiedName~FloatingWindowViewModelCollapsedRefreshTests"`：通过（4 / 4）。
+
+### Iteration 10 - Roll Back Auto-Rebind Pin Behavior (2026-03-19 16:40 +08:00)
+
+#### Product Decision
+
+- 用户确认不再保留“llama 旧 PID 消失后，按身份自动把 pin 迁移到新 PID”的机制。
+- 期望行为改为：
+  - pin 只绑定当前 PID；
+  - 如果被钉住的 llama 进程关闭，pin 立即失效；
+  - 下次 llama 再启动时，由用户手动重新钉住。
+
+#### Fix Applied
+
+- 修改 `XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs`
+  - 删除 `PinnedProcessBinding`
+  - 删除 `TryRebindPinnedProcesses()` 及相关重绑链路
+  - `TogglePin()` 恢复为仅按 `ProcessId` 增删 `_pinnedProcessIds`
+  - 旧 PID 从快照消失后，只清理当前 pin，不再尝试自动接管新 PID
+- 修改 `XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs`
+  - 将“metadata 匹配后自动重绑”的测试改为“旧 PID 消失后必须由用户重新钉住新 PID”
+
+#### Verification Results
+
+- `dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj --filter "FullyQualifiedName~FloatingWindowViewModelCollapsedRefreshTests"`：通过（4 / 4）。

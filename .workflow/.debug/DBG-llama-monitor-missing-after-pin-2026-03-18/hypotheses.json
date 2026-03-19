@@ -1,6 +1,6 @@
 {
-  "iteration": 9,
-  "timestamp": "2026-03-19T16:05:00+08:00",
+  "iteration": 10,
+  "timestamp": "2026-03-19T16:40:00+08:00",
   "bug": "桌面端右键钉住 llama 进程后，后续即使满足 llama 指标采集条件，也可能看不到 llama 运行指标。",
   "hypotheses": [
     {
@@ -144,6 +144,11 @@
       "wrong_assumption": "desktop 第二次打开后不显示命令行，主要是 ProcessMeta 异步消息偶发没补上",
       "corrected_to": "更直接的问题是主快照本身没携带 CommandLine/DisplayName，UI 先天依赖两路消息拼装",
       "reason": "Worker.BuildProcessSnapshot() 原实现缺失这两个字段，而 Desktop 在 SyncProcessRows() 中直接依据 ProcessData 创建行"
+    },
+    {
+      "wrong_assumption": "之前为 debug 加上的 pin 自动重绑机制需要保留在正式行为里",
+      "corrected_to": "当前产品决策是不保留自动重绑；llama 重启后需要用户重新钉住新 PID",
+      "reason": "用户明确要求移除“记住钉住 llama 并自动接管新 PID”的机制"
     }
   ],
   "fixesApplied": [
@@ -178,6 +183,14 @@
     {
       "file": "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs",
       "change": "新增 HasMeta 状态流转回归测试，覆盖 metadata 延迟补齐与 piggyback metadata 两条路径。"
+    },
+    {
+      "file": "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "change": "移除 PinnedProcessBinding 与自动重绑逻辑，pin 恢复为仅绑定当前 ProcessId；旧 PID 消失后不再自动接管新 PID。"
+    },
+    {
+      "file": "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs",
+      "change": "将 llama 重启后的用例改为验证“pin 被清空，用户必须重新钉住新 PID”。"
     }
   ]
 }

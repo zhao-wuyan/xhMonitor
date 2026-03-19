@@ -117,7 +117,7 @@ public class FloatingWindowViewModelCollapsedRefreshTests
     }
 
     [Fact]
-    public void DoneWhen_PinnedProcessRestarts_MetadataMatches_ShouldRebindPinToNewProcessId()
+    public void DoneWhen_PinnedProcessRestarts_ShouldRequireUserToRepinNewProcessId()
     {
         var vm = new FloatingWindowViewModel(
             new FakeServiceDiscovery(),
@@ -151,6 +151,7 @@ public class FloatingWindowViewModelCollapsedRefreshTests
 
         QueueProcessRefresh(vm, Array.Empty<ProcessInfoDto>());
         vm.PinnedProcesses.Should().BeEmpty();
+        pinnedRow.IsPinned.Should().BeFalse();
 
         SyncProcessMeta(vm, new List<ProcessMetaInfoDto>
         {
@@ -163,9 +164,9 @@ public class FloatingWindowViewModelCollapsedRefreshTests
             }
         });
 
-        vm.PinnedProcesses.Select(row => row.ProcessId).Should().Equal(202);
-        vm.PinnedProcesses[0].IsPinned.Should().BeTrue();
+        vm.PinnedProcesses.Should().BeEmpty();
 
+        vm.OnBarPointerEnter();
         QueueProcessRefresh(vm, new List<ProcessInfoDto>
         {
             new()
@@ -180,10 +181,11 @@ public class FloatingWindowViewModelCollapsedRefreshTests
             }
         });
 
-        vm.PinnedProcesses.Should().HaveCount(1);
-        vm.PinnedProcesses[0].ProcessId.Should().Be(202);
-        vm.PinnedProcesses[0].Memory.Should().Be(768);
-        vm.PinnedProcesses[0].HasLlamaMetrics.Should().BeTrue();
+        vm.PinnedProcesses.Should().BeEmpty();
+        var restartedRow = vm.AllProcesses.Single(row => row.ProcessId == 202);
+        restartedRow.IsPinned.Should().BeFalse();
+        restartedRow.Memory.Should().Be(768);
+        restartedRow.HasLlamaMetrics.Should().BeTrue();
     }
 
     [Fact]
