@@ -1,10 +1,16 @@
 ﻿# XhMonitor 安装程序构建脚本
-# 用法: .\build-installer.ps1 [-Version "0.2.1"] [-SkipPublish] [-Help]
+# 用法: .\build-installer.ps1 [-Version "0.2.1"] [-SkipPublish] [-BuildType <Lite|LiteNet8|Full>] [-Help]
+#
+# 构建类型：
+#   - Lite      : Lite 不带 .NET（最精简，约 2MB，需要系统预装 .NET 8）
+#   - LiteNet8  : Lite 带 .NET 安装包（中等，约 60MB，可自动安装运行时）
+#   - Full      : 全量 self-contained（最大，约 100MB，无需额外运行时）
 
 param(
     [string]$Version,  # 版本号参数（字符串类型）
     [switch]$SkipPublish,        # 跳过发布步骤，直接编译安装程序
-    [switch]$Lite,               # 使用精简发布模式
+    [ValidateSet("Lite", "LiteNet8", "Full")]
+    [string]$BuildType = "LiteNet8",  # 构建类型：Lite（不带运行时）/ LiteNet8（带运行时安装包）/ Full（全量）
     [Alias("h")]
     [switch]$Help
 )
@@ -35,13 +41,16 @@ if ($Help) {
     Write-Host "  .\build-installer.ps1 [参数]" -ForegroundColor White
     Write-Host ""
     Write-Host "参数:" -ForegroundColor Yellow
-    Write-Host "  -Version <版本号>    指定版本号 (默认: 0.2.1)" -ForegroundColor White
+    Write-Host "  -Version <版本号>    指定版本号 (默认: 从 Directory.Build.props 读取)" -ForegroundColor White
     Write-Host "                       示例: -Version `"1.0.0`"" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  -SkipPublish         跳过发布步骤，直接编译安装程序" -ForegroundColor White
     Write-Host "                       需要已有发布文件 (release\XhMonitor-v<版本号>\)" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  -Lite                使用精简发布模式（不包含 Web 前端）" -ForegroundColor White
+    Write-Host "  -BuildType <类型>    构建类型 (默认: LiteNet8)" -ForegroundColor White
+    Write-Host "                       Lite     - Lite 不带 .NET（最精简，需系统预装 .NET 8）" -ForegroundColor Gray
+    Write-Host "                       LiteNet8 - Lite 带 .NET 安装包（可自动安装运行时）" -ForegroundColor Gray
+    Write-Host "                       Full     - 全量 self-contained（无需额外运行时）" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  -Help, -h            显示此帮助信息" -ForegroundColor White
     Write-Host ""
@@ -55,17 +64,16 @@ if ($Help) {
     Write-Host ""
     Write-Host "示例:" -ForegroundColor Yellow
     Write-Host "  .\build-installer.ps1" -ForegroundColor White
-    Write-Host "    完整构建：发布 + 编译安装程序" -ForegroundColor Gray
+    Write-Host "    默认构建：LiteNet8 版本（带 .NET 安装包）" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  .\build-installer.ps1 -Version `"1.0.0`"" -ForegroundColor White
-    Write-Host "    构建 v1.0.0 版本安装程序" -ForegroundColor Gray
+    Write-Host "  .\build-installer.ps1 -BuildType Lite" -ForegroundColor White
+    Write-Host "    构建 Lite 版本（最精简，需系统预装 .NET 8）" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  .\build-installer.ps1 -SkipPublish" -ForegroundColor White
+    Write-Host "  .\build-installer.ps1 -BuildType Full -Version `"1.0.0`"" -ForegroundColor White
+    Write-Host "    构建 v1.0.0 全量版本（包含完整运行时）" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  .\build-installer.ps1 -SkipPublish -BuildType LiteNet8" -ForegroundColor White
     Write-Host "    跳过发布，仅编译安装程序（需要已有发布文件）" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "快捷方式:" -ForegroundColor Yellow
-    Write-Host "  也可以通过 publish.ps1 的 -Installer 参数触发:" -ForegroundColor White
-    Write-Host "  .\publish.ps1 -Version `"1.0.0`" -Installer" -ForegroundColor Gray
     Write-Host ""
     Write-Host "安装程序功能:" -ForegroundColor Yellow
     Write-Host "  - 软件名称: 星核监视器 (XhMonitor)" -ForegroundColor White
@@ -75,8 +83,10 @@ if ($Help) {
     Write-Host "  - 完整卸载支持（自动停止服务、清理数据）" -ForegroundColor White
     Write-Host "  - 中英文界面支持" -ForegroundColor White
     Write-Host ""
-    Write-Host "输出:" -ForegroundColor Yellow
-    Write-Host "  release\XhMonitor-v<版本号>-Setup.exe" -ForegroundColor White
+    Write-Host "输出文件命名规则:" -ForegroundColor Yellow
+    Write-Host "  Lite:     release\XhMonitor-v<版本号>-Lite-Setup.exe" -ForegroundColor White
+    Write-Host "  LiteNet8: release\XhMonitor-v<版本号>-Lite-Net8-Setup.exe" -ForegroundColor White
+    Write-Host "  Full:     release\XhMonitor-v<版本号>-Full-Setup.exe" -ForegroundColor White
     Write-Host ""
     exit 0
 }
@@ -89,6 +99,7 @@ Write-Host ""
 Write-Host "====================================" -ForegroundColor Cyan
 Write-Host "  星核监视器 安装程序构建" -ForegroundColor Cyan
 Write-Host "  版本: v$Version" -ForegroundColor Cyan
+Write-Host "  类型: $BuildType" -ForegroundColor Cyan
 Write-Host "====================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -143,7 +154,10 @@ if (-not $SkipPublish) {
         exit 1
     }
 
-    if ($Lite) {
+    # 根据构建类型选择发布模式
+    # Lite 和 LiteNet8 都使用 -Lite 发布（framework-dependent）
+    # Full 使用完整发布（self-contained）
+    if ($BuildType -eq "Lite" -or $BuildType -eq "LiteNet8") {
         & $publishScript -Version $Version -Lite
     } else {
         & $publishScript -Version $Version
@@ -171,15 +185,13 @@ Write-Host ""
 Write-Host "[3/3] 编译安装程序..." -ForegroundColor Yellow
 
 try {
-    # 使用 ISCC 命令行参数传递版本号，避免修改文件导致编码问题
+    # 使用 ISCC 命令行参数传递版本号和构建类型
     Push-Location $InstallerDir
     $isccArgs = @(
-        "/DMyAppVersion=$Version"
+        "/DMyAppVersion=$Version",
+        "/DBuildType=$BuildType",
         $IssFile
     )
-    if ($Lite) {
-        $isccArgs = @("/DIsLiteBuild=1") + $isccArgs
-    }
     & $isccPath @isccArgs
 
     if ($LASTEXITCODE -ne 0) {
@@ -190,7 +202,15 @@ try {
     Pop-Location
 }
 
-$setupFile = Join-Path $RootDir "release\XhMonitor-v$Version-Setup.exe"
+# 确定输出文件后缀
+$outputSuffix = switch ($BuildType) {
+    "Lite" { "Lite" }
+    "LiteNet8" { "Lite-Net8" }
+    "Full" { "Full" }
+    default { "Lite" }
+}
+
+$setupFile = Join-Path $RootDir "release\XhMonitor-v$Version-$outputSuffix-Setup.exe"
 
 if (Test-Path $setupFile) {
     $setupSize = [math]::Round((Get-Item $setupFile).Length / 1MB, 2)
@@ -202,12 +222,16 @@ if (Test-Path $setupFile) {
     Write-Host ""
     Write-Host "输出文件: $setupFile" -ForegroundColor White
     Write-Host "文件大小: $setupSize MB" -ForegroundColor White
+    Write-Host "构建类型: $BuildType" -ForegroundColor White
     Write-Host ""
     Write-Host "安装程序功能:" -ForegroundColor Yellow
     Write-Host "  - 创建开始菜单快捷方式" -ForegroundColor White
     Write-Host "  - 创建桌面快捷方式（可选）" -ForegroundColor White
     Write-Host "  - 开机自启动（可选）" -ForegroundColor White
     Write-Host "  - 完整卸载支持" -ForegroundColor White
+    if ($BuildType -eq "LiteNet8") {
+        Write-Host "  - 自动安装 .NET 运行时（可选）" -ForegroundColor White
+    }
     Write-Host ""
 } else {
     Write-Host "错误: 安装程序文件未生成" -ForegroundColor Red

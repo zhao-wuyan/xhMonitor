@@ -1,4 +1,4 @@
-name: Release (Lite)
+name: Release
 
 on:
   release:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  build-lite-assets:
+  build-assets:
     runs-on: windows-latest
 
     steps:
@@ -46,16 +46,6 @@ jobs:
           cache: npm
           cache-dependency-path: xhmonitor-web/package-lock.json
 
-      - name: Build lite zip
-        shell: pwsh
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Version $env:VERSION -Lite
-
-          $zipPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION.zip"
-          if (-not (Test-Path $zipPath)) {
-            throw "ZIP not found: $zipPath"
-          }
-
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -76,14 +66,113 @@ jobs:
             Write-Host "ChineseSimplified.isl already exists"
           }
 
-      - name: Build lite installer
+      - name: Download .NET Desktop Runtime for bundling
         shell: pwsh
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -Version $env:VERSION -Lite -SkipPublish
+          $runtimeDir = "tools\RuntimePkg"
+          $runtimeFile = "windowsdesktop-runtime-8.0.23-win-x64.exe"
+          $runtimeUrl = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/$runtimeFile"
 
-          $setupPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Setup.exe"
+          New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
+          $runtimePath = Join-Path $runtimeDir $runtimeFile
+
+          Write-Host "Downloading .NET Desktop Runtime 8.0.23..."
+          Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimePath
+
+          if (Test-Path $runtimePath) {
+            $size = (Get-Item $runtimePath).Length / 1MB
+            Write-Host "Downloaded: $runtimePath ($([math]::Round($size, 2)) MB)"
+          } else {
+            throw "Failed to download .NET Desktop Runtime"
+          }
+
+      # ===========================================
+      # Build 1: Lite (no .NET runtime)
+      # ===========================================
+      - name: Build Lite ZIP
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Version $env:VERSION -Lite
+
+          $zipPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION.zip"
+          if (-not (Test-Path $zipPath)) {
+            throw "ZIP not found: $zipPath"
+          }
+
+          # 重命名为 Lite 版本
+          $liteZipPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Lite.zip"
+          Move-Item $zipPath $liteZipPath -Force
+          Write-Host "Lite ZIP: $liteZipPath"
+
+      - name: Build Lite Installer
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -Version $env:VERSION -BuildType Lite -SkipPublish
+
+          $setupPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Lite-Setup.exe"
           if (-not (Test-Path $setupPath)) {
-            throw "Installer not found: $setupPath"
+            throw "Lite Installer not found: $setupPath"
+          }
+          Write-Host "Lite Installer: $setupPath"
+
+      # ===========================================
+      # Build 2: Lite with .NET runtime installer
+      # ===========================================
+      - name: Build Lite-Net8 Installer
+        shell: pwsh
+        run: |
+          # 不需要重新发布，使用之前 Lite 的发布产物
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -Version $env:VERSION -BuildType LiteNet8 -SkipPublish
+
+          $setupPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Lite-Net8-Setup.exe"
+          if (-not (Test-Path $setupPath)) {
+            throw "Lite-Net8 Installer not found: $setupPath"
+          }
+          Write-Host "Lite-Net8 Installer: $setupPath"
+
+      # ===========================================
+      # Build 3: Full (self-contained)
+      # ===========================================
+      - name: Build Full ZIP
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Version $env:VERSION
+
+          $zipPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION.zip"
+          if (-not (Test-Path $zipPath)) {
+            throw "ZIP not found: $zipPath"
+          }
+
+          # 重命名为 Full 版本
+          $fullZipPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Full.zip"
+          Move-Item $zipPath $fullZipPath -Force
+          Write-Host "Full ZIP: $fullZipPath"
+
+      - name: Build Full Installer
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -Version $env:VERSION -BuildType Full -SkipPublish
+
+          $setupPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Full-Setup.exe"
+          if (-not (Test-Path $setupPath)) {
+            throw "Full Installer not found: $setupPath"
+          }
+          Write-Host "Full Installer: $setupPath"
+
+      # ===========================================
+      # Upload all assets
+      # ===========================================
+      - name: List release files
+        shell: pwsh
+        run: |
+          Write-Host "Release files:"
+          Get-ChildItem -Path "release" -Filter "*.exe" | ForEach-Object {
+            $size = [math]::Round($_.Length / 1MB, 2)
+            Write-Host "  $($_.Name) ($size MB)"
+          }
+          Get-ChildItem -Path "release" -Filter "*.zip" | ForEach-Object {
+            $size = [math]::Round($_.Length / 1MB, 2)
+            Write-Host "  $($_.Name) ($size MB)"
           }
 
       - name: Upload assets to GitHub Release
@@ -91,8 +180,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $zipPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION.zip"
-          $setupPath = Join-Path $PWD "release\XhMonitor-v$env:VERSION-Setup.exe"
+          $assets = @(
+            "release\XhMonitor-v$env:VERSION-Lite.zip",
+            "release\XhMonitor-v$env:VERSION-Lite-Setup.exe",
+            "release\XhMonitor-v$env:VERSION-Lite-Net8-Setup.exe",
+            "release\XhMonitor-v$env:VERSION-Full.zip",
+            "release\XhMonitor-v$env:VERSION-Full-Setup.exe"
+          )
 
-          gh release upload $env:TAG $zipPath $setupPath --clobber
+          foreach ($asset in $assets) {
+            if (Test-Path $asset) {
+              Write-Host "Uploading: $asset"
+            } else {
+              Write-Host "Warning: $asset not found"
+            }
+          }
 
+          gh release upload $env:TAG @assets --clobber
