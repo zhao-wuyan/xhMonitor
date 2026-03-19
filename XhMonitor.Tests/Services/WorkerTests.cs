@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using XhMonitor.Core.Interfaces;
+using XhMonitor.Core.Models;
 using XhMonitor.Core.Providers;
 using XhMonitor.Service;
 using XhMonitor.Service.Core;
@@ -116,6 +117,42 @@ public class WorkerTests
             Math.Abs((GetAnonymousNullableDouble(GetAnonymousObjectList(o, "Disks")[0], "ReadSpeed") ?? 0.0) - 1.25) < 1e-9 &&
             GetAnonymousNullableDouble(GetAnonymousObjectList(o, "Disks")[0], "WriteSpeed") == null
         )), Times.Once);
+    }
+
+    [Fact]
+    public void DoneWhen_BuildProcessSnapshot_IncludesCommandLineAndDisplayName()
+    {
+        var timestamp = new DateTime(2026, 3, 19, 15, 30, 0, DateTimeKind.Utc);
+        var metrics = new List<ProcessMetrics>
+        {
+            new()
+            {
+                Info = new ProcessInfo
+                {
+                    ProcessId = 1234,
+                    ProcessName = "llama-server",
+                    CommandLine = "llama-server.exe --metrics --port 1234 -m model.gguf",
+                    DisplayName = "llama-server: qwen"
+                },
+                Metrics = new Dictionary<string, MetricValue>
+                {
+                    ["cpu"] = new() { Value = 12.3, Timestamp = timestamp }
+                },
+                Timestamp = timestamp
+            }
+        };
+
+        var method = typeof(Worker).GetMethod("BuildProcessSnapshot", BindingFlags.Static | BindingFlags.NonPublic);
+        method.Should().NotBeNull();
+
+        var snapshot = method!.Invoke(null, new object[] { metrics, timestamp });
+        snapshot.Should().NotBeNull();
+
+        var processes = GetAnonymousObjectList(snapshot!, "Processes");
+        processes.Should().HaveCount(1);
+        GetAnonymousString(processes[0], "ProcessName").Should().Be("llama-server");
+        GetAnonymousString(processes[0], "CommandLine").Should().Be("llama-server.exe --metrics --port 1234 -m model.gguf");
+        GetAnonymousString(processes[0], "DisplayName").Should().Be("llama-server: qwen");
     }
 
     private static Worker CreateWorker(IHubContext<MetricsHub, IMetricsClient> hubContext, ISystemMetricProvider systemMetricProvider)

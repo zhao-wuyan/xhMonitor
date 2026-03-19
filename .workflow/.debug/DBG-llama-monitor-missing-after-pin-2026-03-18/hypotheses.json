@@ -1,6 +1,6 @@
 {
   "iteration": 8,
-  "timestamp": "2026-03-19T15:05:00+08:00",
+  "timestamp": "2026-03-19T15:25:00+08:00",
   "bug": "桌面端右键钉住 llama 进程后，后续即使满足 llama 指标采集条件，也可能看不到 llama 运行指标。",
   "hypotheses": [
     {
@@ -74,6 +74,18 @@
       },
       "likelihood": 1,
       "status": "confirmed"
+    },
+    {
+      "id": "H7",
+      "description": "Desktop 第二次看到新 PID 时，进程列表缺少 CommandLine / DisplayName，不是 metadata 被覆盖，而是 `ReceiveProcessMetrics` 主快照本身没带这两个字段。",
+      "testable_condition": "检查 `Worker.BuildProcessSnapshot()` 输出字段，以及 `FloatingWindowViewModel` 是否用 `ProcessData` 创建新的 `ProcessRowViewModel`。",
+      "logging_point": "XhMonitor.Service/Worker.cs, XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "evidence_criteria": {
+        "confirm": "主快照只包含 ProcessId/ProcessName/Metrics；Desktop 的 ProcessInfoDto 却有 CommandLine/DisplayName，导致新行初始值为空。",
+        "reject": "主快照已经包含 CommandLine/DisplayName，问题仅发生在 Desktop 本地覆盖逻辑。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
     }
   ],
   "runtimeFindings": [
@@ -96,6 +108,10 @@
     {
       "source": "XhMonitor.Core/Interop/ProcessCommandLineReader.cs",
       "finding": "当前实现通过 NtQueryInformationProcess + ReadProcessMemory 直接读取 PEB，不依赖 cmd.exe 或 wmic。"
+    },
+    {
+      "source": "XhMonitor.Service/Worker.cs + XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs",
+      "finding": "Worker 原来的 ProcessSnapshot 只带 ProcessId/ProcessName/Metrics；Desktop 的 ProcessRowViewModel 却会直接用 ProcessData 新建行，因此新 PID 在 metadata 未及时到达前天然没有 CommandLine/DisplayName。"
     }
   ],
   "corrections": [
@@ -123,6 +139,11 @@
       "wrong_assumption": "用户提到的 cmd 获取失败为空，和当前 Service 代码路径是同一件事",
       "corrected_to": "当前 Service 命令行读取实现不走 cmd.exe；本次提供的 Service 日志里也没有命令行为空 / 读取失败定向日志",
       "reason": "ProcessCommandLineReader 直接读取 PEB，且日志检索未命中相关消息"
+    },
+    {
+      "wrong_assumption": "desktop 第二次打开后不显示命令行，主要是 ProcessMeta 异步消息偶发没补上",
+      "corrected_to": "更直接的问题是主快照本身没携带 CommandLine/DisplayName，UI 先天依赖两路消息拼装",
+      "reason": "Worker.BuildProcessSnapshot() 原实现缺失这两个字段，而 Desktop 在 SyncProcessRows() 中直接依据 ProcessData 创建行"
     }
   ],
   "fixesApplied": [
@@ -137,6 +158,14 @@
     {
       "file": "XhMonitor.Tests/Services/LlamaServerMetricsParsingTests.cs",
       "change": "新增 timeout 回归测试，验证 EnrichAsync() 遇到请求超时不会把取消传播为失败。"
+    },
+    {
+      "file": "XhMonitor.Service/Worker.cs",
+      "change": "ProcessSnapshot / ProcessMetricSnapshot 现在会随 ProcessData 一起携带 CommandLine 和 DisplayName。"
+    },
+    {
+      "file": "XhMonitor.Tests/Services/WorkerTests.cs",
+      "change": "新增 BuildProcessSnapshot 回归测试，验证主快照包含 CommandLine 和 DisplayName。"
     }
   ]
 }

@@ -882,6 +882,8 @@ public class Worker : BackgroundService
             {
                 ProcessId = metric.Info.ProcessId,
                 ProcessName = metric.Info.ProcessName,
+                CommandLine = metric.Info.CommandLine ?? string.Empty,
+                DisplayName = metric.Info.DisplayName ?? string.Empty,
                 Metrics = metricValues
             });
         }
@@ -1091,6 +1093,8 @@ public class Worker : BackgroundService
     {
         public int ProcessId { get; init; }
         public string ProcessName { get; init; } = string.Empty;
+        public string CommandLine { get; init; } = string.Empty;
+        public string DisplayName { get; init; } = string.Empty;
         public Dictionary<string, double> Metrics { get; init; } = new();
     }
 

@@ -346,3 +346,40 @@
 
 - 已补最小修复，防止单次 `/metrics` 超时杀死整条 `llama` loop。
 - 已补 timeout 定向日志，下一次如果端口再次卡住，会直接在日志里体现为 `llama metrics 请求超时...`，而不是静默停更。
+
+### Iteration 9 - Desktop CommandLine/DisplayName Missing After Restart (2026-03-19 15:25 +08:00)
+
+#### New Evidence
+
+- `FloatingWindowViewModel` 中，进程行主要由 `ProcessDataReceived -> QueueProcessRefresh -> SyncProcessRows()` 创建或更新。
+- `ProcessRowViewModel.UpdateFrom(ProcessInfoDto)` 只会在 `dto.CommandLine` / `dto.DisplayName` 非空时覆盖现有值，本身不会把已有元数据擦成空。
+- 但 `Worker.BuildProcessSnapshot()` 原实现构造的 `ReceiveProcessMetrics` 快照只包含：
+  - `ProcessId`
+  - `ProcessName`
+  - `Metrics`
+- 不包含：
+  - `CommandLine`
+  - `DisplayName`
+- Desktop 侧 `ProcessInfoDto` 明明预留了 `CommandLine` / `DisplayName` 字段，因此新建 `ProcessRowViewModel(p)` 时，如果该行来自 `ProcessData` 而不是 `ProcessMeta`，就会天然拿到空命令行和空友好名。
+
+#### Corrected Understanding
+
+- ~~第二次打开 desktop 后命令行消失，是因为 `UpdateFrom()` 把 metadata 覆盖丢了~~
+  → 更直接的问题是：`ProcessData` 主快照压根没有携带命令行和友好名称。
+- ~~只能继续追 `ReceiveProcessMetadata` 为什么偶发没补上~~
+  → 更稳的修法是让 `ReceiveProcessMetrics` 自带元数据，避免 UI 依赖两路异步消息拼装一条完整进程记录。
+
+#### Fix Applied
+
+- 修改 `XhMonitor.Service/Worker.cs`
+  - `BuildProcessSnapshot()` 现在把 `metric.Info.CommandLine` 和 `metric.Info.DisplayName` 一并放进 `ProcessMetricSnapshot`
+  - `ProcessMetricSnapshot` 新增：
+    - `CommandLine`
+    - `DisplayName`
+- 修改 `XhMonitor.Tests/Services/WorkerTests.cs`
+  - 新增 `DoneWhen_BuildProcessSnapshot_IncludesCommandLineAndDisplayName`
+
+#### Verification Results
+
+- `dotnet test XhMonitor.Tests/XhMonitor.Tests.csproj --filter "FullyQualifiedName~WorkerTests|FullyQualifiedName~LlamaServerMetricsParsingTests|FullyQualifiedName~ProcessScannerTests"`：通过（23 / 23）。
+- `dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj --filter "FullyQualifiedName~FloatingWindowViewModelCollapsedRefreshTests"`：通过（2 / 2）。
