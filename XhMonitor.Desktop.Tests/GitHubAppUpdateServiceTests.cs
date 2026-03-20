@@ -22,7 +22,32 @@ public sealed class GitHubAppUpdateServiceTests
         var status = await service.CheckForUpdatesAsync();
 
         status.State.Should().Be(AppUpdateState.SourceUnavailable);
-        status.Message.Should().Contain("latest");
+        status.Message.Should().Be("未找到新版本");
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsync_ShouldHideTechnicalReason_WhenLatestReleaseIsInvalid()
+    {
+        using var tempDir = new TemporaryDirectory();
+        using var handler = new FakeHttpMessageHandler(_ => CreateJsonResponse("""
+        {
+          "tag_name": "latest",
+          "name": "release-without-version",
+          "assets": [
+            {
+              "name": "README.txt",
+              "browser_download_url": "https://example.com/download/README.txt"
+            }
+          ]
+        }
+        """));
+
+        var service = CreateService(handler, tempDir.Path);
+
+        var status = await service.CheckForUpdatesAsync();
+
+        status.State.Should().Be(AppUpdateState.SourceUnavailable);
+        status.Message.Should().Be("未找到新版本");
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.Dialogs;
 using XhMonitor.Desktop.Models;
@@ -11,6 +12,13 @@ namespace XhMonitor.Desktop.Windows;
 
 public partial class SettingsWindow : Window
 {
+    private const double CompactLayoutThreshold = 940;
+    private const double ModeGridTwoColumnThreshold = 620;
+    private const double DockLabelGridFourColumnThreshold = 1040;
+    private const double DockLabelGridTwoColumnThreshold = 620;
+    private const double MonitoringGridThreeColumnThreshold = 780;
+    private const double MonitoringGridTwoColumnThreshold = 520;
+
     private readonly SettingsViewModel _viewModel;
     private readonly IStartupManager _startupManager;
     private readonly IAdminModeManager _adminModeManager;
@@ -21,6 +29,7 @@ public partial class SettingsWindow : Window
     private readonly AppUpdatePanelController _appUpdatePanelController;
     private readonly string _webUiUrl;
     private bool _originalStartupEnabled;
+    private bool _isCompactLayout;
 
     public SettingsWindow(
         SettingsViewModel viewModel,
@@ -47,6 +56,7 @@ public partial class SettingsWindow : Window
         _webUiUrl = BuildWebUiUrl();
         SettingsAboutWebUrlTextBlock.Text = $"Web：{_webUiUrl}";
         SelectSection(initialSection);
+        UpdateResponsiveLayout(Width);
         _appUpdatePanelController = new AppUpdatePanelController(
             _appUpdateService,
             SettingsAboutUpdateActionButton,
@@ -73,6 +83,7 @@ public partial class SettingsWindow : Window
             // 仅在窗口加载时查询一次开机自启动状态，避免每次保存都触发外部命令。
             _originalStartupEnabled = _startupManager.IsStartupEnabled();
             _viewModel.StartWithWindows = _originalStartupEnabled;
+            UpdateResponsiveLayout(ActualWidth);
         };
     }
 
@@ -406,6 +417,93 @@ public partial class SettingsWindow : Window
     private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
     {
 
+    }
+
+    private void SettingsWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateResponsiveLayout(e.NewSize.Width);
+    }
+
+    private void UpdateResponsiveLayout(double windowWidth)
+    {
+        if (windowWidth <= 0)
+        {
+            return;
+        }
+
+        var compactLayout = windowWidth < CompactLayoutThreshold;
+        if (compactLayout != _isCompactLayout)
+        {
+            ApplyWindowLayoutMode(compactLayout);
+            _isCompactLayout = compactLayout;
+        }
+
+        var contentWidth = SettingsContentArea.ActualWidth;
+        if (contentWidth <= 0)
+        {
+            contentWidth = Math.Max(320, windowWidth - (compactLayout ? 48 : 320));
+        }
+
+        AppearanceModeGrid.Columns = contentWidth >= ModeGridTwoColumnThreshold ? 2 : 1;
+        AppearanceDockLabelGrid.Columns = contentWidth >= DockLabelGridFourColumnThreshold
+            ? 4
+            : contentWidth >= DockLabelGridTwoColumnThreshold
+                ? 2
+                : 1;
+        MonitoringMetricsGrid.Columns = contentWidth >= MonitoringGridThreeColumnThreshold
+            ? 3
+            : contentWidth >= MonitoringGridTwoColumnThreshold
+                ? 2
+                : 1;
+    }
+
+    private void ApplyWindowLayoutMode(bool compactLayout)
+    {
+        if (compactLayout)
+        {
+            RootNavRow.Height = GridLength.Auto;
+            RootContentRow.Height = new GridLength(1, GridUnitType.Star);
+            RootNavColumn.Width = new GridLength(0);
+            RootContentColumn.Width = new GridLength(1, GridUnitType.Star);
+
+            Grid.SetRow(SidebarBorder, 0);
+            Grid.SetColumn(SidebarBorder, 0);
+            Grid.SetRowSpan(SidebarBorder, 1);
+            Grid.SetColumnSpan(SidebarBorder, 2);
+            SidebarBorder.BorderThickness = new Thickness(0, 0, 0, 1);
+
+            Grid.SetRow(SettingsContentArea, 1);
+            Grid.SetColumn(SettingsContentArea, 0);
+            Grid.SetRowSpan(SettingsContentArea, 1);
+            Grid.SetColumnSpan(SettingsContentArea, 2);
+            SettingsContentArea.Margin = new Thickness(18, 18, 18, 14);
+
+            NavTitle.Visibility = Visibility.Collapsed;
+            FooterActionsPanel.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+            FooterActionsPanel.Margin = new Thickness(0, 18, 0, 0);
+            return;
+        }
+
+        RootNavRow.Height = new GridLength(1, GridUnitType.Star);
+        RootContentRow.Height = new GridLength(0);
+        RootNavColumn.Width = new GridLength(220);
+        RootContentColumn.Width = new GridLength(1, GridUnitType.Star);
+
+        Grid.SetRow(SidebarBorder, 0);
+        Grid.SetColumn(SidebarBorder, 0);
+        Grid.SetRowSpan(SidebarBorder, 2);
+        Grid.SetColumnSpan(SidebarBorder, 1);
+        SidebarBorder.BorderThickness = new Thickness(0, 0, 1, 0);
+
+        Grid.SetRow(SettingsContentArea, 0);
+        Grid.SetColumn(SettingsContentArea, 1);
+        Grid.SetRowSpan(SettingsContentArea, 2);
+        Grid.SetColumnSpan(SettingsContentArea, 1);
+        SettingsContentArea.Margin = new Thickness(30);
+
+        NavTitle.Visibility = Visibility.Visible;
+        FooterActionsPanel.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+        FooterActionsPanel.Margin = new Thickness(0, 20, 0, 0);
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)

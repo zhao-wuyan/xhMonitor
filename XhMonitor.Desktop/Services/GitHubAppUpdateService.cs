@@ -14,6 +14,7 @@ namespace XhMonitor.Desktop.Services;
 public sealed class GitHubAppUpdateService : IAppUpdateService
 {
     private static readonly Regex VersionRegex = new(@"(?<!\d)(\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled);
+    private const string NoNewVersionMessage = "未找到新版本";
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IAppVersionService _appVersionService;
@@ -62,18 +63,16 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             if (release == null)
             {
                 _latestRelease = null;
-                SetStatus(CreateStatus(
-                    AppUpdateState.SourceUnavailable,
-                    $"未找到 tag 为 {_options.PreferredReleaseTag} 的 release，已停止检测。"));
+                SetStatus(CreateSourceUnavailableStatus(
+                    $"未找到 tag 为 {_options.PreferredReleaseTag} 的 release。"));
                 return _currentStatus;
             }
 
             if (!TryResolveRelease(release, out var resolvedRelease, out var resolveError))
             {
                 _latestRelease = null;
-                SetStatus(CreateStatus(
-                    AppUpdateState.SourceUnavailable,
-                    resolveError ?? "latest release 缺少可用安装包，已停止检测。"));
+                SetStatus(CreateSourceUnavailableStatus(
+                    resolveError ?? "latest release 缺少可用安装包。"));
                 return _currentStatus;
             }
 
@@ -467,6 +466,12 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             DownloadedInstallerPath = installerPath,
             Message = message
         };
+    }
+
+    private AppUpdateStatus CreateSourceUnavailableStatus(string diagnosticMessage)
+    {
+        _logger.LogInformation("Update source unavailable: {DiagnosticMessage}", diagnosticMessage);
+        return CreateStatus(AppUpdateState.SourceUnavailable, NoNewVersionMessage);
     }
 
     private void SetStatus(AppUpdateStatus status)
