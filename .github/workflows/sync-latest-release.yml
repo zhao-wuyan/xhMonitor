@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       source_tag:
-        description: 正式 release tag，例如 v0.2.13
-        required: true
+        description: 源 release tag。留空时优先使用当前选择的 tag ref，例如 v0.2.13
+        required: false
         type: string
 
 permissions:
@@ -17,19 +17,52 @@ jobs:
   sync-latest:
     if: ${{ github.event_name != 'release' || (github.event.release.tag_name != 'latest' && !github.event.release.prerelease) }}
     runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
 
     steps:
       - name: Resolve source release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            TAG="${{ inputs.source_tag }}"
+            INPUT_TAG="${{ inputs.source_tag }}"
+            REF_TYPE="${{ github.ref_type }}"
+            REF_NAME="${{ github.ref_name }}"
+
+            if [[ -n "$INPUT_TAG" ]]; then
+              TAG="$INPUT_TAG"
+              echo "Using source_tag input: $TAG"
+            elif [[ "$REF_TYPE" == "tag" && -n "$REF_NAME" ]]; then
+              TAG="$REF_NAME"
+              echo "Using workflow ref tag: $TAG"
+            else
+              echo "For workflow_dispatch, choose a tag ref or fill source_tag." >&2
+              exit 1
+            fi
           else
             TAG="${{ github.event.release.tag_name }}"
           fi
 
           if [[ -z "$TAG" ]]; then
             echo "Source release tag is empty." >&2
+            exit 1
+          fi
+
+          if [[ "$TAG" == "latest" ]]; then
+            echo "Source release tag cannot be latest." >&2
+            exit 1
+          fi
+
+          if ! gh release view "$TAG" -R "$GH_REPO" >/dev/null 2>&1; then
+            echo "No published release found for tag: $TAG" >&2
+            exit 1
+          fi
+
+          IS_PRERELEASE="$(gh release view "$TAG" -R "$GH_REPO" --json isPrerelease --jq '.isPrerelease')"
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            echo "Source release tag $TAG is a prerelease and cannot be synced to latest." >&2
             exit 1
           fi
 
@@ -74,8 +107,8 @@ jobs:
           rm -rf latest-assets
           mkdir -p latest-assets
 
-          gh release download "$TAG" -D latest-assets
-          gh release view "$TAG" --json body --jq '.body' > latest-release-body.txt
+          gh release download "$TAG" -R "$GH_REPO" -D latest-assets
+          gh release view "$TAG" -R "$GH_REPO" --json body --jq '.body' > latest-release-body.txt
 
           echo "Downloaded assets:"
           ls -lah latest-assets
@@ -85,8 +118,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view latest >/dev/null 2>&1; then
-            gh release delete latest --yes --cleanup-tag
+          if gh release view latest -R "$GH_REPO" >/dev/null 2>&1; then
+            gh release delete latest -R "$GH_REPO" --yes --cleanup-tag
           fi
 
           {
@@ -96,6 +129,7 @@ jobs:
           } > latest-release-notes.txt
 
           gh release create latest \
+            -R "$GH_REPO" \
             --target "$TAG" \
             --title "v$VERSION" \
             --notes-file latest-release-notes.txt \
@@ -106,4 +140,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload latest latest-assets/* --clobber
+          gh release upload latest -R "$GH_REPO" latest-assets/* --clobber
