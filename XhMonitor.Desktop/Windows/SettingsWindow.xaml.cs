@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using XhMonitor.Desktop.Dialogs;
@@ -17,6 +16,9 @@ public partial class SettingsWindow : Window
     private readonly IAdminModeManager _adminModeManager;
     private readonly IBackendServerService _backendServerService;
     private readonly IServiceDiscovery _serviceDiscovery;
+    private readonly IAppVersionService _appVersionService;
+    private readonly IAppUpdateService _appUpdateService;
+    private readonly AppUpdatePanelController _appUpdatePanelController;
     private readonly string _webUiUrl;
     private bool _originalStartupEnabled;
 
@@ -25,7 +27,10 @@ public partial class SettingsWindow : Window
         IStartupManager startupManager,
         IAdminModeManager adminModeManager,
         IBackendServerService backendServerService,
-        IServiceDiscovery serviceDiscovery)
+        IServiceDiscovery serviceDiscovery,
+        IAppVersionService appVersionService,
+        IAppUpdateService appUpdateService,
+        SettingsWindowSection initialSection = SettingsWindowSection.System)
     {
         InitializeComponent();
         _viewModel = viewModel;
@@ -33,16 +38,22 @@ public partial class SettingsWindow : Window
         _adminModeManager = adminModeManager;
         _backendServerService = backendServerService;
         _serviceDiscovery = serviceDiscovery;
+        _appVersionService = appVersionService;
+        _appUpdateService = appUpdateService;
         DataContext = _viewModel;
 
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        if (version != null)
-        {
-            SettingsAboutVersionTextBlock.Text = $"版本：{version.Major}.{version.Minor}.{version.Build}";
-        }
+        SettingsAboutVersionTextBlock.Text = $"版本：{_appVersionService.CurrentVersionText}";
 
         _webUiUrl = BuildWebUiUrl();
         SettingsAboutWebUrlTextBlock.Text = $"Web：{_webUiUrl}";
+        SelectSection(initialSection);
+        _appUpdatePanelController = new AppUpdatePanelController(
+            _appUpdateService,
+            SettingsAboutUpdateActionButton,
+            SettingsAboutUpdateVersionTextBlock,
+            Dispatcher);
+
+        Closed += OnWindowClosed;
 
         Loaded += async (s, e) =>
         {
@@ -63,6 +74,17 @@ public partial class SettingsWindow : Window
             _originalStartupEnabled = _startupManager.IsStartupEnabled();
             _viewModel.StartWithWindows = _originalStartupEnabled;
         };
+    }
+
+    public void SelectSection(SettingsWindowSection section)
+    {
+        var index = (int)section;
+        if (index < 0 || index >= NavList.Items.Count)
+        {
+            index = (int)SettingsWindowSection.System;
+        }
+
+        NavList.SelectedIndex = index;
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e)
@@ -319,16 +341,18 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private async void AboutUpdateAction_Click(object sender, RoutedEventArgs e)
+    {
+        await _appUpdatePanelController.HandleActionAsync();
+    }
+
     private void CopyAboutInfo_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            var versionText = version == null ? "unknown" : $"{version.Major}.{version.Minor}.{version.Build}";
-
             var content =
                 $"XhMonitor\n" +
-                $"Version: {versionText}\n" +
+                $"Version: {_appVersionService.CurrentVersionText}\n" +
                 $"Web UI: {_webUiUrl}\n" +
                 $"API Base: {_serviceDiscovery.ApiBaseUrl}\n" +
                 $"Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
@@ -382,5 +406,11 @@ public partial class SettingsWindow : Window
     private void ListBoxItem_Selected(object sender, RoutedEventArgs e)
     {
 
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        _appUpdatePanelController.Dispose();
+        Closed -= OnWindowClosed;
     }
 }

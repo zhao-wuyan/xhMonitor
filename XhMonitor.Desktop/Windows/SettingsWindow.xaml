@@ -936,6 +936,17 @@
                                     <TextBlock x:Name="SettingsAboutWebUrlTextBlock" Text="Web：" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
                                     <TextBlock Text="高性能 Windows 进程资源监控与可视化工具，支持实时采集、聚合分析与 Web 可视化。" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
 
+                                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0" VerticalAlignment="Center">
+                                        <Button x:Name="SettingsAboutUpdateActionButton" Content="检查更新" Width="100" Height="34" Background="{StaticResource AccentBlue}" Click="AboutUpdateAction_Click"/>
+                                        <TextBlock x:Name="SettingsAboutUpdateVersionTextBlock"
+                                                   Margin="12,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource AccentBlue}"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="360"
+                                                   Visibility="Collapsed"/>
+                                    </StackPanel>
+
                                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                         <Button Content="打开 Web 界面" Width="120" Height="34" Background="{StaticResource AccentBlue}" Click="OpenWebUi_Click"/>
                                         <Button Content="复制信息" Width="100" Height="34" Margin="10,0,0,0" Click="CopyAboutInfo_Click"/>

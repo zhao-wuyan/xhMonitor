@@ -8,6 +8,8 @@ public interface IWindowManagementService
 
     void ShowMainWindow();
 
+    void ShowSettingsWindow(SettingsWindowSection section = SettingsWindowSection.System);
+
     void HideMainWindow();
 
     void CloseMainWindow();

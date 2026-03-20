@@ -73,7 +73,7 @@ public sealed class WindowManagementService : IWindowManagementService
             _floatingWindow,
             ToggleMainWindow,
             OpenWebInterface,
-            OpenSettingsWindow,
+            section => ShowSettingsWindow(section),
             OpenAboutWindow,
             ExitApplication);
 
@@ -237,7 +237,9 @@ public sealed class WindowManagementService : IWindowManagementService
                 return;
             }
 
-            var aboutWindow = new Windows.AboutWindow();
+            var appVersionService = _serviceProvider.GetRequiredService<IAppVersionService>();
+            var appUpdateService = _serviceProvider.GetRequiredService<IAppUpdateService>();
+            var aboutWindow = new Windows.AboutWindow(appVersionService, appUpdateService);
             TryAssignFloatingOwner(aboutWindow);
             aboutWindow.ShowDialog();
         });
@@ -245,11 +247,17 @@ public sealed class WindowManagementService : IWindowManagementService
 
     private void OpenSettingsWindow()
     {
+        ShowSettingsWindow(SettingsWindowSection.System);
+    }
+
+    public void ShowSettingsWindow(SettingsWindowSection section = SettingsWindowSection.System)
+    {
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             var existingWindow = System.Windows.Application.Current.Windows.OfType<Windows.SettingsWindow>().FirstOrDefault();
             if (existingWindow != null)
             {
+                existingWindow.SelectSection(section);
                 existingWindow.Activate();
                 return;
             }
@@ -258,7 +266,17 @@ public sealed class WindowManagementService : IWindowManagementService
             var startupManager = _serviceProvider.GetRequiredService<IStartupManager>();
             var adminModeManager = _serviceProvider.GetRequiredService<IAdminModeManager>();
             var backendServerService = _serviceProvider.GetRequiredService<IBackendServerService>();
-            var settingsWindow = new Windows.SettingsWindow(viewModel, startupManager, adminModeManager, backendServerService, _serviceDiscovery);
+            var appVersionService = _serviceProvider.GetRequiredService<IAppVersionService>();
+            var appUpdateService = _serviceProvider.GetRequiredService<IAppUpdateService>();
+            var settingsWindow = new Windows.SettingsWindow(
+                viewModel,
+                startupManager,
+                adminModeManager,
+                backendServerService,
+                _serviceDiscovery,
+                appVersionService,
+                appUpdateService,
+                section);
             TryAssignFloatingOwner(settingsWindow);
             settingsWindow.ShowDialog();
         });

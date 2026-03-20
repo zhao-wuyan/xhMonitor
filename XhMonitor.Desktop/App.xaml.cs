@@ -64,11 +64,15 @@ public partial class App : WpfApplication
             })
             .ConfigureServices((context, services) =>
             {
+                services.Configure<AppUpdateOptions>(context.Configuration.GetSection("AppUpdate"));
                 services.Configure<UiOptimizationOptions>(context.Configuration.GetSection("UiOptimization"));
                 services.AddSingleton<IServiceDiscovery, ServiceDiscovery>();
                 services.AddSingleton<IBackendServerService, BackendServerService>();
                 services.AddSingleton<IWebServerService, WebServerService>();
                 services.AddSingleton<ITrayIconService, TrayIconService>();
+                services.AddSingleton<IAppVersionService, AppVersionService>();
+                services.AddSingleton<IAppUpdateService, GitHubAppUpdateService>();
+                services.AddSingleton<IInstallerLauncher, InstallerLauncher>();
                 services.AddSingleton<IProcessManager, ProcessManager>();
                 services.AddSingleton<IPowerControlService, PowerControlService>();
                 services.AddSingleton<ITaskbarPlacementService, TaskbarPlacementService>();
@@ -88,6 +92,9 @@ public partial class App : WpfApplication
 
         _windowManagementService = _host.Services.GetRequiredService<IWindowManagementService>();
         _windowManagementService.InitializeMainWindow();
+
+        var appUpdateService = _host.Services.GetRequiredService<IAppUpdateService>();
+        _ = appUpdateService.CheckForUpdatesOnStartupAsync();
     }
 
     private static void WaitForRestartParentExit(string[] args)
