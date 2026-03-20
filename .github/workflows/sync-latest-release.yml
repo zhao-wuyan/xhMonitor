@@ -66,6 +66,12 @@ jobs:
             exit 1
           fi
 
+          SOURCE_COMMIT="$(gh api "repos/${GH_REPO}/commits/$TAG" --jq '.sha')"
+          if [[ -z "$SOURCE_COMMIT" ]]; then
+            echo "Failed to resolve commit SHA for source tag: $TAG" >&2
+            exit 1
+          fi
+
           VERSION="${TAG#v}"
           if [[ -z "$VERSION" ]]; then
             echo "Resolved version is empty (tag=$TAG)." >&2
@@ -74,6 +80,7 @@ jobs:
 
           {
             echo "TAG=$TAG"
+            echo "SOURCE_COMMIT=$SOURCE_COMMIT"
             echo "VERSION=$VERSION"
             echo "EXPECTED_LITE_SETUP=XhMonitor-v$VERSION-Lite-Setup.exe"
           } >> "$GITHUB_ENV"
@@ -130,7 +137,7 @@ jobs:
 
           gh release create latest \
             -R "$GH_REPO" \
-            --target "$TAG" \
+            --target "$SOURCE_COMMIT" \
             --title "v$VERSION" \
             --notes-file latest-release-notes.txt \
             --latest=false
