@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using XhMonitor.Core.Configuration;
+using XhMonitor.Desktop.Models;
 using WinForms = System.Windows.Forms;
 
 namespace XhMonitor.Desktop.Services;
@@ -14,9 +15,10 @@ public sealed class TrayIconService : ITrayIconService
     private FloatingWindow? _floatingWindow;
     private Action? _toggleFloatingWindow;
     private Action? _openWebInterface;
-    private Action? _openSettingsWindow;
+    private Action<SettingsWindowSection>? _openSettingsWindow;
     private Action? _openAboutWindow;
     private Action? _exitApplication;
+    private Action? _pendingBalloonClickAction;
     private readonly IAdminModeManager _adminModeManager;
     private readonly IBackendServerService _backendServerService;
     private readonly IStartupManager _startupManager;
@@ -41,7 +43,7 @@ public sealed class TrayIconService : ITrayIconService
         FloatingWindow floatingWindow,
         Action toggleFloatingWindow,
         Action openWebInterface,
-        Action openSettingsWindow,
+        Action<SettingsWindowSection> openSettingsWindow,
         Action openAboutWindow,
         Action exitApplication)
     {
@@ -67,6 +69,12 @@ public sealed class TrayIconService : ITrayIconService
         };
 
         _trayIcon.DoubleClick += (_, _) => _toggleFloatingWindow?.Invoke();
+        _trayIcon.BalloonTipClicked += (_, _) =>
+        {
+            var action = _pendingBalloonClickAction;
+            _pendingBalloonClickAction = null;
+            action?.Invoke();
+        };
     }
 
     public void Show()
@@ -85,6 +93,20 @@ public sealed class TrayIconService : ITrayIconService
         }
     }
 
+    public void ShowUpdateAvailableNotification(AppUpdateStatus status)
+    {
+        if (_trayIcon == null || !status.HasUpdate || string.IsNullOrWhiteSpace(status.LatestVersion))
+        {
+            return;
+        }
+
+        _pendingBalloonClickAction = () => _openSettingsWindow?.Invoke(SettingsWindowSection.About);
+        _trayIcon.BalloonTipIcon = WinForms.ToolTipIcon.Info;
+        _trayIcon.BalloonTipTitle = "XhMonitor 有新版本可用";
+        _trayIcon.BalloonTipText = $"当前版本 {status.CurrentVersion}，新版本 {status.LatestVersion}。点击前往设置 > 关于更新。";
+        _trayIcon.ShowBalloonTip(5000);
+    }
+
     public void Dispose()
     {
         if (_trayIcon != null)
@@ -100,6 +122,7 @@ public sealed class TrayIconService : ITrayIconService
         _openSettingsWindow = null;
         _openAboutWindow = null;
         _exitApplication = null;
+        _pendingBalloonClickAction = null;
     }
 
     private WinForms.ContextMenuStrip BuildTrayMenu()
@@ -140,7 +163,7 @@ public sealed class TrayIconService : ITrayIconService
         };
 
         var settingsItem = new WinForms.ToolStripMenuItem("⚙️ 设置");
-        settingsItem.Click += (_, _) => _openSettingsWindow?.Invoke();
+        settingsItem.Click += (_, _) => _openSettingsWindow?.Invoke(SettingsWindowSection.System);
 
         var aboutItem = new WinForms.ToolStripMenuItem("关于");
         aboutItem.Click += (_, _) => _openAboutWindow?.Invoke();

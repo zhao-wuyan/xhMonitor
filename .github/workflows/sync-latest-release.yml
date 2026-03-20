@@ -1,0 +1,109 @@
+name: Sync Latest Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: 正式 release tag，例如 v0.2.13
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  sync-latest:
+    if: ${{ github.event_name != 'release' || (github.event.release.tag_name != 'latest' && !github.event.release.prerelease) }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve source release
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.source_tag }}"
+          else
+            TAG="${{ github.event.release.tag_name }}"
+          fi
+
+          if [[ -z "$TAG" ]]; then
+            echo "Source release tag is empty." >&2
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          if [[ -z "$VERSION" ]]; then
+            echo "Resolved version is empty (tag=$TAG)." >&2
+            exit 1
+          fi
+
+          {
+            echo "TAG=$TAG"
+            echo "VERSION=$VERSION"
+            echo "EXPECTED_LITE_SETUP=XhMonitor-v$VERSION-Lite-Setup.exe"
+          } >> "$GITHUB_ENV"
+
+      - name: Wait for source release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 40); do
+            ASSET_COUNT="$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets | length')"
+            HAS_LITE_SETUP="$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[].name' | grep -Fx "$EXPECTED_LITE_SETUP" || true)"
+
+            echo "Attempt $attempt: assets=$ASSET_COUNT"
+            if [[ "$ASSET_COUNT" -ge 5 && -n "$HAS_LITE_SETUP" ]]; then
+              echo "Source release assets are ready."
+              exit 0
+            fi
+
+            sleep 15
+          done
+
+          echo "Timed out waiting for source release assets." >&2
+          exit 1
+
+      - name: Download source assets and notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf latest-assets
+          mkdir -p latest-assets
+
+          gh release download "$TAG" -D latest-assets
+          gh release view "$TAG" --json body --jq '.body' > latest-release-body.txt
+
+          echo "Downloaded assets:"
+          ls -lah latest-assets
+
+      - name: Recreate latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release delete latest --yes --cleanup-tag
+          fi
+
+          {
+            echo "同步自正式 release $TAG"
+            echo
+            cat latest-release-body.txt
+          } > latest-release-notes.txt
+
+          gh release create latest \
+            --target "$TAG" \
+            --title "v$VERSION" \
+            --notes-file latest-release-notes.txt \
+            --latest=false
+
+      - name: Upload assets to latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload latest latest-assets/* --clobber
