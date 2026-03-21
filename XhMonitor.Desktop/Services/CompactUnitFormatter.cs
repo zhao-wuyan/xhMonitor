@@ -4,6 +4,40 @@ namespace XhMonitor.Desktop.Services;
 
 public static class CompactUnitFormatter
 {
+    public static string FormatSizeFromBytes(long bytes)
+    {
+        if (bytes < 0)
+        {
+            return "--";
+        }
+
+        if (bytes < 1024)
+        {
+            return $"{bytes.ToString(CultureInfo.InvariantCulture)}B";
+        }
+
+        var kilobytes = bytes / 1024d;
+        if (kilobytes < 1024)
+        {
+            return $"{FormatNumber(kilobytes)}K";
+        }
+
+        var megabytes = kilobytes / 1024d;
+        if (megabytes < 1024)
+        {
+            return $"{FormatNumber(megabytes)}M";
+        }
+
+        var gigabytes = megabytes / 1024d;
+        if (gigabytes < 1024)
+        {
+            return $"{FormatNumber(gigabytes)}G";
+        }
+
+        var terabytes = gigabytes / 1024d;
+        return $"{FormatNumber(terabytes)}T";
+    }
+
     public static string FormatMemoryFromMegabytes(double megabytes)
     {
         if (double.IsNaN(megabytes) || double.IsInfinity(megabytes) || megabytes < 0)
@@ -52,6 +86,34 @@ public static class CompactUnitFormatter
 
         var gb = megabytesPerSecond / 1024d;
         return $"{FormatNumber(gb)}G/s";
+    }
+
+    public static string FormatSpeedFromBytesPerSecond(double bytesPerSecond)
+    {
+        if (double.IsNaN(bytesPerSecond) || double.IsInfinity(bytesPerSecond) || bytesPerSecond < 0)
+        {
+            return "--";
+        }
+
+        if (bytesPerSecond < 1024)
+        {
+            return $"{FormatNumber(bytesPerSecond)}B/s";
+        }
+
+        var kilobytesPerSecond = bytesPerSecond / 1024d;
+        if (kilobytesPerSecond < 1024)
+        {
+            return $"{FormatNumber(kilobytesPerSecond)}K/s";
+        }
+
+        var megabytesPerSecond = kilobytesPerSecond / 1024d;
+        if (megabytesPerSecond < 1024)
+        {
+            return $"{FormatNumber(megabytesPerSecond)}M/s";
+        }
+
+        var gigabytesPerSecond = megabytesPerSecond / 1024d;
+        return $"{FormatNumber(gigabytesPerSecond)}G/s";
     }
 
     public static string FormatPercent(double value)

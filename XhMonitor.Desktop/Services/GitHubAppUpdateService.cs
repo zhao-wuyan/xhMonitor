@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -14,8 +15,10 @@ namespace XhMonitor.Desktop.Services;
 public sealed class GitHubAppUpdateService : IAppUpdateService
 {
     private static readonly Regex VersionRegex = new(@"(?<!\d)(\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled);
+    private static readonly TimeSpan DownloadProgressUpdateInterval = TimeSpan.FromMilliseconds(250);
     private const string InstallerSearchPattern = "XhMonitor-v*-Lite-Setup.exe";
     private const string NoNewVersionMessage = "未找到新版本";
+    private const int DownloadBufferSize = 128 * 1024;
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IAppVersionService _appVersionService;
@@ -158,6 +161,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
     public async Task<AppUpdateStatus> DownloadUpdateAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        string? tempFilePath = null;
         try
         {
             if (_latestRelease == null)
@@ -182,7 +186,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             Directory.CreateDirectory(downloadDirectory);
             CleanupInstallerCache(_appVersionService.CurrentVersion, release.InstallerPath);
 
-            var tempFilePath = $"{release.InstallerPath}.download";
+            tempFilePath = $"{release.InstallerPath}.download";
             if (File.Exists(tempFilePath))
             {
                 File.Delete(tempFilePath);
@@ -196,13 +200,16 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
 
             response.EnsureSuccessStatusCode();
 
-            await using (var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
-            await using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                await responseStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
-            }
+            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            await DownloadInstallerAsync(
+                release,
+                responseStream,
+                tempFilePath,
+                response.Content.Headers.ContentLength,
+                cancellationToken).ConfigureAwait(false);
 
             File.Move(tempFilePath, release.InstallerPath, true);
+            tempFilePath = null;
 
             SetStatus(CreateStatus(
                 AppUpdateState.Downloaded,
@@ -222,6 +229,11 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to download update.");
+            if (!string.IsNullOrWhiteSpace(tempFilePath))
+            {
+                TryDeleteFile(tempFilePath);
+            }
+
             var latestVersion = _latestRelease?.VersionText;
             var latestTag = _latestRelease?.ReleaseTag;
             var assetName = _latestRelease?.AssetName;
@@ -237,6 +249,61 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         finally
         {
             _gate.Release();
+        }
+    }
+
+    private async Task DownloadInstallerAsync(
+        ResolvedUpdateRelease release,
+        Stream responseStream,
+        string tempFilePath,
+        long? totalBytes,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[DownloadBufferSize];
+        long downloadedBytes = 0;
+        long lastReportedBytes = 0;
+        var stopwatch = Stopwatch.StartNew();
+        var lastReportElapsed = TimeSpan.Zero;
+
+        await using var fileStream = new FileStream(
+            tempFilePath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None,
+            DownloadBufferSize,
+            useAsync: true);
+
+        while (true)
+        {
+            var bytesRead = await responseStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
+            if (bytesRead <= 0)
+            {
+                break;
+            }
+
+            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+            downloadedBytes += bytesRead;
+
+            var elapsed = stopwatch.Elapsed;
+            if (!ShouldReportDownloadProgress(downloadedBytes, totalBytes, elapsed, lastReportElapsed))
+            {
+                continue;
+            }
+
+            ReportDownloadProgress(release, downloadedBytes, totalBytes, elapsed, lastReportedBytes, lastReportElapsed);
+            lastReportedBytes = downloadedBytes;
+            lastReportElapsed = elapsed;
+        }
+
+        if (downloadedBytes > lastReportedBytes)
+        {
+            ReportDownloadProgress(
+                release,
+                downloadedBytes,
+                totalBytes,
+                stopwatch.Elapsed,
+                lastReportedBytes,
+                lastReportElapsed);
         }
     }
 
@@ -515,6 +582,80 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
     {
         _currentStatus = status;
         StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ReportDownloadProgress(
+        ResolvedUpdateRelease release,
+        long downloadedBytes,
+        long? totalBytes,
+        TimeSpan elapsed,
+        long lastReportedBytes,
+        TimeSpan lastReportElapsed)
+    {
+        SetStatus(CreateStatus(
+            AppUpdateState.Downloading,
+            BuildDownloadProgressMessage(
+                downloadedBytes,
+                totalBytes,
+                CalculateDownloadSpeedBytesPerSecond(downloadedBytes, elapsed, lastReportedBytes, lastReportElapsed)),
+            release.VersionText,
+            release.ReleaseTag,
+            release.AssetName));
+    }
+
+    private static bool ShouldReportDownloadProgress(
+        long downloadedBytes,
+        long? totalBytes,
+        TimeSpan elapsed,
+        TimeSpan lastReportElapsed)
+    {
+        if (downloadedBytes <= 0)
+        {
+            return false;
+        }
+
+        if (totalBytes is > 0 && downloadedBytes >= totalBytes.Value)
+        {
+            return true;
+        }
+
+        return elapsed - lastReportElapsed >= DownloadProgressUpdateInterval;
+    }
+
+    private static double CalculateDownloadSpeedBytesPerSecond(
+        long downloadedBytes,
+        TimeSpan elapsed,
+        long lastReportedBytes,
+        TimeSpan lastReportElapsed)
+    {
+        var deltaBytes = downloadedBytes - lastReportedBytes;
+        var deltaSeconds = (elapsed - lastReportElapsed).TotalSeconds;
+        if (deltaBytes > 0 && deltaSeconds > 0)
+        {
+            return deltaBytes / deltaSeconds;
+        }
+
+        if (downloadedBytes <= 0 || elapsed.TotalSeconds <= 0)
+        {
+            return 0;
+        }
+
+        return downloadedBytes / elapsed.TotalSeconds;
+    }
+
+    private static string BuildDownloadProgressMessage(long downloadedBytes, long? totalBytes, double speedBytesPerSecond)
+    {
+        var downloadedText = CompactUnitFormatter.FormatSizeFromBytes(downloadedBytes);
+        var speedText = CompactUnitFormatter.FormatSpeedFromBytesPerSecond(speedBytesPerSecond);
+
+        if (totalBytes is > 0)
+        {
+            var totalText = CompactUnitFormatter.FormatSizeFromBytes(totalBytes.Value);
+            var progressText = CompactUnitFormatter.FormatPercent(downloadedBytes * 100d / totalBytes.Value);
+            return $"已下载 {downloadedText} / {totalText}（{progressText}），速度 {speedText}";
+        }
+
+        return $"已下载 {downloadedText}，速度 {speedText}";
     }
 
     private static string FormatVersion(Version version)

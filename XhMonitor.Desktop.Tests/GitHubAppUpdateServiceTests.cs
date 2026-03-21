@@ -217,6 +217,65 @@ public sealed class GitHubAppUpdateServiceTests
     }
 
     [Fact]
+    public async Task DownloadUpdateAsync_ShouldReportProgressBytesAndSpeedDuringDownload()
+    {
+        using var tempDir = new TemporaryDirectory();
+        using var handler = new FakeHttpMessageHandler(request =>
+        {
+            if (request.RequestUri!.AbsoluteUri.Contains("/releases/tags/latest", StringComparison.Ordinal))
+            {
+                return CreateJsonResponse("""
+                {
+                  "tag_name": "latest",
+                  "name": "v0.2.13",
+                  "assets": [
+                    {
+                      "name": "XhMonitor-v0.2.13-Lite-Setup.exe",
+                      "browser_download_url": "https://example.com/download/XhMonitor-v0.2.13-Lite-Setup.exe"
+                    }
+                  ]
+                }
+                """);
+            }
+
+            if (request.RequestUri.AbsoluteUri.Contains("/download/", StringComparison.Ordinal))
+            {
+                var bytes = new byte[384 * 1024];
+                var content = new StreamContent(new SlowReadStream(bytes, 128 * 1024, TimeSpan.FromMilliseconds(300)));
+                content.Headers.ContentLength = bytes.Length;
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = content
+                };
+            }
+
+            throw new InvalidOperationException($"Unexpected request: {request.RequestUri}");
+        });
+
+        var service = CreateService(handler, tempDir.Path, launcher: new FakeInstallerLauncher());
+        var statuses = new List<AppUpdateStatus>();
+        service.StatusChanged += (_, _) => statuses.Add(service.CurrentStatus);
+
+        await service.CheckForUpdatesAsync();
+        statuses.Clear();
+
+        var status = await service.DownloadUpdateAsync();
+
+        status.State.Should().Be(AppUpdateState.Downloaded);
+        statuses.Should().Contain(status =>
+            status.State == AppUpdateState.Downloading &&
+            status.Message != null &&
+            status.Message.Contains("已下载", StringComparison.Ordinal) &&
+            status.Message.Contains("速度", StringComparison.Ordinal));
+        statuses.Should().Contain(status =>
+            status.State == AppUpdateState.Downloading &&
+            status.Message != null &&
+            status.Message.Contains("%", StringComparison.Ordinal) &&
+            status.Message.Contains("/ 384K", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task LaunchInstallerAsync_ShouldAllowReinstallAfterDownload()
     {
         using var tempDir = new TemporaryDirectory();
@@ -399,6 +458,88 @@ public sealed class GitHubAppUpdateServiceTests
             catch
             {
             }
+        }
+    }
+
+    private sealed class SlowReadStream : Stream
+    {
+        private readonly byte[] _data;
+        private readonly int _chunkSize;
+        private readonly TimeSpan _delay;
+        private int _position;
+
+        public SlowReadStream(byte[] data, int chunkSize, TimeSpan delay)
+        {
+            _data = data;
+            _chunkSize = chunkSize;
+            _delay = delay;
+        }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => _data.Length;
+
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return ReadChunk(buffer.AsSpan(offset, count));
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_position >= _data.Length)
+            {
+                return 0;
+            }
+
+            await Task.Delay(_delay, cancellationToken);
+            return ReadChunk(buffer.Span);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        private int ReadChunk(Span<byte> buffer)
+        {
+            if (_position >= _data.Length)
+            {
+                return 0;
+            }
+
+            var bytesToCopy = Math.Min(Math.Min(buffer.Length, _chunkSize), _data.Length - _position);
+            _data.AsSpan(_position, bytesToCopy).CopyTo(buffer);
+            _position += bytesToCopy;
+            return bytesToCopy;
         }
     }
 }
