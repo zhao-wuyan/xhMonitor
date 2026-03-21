@@ -14,6 +14,7 @@ namespace XhMonitor.Desktop.Services;
 public sealed class GitHubAppUpdateService : IAppUpdateService
 {
     private static readonly Regex VersionRegex = new(@"(?<!\d)(\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled);
+    private const string InstallerSearchPattern = "XhMonitor-v*-Lite-Setup.exe";
     private const string NoNewVersionMessage = "未找到新版本";
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -58,6 +59,8 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         try
         {
             SetStatus(CreateStatus(AppUpdateState.Checking, "正在检查更新……"));
+            var currentVersion = _appVersionService.CurrentVersion;
+            CleanupInstallerCache(currentVersion);
 
             var release = await TryGetManagedLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
             if (release == null)
@@ -76,7 +79,6 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
                 return _currentStatus;
             }
 
-            var currentVersion = _appVersionService.CurrentVersion;
             if (resolvedRelease.Version <= currentVersion)
             {
                 _latestRelease = null;
@@ -90,6 +92,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             }
 
             _latestRelease = resolvedRelease;
+            CleanupInstallerCache(currentVersion, resolvedRelease.InstallerPath);
 
             if (File.Exists(resolvedRelease.InstallerPath))
             {
@@ -177,7 +180,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             }
 
             Directory.CreateDirectory(downloadDirectory);
-            CleanupStaleInstallers(downloadDirectory, release.InstallerPath);
+            CleanupInstallerCache(_appVersionService.CurrentVersion, release.InstallerPath);
 
             var tempFilePath = $"{release.InstallerPath}.download";
             if (File.Exists(tempFilePath))
@@ -424,27 +427,61 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             "Updates");
     }
 
-    private static void CleanupStaleInstallers(string downloadDirectory, string keepInstallerPath)
+    private void CleanupInstallerCache(Version currentVersion, string? keepInstallerPath = null)
     {
+        var downloadDirectory = ResolveDownloadDirectory();
         if (!Directory.Exists(downloadDirectory))
         {
             return;
         }
 
-        foreach (var file in Directory.GetFiles(downloadDirectory, "XhMonitor-v*-Lite-Setup.exe"))
+        foreach (var file in Directory.GetFiles(downloadDirectory, InstallerSearchPattern))
         {
-            if (string.Equals(file, keepInstallerPath, StringComparison.OrdinalIgnoreCase))
+            if (ShouldKeepInstaller(file, currentVersion, keepInstallerPath))
             {
                 continue;
             }
 
-            try
+            TryDeleteFile(file);
+        }
+
+        foreach (var tempFile in Directory.GetFiles(downloadDirectory, "*.download"))
+        {
+            if (!string.IsNullOrWhiteSpace(keepInstallerPath) &&
+                string.Equals(tempFile, $"{keepInstallerPath}.download", StringComparison.OrdinalIgnoreCase))
             {
-                File.Delete(file);
+                continue;
             }
-            catch
-            {
-            }
+
+            TryDeleteFile(tempFile);
+        }
+    }
+
+    private static bool ShouldKeepInstaller(string installerPath, Version currentVersion, string? keepInstallerPath)
+    {
+        if (!string.IsNullOrWhiteSpace(keepInstallerPath) &&
+            string.Equals(installerPath, keepInstallerPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var installerVersionText = TryExtractVersion(Path.GetFileName(installerPath));
+        if (installerVersionText == null || !Version.TryParse(installerVersionText, out var installerVersion))
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(keepInstallerPath) && installerVersion > currentVersion;
+    }
+
+    private static void TryDeleteFile(string filePath)
+    {
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch
+        {
         }
     }
 

@@ -81,6 +81,70 @@ public sealed class GitHubAppUpdateServiceTests
     }
 
     [Fact]
+    public async Task CheckForUpdatesAsync_ShouldReturnUpToDate_AndDeleteInstallerMatchingCurrentVersion()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var cachedInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.9-Lite-Setup.exe");
+        await File.WriteAllBytesAsync(cachedInstallerPath, [1, 2, 3]);
+
+        using var handler = new FakeHttpMessageHandler(_ => CreateJsonResponse("""
+        {
+          "tag_name": "latest",
+          "name": "v0.2.9",
+          "assets": [
+            {
+              "name": "XhMonitor-v0.2.9-Lite-Setup.exe",
+              "browser_download_url": "https://example.com/download/XhMonitor-v0.2.9-Lite-Setup.exe"
+            }
+          ]
+        }
+        """));
+
+        var service = CreateService(handler, tempDir.Path);
+
+        var status = await service.CheckForUpdatesAsync();
+
+        status.State.Should().Be(AppUpdateState.UpToDate);
+        status.Message.Should().Contain("当前已是最新版本");
+        File.Exists(cachedInstallerPath).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsync_ShouldDeleteOlderInstallers_AndKeepLatestDownloadedInstaller()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var staleInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.8-Lite-Setup.exe");
+        var currentInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.9-Lite-Setup.exe");
+        var latestInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.13-Lite-Setup.exe");
+        await File.WriteAllBytesAsync(staleInstallerPath, [1]);
+        await File.WriteAllBytesAsync(currentInstallerPath, [2]);
+        await File.WriteAllBytesAsync(latestInstallerPath, [3]);
+
+        using var handler = new FakeHttpMessageHandler(_ => CreateJsonResponse("""
+        {
+          "tag_name": "latest",
+          "name": "v0.2.13",
+          "assets": [
+            {
+              "name": "XhMonitor-v0.2.13-Lite-Setup.exe",
+              "browser_download_url": "https://example.com/download/XhMonitor-v0.2.13-Lite-Setup.exe"
+            }
+          ]
+        }
+        """));
+
+        var service = CreateService(handler, tempDir.Path);
+
+        var status = await service.CheckForUpdatesAsync();
+
+        status.State.Should().Be(AppUpdateState.Downloaded);
+        status.DownloadedInstallerPath.Should().Be(latestInstallerPath);
+        File.Exists(staleInstallerPath).Should().BeFalse();
+        File.Exists(currentInstallerPath).Should().BeFalse();
+        File.Exists(latestInstallerPath).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task CheckForUpdatesOnStartupAsync_ShouldShowTrayNotification_WhenUpdateExists()
     {
         using var tempDir = new TemporaryDirectory();
