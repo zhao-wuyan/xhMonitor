@@ -1,0 +1,23 @@
+.github/workflows/release-lite.yml
+  40c3ee772e32bcb7 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "1a76b386aba2cd301ead901489ce8781f447a412",
+  "prompts": {
+    "40c3ee772e32bcb7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d5c4a-965f-7af3-b646-0157fd1b35d8",
+        "model": "gpt-5.4"
+      },
+      "human_author": "zhao-wuyan",
+      "messages": [],
+      "total_additions": 244,
+      "total_deletions": 243,
+      "accepted_lines": 156,
+      "overriden_lines": 16
+    }
+  }
+}
