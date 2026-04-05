@@ -1,0 +1,25 @@
+XhMonitor.Desktop.Tests/TaskbarMetricsWindowCoordinateTransformTests.cs
+  ea4e86a3a92227e8 1-35
+XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs
+  ea4e86a3a92227e8 61,142,165,238,275,330,348,376,378-379,413,544,573-575,614-650
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "450cfc93160146926eb68361f50c0ed1e3350338",
+  "prompts": {
+    "ea4e86a3a92227e8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d5c26-9c7f-7180-81cf-c240ecb28d90",
+        "model": "gpt-5.4"
+      },
+      "human_author": "zhao-wuyan",
+      "messages": [],
+      "total_additions": 678,
+      "total_deletions": 598,
+      "accepted_lines": 515,
+      "overriden_lines": 0
+    }
+  }
+}
