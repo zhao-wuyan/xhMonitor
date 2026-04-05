@@ -58,6 +58,7 @@ public partial class TaskbarMetricsWindow : Window
     private static readonly WpfColor SideGlowColor = WpfColor.FromRgb(0xE6, 0x9F, 0x00);
 
     private readonly TaskbarMetricsViewModel _viewModel;
+    private HwndSource? _hwndSource;
     private bool _allowClose;
 
     private bool _isDragging;
@@ -138,7 +139,7 @@ public partial class TaskbarMetricsWindow : Window
     private void ActivateDockFromCursorFallback()
     {
         var screen = GetMouseScreen();
-        var cursor = WinFormsCursor.Position;
+        var cursor = GetMousePositionInLogicalCoordinates();
 
         _manualPlacement = false;
         _isDockedVisual = true;
@@ -161,6 +162,7 @@ public partial class TaskbarMetricsWindow : Window
 
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
+        _hwndSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
         RefreshPlacementToDockAnchor();
         ReassertTopMost();
     }
@@ -233,7 +235,7 @@ public partial class TaskbarMetricsWindow : Window
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         var cursorLocal = e.GetPosition(this);
-        var cursorScreen = PointToScreen(cursorLocal);
+        var cursorScreen = ConvertScreenPointToLogicalCoordinates(PointToScreen(cursorLocal));
 
         _dragStartedFromDockedVisual = _isDockedVisual;
 
@@ -270,7 +272,7 @@ public partial class TaskbarMetricsWindow : Window
             return;
         }
 
-        var currentScreen = PointToScreen(e.GetPosition(this));
+        var currentScreen = GetMousePositionInLogicalCoordinates();
         var delta = currentScreen - _dragStartScreen;
         Left = _windowStart.X + delta.X;
         Top = _windowStart.Y + delta.Y;
@@ -325,7 +327,7 @@ public partial class TaskbarMetricsWindow : Window
 
     private bool TrySnapByHalfOut(WinFormsScreen screen)
     {
-        var bounds = screen.Bounds;
+        var bounds = ConvertScreenRectangleToLogicalCoordinates(screen.Bounds);
         var windowWidth = Math.Max(Width, ActualWidth);
         var windowHeight = Math.Max(Height, ActualHeight);
 
@@ -343,7 +345,7 @@ public partial class TaskbarMetricsWindow : Window
 
     private EdgeDockSide GetNearestDockSide(WinFormsScreen screen, out double minDistance)
     {
-        var work = screen.WorkingArea;
+        var work = ConvertScreenRectangleToLogicalCoordinates(screen.WorkingArea);
         var windowWidth = Math.Max(Width, ActualWidth);
         var windowHeight = Math.Max(Height, ActualHeight);
 
@@ -371,10 +373,10 @@ public partial class TaskbarMetricsWindow : Window
         return EdgeDockSide.Bottom;
     }
 
-    private static EdgeDockSide GetNearestDockSideByCursor(WinFormsScreen screen)
+    private EdgeDockSide GetNearestDockSideByCursor(WinFormsScreen screen)
     {
-        var work = screen.WorkingArea;
-        var cursor = WinFormsCursor.Position;
+        var work = ConvertScreenRectangleToLogicalCoordinates(screen.WorkingArea);
+        var cursor = GetMousePositionInLogicalCoordinates();
 
         var leftDistance = Math.Abs(cursor.X - work.Left);
         var rightDistance = Math.Abs(work.Right - cursor.X);
@@ -408,7 +410,7 @@ public partial class TaskbarMetricsWindow : Window
 
         ApplyWindowSize(isDocked: true, dockSide);
 
-        var work = screen.WorkingArea;
+        var work = ConvertScreenRectangleToLogicalCoordinates(screen.WorkingArea);
         var minLeft = work.Left + EdgeSnapMargin;
         var maxLeft = work.Right - Width - EdgeSnapMargin;
         var minTop = work.Top + EdgeSnapMargin;
@@ -539,7 +541,7 @@ public partial class TaskbarMetricsWindow : Window
 
     private void ResetToNearestNonTaskbarOverlap(WinFormsScreen screen)
     {
-        var workingArea = screen.WorkingArea;
+        var workingArea = ConvertScreenRectangleToLogicalCoordinates(screen.WorkingArea);
         var windowWidth = Math.Max(Width, ActualWidth);
         var windowHeight = Math.Max(Height, ActualHeight);
 
@@ -566,6 +568,11 @@ public partial class TaskbarMetricsWindow : Window
     private static WinFormsScreen GetMouseScreen()
     {
         return WinFormsScreen.FromPoint(WinFormsCursor.Position);
+    }
+
+    private WpfPoint GetMousePositionInLogicalCoordinates()
+    {
+        return ConvertScreenPointToLogicalCoordinates(WinFormsCursor.Position.X, WinFormsCursor.Position.Y);
     }
 
     private static double ClampToRange(double value, double min, double max)
@@ -602,6 +609,44 @@ public partial class TaskbarMetricsWindow : Window
         }
 
         return value;
+    }
+
+    private WpfPoint ConvertScreenPointToLogicalCoordinates(int x, int y)
+    {
+        return ConvertScreenPointToLogicalCoordinates(new WpfPoint(x, y));
+    }
+
+    private WpfPoint ConvertScreenPointToLogicalCoordinates(WpfPoint point)
+    {
+        return TransformDevicePointToLogical(point, GetDeviceToLogicalTransform());
+    }
+
+    private Rect ConvertScreenRectangleToLogicalCoordinates(global::System.Drawing.Rectangle rectangle)
+    {
+        return TransformDeviceRectangleToLogical(rectangle, GetDeviceToLogicalTransform());
+    }
+
+    private Matrix GetDeviceToLogicalTransform()
+    {
+        return _hwndSource?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+    }
+
+    internal static WpfPoint TransformDevicePointToLogical(WpfPoint point, Matrix deviceToLogicalTransform)
+    {
+        return deviceToLogicalTransform.Transform(point);
+    }
+
+    internal static Rect TransformDeviceRectangleToLogical(global::System.Drawing.Rectangle rectangle, Matrix deviceToLogicalTransform)
+    {
+        var topLeft = TransformDevicePointToLogical(new WpfPoint(rectangle.Left, rectangle.Top), deviceToLogicalTransform);
+        var bottomRight = TransformDevicePointToLogical(new WpfPoint(rectangle.Right, rectangle.Bottom), deviceToLogicalTransform);
+
+        var left = Math.Min(topLeft.X, bottomRight.X);
+        var top = Math.Min(topLeft.Y, bottomRight.Y);
+        var right = Math.Max(topLeft.X, bottomRight.X);
+        var bottom = Math.Max(topLeft.Y, bottomRight.Y);
+
+        return new Rect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
     }
 
     private static double ResolveAnchorRatio(double cursorOffset, double sourceSize)
