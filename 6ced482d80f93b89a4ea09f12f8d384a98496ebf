@@ -1,0 +1,23 @@
+XhMonitor.Desktop/FloatingWindow.xaml.cs
+  900f198d2e13ccbe 30-34,101-102,302-303,400-410,1106,1108,1121-1122,1146,1210-1211,1216,1236-1238,1269-1327,1330,1332,1337-1344,1373-1383
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "6ced482d80f93b89a4ea09f12f8d384a98496ebf",
+  "prompts": {
+    "900f198d2e13ccbe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d5b91-d35f-7ae1-8dfd-54617fde387d",
+        "model": "gpt-5.4"
+      },
+      "human_author": "zhao-wuyan",
+      "messages": [],
+      "total_additions": 1464,
+      "total_deletions": 1353,
+      "accepted_lines": 1201,
+      "overriden_lines": 0
+    }
+  }
+}
