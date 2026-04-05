@@ -1,0 +1,39 @@
+{
+  "iteration": 2,
+  "timestamp": "2026-04-05T00:00:00+08:00",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "description": "TaskbarMetricsWindow 混用了设备像素与 WPF 逻辑坐标，导致拖拽增量和吸附计算出现固定比例偏移",
+      "testable_condition": "检查拖拽起点、拖拽增量、屏幕边界是否统一转换为逻辑坐标",
+      "logging_point": "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+      "evidence_criteria": {
+        "confirm": "发现 PointToScreen / Screen.Bounds / Screen.WorkingArea 直接参与 Left/Top 计算，且没有 TransformFromDevice 转换",
+        "reject": "所有拖拽和吸附计算都已经先转换到同一逻辑坐标系"
+      },
+      "likelihood": 1,
+      "status": "confirmed",
+      "verdict_reason": "源码审查确认拖拽和吸附路径中存在设备像素与 DIP 混算，且 FloatingWindow 已有对应转换实现"
+    },
+    {
+      "id": "H2",
+      "description": "仅修正拖拽起始锚点不足以解决问题，释放吸附与边界钳制路径也存在同类坐标系偏差",
+      "testable_condition": "检查 TrySnapByHalfOut / GetNearestDockSide / ApplyDockSide / ResetToNearestNonTaskbarOverlap 是否仍使用设备像素边界",
+      "logging_point": "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+      "evidence_criteria": {
+        "confirm": "屏幕边界来自 Screen.Bounds / WorkingArea，直接与 Left / Top / Width / Height 比较",
+        "reject": "所有边界计算都已使用逻辑坐标"
+      },
+      "likelihood": 1,
+      "status": "confirmed",
+      "verdict_reason": "同一文件中的吸附判断和工作区钳制也直接使用了 WinForms 屏幕矩形，需要一并统一坐标"
+    }
+  ],
+  "corrections": [
+    {
+      "wrong_assumption": "偏移只发生在从贴边态切回浮动态的首帧重定位",
+      "corrected_to": "偏移贯穿拖拽增量、释放吸附判断和工作区边界钳制，是系统性的坐标系混用",
+      "reason": "多个路径都直接把设备像素边界或鼠标位置拿去和 WPF 逻辑坐标做运算"
+    }
+  ]
+}

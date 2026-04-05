@@ -1,0 +1,141 @@
+{
+  "iteration": 1,
+  "timestamp": "2026-04-05T11:00:08+08:00",
+  "bug": "桌面悬浮窗偶发出现非置顶现象，会被其他窗口挡住。",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "description": "悬浮窗仅依赖 WPF 的 Topmost 属性，缺少在失焦、拖拽、显示切换后的 Win32 级回顶，因此会落到其他 topmost 窗口后面。",
+      "testable_condition": "对比 FloatingWindow 与 TaskbarMetricsWindow 的生命周期处理，确认前者没有 ReassertTopMost / SetWindowPos(HWND_TOPMOST) 兜底。",
+      "logging_point": "XhMonitor.Desktop/FloatingWindow.xaml.cs, XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+      "evidence_criteria": {
+        "confirm": "FloatingWindow 没有等价的回顶逻辑，而 TaskbarMetricsWindow 在 Loaded、SourceInitialized、Deactivated、拖拽结束后都会 ReassertTopMost。",
+        "reject": "FloatingWindow 在关键生命周期里也存在等价的 HWND_TOPMOST 重申逻辑。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H2",
+      "description": "Show/Hide、托盘菜单、设置窗或关于窗关闭后，悬浮窗只做 Activate 不做 SetWindowPos(HWND_TOPMOST)，导致层级没有被重新抬到 topmost band 顶部。",
+      "testable_condition": "复现托盘显示/隐藏、打开/关闭对话窗等路径，观察窗口是否在这些交互后更容易被挡住。",
+      "logging_point": "XhMonitor.Desktop/Services/WindowManagementService.cs, XhMonitor.Desktop/Services/TrayIconService.cs",
+      "evidence_criteria": {
+        "confirm": "问题主要出现在窗口切换、托盘交互或对话窗关闭后，且代码路径没有显式回顶。",
+        "reject": "这些路径都不会影响层级，问题仅在别的系统窗口类型下出现。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    },
+    {
+      "id": "H3",
+      "description": "用户遇到的是“其他本身也置顶的窗口”或全屏/独占窗口覆盖，而不是悬浮窗完全失去 Topmost。",
+      "testable_condition": "收集复现场景里的遮挡窗口类型，区分普通窗口、同样置顶窗口、全屏窗口。",
+      "logging_point": "runtime reproduction",
+      "evidence_criteria": {
+        "confirm": "只有特定 topmost 或全屏类窗口会遮挡，普通窗口不会。",
+        "reject": "普通非 topmost 窗口也能稳定把悬浮窗压住。"
+      },
+      "likelihood": 2,
+      "status": "pending"
+    },
+    {
+      "id": "H4",
+      "description": "透明分层窗口（AllowsTransparency）叠加多屏/DPI/拖拽切换时暴露了 Z 序维护问题，但本质仍需要通过回顶逻辑兜住。",
+      "testable_condition": "在多屏、缩放变化或跨屏拖拽后复现，观察问题是否更稳定出现。",
+      "logging_point": "XhMonitor.Desktop/FloatingWindow.xaml, runtime reproduction",
+      "evidence_criteria": {
+        "confirm": "问题集中在透明窗口、跨屏或 DPI 变化场景中出现。",
+        "reject": "单屏固定缩放下也可稳定复现，且与显示环境无关。"
+      },
+      "likelihood": 3,
+      "status": "pending"
+    },
+    {
+      "id": "H5",
+      "description": "右侧边缘检测和释放后的回弹使用了 `Math.Max(Width, ActualWidth)`；在 SizeToContent 窗口上 Width/Height 可能为 NaN，导致右/下边界计算失效。",
+      "testable_condition": "检查 FloatingWindow 是否为 SizeToContent 窗口，并验证 `Math.Max(double.NaN, finite)` 的结果是否仍为 NaN。",
+      "logging_point": "XhMonitor.Desktop/FloatingWindow.xaml, XhMonitor.Desktop/FloatingWindow.xaml.cs",
+      "evidence_criteria": {
+        "confirm": "FloatingWindow 使用 SizeToContent，且边缘检测/边界纠偏直接用 Math.Max(Width, ActualWidth)；测试证明该分支在 NaN 下不会回退到 ActualWidth。",
+        "reject": "Width/Height 在拖拽路径中始终为有限值，或右侧逻辑不依赖它们。"
+      },
+      "likelihood": 1,
+      "status": "confirmed"
+    }
+  ],
+  "corrections": [
+    {
+      "wrong_assumption": "当前问题主要是缺少一个置顶菜单开关。",
+      "corrected_to": "更可疑的是悬浮窗缺少和贴边窗口同等级别的 Win32 回顶逻辑；菜单项最多作为补救入口。",
+      "reason": "FloatingWindow 已经在 XAML 中声明 Topmost=True。"
+    }
+  ],
+  "staticFindings": [
+    {
+      "source": "XhMonitor.Desktop/FloatingWindow.xaml",
+      "finding": "悬浮窗已默认 Topmost=True。"
+    },
+    {
+      "source": "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+      "finding": "OnSourceInitialized、HandleWindowDragReleased、SetClickThrough 路径都没有看到 HWND_TOPMOST 回顶。"
+    },
+    {
+      "source": "XhMonitor.Desktop/Services/WindowManagementService.cs",
+      "finding": "显示悬浮窗时仅调用 Show() 和 Activate()。"
+    },
+    {
+      "source": "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+      "finding": "贴边窗口在 Loaded、SourceInitialized、Deactivated、拖拽结束后都有 ReassertTopMost()。"
+    },
+    {
+      "source": "XhMonitor.Desktop/Services/TrayIconService.cs",
+      "finding": "托盘菜单没有置顶相关入口，只有点击穿透。"
+    },
+    {
+      "source": "XhMonitor.Desktop/Services/WindowManagementService.cs",
+      "finding": "设置窗和关于窗通过 ShowDialog() 打开，关闭后没有显式对悬浮窗重新回顶。"
+    },
+    {
+      "source": "XhMonitor.Desktop/FloatingWindow.xaml.cs + XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs",
+      "finding": "悬浮窗没有 Deactivated 回顶和拖拽结束回顶，而贴边窗口两者都有。"
+    }
+  ],
+  "nextChecks": [
+    "优先按拖拽结束、托盘显示/隐藏、打开设置后关闭三个路径做手工复现。",
+    "区分遮挡窗口是否本身也属于 topmost 或全屏窗口。",
+    "若产品上需要补入口，优先考虑“重新置顶”动作，而不是再次暴露一个默认已为 true 的置顶开关。"
+  ],
+  "fixesApplied": [
+    {
+      "file": "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+      "change": "新增 ReassertTopMost()，通过 SetWindowPos(HWND_TOPMOST) 在悬浮窗 Activated、Deactivated、SourceInitialized、Loaded 和拖拽结束路径重新声明 topmost。"
+    },
+    {
+      "file": "XhMonitor.Desktop/FloatingWindow.xaml.cs",
+      "change": "新增 ResolveWindowDimension()，并在右侧边缘检测与释放后的工作区回弹中改用安全宽高解析，修复 SizeToContent 场景下的 NaN 尺寸问题。"
+    },
+    {
+      "file": "XhMonitor.Desktop.Tests/FloatingWindowDimensionTests.cs",
+      "change": "新增单测覆盖 Width/Height 为 NaN 时对 ActualWidth/ActualHeight 的回退逻辑。"
+    }
+  ],
+  "verification": [
+    {
+      "command": "dotnet build XhMonitor.Desktop/XhMonitor.Desktop.csproj",
+      "result": "passed"
+    },
+    {
+      "command": "dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj --no-build",
+      "result": "passed (73/73)"
+    },
+    {
+      "command": "dotnet build XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj -p:OutDir=C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.codex-temp\\verify2\\ -p:UseAppHost=false",
+      "result": "passed"
+    },
+    {
+      "command": "dotnet test .codex-temp/verify2/XhMonitor.Desktop.Tests.dll",
+      "result": "passed (77/77)"
+    }
+  ]
+}

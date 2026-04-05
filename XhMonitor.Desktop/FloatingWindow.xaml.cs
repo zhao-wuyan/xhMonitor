@@ -27,6 +27,11 @@ public partial class FloatingWindow : Window
 {
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20L;
+    private static readonly IntPtr HwndTopMost = new(-1);
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoActivate = 0x0010;
+    private const uint SwpNoOwnerZOrder = 0x0200;
     private const double DRAG_THRESHOLD = 5.0; // 拖动阈值(像素)
     private const double EDGE_DOCK_SNAP_DISTANCE = 24.0; // 贴边触发的近边阈值(像素)
     private const string ScrollViewerVerticalScrollBarPartName = "PART_VerticalScrollBar";
@@ -93,6 +98,8 @@ public partial class FloatingWindow : Window
 
         _positionStore = new WindowPositionStore("XhMonitor.Desktop");
 
+        Activated += OnActivated;
+        Deactivated += OnDeactivated;
         Loaded += OnLoaded;
         SourceInitialized += OnSourceInitialized;
         MouseLeftButtonDown += OnMouseLeftButtonDown;
@@ -292,6 +299,8 @@ public partial class FloatingWindow : Window
 
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        ReassertTopMost();
+
         try
         {
             await _viewModel.InitializeAsync();
@@ -388,6 +397,17 @@ public partial class FloatingWindow : Window
 
         _hwndSource = HwndSource.FromHwnd(_windowHandle);
         _hwndSource?.AddHook(WndProc);
+        ReassertTopMost();
+    }
+
+    private void OnActivated(object? sender, EventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(ReassertTopMost), DispatcherPriority.Background);
+    }
+
+    private void OnDeactivated(object? sender, EventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(ReassertTopMost), DispatcherPriority.Background);
     }
 
     private void OnMouseLeftButtonDown(object? sender, MouseButtonEventArgs e)
@@ -1083,9 +1103,9 @@ public partial class FloatingWindow : Window
     {
         var screen = WinFormsScreen.FromPoint(WinFormsCursor.Position);
         // 完整屏幕边界：用于“半窗越界”触发。
-        var screenBounds = screen.Bounds;
+        var screenBounds = ConvertScreenRectangleToWindowCoordinates(screen.Bounds);
         // 工作区边界：仅用于识别任务栏所在方向，避免把任务栏边缘当作贴边触发。
-        var workingBounds = screen.WorkingArea;
+        var workingBounds = ConvertScreenRectangleToWindowCoordinates(screen.WorkingArea);
 
         // 若某一侧存在任务栏占位，则该方向不触发悬浮窗 -> 迷你/贴边切换。
         var hasTaskbarOnLeft = workingBounds.Left > screenBounds.Left;
@@ -1098,8 +1118,8 @@ public partial class FloatingWindow : Window
         var boundaryRight = screenBounds.Right;
         var boundaryBottom = screenBounds.Bottom;
 
-        var windowWidth = Math.Max(Width, ActualWidth);
-        var windowHeight = Math.Max(Height, ActualHeight);
+        var windowWidth = ResolveWindowDimension(Width, ActualWidth, 320);
+        var windowHeight = ResolveWindowDimension(Height, ActualHeight, 60);
 
         var overflowLeft = Math.Max(0, boundaryLeft - Left);
         var overflowRight = Math.Max(0, (Left + windowWidth) - boundaryRight);
@@ -1123,7 +1143,7 @@ public partial class FloatingWindow : Window
         var nearBottom = !hasTaskbarOnBottom && screenBottomDistance <= EDGE_DOCK_SNAP_DISTANCE;
         var triggerByNearScreenEdge = nearLeft || nearRight || nearTop || nearBottom;
 
-        var cursor = WinFormsCursor.Position;
+        var cursor = ConvertScreenPointToLogicalCoordinates(WinFormsCursor.Position.X, WinFormsCursor.Position.Y);
         var cursorNearLeft = !hasTaskbarOnLeft && Math.Abs(cursor.X - boundaryLeft) <= EDGE_DOCK_SNAP_DISTANCE;
         var cursorNearRight = !hasTaskbarOnRight && Math.Abs(boundaryRight - cursor.X) <= EDGE_DOCK_SNAP_DISTANCE;
         var cursorNearTop = !hasTaskbarOnTop && Math.Abs(cursor.Y - boundaryTop) <= EDGE_DOCK_SNAP_DISTANCE;
@@ -1187,11 +1207,13 @@ public partial class FloatingWindow : Window
         StopLongPressTimer();
         System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [主控制栏] 拖动结束");
 
-        var activated = TryActivateEdgeDockModeOnDragRelease(out _, out _);
+        var activated = TryActivateEdgeDockModeOnDragRelease(out var reason, out var detail);
+        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [边缘检测] activated={activated}, reason={reason}, detail={detail}");
 
         if (!activated)
         {
             ResetToNearestNonTaskbarOverlapByMouseScreen();
+            ReassertTopMost();
         }
     }
 
@@ -1211,9 +1233,9 @@ public partial class FloatingWindow : Window
 
     private void ResetToNearestNonTaskbarOverlap(WinFormsScreen screen)
     {
-        var workingArea = screen.WorkingArea;
-        var windowWidth = Math.Max(Width, ActualWidth);
-        var windowHeight = Math.Max(Height, ActualHeight);
+        var workingArea = ConvertScreenRectangleToWindowCoordinates(screen.WorkingArea);
+        var windowWidth = ResolveWindowDimension(Width, ActualWidth, 320);
+        var windowHeight = ResolveWindowDimension(Height, ActualHeight, 60);
 
         var minLeft = workingArea.Left;
         var maxLeft = workingArea.Right - windowWidth;
@@ -1244,6 +1266,84 @@ public partial class FloatingWindow : Window
         return Math.Clamp(value, min, max);
     }
 
+    internal static double ResolveWindowDimension(double width, double actualWidth, double fallback)
+    {
+        var hasWidth = double.IsFinite(width) && width > 0;
+        var hasActualWidth = double.IsFinite(actualWidth) && actualWidth > 0;
+
+        if (hasWidth && hasActualWidth)
+        {
+            return Math.Max(width, actualWidth);
+        }
+
+        if (hasWidth)
+        {
+            return width;
+        }
+
+        if (hasActualWidth)
+        {
+            return actualWidth;
+        }
+
+        if (!double.IsFinite(fallback) || fallback <= 0)
+        {
+            return 0;
+        }
+
+        return fallback;
+    }
+
+    private Rect ConvertScreenRectangleToWindowCoordinates(global::System.Drawing.Rectangle rectangle)
+    {
+        return TransformDeviceRectangleToLogical(rectangle, GetDeviceToLogicalTransform());
+    }
+
+    private System.Windows.Point ConvertScreenPointToLogicalCoordinates(int x, int y)
+    {
+        return TransformDevicePointToLogical(new System.Windows.Point(x, y), GetDeviceToLogicalTransform());
+    }
+
+    private Matrix GetDeviceToLogicalTransform()
+    {
+        return _hwndSource?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+    }
+
+    internal static System.Windows.Point TransformDevicePointToLogical(System.Windows.Point point, Matrix deviceToLogicalTransform)
+    {
+        return deviceToLogicalTransform.Transform(point);
+    }
+
+    internal static Rect TransformDeviceRectangleToLogical(global::System.Drawing.Rectangle rectangle, Matrix deviceToLogicalTransform)
+    {
+        var topLeft = TransformDevicePointToLogical(new System.Windows.Point(rectangle.Left, rectangle.Top), deviceToLogicalTransform);
+        var bottomRight = TransformDevicePointToLogical(new System.Windows.Point(rectangle.Right, rectangle.Bottom), deviceToLogicalTransform);
+
+        var left = Math.Min(topLeft.X, bottomRight.X);
+        var top = Math.Min(topLeft.Y, bottomRight.Y);
+        var right = Math.Max(topLeft.X, bottomRight.X);
+        var bottom = Math.Max(topLeft.Y, bottomRight.Y);
+
+        return new Rect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
+    }
+
+    private void ReassertTopMost()
+    {
+        if (_windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _ = SetWindowPos(
+            _windowHandle,
+            HwndTopMost,
+            0,
+            0,
+            0,
+            0,
+            SwpNoMove | SwpNoSize | SwpNoActivate | SwpNoOwnerZOrder);
+    }
+
     private static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)
     {
         return IntPtr.Size == 8
@@ -1269,6 +1369,17 @@ public partial class FloatingWindow : Window
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")]
     private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int cx,
+        int cy,
+        uint uFlags);
 
     private void RegisterExitHotkey()
     {
