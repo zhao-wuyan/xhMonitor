@@ -8,17 +8,48 @@ using XhMonitor.Core.Models;
 
 namespace XhMonitor.Core.Providers;
 
-public class VramMetricProvider(ILogger<VramMetricProvider>? logger = null) : IMetricProvider
+public class VramMetricProvider : IMetricProvider
 {
-    private readonly ILogger<VramMetricProvider>? _logger = logger;
+    private readonly ILogger<VramMetricProvider>? _logger;
+    private readonly object _snapshotLock = new();
+    private readonly Func<bool>? _isSupportedOverride;
+    private readonly Func<DateTime> _utcNowProvider;
+    private readonly Func<IReadOnlyDictionary<int, long>> _processUsageSnapshotFactory;
     private double _cachedMaxVram;
+    private VramProcessSnapshot? _snapshot;
+    private static readonly TimeSpan SnapshotTtl = TimeSpan.FromMilliseconds(750);
+
+    public VramMetricProvider(ILogger<VramMetricProvider>? logger = null)
+        : this(logger, isSupportedOverride: null, utcNowProvider: null, processUsageSnapshotFactory: null)
+    {
+    }
+
+    internal VramMetricProvider(
+        ILogger<VramMetricProvider>? logger,
+        Func<bool>? isSupportedOverride,
+        Func<DateTime>? utcNowProvider,
+        Func<IReadOnlyDictionary<int, long>>? processUsageSnapshotFactory)
+    {
+        _logger = logger;
+        _isSupportedOverride = isSupportedOverride;
+        _utcNowProvider = utcNowProvider ?? (() => DateTime.UtcNow);
+        _processUsageSnapshotFactory = processUsageSnapshotFactory ?? CaptureUsageByProcess;
+    }
 
     public string MetricId => "vram";
     public string DisplayName => "VRAM Usage";
     public string Unit => "MB";
     public MetricType Type => MetricType.Size;
 
-    public bool IsSupported() => OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Process Memory");
+    public bool IsSupported()
+    {
+        if (_isSupportedOverride != null)
+        {
+            return _isSupportedOverride();
+        }
+
+        return OperatingSystem.IsWindows() && PerformanceCounterCategory.Exists("GPU Process Memory");
+    }
 
     /// <summary>
     /// 获取 VRAM 最大容量（用于 MaxVram）
@@ -319,16 +350,8 @@ public class VramMetricProvider(ILogger<VramMetricProvider>? logger = null) : IM
         {
             try
             {
-                var category = new PerformanceCounterCategory("GPU Process Memory");
-                var names = category.GetInstanceNames();
-                var prefix = $"pid_{processId}_";
-                long totalBytes = 0;
-
-                foreach (var name in names.Where(n => n.Contains(prefix)))
-                {
-                    using var c = new PerformanceCounter("GPU Process Memory", "Dedicated Usage", name, true);
-                    totalBytes += c.RawValue;
-                }
+                var snapshot = GetOrCreateSnapshot();
+                snapshot.UsageByProcessId.TryGetValue(processId, out var totalBytes);
 
                 return new MetricValue { Value = Math.Round(totalBytes / 1024.0 / 1024.0, 1), Unit = Unit, DisplayName = DisplayName, Timestamp = DateTime.Now };
             }
@@ -337,4 +360,87 @@ public class VramMetricProvider(ILogger<VramMetricProvider>? logger = null) : IM
     }
 
     public void Dispose() { }
+
+    internal int DebugGetCachedProcessCount()
+    {
+        lock (_snapshotLock)
+        {
+            return _snapshot?.UsageByProcessId.Count ?? 0;
+        }
+    }
+
+    internal void DebugInvalidateSnapshot()
+    {
+        lock (_snapshotLock)
+        {
+            _snapshot = null;
+        }
+    }
+
+    private VramProcessSnapshot GetOrCreateSnapshot()
+    {
+        lock (_snapshotLock)
+        {
+            var now = _utcNowProvider();
+            if (_snapshot != null && now - _snapshot.CreatedAtUtc <= SnapshotTtl)
+            {
+                return _snapshot;
+            }
+
+            _snapshot = new VramProcessSnapshot(now, _processUsageSnapshotFactory());
+            return _snapshot;
+        }
+    }
+
+    private static IReadOnlyDictionary<int, long> CaptureUsageByProcess()
+    {
+        var usageByProcessId = new Dictionary<int, long>();
+        var category = new PerformanceCounterCategory("GPU Process Memory");
+        var names = category.GetInstanceNames();
+
+        foreach (var name in names)
+        {
+            if (!TryExtractProcessId(name, out var processId))
+            {
+                continue;
+            }
+
+            using var counter = new PerformanceCounter("GPU Process Memory", "Dedicated Usage", name, true);
+            var value = counter.RawValue;
+
+            if (value <= 0)
+            {
+                continue;
+            }
+
+            usageByProcessId.TryGetValue(processId, out var current);
+            usageByProcessId[processId] = current + value;
+        }
+
+        return usageByProcessId;
+    }
+
+    private static bool TryExtractProcessId(string instanceName, out int processId)
+    {
+        processId = 0;
+        const string marker = "pid_";
+        var start = instanceName.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (start < 0)
+        {
+            return false;
+        }
+
+        start += marker.Length;
+        var end = instanceName.IndexOf('_', start);
+        if (end < 0)
+        {
+            end = instanceName.Length;
+        }
+
+        return int.TryParse(instanceName[start..end], out processId);
+    }
+
+    private sealed record VramProcessSnapshot(
+        DateTime CreatedAtUtc,
+        IReadOnlyDictionary<int, long> UsageByProcessId);
 }

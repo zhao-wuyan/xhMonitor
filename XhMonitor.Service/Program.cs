@@ -204,8 +204,25 @@ builder.Services.AddSingleton<IRyzenAdjCli>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var env = sp.GetRequiredService<IHostEnvironment>();
-    var logger = sp.GetRequiredService<ILogger<RyzenAdjCli>>();
-    return new RyzenAdjCli(config["Power:RyzenAdjPath"], env.ContentRootPath, logger);
+    var backend = config["Power:Backend"] ?? "Native";
+    var fallbackToCli = config.GetValue("Power:NativeFallbackToCli", true);
+
+    var cliLogger = sp.GetRequiredService<ILogger<RyzenAdjCli>>();
+    var cli = new RyzenAdjCli(config["Power:RyzenAdjPath"], env.ContentRootPath, cliLogger);
+    if (!string.Equals(backend, "Native", StringComparison.OrdinalIgnoreCase))
+    {
+        return cli;
+    }
+
+    var nativeLogger = sp.GetRequiredService<ILogger<RyzenAdjNativeClient>>();
+    var native = new RyzenAdjNativeClient(config["Power:RyzenAdjPath"], env.ContentRootPath, nativeLogger);
+    if (!fallbackToCli)
+    {
+        return native;
+    }
+
+    var fallbackLogger = sp.GetRequiredService<ILogger<RyzenAdjFallbackClient>>();
+    return new RyzenAdjFallbackClient(native, cli, fallbackLogger);
 });
 
 // 设备验证服务
