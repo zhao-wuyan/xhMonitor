@@ -1,0 +1,24 @@
+CLAUDE.md
+  afde0909a49468ea 111
+AGENTS.md
+  afde0909a49468ea 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "aea5d2c3344a20897bb3fff7278b37b3be4e887c",
+  "prompts": {
+    "afde0909a49468ea": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3b09b80-922a-4b59-9ab6-f2a25a3496b1",
+        "model": "GLM-5-Internal-XAIO-CP-2026s"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>",
+      "total_additions": 5,
+      "total_deletions": 5,
+      "accepted_lines": 3,
+      "overriden_lines": 2
+    }
+  }
+}
