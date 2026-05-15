@@ -84,6 +84,7 @@ public partial class SettingsWindow : Window
             // 仅在窗口加载时查询一次开机自启动状态，避免每次保存都触发外部命令。
             _originalStartupEnabled = _startupManager.IsStartupEnabled();
             _viewModel.StartWithWindows = _originalStartupEnabled;
+            _viewModel.RefreshWebServerBindingStatus();
             UpdateResponsiveLayout(ActualWidth);
         };
     }
@@ -232,6 +233,7 @@ public partial class SettingsWindow : Window
                         {
                             // 仅管理员模式变更，重启Service即可
                             await _backendServerService.RestartAsync();
+                            _viewModel.RefreshWebServerBindingStatus();
 
                             // Service 重启后，主动重连 SignalR 以刷新 Power 等指标状态
                             if (Owner is FloatingWindow fw)
@@ -263,6 +265,7 @@ public partial class SettingsWindow : Window
                 await ShowSaveSuccessHintAsync();
             }
 
+            _viewModel.RefreshWebServerBindingStatus();
             // 更新原始值，避免重复提示
             _viewModel.UpdateOriginalAdminMode();
             _viewModel.UpdateOriginalEnableLanAccess();

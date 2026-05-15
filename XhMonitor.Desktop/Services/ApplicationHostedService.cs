@@ -24,10 +24,11 @@ public sealed class ApplicationHostedService : BackgroundService
     {
         try
         {
-            _logger.LogInformation("Starting backend and web services.");
-            await Task.WhenAll(
-                _backendService.StartAsync(stoppingToken),
-                _webService.StartAsync(stoppingToken)).ConfigureAwait(false);
+            _logger.LogInformation("Starting backend service.");
+            await _backendService.StartAsync(stoppingToken).ConfigureAwait(false);
+
+            _logger.LogInformation("Backend service is ready. Starting web service.");
+            await _webService.StartAsync(stoppingToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

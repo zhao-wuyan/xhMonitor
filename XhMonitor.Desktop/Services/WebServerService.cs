@@ -25,6 +25,7 @@ public sealed class WebServerService : IWebServerService
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Task? _webServerTask;
     private CancellationTokenSource? _webServerCts;
+    private volatile WebServerBindingMode _currentBindingMode = WebServerBindingMode.Unknown;
 
     public WebServerService(IServiceDiscovery serviceDiscovery, HttpClient httpClient)
     {
@@ -34,6 +35,7 @@ public sealed class WebServerService : IWebServerService
     }
 
     public bool IsRunning => _webServerTask != null && !_webServerTask.IsCompleted;
+    public WebServerBindingMode CurrentBindingMode => _currentBindingMode;
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -75,12 +77,14 @@ public sealed class WebServerService : IWebServerService
                     {
                         builder.WebHost.UseKestrel(options => { options.ListenAnyIP(_webPort); });
                         builder.WebHost.UseUrls($"http://*:{_webPort}");
+                        _currentBindingMode = WebServerBindingMode.Lan;
                         Debug.WriteLine($"Web server configured for LAN access (0.0.0.0:{_webPort})");
                     }
                     else
                     {
                         builder.WebHost.UseKestrel(options => { options.ListenLocalhost(_webPort); });
                         builder.WebHost.UseUrls($"http://localhost:{_webPort}");
+                        _currentBindingMode = WebServerBindingMode.Localhost;
                         Debug.WriteLine($"Web server configured for localhost only");
                     }
 
@@ -235,6 +239,7 @@ public sealed class WebServerService : IWebServerService
                 }
                 catch (Exception ex)
                 {
+                    _currentBindingMode = WebServerBindingMode.Unknown;
                     Debug.WriteLine($"Web server error: {ex.Message}");
                 }
             }, _webServerCts.Token);
@@ -291,11 +296,13 @@ public sealed class WebServerService : IWebServerService
             _webServerCts?.Dispose();
             _webServerCts = null;
             _webServerTask = null;
+            _currentBindingMode = WebServerBindingMode.Unknown;
 
             Debug.WriteLine("Web frontend server stopped successfully");
         }
         catch (Exception ex)
         {
+            _currentBindingMode = WebServerBindingMode.Unknown;
             Debug.WriteLine($"Error stopping web server: {ex.Message}");
         }
     }

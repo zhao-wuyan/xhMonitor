@@ -8,6 +8,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using XhMonitor.Core.Common;
 using XhMonitor.Core.Configuration;
 using XhMonitor.Desktop.Services;
@@ -18,6 +19,8 @@ public class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiBaseUrl;
+    private readonly IWebServerService _webServerService;
+    private readonly ILogger<SettingsViewModel> _logger;
     // 端口属于基础设施配置：由服务端 appsettings.json (Server:Port) 管理，不在数据库/设置界面中暴露。
 
     // 外观设置
@@ -63,15 +66,23 @@ public class SettingsViewModel : INotifyPropertyChanged
     // Service 状态
     private bool _serviceIsAdmin = false;
     private string _serviceAdminMessage = string.Empty;
+    private WebServerBindingMode _webServerBindingMode = WebServerBindingMode.Unknown;
+    private string _webServerBindingMessage = "Web 监听状态未知";
 
     private bool _isSaving = false;
 
     /// <param name="httpClient">HttpClient instance from IHttpClientFactory</param>
-    public SettingsViewModel(HttpClient httpClient, IServiceDiscovery serviceDiscovery)
+    public SettingsViewModel(
+        HttpClient httpClient,
+        IServiceDiscovery serviceDiscovery,
+        IWebServerService webServerService,
+        ILogger<SettingsViewModel> logger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _webPort = serviceDiscovery.WebPort;
         _apiBaseUrl = $"{serviceDiscovery.ApiBaseUrl.TrimEnd('/')}/api/v1/config";
+        _webServerService = webServerService ?? throw new ArgumentNullException(nameof(webServerService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public string ThemeColor
@@ -325,6 +336,18 @@ public class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _serviceAdminMessage, value);
     }
 
+    public WebServerBindingMode WebServerBindingMode
+    {
+        get => _webServerBindingMode;
+        private set => SetProperty(ref _webServerBindingMode, value);
+    }
+
+    public string WebServerBindingMessage
+    {
+        get => _webServerBindingMessage;
+        private set => SetProperty(ref _webServerBindingMessage, value ?? string.Empty);
+    }
+
     public bool IsSaving
     {
         get => _isSaving;
@@ -414,6 +437,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             // 加载 Service 管理员状态
             await LoadAdminStatusAsync();
+            RefreshWebServerBindingStatus();
 
             return Result<bool, string>.Success(true);
         }
@@ -540,6 +564,26 @@ public class SettingsViewModel : INotifyPropertyChanged
         {
             ServiceIsAdmin = false;
             ServiceAdminMessage = "无法连接到 Service";
+        }
+    }
+
+    public void RefreshWebServerBindingStatus()
+    {
+        try
+        {
+            WebServerBindingMode = _webServerService.CurrentBindingMode;
+            WebServerBindingMessage = _webServerService.CurrentBindingMode switch
+            {
+                WebServerBindingMode.Lan => $"当前实际监听：0.0.0.0:{WebPort}（局域网可访问）",
+                WebServerBindingMode.Localhost => $"当前实际监听：localhost:{WebPort}（仅本机可访问）",
+                _ => "当前实际监听：未知（Web 服务尚未启动或状态未刷新）"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to refresh web server binding status.");
+            WebServerBindingMode = WebServerBindingMode.Unknown;
+            WebServerBindingMessage = "当前实际监听：未知（读取失败）";
         }
     }
 

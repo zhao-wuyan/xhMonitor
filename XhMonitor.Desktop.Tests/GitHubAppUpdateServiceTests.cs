@@ -84,17 +84,17 @@ public sealed class GitHubAppUpdateServiceTests
     public async Task CheckForUpdatesAsync_ShouldReturnUpToDate_AndDeleteInstallerMatchingCurrentVersion()
     {
         using var tempDir = new TemporaryDirectory();
-        var cachedInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.9-Lite-Setup.exe");
+        var cachedInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.17-Lite-Setup.exe");
         await File.WriteAllBytesAsync(cachedInstallerPath, [1, 2, 3]);
 
         using var handler = new FakeHttpMessageHandler(_ => CreateJsonResponse("""
         {
           "tag_name": "latest",
-          "name": "v0.2.9",
+          "name": "v0.2.17",
           "assets": [
             {
-              "name": "XhMonitor-v0.2.9-Lite-Setup.exe",
-              "browser_download_url": "https://example.com/download/XhMonitor-v0.2.9-Lite-Setup.exe"
+              "name": "XhMonitor-v0.2.17-Lite-Setup.exe",
+              "browser_download_url": "https://example.com/download/XhMonitor-v0.2.17-Lite-Setup.exe"
             }
           ]
         }
@@ -114,7 +114,7 @@ public sealed class GitHubAppUpdateServiceTests
     {
         using var tempDir = new TemporaryDirectory();
         var staleInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.8-Lite-Setup.exe");
-        var currentInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.9-Lite-Setup.exe");
+        var currentInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.17-Lite-Setup.exe");
         var latestInstallerPath = Path.Combine(tempDir.Path, "XhMonitor-v0.2.13-Lite-Setup.exe");
         await File.WriteAllBytesAsync(staleInstallerPath, [1]);
         await File.WriteAllBytesAsync(currentInstallerPath, [2]);
@@ -384,7 +384,7 @@ public sealed class GitHubAppUpdateServiceTests
     {
         public Version CurrentVersion => new(0, 2, 9);
 
-        public string CurrentVersionText => "0.2.9";
+        public string CurrentVersionText => "0.2.17";
     }
 
     private sealed class FakeTrayIconService : ITrayIconService
