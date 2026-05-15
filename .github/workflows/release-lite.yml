@@ -81,25 +81,112 @@ jobs:
             Write-Host "ChineseSimplified.isl already exists"
           }
 
-      - name: Download .NET Desktop Runtime for bundling
+      - name: Prepare runtime packages for bundling
         shell: pwsh
         run: |
           $runtimeDir = "tools\RuntimePkg"
-          $runtimeFile = "windowsdesktop-runtime-8.0.23-win-x64.exe"
-          $runtimeUrl = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/$runtimeFile"
-
           New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
-          $runtimePath = Join-Path $runtimeDir $runtimeFile
 
-          Write-Host "Downloading .NET Desktop Runtime 8.0.23..."
-          Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimePath
+          function Get-ExpectedRuntimePackages {
+            param([string]$IssPath)
 
-          if (Test-Path $runtimePath) {
+            $issContent = Get-Content $IssPath -Raw
+            $patterns = @{
+              DotNet = '#define DotNetRuntimeInstallerFileName "([^"]+)"'
+              AspNetCore = '#define AspNetCoreRuntimeInstallerFileName "([^"]+)"'
+              WindowsDesktop = '#define DotNetDesktopRuntimeInstallerFileName "([^"]+)"'
+            }
+
+            $result = @{}
+            foreach ($key in $patterns.Keys) {
+              $match = [regex]::Match($issContent, $patterns[$key])
+              if (-not $match.Success) {
+                throw "Failed to resolve $key runtime package from $IssPath"
+              }
+
+              $result[$key] = $match.Groups[1].Value
+            }
+
+            return $result
+          }
+
+          function Ensure-SingleRuntimePackage {
+            param(
+              [string]$RuntimeDir,
+              [string]$Pattern,
+              [string]$ExpectedFile,
+              [string]$DisplayName
+            )
+
+            $matches = Get-ChildItem -Path $RuntimeDir -File -Filter $Pattern
+            if ($matches.Count -gt 1) {
+              $names = ($matches | Sort-Object Name | ForEach-Object { $_.Name }) -join ", "
+              throw "$DisplayName has multiple matching packages in $RuntimeDir. Keep only one version: $names"
+            }
+
+            $runtimePath = Join-Path $RuntimeDir $ExpectedFile
+            if (Test-Path $runtimePath) {
+              $size = (Get-Item $runtimePath).Length / 1MB
+              Write-Host "Using existing $DisplayName: $runtimePath ($([math]::Round($size, 2)) MB)"
+              return
+            }
+
+            if ($matches.Count -eq 1) {
+              throw "$DisplayName expected $ExpectedFile, but found $($matches[0].Name). Update installer/XhMonitor.iss or replace the runtime package."
+            }
+          }
+
+          function Ensure-RuntimePackage {
+            param(
+              [string]$RuntimeDir,
+              [string]$ExpectedFile,
+              [string]$DisplayName
+            )
+
+            $runtimePath = Join-Path $RuntimeDir $ExpectedFile
+            if (Test-Path $runtimePath) {
+              return
+            }
+
+            if ($ExpectedFile -match '^[^-]+-runtime-(\d+\.\d+\.\d+)-win-x64\.exe$') {
+              $version = $matches[1]
+            } elseif ($ExpectedFile -match '^windowsdesktop-runtime-(\d+\.\d+\.\d+)-win-x64\.exe$') {
+              $version = $matches[1]
+            } else {
+              throw "Unsupported runtime package name: $ExpectedFile"
+            }
+
+            $runtimeKind = if ($ExpectedFile -like 'dotnet-runtime-*') {
+              'Runtime'
+            } elseif ($ExpectedFile -like 'aspnetcore-runtime-*') {
+              'aspnetcore/Runtime'
+            } elseif ($ExpectedFile -like 'windowsdesktop-runtime-*') {
+              'WindowsDesktop'
+            } else {
+              throw "Unsupported runtime package name: $ExpectedFile"
+            }
+
+            $runtimeUrl = "https://builds.dotnet.microsoft.com/dotnet/$runtimeKind/$version/$ExpectedFile"
+            Write-Host "Downloading $DisplayName $version..."
+            Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimePath
+
+            if (-not (Test-Path $runtimePath)) {
+              throw "Failed to download $DisplayName"
+            }
+
             $size = (Get-Item $runtimePath).Length / 1MB
             Write-Host "Downloaded: $runtimePath ($([math]::Round($size, 2)) MB)"
-          } else {
-            throw "Failed to download .NET Desktop Runtime"
           }
+
+          $runtimeFiles = Get-ExpectedRuntimePackages -IssPath "installer\XhMonitor.iss"
+
+          Ensure-SingleRuntimePackage -RuntimeDir $runtimeDir -Pattern "dotnet-runtime-8.*-win-x64.exe" -ExpectedFile $runtimeFiles.DotNet -DisplayName ".NET Runtime"
+          Ensure-SingleRuntimePackage -RuntimeDir $runtimeDir -Pattern "aspnetcore-runtime-8.*-win-x64.exe" -ExpectedFile $runtimeFiles.AspNetCore -DisplayName "ASP.NET Core Runtime"
+          Ensure-SingleRuntimePackage -RuntimeDir $runtimeDir -Pattern "windowsdesktop-runtime-8.*-win-x64.exe" -ExpectedFile $runtimeFiles.WindowsDesktop -DisplayName ".NET Desktop Runtime"
+
+          Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.DotNet -DisplayName ".NET Runtime"
+          Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.AspNetCore -DisplayName "ASP.NET Core Runtime"
+          Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.WindowsDesktop -DisplayName ".NET Desktop Runtime"
 
       # ===========================================
       # Build 1: Lite (no .NET runtime)

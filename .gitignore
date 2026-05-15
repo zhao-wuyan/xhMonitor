@@ -82,3 +82,8 @@ xhmonitor.db
 .ccw
 .claude/
 .gitnexus
+
+## Runtime packages tracked for release bundling
+!tools/
+!tools/RuntimePkg/
+!tools/RuntimePkg/*.exe
