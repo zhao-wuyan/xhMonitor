@@ -1,5 +1,6 @@
 using System.Net.Http;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using XhMonitor.Desktop.Services;
 using XhMonitor.Desktop.ViewModels;
 using Xunit;
@@ -17,10 +18,33 @@ public class SettingsViewModelTests
         public int WebPort { get; init; } = 35180;
     }
 
+    private sealed class FakeWebServerService : IWebServerService
+    {
+        public bool IsRunning { get; set; }
+        public WebServerBindingMode CurrentBindingMode { get; set; } = WebServerBindingMode.Unknown;
+
+        public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private static SettingsViewModel CreateViewModel(
+        FakeServiceDiscovery? serviceDiscovery = null,
+        FakeWebServerService? webServerService = null)
+    {
+        return new SettingsViewModel(
+            new HttpClient(),
+            serviceDiscovery ?? new FakeServiceDiscovery(),
+            webServerService ?? new FakeWebServerService(),
+            NullLogger<SettingsViewModel>.Instance);
+    }
+
     [Fact]
     public void LocalIpEndpoint_ShouldAppendPort_ForSingleIp()
     {
-        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery { WebPort = 35180 });
+        var vm = CreateViewModel(new FakeServiceDiscovery { WebPort = 35180 });
         vm.LocalIpAddress = "10.0.0.1";
 
         vm.LocalIpEndpoint.Should().Be("10.0.0.1:35180");
@@ -29,7 +53,7 @@ public class SettingsViewModelTests
     [Fact]
     public void LocalIpEndpoint_ShouldAppendPort_ForMultipleIps()
     {
-        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery { WebPort = 35180 });
+        var vm = CreateViewModel(new FakeServiceDiscovery { WebPort = 35180 });
         vm.LocalIpAddress = "10.0.0.1, 192.168.1.2";
 
         vm.LocalIpEndpoint.Should().Be("10.0.0.1:35180, 192.168.1.2:35180");
@@ -38,7 +62,7 @@ public class SettingsViewModelTests
     [Fact]
     public void LocalIpEndpoint_ShouldFallbackToPortHint_WhenNoValidIp()
     {
-        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery { WebPort = 35180 });
+        var vm = CreateViewModel(new FakeServiceDiscovery { WebPort = 35180 });
         vm.LocalIpAddress = "未检测到";
 
         vm.LocalIpEndpoint.Should().Be("未检测到 (端口 35180)");
@@ -47,7 +71,7 @@ public class SettingsViewModelTests
     [Fact]
     public void DockVisualStyle_ShouldNormalizeToBar_WhenInputInvalid()
     {
-        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery());
+        var vm = CreateViewModel();
 
         vm.DockVisualStyle = "unknown-style";
 
@@ -57,10 +81,27 @@ public class SettingsViewModelTests
     [Fact]
     public void DockVisualStyle_ShouldKeepText_WhenInputIsText()
     {
-        var vm = new SettingsViewModel(new HttpClient(), new FakeServiceDiscovery());
+        var vm = CreateViewModel();
 
         vm.DockVisualStyle = "Text";
 
         vm.DockVisualStyle.Should().Be("Text");
+    }
+
+    [Theory]
+    [InlineData(WebServerBindingMode.Lan, "当前实际监听：0.0.0.0:35180（局域网可访问）")]
+    [InlineData(WebServerBindingMode.Localhost, "当前实际监听：localhost:35180（仅本机可访问）")]
+    [InlineData(WebServerBindingMode.Unknown, "当前实际监听：未知（Web 服务尚未启动或状态未刷新）")]
+    public void RefreshWebServerBindingStatus_ShouldMapRuntimeBindingModeToMessage(
+        WebServerBindingMode bindingMode,
+        string expectedMessage)
+    {
+        var webServerService = new FakeWebServerService { CurrentBindingMode = bindingMode };
+        var vm = CreateViewModel(new FakeServiceDiscovery { WebPort = 35180 }, webServerService);
+
+        vm.RefreshWebServerBindingStatus();
+
+        vm.WebServerBindingMode.Should().Be(bindingMode);
+        vm.WebServerBindingMessage.Should().Be(expectedMessage);
     }
 }

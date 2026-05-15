@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:services="clr-namespace:XhMonitor.Desktop.Services"
         mc:Ignorable="d"
         Title="XhMonitor 设置" Height="720" Width="1080"
         MinWidth="760" MinHeight="640"
@@ -570,6 +571,54 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Web 实际监听状态 -->
+                                    <Border Margin="0,12,0,0"
+                                            Padding="10,6"
+                                            CornerRadius="4"
+                                            HorizontalAlignment="Stretch">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#2D2D30"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding WebServerBindingMode}" Value="{x:Static services:WebServerBindingMode.Lan}">
+                                                        <Setter Property="Background" Value="#1E3A1E"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding WebServerBindingMode}" Value="{x:Static services:WebServerBindingMode.Localhost}">
+                                                        <Setter Property="Background" Value="#1E2A3A"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding WebServerBindingMode}" Value="{x:Static services:WebServerBindingMode.Unknown}">
+                                                        <Setter Property="Background" Value="#3A2A1E"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="#888888"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding WebServerBindingMode}" Value="{x:Static services:WebServerBindingMode.Lan}">
+                                                                <Setter Property="Fill" Value="#4CAF50"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding WebServerBindingMode}" Value="{x:Static services:WebServerBindingMode.Localhost}">
+                                                                <Setter Property="Fill" Value="#64B5F6"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding WebServerBindingMode}" Value="{x:Static services:WebServerBindingMode.Unknown}">
+                                                                <Setter Property="Fill" Value="#FFB74D"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding WebServerBindingMessage}"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource TextPrimary}"
+                                                       TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
