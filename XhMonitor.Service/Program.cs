@@ -246,6 +246,14 @@ builder.Services.AddSingleton<IPowerProvider>(sp =>
         return new NullPowerProvider();
     }
 
+    // Only verified devices may load RyzenAdj/WinRing0. Keep this before resolving IRyzenAdjCli.
+    var deviceVerifier = sp.GetRequiredService<IDeviceVerifier>();
+    var deviceName = deviceVerifier.GetVerifiedDeviceName();
+    if (deviceName == null)
+    {
+        return new NullPowerProvider();
+    }
+
     var cli = sp.GetRequiredService<IRyzenAdjCli>();
     if (!cli.IsAvailable)
     {
@@ -255,12 +263,7 @@ builder.Services.AddSingleton<IPowerProvider>(sp =>
     var config = sp.GetRequiredService<IConfiguration>();
     var pollSeconds = config.GetValue<int>("Power:PollingIntervalSeconds", 3);
     var pollingInterval = pollSeconds <= 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(pollSeconds);
-
-    // 获取设备验证服务，使用验证后的设备方案
-    var deviceVerifier = sp.GetRequiredService<IDeviceVerifier>();
-    var deviceName = deviceVerifier.GetVerifiedDeviceName();
-    var schemes = deviceName != null ? deviceVerifier.GetSchemesForDevice(deviceName) : null;
-
+    var schemes = deviceVerifier.GetSchemesForDevice(deviceName);
     var logger = sp.GetRequiredService<ILogger<RyzenAdjPowerProvider>>();
     return new RyzenAdjPowerProvider(cli, pollingInterval, schemes, logger);
 });
