@@ -4,7 +4,7 @@
 ;
 ; 构建类型（通过命令行参数 /DBuildType=xxx 传递）：
 ;   - BuildType=Lite           : Lite 不带 .NET（最精简，不显示运行时安装选项）
-;   - BuildType=LiteNet8       : Lite 带 .NET 安装包（中等，显示运行时安装选项）
+;   - BuildType=LiteNet8       : Lite 带 .NET 安装包（中等，显示运行时安装选项并安装 3 个运行时）
 ;   - BuildType=Full           : 全量 self-contained（最大，无需运行时）
 ;
 ; 使用示例：
@@ -26,8 +26,16 @@
 #define MyAppURL "https://github.com/zhao-wuyan/xhMonitor"
 #define MyAppExeName "XhMonitor.Desktop.exe"
 #define MyAppServiceName "XhMonitor.Service.exe"
-#define DotNetDesktopRuntimeInstallerFileName "windowsdesktop-runtime-8.0.23-win-x64.exe"
-#define DotNetDesktopRuntimeDownloadUrl "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.23/windowsdesktop-runtime-8.0.23-win-x64.exe"
+#ifndef DotNetRuntimeInstallerFileName
+  #define DotNetRuntimeInstallerFileName "dotnet-runtime-8.0.27-win-x64.exe"
+#endif
+#ifndef AspNetCoreRuntimeInstallerFileName
+  #define AspNetCoreRuntimeInstallerFileName "aspnetcore-runtime-8.0.27-win-x64.exe"
+#endif
+#ifndef DotNetDesktopRuntimeInstallerFileName
+  #define DotNetDesktopRuntimeInstallerFileName "windowsdesktop-runtime-8.0.27-win-x64.exe"
+#endif
+#define DotNetRuntimeDownloadUrl "https://dotnet.microsoft.com/download/dotnet/8.0"
 
 ; 根据构建类型设置输出文件名
 #if BuildType == "Lite"
@@ -98,8 +106,8 @@ english.LaunchProgram=Launch %1
 english.AssocFileExtension=&Associate %1 with the %2 file extension
 english.StartupTask=Start automatically with Windows
 english.SystemSettings=System Settings:
-english.AutoInstallDotNetRuntime=Auto install .NET runtime
-english.AutoInstallDotNetRuntimeHint=Install .NET Desktop Runtime 8 silently if missing
+english.AutoInstallDotNetRuntime=Auto install required .NET runtimes
+english.AutoInstallDotNetRuntimeHint=Silently install the .NET 8 runtimes required by XhMonitor if missing
 ; 中文消息（启用中文语言后生效）
 ; chinesesimplified.CreateDesktopIcon=创建桌面快捷方式(&D)
 ; chinesesimplified.CreateQuickLaunchIcon=创建快速启动栏快捷方式(&Q)
@@ -108,8 +116,8 @@ english.AutoInstallDotNetRuntimeHint=Install .NET Desktop Runtime 8 silently if 
 ; chinesesimplified.StartupTask=开机自动启动
 ; chinesesimplified.SystemSettings=系统设置:
 chinesesimplified.SystemSettings=系统设置：
-chinesesimplified.AutoInstallDotNetRuntime=自动安装 .NET 运行环境
-chinesesimplified.AutoInstallDotNetRuntimeHint=若缺少 .NET Desktop Runtime 8，则静默安装后继续
+chinesesimplified.AutoInstallDotNetRuntime=自动安装所需的 .NET 运行环境
+chinesesimplified.AutoInstallDotNetRuntimeHint=若缺少 XhMonitor 所需的 .NET 8 运行环境，则静默安装后继续
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -132,8 +140,10 @@ Source: "..\release\XhMonitor-v{#MyAppVersion}\停止服务.bat"; DestDir: "{app
 Source: "..\release\XhMonitor-v{#MyAppVersion}\README.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 #if BuildType == "LiteNet8"
-; LiteNet8 版本：将 .NET Desktop Runtime 安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
-Source: "..\tools\RuntimePkg\{#DotNetDesktopRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy skipifsourcedoesntexist
+; LiteNet8 版本：将 .NET 运行时安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
+Source: "..\tools\RuntimePkg\{#DotNetRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy
+Source: "..\tools\RuntimePkg\{#AspNetCoreRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy
+Source: "..\tools\RuntimePkg\{#DotNetDesktopRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy
 #endif
 
 [Icons]
@@ -166,7 +176,10 @@ Type: filesandordirs; Name: "{app}\Service\*.db-wal"
 
 [Code]
 const
-  DotNetDesktopRuntimeSilentArgs = '/install /quiet /norestart';
+  DotNetRuntimeSilentArgs = '/install /quiet /norestart';
+  DotNetCoreSharedFrameworkName = 'Microsoft.NETCore.App';
+  AspNetCoreSharedFrameworkName = 'Microsoft.AspNetCore.App';
+  WindowsDesktopSharedFrameworkName = 'Microsoft.WindowsDesktop.App';
 
 var
   RuntimePromptShown: Boolean;
@@ -177,6 +190,14 @@ var
   ResultCode: Integer;
 begin
   Exec('taskkill.exe', '/F /IM ' + ProcessName, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure StopWinRingDriver();
+var
+  ResultCode: Integer;
+begin
+  Exec('sc.exe', 'stop WinRing0_1_2_0', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(2000);
 end;
 
 function IsChineseSystemLanguage(): Boolean;
@@ -200,8 +221,9 @@ begin
   Result := IsWin64 and RegQueryStringValue(HKLM64, 'SOFTWARE\dotnet\Setup\InstalledVersions\x64', 'InstallLocation', InstallLocation);
 end;
 
-function HasDesktopRuntime8AtBase(const BasePath: String): Boolean;
+function HasSharedFramework8AtBase(const BasePath: String; const SharedFrameworkName: String): Boolean;
 var
+  SharedFrameworkBase: String;
   SearchPattern: String;
   FindRec: TFindRec;
 begin
@@ -212,7 +234,14 @@ begin
     exit;
   end;
 
-  SearchPattern := AddBackslash(BasePath) + 'shared\Microsoft.WindowsDesktop.App\8.*';
+  SharedFrameworkBase := AddBackslash(AddBackslash(BasePath) + 'shared') + SharedFrameworkName;
+  if not DirExists(SharedFrameworkBase) then
+  begin
+    Result := False;
+    exit;
+  end;
+
+  SearchPattern := AddBackslash(SharedFrameworkBase) + '8.*';
 
   // 通过共享框架目录判断是否已安装 Desktop Runtime 8.x
   if FindFirst(SearchPattern, FindRec) then
@@ -226,14 +255,14 @@ begin
   end;
 end;
 
-function IsDotNetDesktopRuntime8Installed(): Boolean;
+function IsSharedFramework8Installed(const SharedFrameworkName: String): Boolean;
 var
   InstallLocation: String;
 begin
   // 先用注册表的 x64 安装路径（支持自定义目录）
   if TryGetDotNetInstallLocationX64(InstallLocation) then
   begin
-    if HasDesktopRuntime8AtBase(InstallLocation) then
+    if HasSharedFramework8AtBase(InstallLocation, SharedFrameworkName) then
     begin
       Result := True;
       exit;
@@ -243,13 +272,13 @@ begin
   // 再检查常见默认路径。注意：安装器可能为 32 位，此时 {pf} 会指向 Program Files (x86)，因此需要显式检查 {pf64}。
   if IsWin64 then
   begin
-    if HasDesktopRuntime8AtBase(ExpandConstant('{pf64}\dotnet')) then
+    if HasSharedFramework8AtBase(ExpandConstant('{pf64}\dotnet'), SharedFrameworkName) then
     begin
       Result := True;
       exit;
     end;
 
-    if HasDesktopRuntime8AtBase(ExpandConstant('{pf32}\dotnet')) then
+    if HasSharedFramework8AtBase(ExpandConstant('{pf32}\dotnet'), SharedFrameworkName) then
     begin
       Result := True;
       exit;
@@ -257,7 +286,7 @@ begin
   end
   else
   begin
-    if HasDesktopRuntime8AtBase(ExpandConstant('{pf}\dotnet')) then
+    if HasSharedFramework8AtBase(ExpandConstant('{pf}\dotnet'), SharedFrameworkName) then
     begin
       Result := True;
       exit;
@@ -265,13 +294,21 @@ begin
   end;
 
   // 兜底：有些环境可能为“用户级 dotnet”安装
-  if HasDesktopRuntime8AtBase(ExpandConstant('{localappdata}\Microsoft\dotnet')) then
+  if HasSharedFramework8AtBase(ExpandConstant('{localappdata}\Microsoft\dotnet'), SharedFrameworkName) then
   begin
     Result := True;
     exit;
   end;
 
   Result := False;
+end;
+
+function AreRequiredDotNetRuntimesInstalled(): Boolean;
+begin
+  Result :=
+    IsSharedFramework8Installed(DotNetCoreSharedFrameworkName) and
+    IsSharedFramework8Installed(AspNetCoreSharedFrameworkName) and
+    IsSharedFramework8Installed(WindowsDesktopSharedFrameworkName);
 end;
 
 function IsSelfContainedPackageInstalled(): Boolean;
@@ -291,49 +328,36 @@ begin
 #endif
 end;
 
-function InstallDotNetDesktopRuntimeIfNeeded(var NeedsRestart: Boolean): String;
+function InstallBundledRuntime(const InstallerFileName: String; const RuntimeDisplayName: String; var NeedsRestart: Boolean): Boolean;
 var
   InstallerPath: String;
   ResultCode: Integer;
 begin
-  Result := '';
-
-#if BuildType == "LiteNet8"
-  if not ShouldAutoInstallDotNetRuntime() then
-    exit;
-
-  if IsDotNetDesktopRuntime8Installed() then
-    exit;
-
-  Log('Auto-install .NET Desktop Runtime 8 requested and runtime is missing, start silent install.');
+  Result := False;
 
   try
-    ExtractTemporaryFile('{#DotNetDesktopRuntimeInstallerFileName}');
+    ExtractTemporaryFile(InstallerFileName);
   except
-    Log('Failed to extract bundled .NET Desktop Runtime installer, fallback to download prompt.');
-    ShowRuntimeMissingPrompt();
+    Log('Failed to extract bundled installer for ' + RuntimeDisplayName + '.');
     exit;
   end;
 
-  InstallerPath := ExpandConstant('{tmp}\{#DotNetDesktopRuntimeInstallerFileName}');
+  InstallerPath := ExpandConstant('{tmp}\' + InstallerFileName);
   if not FileExists(InstallerPath) then
   begin
-    Log('Bundled .NET Desktop Runtime installer not found, fallback to download prompt.');
-    ShowRuntimeMissingPrompt();
+    Log('Bundled installer not found for ' + RuntimeDisplayName + ': ' + InstallerPath);
     exit;
   end;
 
-  if not Exec(InstallerPath, DotNetDesktopRuntimeSilentArgs, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  if not Exec(InstallerPath, DotNetRuntimeSilentArgs, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
-    Log('Failed to execute bundled .NET Desktop Runtime installer, fallback to download prompt.');
-    ShowRuntimeMissingPrompt();
+    Log('Failed to execute bundled installer for ' + RuntimeDisplayName + '.');
     exit;
   end;
 
   if (ResultCode <> 0) and (ResultCode <> 3010) and (ResultCode <> 1641) then
   begin
-    Log('Bundled .NET Desktop Runtime installer exit code: ' + IntToStr(ResultCode) + ', fallback to download prompt.');
-    ShowRuntimeMissingPrompt();
+    Log('Bundled installer exit code for ' + RuntimeDisplayName + ': ' + IntToStr(ResultCode));
     exit;
   end;
 
@@ -341,21 +365,66 @@ begin
     NeedsRestart := True;
 
   Sleep(1500);
+  Result := True;
+end;
 
-  if not IsDotNetDesktopRuntime8Installed() then
+function InstallRequiredDotNetRuntimesIfNeeded(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+
+#if BuildType == "LiteNet8"
+  if not ShouldAutoInstallDotNetRuntime() then
+    exit;
+
+  if AreRequiredDotNetRuntimesInstalled() then
+    exit;
+
+  Log('Auto-install required .NET 8 runtimes requested and at least one required runtime is missing.');
+
+  if not IsSharedFramework8Installed(DotNetCoreSharedFrameworkName) then
   begin
-    Log('.NET Desktop Runtime still missing after silent install, fallback to download prompt.');
+    Log('Microsoft.NETCore.App 8.x is missing, start silent install.');
+    if not InstallBundledRuntime('{#DotNetRuntimeInstallerFileName}', '.NET Runtime 8', NeedsRestart) then
+    begin
+      ShowRuntimeMissingPrompt();
+      exit;
+    end;
+  end;
+
+  if not IsSharedFramework8Installed(AspNetCoreSharedFrameworkName) then
+  begin
+    Log('Microsoft.AspNetCore.App 8.x is missing, start silent install.');
+    if not InstallBundledRuntime('{#AspNetCoreRuntimeInstallerFileName}', 'ASP.NET Core Runtime 8', NeedsRestart) then
+    begin
+      ShowRuntimeMissingPrompt();
+      exit;
+    end;
+  end;
+
+  if not IsSharedFramework8Installed(WindowsDesktopSharedFrameworkName) then
+  begin
+    Log('Microsoft.WindowsDesktop.App 8.x is missing, start silent install.');
+    if not InstallBundledRuntime('{#DotNetDesktopRuntimeInstallerFileName}', '.NET Desktop Runtime 8', NeedsRestart) then
+    begin
+      ShowRuntimeMissingPrompt();
+      exit;
+    end;
+  end;
+
+  if not AreRequiredDotNetRuntimesInstalled() then
+  begin
+    Log('At least one required .NET 8 runtime is still missing after silent install, fallback to download prompt.');
     ShowRuntimeMissingPrompt();
     exit;
   end;
 
-  Log('.NET Desktop Runtime 8 silent installation completed.');
+  Log('Required .NET 8 runtimes silent installation completed.');
 #endif
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  Result := InstallDotNetDesktopRuntimeIfNeeded(NeedsRestart);
+  Result := InstallRequiredDotNetRuntimesIfNeeded(NeedsRestart);
 end;
 
 procedure OpenUrl(const Url: String);
@@ -377,7 +446,7 @@ begin
     exit;
 
   RuntimePromptShown := True;
-  DotNetUrl := '{#DotNetDesktopRuntimeDownloadUrl}';
+  DotNetUrl := '{#DotNetRuntimeDownloadUrl}';
   FullInstallerUrl := '{#MyAppURL}/releases';
 
   if IsChineseSystemLanguage() then
@@ -385,9 +454,13 @@ begin
     TitleText := '缺少运行环境';
     MessageText :=
       '要运行此应用程序，你必须安装或更新 .NET。' + #13#10 + #13#10 +
-      '当前安装包不带运行环境（.NET Desktop Runtime）。' + #13#10 +
+      '当前安装包缺少或未能成功安装 XhMonitor 所需的 .NET 8 运行环境。' + #13#10 +
       '检测到你的系统缺少相关运行环境，无法运行 XhMonitor。' + #13#10 + #13#10 +
-      '你需要安装运行环境，或者下载包含运行环境的完整安装包。' + #13#10 + #13#10 +
+      '至少需要以下运行环境：' + #13#10 +
+      '- Microsoft.NETCore.App 8.x' + #13#10 +
+      '- Microsoft.AspNetCore.App 8.x' + #13#10 +
+      '- Microsoft.WindowsDesktop.App 8.x' + #13#10 + #13#10 +
+      '你可以安装这些运行环境，或者下载包含运行环境的完整安装包。' + #13#10 + #13#10 +
       '运行环境下载：' + #13#10 + DotNetUrl + #13#10 + #13#10 +
       '完整安装包下载：' + #13#10 + FullInstallerUrl + #13#10 + #13#10 +
       '是否立即打开运行环境下载页面？';
@@ -397,9 +470,13 @@ begin
     TitleText := 'Missing runtime';
     MessageText :=
       'You must install or update .NET to run this application.' + #13#10 + #13#10 +
-      'This installer does not include the runtime (.NET Desktop Runtime).' + #13#10 +
-      'Your system is missing the required runtime, so XhMonitor cannot run.' + #13#10 + #13#10 +
-      'Install the runtime, or download the full installer that includes the runtime (self-contained).' + #13#10 + #13#10 +
+      'This installer is missing, or failed to install, the .NET 8 runtimes required by XhMonitor.' + #13#10 +
+      'Your system is missing at least one required runtime, so XhMonitor cannot run.' + #13#10 + #13#10 +
+      'Required runtimes:' + #13#10 +
+      '- Microsoft.NETCore.App 8.x' + #13#10 +
+      '- Microsoft.AspNetCore.App 8.x' + #13#10 +
+      '- Microsoft.WindowsDesktop.App 8.x' + #13#10 + #13#10 +
+      'Install the required runtimes, or download the full installer that includes the runtime (self-contained).' + #13#10 + #13#10 +
       'Runtime download:' + #13#10 + DotNetUrl + #13#10 + #13#10 +
       'Full installer download:' + #13#10 + FullInstallerUrl + #13#10 + #13#10 +
       'Open the runtime download page now?';
@@ -420,7 +497,7 @@ begin
     exit;
   end;
 
-  if IsDotNetDesktopRuntime8Installed() then
+  if AreRequiredDotNetRuntimesInstalled() then
   begin
     Result := True;
     exit;
@@ -448,13 +525,14 @@ begin
     // 强制终止可能残留的进程
     KillProcess('XhMonitor.Service.exe');
     KillProcess('XhMonitor.Desktop.exe');
+    StopWinRingDriver();
     Sleep(1000);
   end;
 
   // 精简版（不带运行环境）在运行前给出明确提示，避免弹出 .NET host 默认错误提示
   if CurStep = ssPostInstall then
   begin
-    if (not IsSelfContainedPackageInstalled()) and (not IsDotNetDesktopRuntime8Installed()) then
+    if (not IsSelfContainedPackageInstalled()) and (not AreRequiredDotNetRuntimesInstalled()) then
     begin
       ShowRuntimeMissingPrompt();
     end;
@@ -477,5 +555,6 @@ begin
   // 强制终止进程
   KillProcess('XhMonitor.Service.exe');
   KillProcess('XhMonitor.Desktop.exe');
+  StopWinRingDriver();
   Sleep(1000);
 end;

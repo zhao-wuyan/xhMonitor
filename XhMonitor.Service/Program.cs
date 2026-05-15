@@ -204,8 +204,25 @@ builder.Services.AddSingleton<IRyzenAdjCli>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var env = sp.GetRequiredService<IHostEnvironment>();
-    var logger = sp.GetRequiredService<ILogger<RyzenAdjCli>>();
-    return new RyzenAdjCli(config["Power:RyzenAdjPath"], env.ContentRootPath, logger);
+    var backend = config["Power:Backend"] ?? "Native";
+    var fallbackToCli = config.GetValue("Power:NativeFallbackToCli", true);
+
+    var cliLogger = sp.GetRequiredService<ILogger<RyzenAdjCli>>();
+    var cli = new RyzenAdjCli(config["Power:RyzenAdjPath"], env.ContentRootPath, cliLogger);
+    if (!string.Equals(backend, "Native", StringComparison.OrdinalIgnoreCase))
+    {
+        return cli;
+    }
+
+    var nativeLogger = sp.GetRequiredService<ILogger<RyzenAdjNativeClient>>();
+    var native = new RyzenAdjNativeClient(config["Power:RyzenAdjPath"], env.ContentRootPath, nativeLogger);
+    if (!fallbackToCli)
+    {
+        return native;
+    }
+
+    var fallbackLogger = sp.GetRequiredService<ILogger<RyzenAdjFallbackClient>>();
+    return new RyzenAdjFallbackClient(native, cli, fallbackLogger);
 });
 
 // 设备验证服务
@@ -229,6 +246,14 @@ builder.Services.AddSingleton<IPowerProvider>(sp =>
         return new NullPowerProvider();
     }
 
+    // Only verified devices may load RyzenAdj/WinRing0. Keep this before resolving IRyzenAdjCli.
+    var deviceVerifier = sp.GetRequiredService<IDeviceVerifier>();
+    var deviceName = deviceVerifier.GetVerifiedDeviceName();
+    if (deviceName == null)
+    {
+        return new NullPowerProvider();
+    }
+
     var cli = sp.GetRequiredService<IRyzenAdjCli>();
     if (!cli.IsAvailable)
     {
@@ -238,12 +263,7 @@ builder.Services.AddSingleton<IPowerProvider>(sp =>
     var config = sp.GetRequiredService<IConfiguration>();
     var pollSeconds = config.GetValue<int>("Power:PollingIntervalSeconds", 3);
     var pollingInterval = pollSeconds <= 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(pollSeconds);
-
-    // 获取设备验证服务，使用验证后的设备方案
-    var deviceVerifier = sp.GetRequiredService<IDeviceVerifier>();
-    var deviceName = deviceVerifier.GetVerifiedDeviceName();
-    var schemes = deviceName != null ? deviceVerifier.GetSchemesForDevice(deviceName) : null;
-
+    var schemes = deviceVerifier.GetSchemesForDevice(deviceName);
     var logger = sp.GetRequiredService<ILogger<RyzenAdjPowerProvider>>();
     return new RyzenAdjPowerProvider(cli, pollingInterval, schemes, logger);
 });

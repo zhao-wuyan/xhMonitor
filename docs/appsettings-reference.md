@@ -41,7 +41,9 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `Power:RyzenAdjPath` | string | `""` | `ryzenadj.exe` 路径（可目录或完整路径） |
+| `Power:Backend` | string | `Native` | 功耗后端：`Native` 常驻加载 `libryzenadj.dll`，`Cli` 调用 `ryzenadj.exe` |
+| `Power:NativeFallbackToCli` | bool | `true` | Native 后端初始化或调用失败时是否自动回退到 CLI 后端 |
+| `Power:RyzenAdjPath` | string | `""` | RyzenAdj 路径（可填目录、`libryzenadj.dll` 或 `ryzenadj.exe`；Native 会从同目录查找 DLL，CLI 会从同目录查找 exe） |
 | `Power:PollingIntervalSeconds` | int | `3` | 功耗采样周期（秒） |
 | `Power:DeviceVerification:Endpoint` | string | `http://127.0.0.1:5050/device_info` | 设备验证 API |
 | `Power:DeviceVerification:TimeoutSeconds` | int | `5` | 设备验证超时（秒） |

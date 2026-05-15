@@ -245,7 +245,9 @@ On `OnConnectedAsync`: immediately sends full `ProcessMetadataStore` snapshot to
 #### Power
 | Key | Default | Description |
 |-----|---------|-------------|
-| `Power:RyzenAdjPath` | `tools/RyzenAdj/ryzenadj.exe` | Path to RyzenAdj executable |
+| `Power:Backend` | `Native` | `Native` keeps `libryzenadj.dll` loaded; `Cli` invokes `ryzenadj.exe` |
+| `Power:NativeFallbackToCli` | `true` | Falls back to CLI when Native initialization or calls fail |
+| `Power:RyzenAdjPath` | `tools/RyzenAdj/` | Path to RyzenAdj directory, `libryzenadj.dll`, or `ryzenadj.exe` |
 | `Power:PollingIntervalSeconds` | `3` | Power status polling interval |
 | `Power:DeviceVerification:*` | -- | Device verification endpoint settings |
 

@@ -17,7 +17,7 @@ echo                           停止所有服务 (Stop Services)
 echo     =========================================================================
 echo.
 
-echo   [1/2] 正在停止后台服务...
+echo   [1/3] 正在停止后台服务...
 taskkill /F /IM XhMonitor.Service.exe > nul 2>&1
 if %errorlevel% equ 0 (
     echo         [OK] 后台服务已停止
@@ -26,12 +26,21 @@ if %errorlevel% equ 0 (
 )
 echo.
 
-echo   [2/2] 正在停止桌面客户端...
+echo   [2/3] 正在停止桌面客户端...
 taskkill /F /IM XhMonitor.Desktop.exe > nul 2>&1
 if %errorlevel% equ 0 (
     echo         [OK] 桌面客户端已停止
 ) else (
     echo         [-] 桌面客户端未运行
+)
+echo.
+
+echo   [3/3] 正在停止 WinRing0 驱动...
+sc stop WinRing0_1_2_0 > nul 2>&1
+if %errorlevel% equ 0 (
+    echo         [OK] WinRing0 驱动已停止
+) else (
+    echo         [-] WinRing0 驱动未运行或无需停止
 )
 echo.
 

@@ -28,6 +28,7 @@ public partial class SettingsWindow : Window
     private readonly IAppUpdateService _appUpdateService;
     private readonly AppUpdatePanelController _appUpdatePanelController;
     private readonly string _webUiUrl;
+    private readonly AsyncOperationGate _saveGate = new();
     private bool _originalStartupEnabled;
     private bool _isCompactLayout;
 
@@ -99,6 +100,31 @@ public partial class SettingsWindow : Window
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_saveGate.TryEnter(out var saveScope))
+        {
+            return;
+        }
+
+        var originalSaveContent = SaveButton.Content;
+        SaveButton.Content = "保存中...";
+        SaveButton.IsEnabled = false;
+
+        using (saveScope)
+        {
+            try
+            {
+                await SaveSettingsOnceAsync();
+            }
+            finally
+            {
+                SaveButton.Content = originalSaveContent;
+                SaveButton.IsEnabled = true;
+            }
+        }
+    }
+
+    private async Task SaveSettingsOnceAsync()
     {
         // 检查管理员模式变更
         var adminModeChanged = _viewModel.AdminMode != _viewModel.OriginalAdminMode;
@@ -256,14 +282,9 @@ public partial class SettingsWindow : Window
     /// </summary>
     private async Task ShowSaveSuccessHintAsync()
     {
-        var originalContent = SaveButton.Content;
         SaveButton.Content = "已保存 ✓";
-        SaveButton.IsEnabled = false;
 
         await Task.Delay(1500);
-
-        SaveButton.Content = originalContent;
-        SaveButton.IsEnabled = true;
     }
 
     private async Task ApplyDisplayModesAsync()

@@ -315,22 +315,27 @@ Copy-Item (Join-Path $RootDir "scripts\停止服务.bat") (Join-Path $OutputDir 
 $systemRequirement = if ($Lite) {
     @"
 - Windows 10/11 x64
-- 需要预先安装 .NET 8 Desktop Runtime
+- 需要预先安装 XhMonitor 所需的 .NET 8 运行环境
 
 【重要】安装步骤：
 1. 访问官方下载页：https://dotnet.microsoft.com/download/dotnet/8.0
-2. 找到 ".NET Desktop Runtime 8.0.x" 部分
-3. 下载 Windows x64 版本（约 55 MB）
-4. 安装后重启电脑
+2. 安装以下 Windows x64 运行环境：
+   - .NET Runtime 8.0.x
+   - ASP.NET Core Runtime 8.0.x
+   - .NET Desktop Runtime 8.0.x
+3. 安装完成后建议重启电脑
 
 【注意】
-- 不要下载 .NET Runtime（基础版），必须下载 Desktop Runtime！
-- 不要下载 .NET SDK（开发工具包），只需要 Runtime！
-- 如果已经安装了基础版 Runtime，仍需安装 Desktop Runtime
+- 不要只安装其中一个 Runtime，XhMonitor 同时依赖以上 3 个运行环境
+- 不需要安装 .NET SDK（开发工具包），只需要 Runtime
+- 如果已安装旧版本 8.x，仍建议更新到较新的 8.0.x 补丁版本
 
 【验证安装】
 打开命令提示符，运行：dotnet --list-runtimes
-应该看到：Microsoft.WindowsDesktop.App 8.0.x
+应该至少看到：
+- Microsoft.NETCore.App 8.0.x
+- Microsoft.AspNetCore.App 8.0.x
+- Microsoft.WindowsDesktop.App 8.0.x
 "@
 } else {
     "- Windows 10/11 x64`n- 无需安装 .NET Runtime（已包含）"

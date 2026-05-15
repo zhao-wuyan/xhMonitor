@@ -7,10 +7,14 @@ namespace XhMonitor.Service.Core;
 
 public class PerformanceMonitor
 {
+    private static readonly TimeSpan ProviderTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ProviderCooldown = TimeSpan.FromSeconds(15);
+
     private readonly ILogger<PerformanceMonitor> _logger;
     private readonly ProcessScanner _scanner;
     private readonly MetricProviderRegistry _registry;
     private readonly SemaphoreSlim _providerSemaphore = new(8, 8); // Limit to 8 concurrent provider calls
+    private readonly ConcurrentDictionary<string, DateTime> _providerCooldownUntilUtc = new(StringComparer.OrdinalIgnoreCase);
 
     public PerformanceMonitor(
         ILogger<PerformanceMonitor> logger,
@@ -100,19 +104,31 @@ public class PerformanceMonitor
 
     private async Task<(string MetricId, MetricValue Value)> CollectMetricSafeAsync(IMetricProvider provider, int processId)
     {
+        if (TryGetProviderCooldown(provider.MetricId, out var cooldownRemaining))
+        {
+            _logger.LogTrace(
+                "Provider {MetricId} is cooling down for another {CooldownMs}ms, skipping process {ProcessId}",
+                provider.MetricId,
+                Math.Max(0, cooldownRemaining.TotalMilliseconds),
+                processId);
+            return (provider.MetricId, MetricValue.Error("Cooling down after timeout"));
+        }
+
         await _providerSemaphore.WaitAsync();
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            using var cts = new CancellationTokenSource(ProviderTimeout);
             var collectTask = provider.CollectAsync(processId);
 
             if (await Task.WhenAny(collectTask, Task.Delay(Timeout.Infinite, cts.Token)) == collectTask)
             {
                 var value = await collectTask;
+                ClearProviderCooldown(provider.MetricId);
                 return (provider.MetricId, value);
             }
             else
             {
+                SetProviderCooldown(provider.MetricId);
                 _logger.LogWarning("Provider {MetricId} timed out for process {ProcessId}", provider.MetricId, processId);
                 return (provider.MetricId, MetricValue.Error("Timeout"));
             }
@@ -126,5 +142,39 @@ public class PerformanceMonitor
         {
             _providerSemaphore.Release();
         }
+    }
+
+    internal bool DebugIsProviderCoolingDown(string metricId)
+        => TryGetProviderCooldown(metricId, out _);
+
+    internal void DebugSetProviderCooldown(string metricId, DateTime untilUtc)
+        => _providerCooldownUntilUtc[metricId] = untilUtc;
+
+    private bool TryGetProviderCooldown(string metricId, out TimeSpan remaining)
+    {
+        remaining = TimeSpan.Zero;
+        if (!_providerCooldownUntilUtc.TryGetValue(metricId, out var cooldownUntilUtc))
+        {
+            return false;
+        }
+
+        remaining = cooldownUntilUtc - DateTime.UtcNow;
+        if (remaining > TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        _providerCooldownUntilUtc.TryRemove(metricId, out _);
+        return false;
+    }
+
+    private void SetProviderCooldown(string metricId)
+    {
+        _providerCooldownUntilUtc[metricId] = DateTime.UtcNow + ProviderCooldown;
+    }
+
+    private void ClearProviderCooldown(string metricId)
+    {
+        _providerCooldownUntilUtc.TryRemove(metricId, out _);
     }
 }
