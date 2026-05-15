@@ -127,7 +127,7 @@ jobs:
             $runtimePath = Join-Path $RuntimeDir $ExpectedFile
             if (Test-Path $runtimePath) {
               $size = (Get-Item $runtimePath).Length / 1MB
-              Write-Host "Using existing $DisplayName: $runtimePath ($([math]::Round($size, 2)) MB)"
+              Write-Host ("Using existing {0}: {1} ({2} MB)" -f $DisplayName, $runtimePath, [math]::Round($size, 2))
               return
             }
 
