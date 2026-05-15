@@ -127,6 +127,31 @@ function Find-InnoSetup {
     return $null
 }
 
+function Get-RuntimePackageFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RuntimeDir,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Pattern,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DisplayName
+    )
+
+    $matches = Get-ChildItem -Path $RuntimeDir -File -Filter $Pattern | Sort-Object Name
+    if ($matches.Count -eq 0) {
+        throw "缺少 $DisplayName 安装包，未找到匹配文件：$Pattern"
+    }
+
+    if ($matches.Count -gt 1) {
+        $names = ($matches | ForEach-Object { $_.Name }) -join "，"
+        throw "$DisplayName 安装包存在多个匹配文件，请只保留 1 个：$names"
+    }
+
+    return $matches[0]
+}
+
 # 检查 Inno Setup
 Write-Host "[1/3] 检查 Inno Setup..." -ForegroundColor Yellow
 $isccPath = Find-InnoSetup
@@ -184,14 +209,43 @@ if (-not $SkipPublish) {
 Write-Host ""
 Write-Host "[3/3] 编译安装程序..." -ForegroundColor Yellow
 
+$isccDefines = @()
+if ($BuildType -eq "LiteNet8") {
+    $runtimeDir = Join-Path $RootDir "tools\RuntimePkg"
+    if (-not (Test-Path $runtimeDir)) {
+        Write-Host "错误: 运行时安装包目录不存在: $runtimeDir" -ForegroundColor Red
+        exit 1
+    }
+
+    try {
+        $dotnetRuntime = Get-RuntimePackageFile -RuntimeDir $runtimeDir -Pattern "dotnet-runtime-8.*-win-x64.exe" -DisplayName ".NET Runtime"
+        $aspNetCoreRuntime = Get-RuntimePackageFile -RuntimeDir $runtimeDir -Pattern "aspnetcore-runtime-8.*-win-x64.exe" -DisplayName "ASP.NET Core Runtime"
+        $windowsDesktopRuntime = Get-RuntimePackageFile -RuntimeDir $runtimeDir -Pattern "windowsdesktop-runtime-8.*-win-x64.exe" -DisplayName ".NET Desktop Runtime"
+    }
+    catch {
+        Write-Host "错误: $_" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "✓ 检测到运行时安装包：" -ForegroundColor Green
+    Write-Host "  - $($dotnetRuntime.Name)" -ForegroundColor White
+    Write-Host "  - $($aspNetCoreRuntime.Name)" -ForegroundColor White
+    Write-Host "  - $($windowsDesktopRuntime.Name)" -ForegroundColor White
+
+    $isccDefines += "/DDotNetRuntimeInstallerFileName=$($dotnetRuntime.Name)"
+    $isccDefines += "/DAspNetCoreRuntimeInstallerFileName=$($aspNetCoreRuntime.Name)"
+    $isccDefines += "/DDotNetDesktopRuntimeInstallerFileName=$($windowsDesktopRuntime.Name)"
+}
+
 try {
     # 使用 ISCC 命令行参数传递版本号和构建类型
     Push-Location $InstallerDir
     $isccArgs = @(
         "/DMyAppVersion=$Version",
-        "/DBuildType=$BuildType",
-        $IssFile
+        "/DBuildType=$BuildType"
     )
+    $isccArgs += $isccDefines
+    $isccArgs += $IssFile
     & $isccPath @isccArgs
 
     if ($LASTEXITCODE -ne 0) {

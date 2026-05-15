@@ -4,7 +4,7 @@ using XhMonitor.Core.Models;
 
 namespace XhMonitor.Core.Services;
 
-public sealed class RyzenAdjFallbackClient : IRyzenAdjCli
+public sealed class RyzenAdjFallbackClient : IRyzenAdjCli, IDisposable, IAsyncDisposable
 {
     private readonly IRyzenAdjCli _primary;
     private readonly IRyzenAdjCli _fallback;
@@ -69,5 +69,31 @@ public sealed class RyzenAdjFallbackClient : IRyzenAdjCli
             ex,
             "[RyzenAdjFallbackClient] Primary RyzenAdj backend failed to {Operation}; falling back to CLI backend",
             operation);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_primary is IAsyncDisposable asyncPrimary)
+        {
+            await asyncPrimary.DisposeAsync().ConfigureAwait(false);
+        }
+        else if (_primary is IDisposable disposablePrimary)
+        {
+            disposablePrimary.Dispose();
+        }
+
+        if (_fallback is IAsyncDisposable asyncFallback)
+        {
+            await asyncFallback.DisposeAsync().ConfigureAwait(false);
+        }
+        else if (_fallback is IDisposable disposableFallback)
+        {
+            disposableFallback.Dispose();
+        }
+    }
+
+    public void Dispose()
+    {
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 }
