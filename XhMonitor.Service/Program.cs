@@ -127,7 +127,9 @@ try
         return;
     }
 
-    var connectionString = connectionResult.Value;
+    var connectionString = SqliteConnectionStringResolver.ResolveDataSourcePath(
+        connectionResult.Value,
+        appDirectory);
 
 builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
 {
