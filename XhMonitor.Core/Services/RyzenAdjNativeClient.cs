@@ -218,15 +218,11 @@ public sealed class RyzenAdjNativeClient : IRyzenAdjCli, IDisposable
 
     private sealed class NativeLibraryDirectoryScope : IDisposable
     {
-        private readonly string _previousDirectory;
-
         private NativeLibraryDirectoryScope(string? directory)
         {
-            _previousDirectory = Environment.CurrentDirectory;
             if (!string.IsNullOrWhiteSpace(directory))
             {
                 SetDllDirectory(directory);
-                Environment.CurrentDirectory = directory;
             }
         }
 
@@ -236,7 +232,6 @@ public sealed class RyzenAdjNativeClient : IRyzenAdjCli, IDisposable
         public void Dispose()
         {
             SetDllDirectory(null);
-            Environment.CurrentDirectory = _previousDirectory;
         }
     }
 
