@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "project_name": "xhMonitor",
+  "status": "initialized",
+  "current_milestone": null,
+  "current_task_id": null,
+  "milestones": [],
+  "artifacts": [
+    {
+      "path": ".workflow/project-tech.json",
+      "type": "codebase-analysis",
+      "description": "Existing project technology scan restored before initialization metadata recovery."
+    },
+    {
+      "path": ".workflow/specs",
+      "type": "spec-directory",
+      "description": "Existing project specification entries preserved during non-destructive recovery."
+    },
+    {
+      "path": ".workflow/issues",
+      "type": "issue-directory",
+      "description": "Existing workflow issue records preserved during non-destructive recovery."
+    }
+  ],
+  "last_updated": "2026-05-20T00:00:00+08:00",
+  "accumulated_context": {
+    "key_decisions": [
+      "Recovered missing maestro initialization metadata without overwriting existing .workflow assets.",
+      "Project is treated as an existing codebase with established .NET, WPF, ASP.NET Core, React, and SignalR architecture."
+    ],
+    "blockers": [],
+    "deferred": []
+  },
+  "transition_history": [
+    {
+      "timestamp": "2026-05-20T00:00:00+08:00",
+      "from": "partial-workflow",
+      "to": "initialized",
+      "reason": "Restored missing .workflow/project.md, .workflow/state.json, and .workflow/config.json while preserving existing workflow assets."
+    }
+  ],
+  "milestone_history": []
+}
