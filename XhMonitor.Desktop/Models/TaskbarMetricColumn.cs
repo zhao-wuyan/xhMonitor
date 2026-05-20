@@ -23,6 +23,7 @@ public sealed class TaskbarMetricColumn : INotifyPropertyChanged
     private double _barFillLength;
     private string _barDisplayText = string.Empty;
     private string _barUnitText = string.Empty;
+    private string _barTrailingText = string.Empty;
     private WpfBrush _barTextBrush = WpfBrushes.White;
     private Thickness _margin;
 
@@ -108,6 +109,12 @@ public sealed class TaskbarMetricColumn : INotifyPropertyChanged
     {
         get => _barUnitText;
         set => SetField(ref _barUnitText, value);
+    }
+
+    public string BarTrailingText
+    {
+        get => _barTrailingText;
+        set => SetField(ref _barTrailingText, value);
     }
 
     public WpfBrush BarTextBrush

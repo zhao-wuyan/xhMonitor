@@ -55,6 +55,10 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
     private const double BarNumericFontSizeHorizontal = 11;
     // 柱状条风格下，纵向数值字号（与 XAML BarNumericVertical 保持一致）。
     private const double BarNumericFontSizeVertical = 9;
+    // 横向柱状条右侧附加信息字号（例如温度）。
+    private const double BarTrailingFontSizeHorizontal = 9;
+    // 横向柱状条与右侧附加信息之间的间距。
+    private const double BarTrailingGap = 3;
     // 非贴边（顶部/底部/浮窗）横向模式左右内边距。
     private const double HorizontalModeHorizontalPadding = 8;
     // 文本风格左右贴边时左右内边距。
@@ -99,6 +103,8 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
     private double _totalGpu;
     private double _totalVram;
     private double _totalPower;
+    private double? _cpuTemperature;
+    private double? _gpuTemperature;
     private double _uploadSpeed;
     private double _downloadSpeed;
     private double _maxMemory;
@@ -237,6 +243,8 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         _totalGpu = data.TotalGpu;
         _totalVram = data.TotalVram;
         _totalPower = data.TotalPower;
+        _cpuTemperature = data.CpuTemperature;
+        _gpuTemperature = data.GpuTemperature;
         _uploadSpeed = data.UploadSpeed;
         _downloadSpeed = data.DownloadSpeed;
         _powerAvailable = data.PowerAvailable;
@@ -355,7 +363,7 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 : BuildDisplayText(metric.ValueMaxText, isVertical);
 
             var layout = useBarVisual
-                ? CalculateBarItemLayout(measureLabelCurrent, valueCurrent, measureLabelMax, valueMax, metric.IsBarMetric, isVertical)
+                ? CalculateBarItemLayout(measureLabelCurrent, valueCurrent, measureLabelMax, valueMax, metric.IsBarMetric, isVertical, metric.TrailingText)
                 : CalculateItemLayout(labelCurrent, valueCurrent, labelMax, valueMax, isVertical);
             maxColumnWidth = Math.Max(maxColumnWidth, layout.Width);
             maxRowHeight = Math.Max(maxRowHeight, layout.Height);
@@ -397,6 +405,9 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                     : string.Empty,
                 BarUnitText = useBarVisual
                     ? barUnitCurrent
+                    : string.Empty,
+                BarTrailingText = useBarVisual && metric.IsBarMetric && !isVertical
+                    ? metric.TrailingText
                     : string.Empty,
                 BarTextBrush = useBarVisual && metric.IsBarMetric
                     ? ResolveBarTextBrush(metric, isVertical)
@@ -470,6 +481,9 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 ? FormatBarPercent(metric.FillPercent, includeSuffix: !isVertical)
                 : string.Empty;
             column.BarUnitText = useBarVisual ? barUnitCurrent : string.Empty;
+            column.BarTrailingText = useBarVisual && metric.IsBarMetric && !isVertical
+                ? metric.TrailingText
+                : string.Empty;
             column.BarTextBrush = useBarVisual && metric.IsBarMetric
                 ? ResolveBarTextBrush(metric, isVertical)
                 : BarTextLightBrush;
@@ -489,7 +503,8 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 metric.LabelMaxText,
                 metric.ValueMaxText,
                 metric.IsBarMetric,
-                ExtractUnitToken(metric.ValueText));
+                ExtractUnitToken(metric.ValueText),
+                string.IsNullOrWhiteSpace(metric.TrailingText) ? string.Empty : "temperature");
         }
 
         if (!_hasLayoutSnapshot)
@@ -592,7 +607,8 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 "100%",
                 CpuLabelBrush,
                 true,
-                ClampPercent(_totalCpu)));
+                ClampPercent(_totalCpu),
+                FormatTemperature(_cpuTemperature)));
         }
 
         if (_displaySettings.MonitorMemory && IsFiniteNonNegative(_totalMemory))
@@ -618,7 +634,8 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 "100%",
                 GpuLabelBrush,
                 true,
-                ClampPercent(_totalGpu)));
+                ClampPercent(_totalGpu),
+                FormatTemperature(_gpuTemperature)));
         }
 
         if (_displaySettings.MonitorVram && HasVramMetricData())
@@ -795,13 +812,29 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         return includeSuffix ? $"{rounded}%" : rounded;
     }
 
+    private static string FormatTemperature(double? temperature)
+    {
+        if (!temperature.HasValue ||
+            double.IsNaN(temperature.Value) ||
+            double.IsInfinity(temperature.Value) ||
+            temperature.Value <= 0)
+        {
+            return string.Empty;
+        }
+
+        var rounded = Math.Round(temperature.Value, MidpointRounding.AwayFromZero)
+            .ToString(CultureInfo.InvariantCulture);
+        return $"{rounded}°C";
+    }
+
     private MetricLayout CalculateBarItemLayout(
         string labelCurrent,
         string valueCurrent,
         string labelMax,
         string valueMax,
         bool isBarMetric,
-        bool isVertical)
+        bool isVertical,
+        string trailingText)
     {
         var labelWidth = Math.Max(
             MeasureTextWidth(labelCurrent, _monoTypeface, LabelFontSize),
@@ -830,10 +863,15 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 return new MetricLayout(width, height);
             }
 
-            var horizontalWidth = Math.Ceiling(labelWidth + BarGroupGap + BarTrackWidthHorizontal + BarWidthSafetyBuffer);
+            var trailingWidth = string.IsNullOrWhiteSpace(trailingText)
+                ? 0
+                : BarTrailingGap + Math.Max(
+                    MeasureTextWidth(trailingText, _monoTypeface, BarTrailingFontSizeHorizontal),
+                    MeasureTextWidth("100°C", _monoTypeface, BarTrailingFontSizeHorizontal));
+            var horizontalWidth = Math.Ceiling(labelWidth + BarGroupGap + BarTrackWidthHorizontal + trailingWidth + BarWidthSafetyBuffer);
             var horizontalHeight = Math.Max(
                 MinVerticalItemHeight,
-                Math.Ceiling(Math.Max(labelHeight, BarTrackHeightHorizontal)));
+                Math.Ceiling(Math.Max(labelHeight, Math.Max(BarTrackHeightHorizontal, valueHeight))));
             return new MetricLayout(horizontalWidth, horizontalHeight);
         }
 
@@ -1121,6 +1159,7 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
             collection[i].BarFillLength = desired[i].BarFillLength;
             collection[i].BarDisplayText = desired[i].BarDisplayText;
             collection[i].BarUnitText = desired[i].BarUnitText;
+            collection[i].BarTrailingText = desired[i].BarTrailingText;
             collection[i].BarTextBrush = desired[i].BarTextBrush;
             collection[i].Margin = desired[i].Margin;
         }
@@ -1195,14 +1234,16 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         string ValueMaxText,
         WpfBrush LabelBrush,
         bool IsBarMetric,
-        double FillPercent);
+        double FillPercent,
+        string TrailingText = "");
 
     private readonly record struct ColumnLayoutMetricKey(
         string LabelText,
         string LabelMaxText,
         string ValueMaxText,
         bool IsBarMetric,
-        string UnitToken);
+        string UnitToken,
+        string TrailingText);
 
     private readonly record struct TextMeasureKey(
         string Text,

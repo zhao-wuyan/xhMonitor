@@ -28,6 +28,8 @@ export interface SystemUsage {
   timestamp: string;
   totalCpu: number;
   totalGpu: number;
+  cpuTemperature?: number | null;
+  gpuTemperature?: number | null;
   totalMemory: number;
   totalVram: number;
   disks?: DiskUsage[];

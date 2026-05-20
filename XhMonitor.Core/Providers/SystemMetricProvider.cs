@@ -23,6 +23,7 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     private readonly IPowerProvider? _powerProvider;
     private int _hardwareManagerInitAttempted;
     private int _storageSensorsMissingLogged;
+    private int _temperatureSensorsInvalidLogged;
     private static readonly string[] VirtualAdapterKeywords =
     [
         "vEthernet",
@@ -276,11 +277,14 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
         var powerStatus = await powerTask;
         var (uploadSpeed, downloadSpeed) = GetNetworkSpeed();
         var disks = GetDiskUsages();
+        var (cpuTemperature, gpuTemperature) = GetTemperatures();
 
         return new SystemUsage
         {
             TotalCpu = totalCpu,
             TotalGpu = totalGpu,
+            CpuTemperature = cpuTemperature,
+            GpuTemperature = gpuTemperature,
             TotalMemory = totalMemory,
             TotalVram = totalVram,
             UploadSpeed = uploadSpeed,
@@ -292,6 +296,77 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
             PowerSchemeIndex = powerStatus?.SchemeIndex,
             Timestamp = DateTime.UtcNow
         };
+    }
+
+    private (double? CpuTemperature, double? GpuTemperature) GetTemperatures()
+    {
+        EnsureHardwareManagerInitialized();
+        if (_hardwareManager == null || !_hardwareManager.IsAvailable)
+        {
+            return (null, null);
+        }
+
+        try
+        {
+            var sensors = _hardwareManager.GetSensorValues(
+                new[] { HardwareType.Cpu, HardwareType.GpuAmd, HardwareType.GpuNvidia, HardwareType.GpuIntel },
+                SensorType.Temperature);
+
+            var cpuTemperature = SelectTemperature(sensors, HardwareType.Cpu);
+            var gpuTemperature = SelectTemperature(sensors, HardwareType.GpuAmd, HardwareType.GpuNvidia, HardwareType.GpuIntel);
+            LogInvalidTemperatureSensorsOnce(sensors, cpuTemperature, gpuTemperature);
+            return (cpuTemperature, gpuTemperature);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "[SystemMetricProvider] Failed to read temperature sensors");
+            return (null, null);
+        }
+    }
+
+    private static double? SelectTemperature(IReadOnlyList<SensorReading> sensors, params HardwareType[] hardwareTypes)
+    {
+        var typeSet = hardwareTypes.ToHashSet();
+        var matching = sensors
+            .Where(s => typeSet.Contains(s.HardwareType) && IsUsableTemperature(s.Value))
+            .ToList();
+        if (matching.Count == 0)
+        {
+            return null;
+        }
+
+        var preferred = matching
+            .Where(s =>
+                s.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
+                s.Name.Contains("Core", StringComparison.OrdinalIgnoreCase) ||
+                s.Name.Contains("Hot Spot", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(s => s.Value)
+            .FirstOrDefault();
+        var selected = preferred ?? matching.OrderByDescending(s => s.Value).First();
+        return Math.Round(selected.Value, 1);
+    }
+
+    private static bool IsUsableTemperature(float value)
+        => !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
+
+    private void LogInvalidTemperatureSensorsOnce(
+        IReadOnlyList<SensorReading> sensors,
+        double? cpuTemperature,
+        double? gpuTemperature)
+    {
+        if ((cpuTemperature.HasValue && gpuTemperature.HasValue) ||
+            sensors.Count == 0 ||
+            Interlocked.Exchange(ref _temperatureSensorsInvalidLogged, 1) == 1)
+        {
+            return;
+        }
+
+        var invalidSensors = sensors
+            .Where(s => !IsUsableTemperature(s.Value))
+            .Select(s => $"{s.HardwareType}/{s.HardwareName}/{s.Name}={s.Value}");
+        _logger?.LogDebug(
+            "[SystemMetricProvider] Temperature sensors were found but returned invalid values. This often indicates insufficient privileges or driver access limitations. Sensors: {Sensors}",
+            string.Join(", ", invalidSensors));
     }
 
     private double GetMaxMemory()
@@ -1117,6 +1192,8 @@ public class SystemUsage
 {
     public double TotalCpu { get; set; }
     public double TotalGpu { get; set; }
+    public double? CpuTemperature { get; set; }
+    public double? GpuTemperature { get; set; }
     public double TotalMemory { get; set; }
     public double TotalVram { get; set; }
     public double UploadSpeed { get; set; }

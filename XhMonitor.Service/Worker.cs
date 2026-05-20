@@ -276,6 +276,8 @@ public class Worker : BackgroundService
             Timestamp = timestamp,
             TotalCpu = usage.TotalCpu,
             TotalGpu = usage.TotalGpu,
+            CpuTemperature = usage.CpuTemperature.HasValue ? Math.Round(usage.CpuTemperature.Value, 1) : (double?)null,
+            GpuTemperature = usage.GpuTemperature.HasValue ? Math.Round(usage.GpuTemperature.Value, 1) : (double?)null,
             TotalMemory = Math.Round(usage.TotalMemory, 1),
             TotalVram = Math.Round(usage.TotalVram, 1),
             UploadSpeed = Math.Max(0.0, usage.UploadSpeed),

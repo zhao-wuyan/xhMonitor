@@ -149,7 +149,7 @@ function AppShell() {
               const color = layoutState.themeColors[cardId as keyof typeof layoutState.themeColors];
 
               if (cardId === 'cpu') {
-                const cpuTemp = systemUsage?.totalCpu ? 40 + systemUsage.totalCpu * 0.5 : undefined;
+                const cpuTemp = systemUsage ? (systemUsage.cpuTemperature ?? Number.NaN) : undefined;
                 return (
                   <StatCard
                     key="cpu"
@@ -195,7 +195,7 @@ function AppShell() {
               }
 
               if (cardId === 'gpu') {
-                const gpuTemp = systemUsage?.totalGpu ? 35 + systemUsage.totalGpu * 0.6 : undefined;
+                const gpuTemp = systemUsage ? (systemUsage.gpuTemperature ?? Number.NaN) : undefined;
                 return (
                   <StatCard
                     key="gpu"

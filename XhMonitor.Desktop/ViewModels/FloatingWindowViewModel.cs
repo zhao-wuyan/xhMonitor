@@ -56,6 +56,20 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         set { _totalCpu = value; OnPropertyChanged(); }
     }
 
+    private double? _cpuTemperature;
+    public double? CpuTemperature
+    {
+        get => _cpuTemperature;
+        set
+        {
+            _cpuTemperature = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CpuTemperatureText));
+        }
+    }
+
+    public string CpuTemperatureText => FormatTemperatureText(CpuTemperature);
+
     private double _totalMemory;
     public double TotalMemory
     {
@@ -69,6 +83,20 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         get => _totalGpu;
         set { _totalGpu = value; OnPropertyChanged(); }
     }
+
+    private double? _gpuTemperature;
+    public double? GpuTemperature
+    {
+        get => _gpuTemperature;
+        set
+        {
+            _gpuTemperature = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(GpuTemperatureText));
+        }
+    }
+
+    public string GpuTemperatureText => FormatTemperatureText(GpuTemperature);
 
     private double _totalVram;
     public double TotalVram
@@ -310,7 +338,9 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
         _ = dispatcher.BeginInvoke(new Action(() =>
         {
             TotalCpu = data.TotalCpu;
+            CpuTemperature = data.CpuTemperature;
             TotalGpu = data.TotalGpu;
+            GpuTemperature = data.GpuTemperature;
             TotalMemory = data.TotalMemory;
             TotalVram = data.TotalVram;
             IsPowerVisible = data.PowerAvailable;
@@ -322,6 +352,19 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
             if (data.MaxVram > 0) MaxVram = data.MaxVram;
         }));
+    }
+
+    private static string FormatTemperatureText(double? temperature)
+    {
+        if (!temperature.HasValue ||
+            double.IsNaN(temperature.Value) ||
+            double.IsInfinity(temperature.Value) ||
+            temperature.Value <= 0)
+        {
+            return "-°C";
+        }
+
+        return $"{Math.Round(temperature.Value, MidpointRounding.AwayFromZero):0}°C";
     }
 
     private void OnProcessDataReceived(ProcessDataDto data)

@@ -128,6 +128,67 @@ public class TaskbarMetricsViewModelColumnRebuildTests
         vm.Columns[0].ValueText.Should().Be("2G");
     }
 
+    [Fact]
+    public void DoneWhen_TemperatureChangesInBarStyle_ShouldUpdateTrailingTextWithoutRebuildingColumns()
+    {
+        var vm = new TaskbarMetricsViewModel(new FakeServiceDiscovery());
+        vm.ApplySettings(new TaskbarDisplaySettings
+        {
+            MonitorCpu = true,
+            MonitorMemory = false,
+            MonitorGpu = true,
+            MonitorVram = false,
+            MonitorPower = false,
+            MonitorNetwork = false,
+            DockVisualStyle = TaskbarDisplaySettings.DockVisualStyleBar
+        });
+
+        ApplySystemUsage(vm, new SystemUsageDto
+        {
+            TotalCpu = 12,
+            CpuTemperature = 54.4,
+            TotalGpu = 34,
+            GpuTemperature = 61.6,
+            TotalMemory = 0,
+            TotalVram = 0,
+            TotalPower = 0,
+            UploadSpeed = 0,
+            DownloadSpeed = 0,
+            MaxMemory = 0,
+            MaxVram = 0,
+            MaxPower = 0,
+            PowerAvailable = false,
+            Timestamp = DateTime.UtcNow
+        });
+
+        var rebuildCountAfterBaseline = GetLayoutRebuildCount(vm);
+        vm.Columns.Should().HaveCount(2);
+        vm.Columns[0].BarTrailingText.Should().Be("54°C");
+        vm.Columns[1].BarTrailingText.Should().Be("62°C");
+
+        ApplySystemUsage(vm, new SystemUsageDto
+        {
+            TotalCpu = 13,
+            CpuTemperature = 55.2,
+            TotalGpu = 35,
+            GpuTemperature = 62.1,
+            TotalMemory = 0,
+            TotalVram = 0,
+            TotalPower = 0,
+            UploadSpeed = 0,
+            DownloadSpeed = 0,
+            MaxMemory = 0,
+            MaxVram = 0,
+            MaxPower = 0,
+            PowerAvailable = false,
+            Timestamp = DateTime.UtcNow
+        });
+
+        GetLayoutRebuildCount(vm).Should().Be(rebuildCountAfterBaseline);
+        vm.Columns[0].BarTrailingText.Should().Be("55°C");
+        vm.Columns[1].BarTrailingText.Should().Be("62°C");
+    }
+
     private static void ApplySystemUsage(TaskbarMetricsViewModel vm, SystemUsageDto data)
     {
         var method = typeof(TaskbarMetricsViewModel).GetMethod(

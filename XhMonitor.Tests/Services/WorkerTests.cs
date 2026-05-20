@@ -69,6 +69,8 @@ public class WorkerTests
             {
                 TotalCpu = 10.1,
                 TotalGpu = 20.2,
+                CpuTemperature = 51.24,
+                GpuTemperature = 62.56,
                 TotalMemory = 300.34,
                 TotalVram = 400.45,
                 UploadSpeed = 12.34,
@@ -96,6 +98,8 @@ public class WorkerTests
         var expectedDownloadSpeed = 56.78;
         var expectedMaxMemory = Math.Round(4096.04, 1);
         var expectedMaxVram = Math.Round(8192.09, 1);
+        var expectedCpuTemperature = Math.Round(51.24, 1);
+        var expectedGpuTemperature = Math.Round(62.56, 1);
 
         await InvokePrivateAsync(worker, "SendMemoryLimitAsync", limitsTimestamp, CancellationToken.None);
         await InvokePrivateAsync(worker, "SendSystemUsageAsync", usageTimestamp, CancellationToken.None);
@@ -104,6 +108,8 @@ public class WorkerTests
             GetAnonymousDateTime(o, "Timestamp") == usageTimestamp &&
             GetAnonymousDouble(o, "TotalCpu") == 10.1 &&
             GetAnonymousDouble(o, "TotalGpu") == 20.2 &&
+            GetAnonymousDouble(o, "CpuTemperature") == expectedCpuTemperature &&
+            GetAnonymousDouble(o, "GpuTemperature") == expectedGpuTemperature &&
             GetAnonymousDouble(o, "TotalMemory") == expectedTotalMemory &&
             GetAnonymousDouble(o, "TotalVram") == expectedTotalVram &&
             GetAnonymousDouble(o, "UploadSpeed") == expectedUploadSpeed &&

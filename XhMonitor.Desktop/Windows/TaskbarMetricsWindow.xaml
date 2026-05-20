@@ -159,6 +159,14 @@
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
                                         </Grid>
+                                        <TextBlock Text="{Binding BarTrailingText}"
+                                                   FontSize="9"
+                                                   FontWeight="Bold"
+                                                   FontFamily="JetBrains Mono, Consolas"
+                                                   Foreground="#B3FFFFFF"
+                                                   Margin="3,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   TextAlignment="Center"/>
                                     </StackPanel>
 
                                     <StackPanel x:Name="BarMetricVertical"

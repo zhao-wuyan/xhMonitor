@@ -263,6 +263,23 @@ public class FloatingWindowViewModelCollapsedRefreshTests
         row.DisplayName.Should().Be("llama-server: qwen");
     }
 
+    [Fact]
+    public void DoneWhen_TemperaturesAreAssigned_ShouldExposeRoundedDisplayText()
+    {
+        var vm = new FloatingWindowViewModel(
+            new FakeServiceDiscovery(),
+            Options.Create(new UiOptimizationOptions { EnableProcessRefreshThrottling = false }));
+
+        vm.CpuTemperatureText.Should().Be("-°C");
+        vm.GpuTemperatureText.Should().Be("-°C");
+
+        vm.CpuTemperature = 69.8;
+        vm.GpuTemperature = 48.2;
+
+        vm.CpuTemperatureText.Should().Be("70°C");
+        vm.GpuTemperatureText.Should().Be("48°C");
+    }
+
     private static void QueueProcessRefresh(FloatingWindowViewModel vm, IReadOnlyList<ProcessInfoDto> processes)
     {
         var method = typeof(FloatingWindowViewModel).GetMethod(
