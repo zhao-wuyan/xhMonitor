@@ -218,6 +218,40 @@ public class SystemMetricProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_IncludesCpuAndGpuTemperatures_WhenHardwareManagerAvailable()
+    {
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager
+            .Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), It.IsAny<SensorType>()))
+            .Returns((IReadOnlyCollection<HardwareType> types, SensorType sensorType) =>
+            {
+                if (sensorType != SensorType.Temperature)
+                {
+                    return new List<SensorReading>();
+                }
+
+                return new List<SensorReading>
+                {
+                    new(HardwareType.Cpu, "AMD Ryzen", SensorType.Temperature, "CPU Core #1", 51.2f),
+                    new(HardwareType.Cpu, "AMD Ryzen", SensorType.Temperature, "CPU Package", 58.6f),
+                    new(HardwareType.GpuNvidia, "NVIDIA RTX", SensorType.Temperature, "GPU Core", 63.4f)
+                };
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.CpuTemperature.Should().Be(58.6);
+        usage.GpuTemperature.Should().Be(63.4);
+    }
+
+    [Fact]
     public async Task DoneWhen_GetSystemUsageAsync_FallsBackToVirtualAdapters_WhenNoPhysicalAdaptersMatched()
     {
         var hardwareManager = new Mock<ILibreHardwareManager>();

@@ -28,6 +28,12 @@ public class SystemStatsDto
     [JsonPropertyName("totalGpu")]
     public double TotalGpu { get; set; }
 
+    [JsonPropertyName("cpuTemperature")]
+    public double? CpuTemperature { get; set; }
+
+    [JsonPropertyName("gpuTemperature")]
+    public double? GpuTemperature { get; set; }
+
     [JsonPropertyName("totalVram")]
     public double TotalVram { get; set; }
 
@@ -66,6 +72,12 @@ public class SystemUsageDto
 
     [JsonPropertyName("totalGpu")]
     public double TotalGpu { get; set; }
+
+    [JsonPropertyName("cpuTemperature")]
+    public double? CpuTemperature { get; set; }
+
+    [JsonPropertyName("gpuTemperature")]
+    public double? GpuTemperature { get; set; }
 
     [JsonPropertyName("totalMemory")]
     public double TotalMemory { get; set; }

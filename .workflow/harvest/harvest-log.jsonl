@@ -1,0 +1,1 @@
+{"fragment_id":"HRV-c639c05c","source_type":"session","source_id":"commit:b37b357","routed_to":"spec","target_id":".workflow/specs/debug-notes.md#sqlite-relative-path-current-directory","timestamp":"2026-05-20T16:24:50.0398642+08:00","title":"SQLite 相对路径不得依赖全局当前目录","confidence":0.95}

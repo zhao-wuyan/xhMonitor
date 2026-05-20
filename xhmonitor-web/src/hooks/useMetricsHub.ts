@@ -137,6 +137,8 @@ export const useMetricsHub = (options?: { processMetricsMode?: ProcessMetricsSub
         timestamp: (data.timestamp ?? data.Timestamp ?? new Date().toISOString()) as string,
         totalCpu: Number(data.totalCpu ?? data.TotalCpu ?? 0),
         totalGpu: Number(data.totalGpu ?? data.TotalGpu ?? 0),
+        cpuTemperature: toNullableNumber(data.cpuTemperature ?? data.CpuTemperature),
+        gpuTemperature: toNullableNumber(data.gpuTemperature ?? data.GpuTemperature),
         totalMemory: Number(data.totalMemory ?? data.TotalMemory ?? 0),
         totalVram: Number(data.totalVram ?? data.TotalVram ?? 0),
         disks,
