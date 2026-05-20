@@ -252,6 +252,41 @@ public class SystemMetricProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task DoneWhen_GetSystemUsageAsync_ReadsIntelCoreMaxAndIgnoresDistanceToTjMax()
+    {
+        var hardwareManager = new Mock<ILibreHardwareManager>();
+        hardwareManager.SetupGet(m => m.IsAvailable).Returns(true);
+        hardwareManager
+            .Setup(m => m.GetSensorValues(It.IsAny<IReadOnlyCollection<HardwareType>>(), It.IsAny<SensorType>()))
+            .Returns((IReadOnlyCollection<HardwareType> types, SensorType sensorType) =>
+            {
+                if (sensorType != SensorType.Temperature)
+                {
+                    return new List<SensorReading>();
+                }
+
+                return new List<SensorReading>
+                {
+                    new(HardwareType.Cpu, "12th Gen Intel Core i7-12700H", SensorType.Temperature, "Core Average", 53.3f),
+                    new(HardwareType.Cpu, "12th Gen Intel Core i7-12700H", SensorType.Temperature, "P-Core #4", 54.0f),
+                    new(HardwareType.Cpu, "12th Gen Intel Core i7-12700H", SensorType.Temperature, "CPU Package", 63.0f),
+                    new(HardwareType.Cpu, "12th Gen Intel Core i7-12700H", SensorType.Temperature, "Core Max", 70.0f),
+                    new(HardwareType.Cpu, "12th Gen Intel Core i7-12700H", SensorType.Temperature, "P-Core #4 Distance to TjMax", 90.0f)
+                };
+            });
+
+        using var provider = new SystemMetricProvider(
+            Array.Empty<IMetricProvider>(),
+            logger: null,
+            hardwareManager: hardwareManager.Object,
+            verifiedPhysicalAdapterSignatures: Array.Empty<string>());
+
+        var usage = await provider.GetSystemUsageAsync();
+
+        usage.CpuTemperature.Should().Be(70.0);
+    }
+
+    [Fact]
     public async Task DoneWhen_GetSystemUsageAsync_FallsBackToVirtualAdapters_WhenNoPhysicalAdaptersMatched()
     {
         var hardwareManager = new Mock<ILibreHardwareManager>();

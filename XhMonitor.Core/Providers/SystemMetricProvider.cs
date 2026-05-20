@@ -328,26 +328,52 @@ public class SystemMetricProvider : ISystemMetricProvider, IAsyncDisposable, IDi
     {
         var typeSet = hardwareTypes.ToHashSet();
         var matching = sensors
-            .Where(s => typeSet.Contains(s.HardwareType) && IsUsableTemperature(s.Value))
+            .Where(s => typeSet.Contains(s.HardwareType) &&
+                        IsUsableTemperature(s.Value) &&
+                        IsTemperatureSensorNameUsable(s.Name))
             .ToList();
         if (matching.Count == 0)
         {
             return null;
         }
 
-        var preferred = matching
-            .Where(s =>
-                s.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
-                s.Name.Contains("Core", StringComparison.OrdinalIgnoreCase) ||
-                s.Name.Contains("Hot Spot", StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(s => s.Value)
-            .FirstOrDefault();
-        var selected = preferred ?? matching.OrderByDescending(s => s.Value).First();
+        var selected = SelectPreferredTemperatureSensor(matching);
         return Math.Round(selected.Value, 1);
     }
 
     private static bool IsUsableTemperature(float value)
         => !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
+
+    private static bool IsTemperatureSensorNameUsable(string name)
+        => !name.Contains("Distance to TjMax", StringComparison.OrdinalIgnoreCase);
+
+    private static SensorReading SelectPreferredTemperatureSensor(IReadOnlyList<SensorReading> sensors)
+    {
+        var coreMax = sensors.FirstOrDefault(s => s.Name.Equals("Core Max", StringComparison.OrdinalIgnoreCase));
+        if (coreMax != null)
+        {
+            return coreMax;
+        }
+
+        var package = sensors.FirstOrDefault(s =>
+            s.Name.Equals("CPU Package", StringComparison.OrdinalIgnoreCase) ||
+            s.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
+            s.Name.Contains("Tctl", StringComparison.OrdinalIgnoreCase) ||
+            s.Name.Contains("Tdie", StringComparison.OrdinalIgnoreCase) ||
+            s.Name.Contains("Hot Spot", StringComparison.OrdinalIgnoreCase));
+        if (package != null)
+        {
+            return package;
+        }
+
+        var average = sensors.FirstOrDefault(s => s.Name.Equals("Core Average", StringComparison.OrdinalIgnoreCase));
+        if (average != null)
+        {
+            return average;
+        }
+
+        return sensors.OrderByDescending(s => s.Value).First();
+    }
 
     private void LogInvalidTemperatureSensorsOnce(
         IReadOnlyList<SensorReading> sensors,
