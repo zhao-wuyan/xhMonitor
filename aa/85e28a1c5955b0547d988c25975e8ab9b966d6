@@ -1,0 +1,31 @@
+.gitignore
+  s_0a9c97c062f378::t_c80b43cc7d852b 90-94
+.github/workflows/release-lite.yml
+  s_0a9c97c062f378::t_c80b43cc7d852b 190-212
+XhMonitor.Service/XhMonitor.Service.csproj
+  s_0a9c97c062f378::t_2189fddb68601a 46-47,52
+scripts/Update-RyzenAdj.ps1
+  s_0a9c97c062f378::t_43cbe25ee3a1ba 19-20
+  s_0a9c97c062f378::t_c80b43cc7d852b 1-18,21-107,112-117,120,123,126,129-130,135-143
+  s_0a9c97c062f378::t_82717cd1e3e440 108-111,118-119,121-122,124-125,127-128,131-134
+tools/RyzenAdj/README.md
+  s_0a9c97c062f378::t_c80b43cc7d852b 14,18-24
+tools/RyzenAdj/VERSION.txt
+  s_0a9c97c062f378::t_01b4bce4e6aefb 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "aa85e28a1c5955b0547d988c25975e8ab9b966d6",
+  "prompts": {},
+  "sessions": {
+    "s_0a9c97c062f378": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e54de-fd0b-7221-853d-12d7c039e9d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
