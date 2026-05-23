@@ -11,9 +11,17 @@
 从 RyzenAdj 的 GitHub Releases 下载 `ryzenadj-win64.zip`，解压后把以下文件放到本目录（保持同一目录）：
 
 - `ryzenadj.exe`
+- `libryzenadj.dll`
 - `WinRing0x64.dll`
 - `WinRing0x64.sys`
 - `inpoutx64.dll`
+- `VERSION.txt`
+
+可以直接运行下面的脚本更新到最新 release：
+
+```powershell
+.\scripts\Update-RyzenAdj.ps1
+```
 
 说明：
 - RyzenAdj 需要管理员权限才能正常读取/设置功耗相关指标。
