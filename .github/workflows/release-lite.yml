@@ -188,6 +188,30 @@ jobs:
           Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.AspNetCore -DisplayName "ASP.NET Core Runtime"
           Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.WindowsDesktop -DisplayName ".NET Desktop Runtime"
 
+      - name: Prepare RyzenAdj package
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Update-RyzenAdj.ps1
+
+          $requiredFiles = @(
+            "tools\RyzenAdj\ryzenadj.exe",
+            "tools\RyzenAdj\libryzenadj.dll",
+            "tools\RyzenAdj\WinRing0x64.dll",
+            "tools\RyzenAdj\WinRing0x64.sys",
+            "tools\RyzenAdj\inpoutx64.dll",
+            "tools\RyzenAdj\LICENSE.txt",
+            "tools\RyzenAdj\VERSION.txt"
+          )
+
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              throw "Required RyzenAdj file is missing: $file"
+            }
+          }
+
+          Write-Host "RyzenAdj package version:"
+          Get-Content "tools\RyzenAdj\VERSION.txt"
+
       # ===========================================
       # Build 1: Lite (no .NET runtime)
       # ===========================================

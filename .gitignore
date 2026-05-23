@@ -87,3 +87,8 @@ xhmonitor.db
 !tools/
 !tools/RuntimePkg/
 !tools/RuntimePkg/*.exe
+!tools/RyzenAdj/
+!tools/RyzenAdj/*.exe
+!tools/RyzenAdj/*.dll
+!tools/RyzenAdj/*.sys
+!tools/RyzenAdj/VERSION.txt

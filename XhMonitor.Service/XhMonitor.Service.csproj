@@ -43,12 +43,13 @@
       <TargetPath>tools\RyzenAdj\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </Content>
     <!-- Native RyzenAdj expects these dependencies next to the host executable on some systems. Keep root copies too. -->
-    <Content Update="..\tools\RyzenAdj\WinRing0x64.sys;..\tools\RyzenAdj\WinRing0x64.dll;..\tools\RyzenAdj\inpoutx64.dll">
+    <None Include="..\tools\RyzenAdj\WinRing0x64.sys;..\tools\RyzenAdj\WinRing0x64.dll;..\tools\RyzenAdj\inpoutx64.dll"
+          Link="%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <TargetPath>%(Filename)%(Extension)</TargetPath>
-    </Content>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="logs\" />
