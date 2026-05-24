@@ -13,8 +13,6 @@ namespace XhMonitor.Core.Services;
 /// </summary>
 public sealed class DeviceVerifier : IDeviceVerifier
 {
-    private const string SupportedPowerMonitoringPlatform = "amd_395";
-
     private readonly HttpClient _httpClient;
     private readonly DeviceVerificationOptions _options;
     private readonly ILogger<DeviceVerifier>? _logger;
@@ -218,7 +216,16 @@ public sealed class DeviceVerifier : IDeviceVerifier
             }
         }
 
-        // 尝试获取设备信息
+        var legacyMappings = _deviceMappings.Values
+            .Where(mapping => !mapping.HasHardwarePlatformCondition)
+            .ToArray();
+        if (legacyMappings.Length == 0)
+        {
+            _disabledReason = defaultErrMsg;
+            return;
+        }
+
+        // 仅兼容旧配置：没有 SMBIOS 条件的设备规则才需要远端 device_info。
         DeviceInfo? deviceInfo = null;
         try
         {
@@ -256,8 +263,6 @@ public sealed class DeviceVerifier : IDeviceVerifier
         }
 
         _cachedDeviceInfo = deviceInfo;
-        _powerMonitoringEnabled = _powerMonitoringEnabled ||
-            IsPlatformSupportedForPowerMonitoring(deviceInfo?.Platform);
 
         if (deviceInfo == null)
         {
@@ -266,13 +271,8 @@ public sealed class DeviceVerifier : IDeviceVerifier
         }
 
         // 匹配设备
-        foreach (var mapping in _deviceMappings.Values)
+        foreach (var mapping in legacyMappings)
         {
-            if (mapping.HasHardwarePlatformCondition)
-            {
-                continue;
-            }
-
             if (mapping.Matches(deviceInfo))
             {
                 _verifiedDeviceName = mapping.Name;
@@ -291,9 +291,6 @@ public sealed class DeviceVerifier : IDeviceVerifier
             "[DeviceVerifier] No matching device found for platform={Platform}, mac_authorized={MacAuthorized}",
             deviceInfo.Platform, deviceInfo.IsMacAuthorized);
     }
-
-    private static bool IsPlatformSupportedForPowerMonitoring(string? platform) =>
-        string.Equals(platform, SupportedPowerMonitoringPlatform, StringComparison.OrdinalIgnoreCase);
 
     private static bool IsHardwareSupportedForPowerMonitoring(HardwarePlatformInfo hardware)
     {

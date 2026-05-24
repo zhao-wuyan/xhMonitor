@@ -45,12 +45,12 @@
 | `Power:NativeFallbackToCli` | bool | `true` | Native 后端初始化或调用失败时是否自动回退到 CLI 后端 |
 | `Power:RyzenAdjPath` | string | `""` | RyzenAdj 路径（可填目录、`libryzenadj.dll` 或 `ryzenadj.exe`；Native 会从同目录查找 DLL，CLI 会从同目录查找 exe） |
 | `Power:PollingIntervalSeconds` | int | `3` | 功耗采样周期（秒） |
-| `Power:DeviceVerification:Endpoint` | string | `http://127.0.0.1:5050/device_info` | 设备验证 API |
+| `Power:DeviceVerification:Endpoint` | string | `http://127.0.0.1:5050/device_info` | 旧设备验证 API；不再用于开启功耗监控 |
 | `Power:DeviceVerification:TimeoutSeconds` | int | `5` | 设备验证超时（秒） |
 | `Power:DeviceVerification:SchemeProfiles` | object | 示例见文件 | 可复用功耗方案集合；key 由设备项的 `SchemeKey` 引用 |
 | `Power:DeviceVerification:Devices` | array | 示例见文件 | 设备识别规则；匹配成功后通过 `SchemeKey` 绑定功耗切换方案 |
 
-功耗监控按 `amd_395` 平台启用；启动阶段若 NovaStudio `/device_info` 暂不可用，会用本机 CPU 名称包含 `AMD Ryzen AI Max` 和 `395` 作为硬件兜底。`Devices` 主要控制功耗切换方案绑定。`Devices[*].SchemeKey` 没有匹配到 `SchemeProfiles`，或平台是 `amd_395` 但未命中具体设备规则时，只禁用功耗切换并记录日志；功耗监控和功耗展示继续按 RyzenAdj 可用性运行。
+功耗监控只按本机 CPU 名称启用：`processor_name` 同时包含 `AMD Ryzen AI Max` 和 `395`。NovaStudio `/device_info` 不再用于开启功耗监控，只保留给没有 SMBIOS 硬件条件的旧设备验证规则。`Devices` 主要控制功耗切换方案绑定。`Devices[*].SchemeKey` 没有匹配到 `SchemeProfiles`，或功耗监控已启用但未命中具体设备规则时，只禁用功耗切换并记录日志；功耗监控和功耗展示继续按 RyzenAdj 可用性运行。
 
 ### 1.6 `Server`
 

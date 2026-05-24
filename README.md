@@ -226,7 +226,7 @@ Write-Host ("XhMonitor AXB35-02 power switching verification: " + $(if ($isSuppo
 [pscustomobject]$hardware | Format-List
 ```
 
-当前功耗监控启用条件为平台识别到 `amd_395`；启动阶段如果 NovaStudio `/device_info` 暂不可用，会用 `processor_name` 包含 `AMD Ryzen AI Max` 和 `395` 作为硬件兜底。默认功耗切换方案识别条件为：`system_manufacturer` / `product_vendor` / `baseboard_manufacturer` 任一字段包含 `Six United` 或 `Sixunited`，并且 `system_model` / `product_name` / `baseboard_product` 任一字段包含 `AXB35-02`。
+当前功耗监控启用条件只看本机硬件：`processor_name` 同时包含 `AMD Ryzen AI Max` 和 `395`。默认功耗切换方案识别条件为：`system_manufacturer` / `product_vendor` / `baseboard_manufacturer` 任一字段包含 `Six United` 或 `Sixunited`，并且 `system_model` / `product_name` / `baseboard_product` 任一字段包含 `AXB35-02`。NovaStudio `/device_info` 不再用于开启功耗监控，只保留给没有 SMBIOS 硬件条件的旧设备验证规则。
 
 功耗切换档位通过 `Power:DeviceVerification:SchemeProfiles` 统一配置，设备识别项通过 `SchemeKey` 绑定对应方案。`SchemeKey` 缺失、没有匹配 profile 或未命中 AXB35-02 设备规则时，只禁用功耗切换并写日志，不影响 `amd_395` 平台的功耗监控和展示。
 
