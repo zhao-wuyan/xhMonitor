@@ -36,10 +36,9 @@ public class DeviceVerifierTests
     }
 
     [Fact]
-    public async Task DoneWhen_SmbiosDoesNotMatch_ButDeviceInfoIsAmd395_EnablesPowerMonitoringOnly()
+    public async Task DoneWhen_SmbiosDoesNotMatch_AndNoLegacyMapping_DoesNotCallDeviceInfoEndpoint()
     {
-        var httpClient = new HttpClient(new JsonHttpMessageHandler(
-            """{"platform":"amd_395","is_mac_authorized":false,"device_verified":true,"nova_id":null,"is_permanent":true,"usable_until":null,"use_cdk":false}"""));
+        var httpClient = new HttpClient(new ThrowingHttpMessageHandler());
         var verifier = new DeviceVerifier(
             httpClient,
             Options.Create(CreateOptions()),
@@ -56,10 +55,10 @@ public class DeviceVerifierTests
 
         var info = await verifier.GetDeviceInfoAsync();
 
-        info.Should().NotBeNull();
+        info.Should().BeNull();
         verifier.GetVerifiedDeviceName().Should().BeNull();
         verifier.GetDisabledReason().Should().Be("当前设备不支持此功能");
-        verifier.IsPowerMonitoringEnabled().Should().BeTrue();
+        verifier.IsPowerMonitoringEnabled().Should().BeFalse();
         verifier.IsPowerSwitchEnabled().Should().BeFalse();
     }
 
@@ -115,7 +114,7 @@ public class DeviceVerifierTests
 
         verifier.GetVerifiedDeviceName().Should().Be("LegacyAmd395");
         verifier.GetDisabledReason().Should().BeNull();
-        verifier.IsPowerMonitoringEnabled().Should().BeTrue();
+        verifier.IsPowerMonitoringEnabled().Should().BeFalse();
     }
 
     [Fact]

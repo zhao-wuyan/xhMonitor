@@ -8,7 +8,7 @@ namespace XhMonitor.Core.Configuration;
 public sealed class DeviceVerificationOptions
 {
     /// <summary>
-    /// 设备信息 API 端点
+    /// 旧设备验证 API 端点；不用于开启功耗监控
     /// </summary>
     public string Endpoint { get; set; } = "http://127.0.0.1:5050/device_info";
 
