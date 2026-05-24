@@ -1,0 +1,40 @@
+docs/appsettings-reference.md
+  s_891a896ca77e7e::t_fe46a3832fa2fa 53
+XhMonitor.Core/Services/WmiHardwarePlatformDetector.cs
+  s_891a896ca77e7e::t_44995c7e27f095 25,35-36
+XhMonitor.Core/Services/DeviceVerifier.cs
+  s_891a896ca77e7e::t_e0ea004dc223e1 259-260
+  s_891a896ca77e7e::t_677b9a5e7d7a35 200,298-304,308,316-317
+XhMonitor.Tests/Services/DeviceVerifierTests.cs
+  s_891a896ca77e7e::t_89ec8045c12305 27,54-55,66-90,138-139
+  s_891a896ca77e7e::t_42fe15219fd438 28
+README.md
+  s_96ed1f6870c9c0::t_5c078ac3a2d815 182-188
+  s_891a896ca77e7e::t_818eccb989f9b3 197,208,213,216-217,220,229
+XhMonitor.Core/Models/HardwarePlatformInfo.cs
+  s_891a896ca77e7e::t_f030330b0225f8 11-12,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "bdb1adde15e80f8bac7143c047cd4707aee2b225",
+  "prompts": {},
+  "sessions": {
+    "s_891a896ca77e7e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e57e9-dc08-7cb1-b11c-609f4142e058",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    },
+    "s_96ed1f6870c9c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5846-9b40-7400-84a5-8bfdbcdea520",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
