@@ -558,37 +558,5 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 [MIT License](LICENSE)
 
-## Changelog
-
-详见 [CHANGELOG.md](CHANGELOG.md)
-
-### 最新版本 v0.2.6 (2026-02-05)
-
-- ✨ 新增硬盘指标监控（读写速度、使用率）
-- ✨ 新增访问密钥认证功能
-- ✨ 新增局域网访问控制和 IP 白名单
-- ✨ 新增 API 端点集中化配置管理
-- ✨ 完善关于页面技术栈说明
-- ✨ Web 体验优化（指标顺序调整、标签图标和描述）
-- ✨ 设置布局优化和面板透明度调整
-- 🐛 修复设置页面相关问题
-
-### v0.2.0 (2026-01-27)
-
-- ✨ 新增进程排序优化
-- ✨ 新增单实例模式与设备验证
-- ✨ 新增点击动画视觉反馈
-- ✨ 新增管理员状态指示器
-- ✨ 设置页改版（监控开关、开机自启、管理员模式）
-- ✨ 新增功耗监控（RyzenAdj 集成）
-- ✨ 新增网络监控
-- 🐛 修复悬浮窗置顶卡片宽度问题
-- 🐛 修复 Web 端显存和内存占用显示问题
-
-## Contact
-
-- 项目地址：<repository-url>
-- Issue 追踪：<repository-url>/issues
-
 ---
 
