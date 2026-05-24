@@ -21,6 +21,11 @@ public sealed class DeviceVerificationOptions
     /// 设备-方案映射配置
     /// </summary>
     public List<DeviceSchemeMappingConfig> Devices { get; set; } = new();
+
+    /// <summary>
+    /// 可复用功耗方案配置
+    /// </summary>
+    public Dictionary<string, List<PowerSchemeConfig>> SchemeProfiles { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>
@@ -34,6 +39,11 @@ public sealed class DeviceSchemeMappingConfig
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// 引用 Power:DeviceVerification:SchemeProfiles 中的功耗方案 key
+    /// </summary>
+    public string SchemeKey { get; set; } = string.Empty;
+
+    /// <summary>
     /// 平台标识（如 amd_395）
     /// </summary>
     public string Platform { get; set; } = string.Empty;
@@ -44,18 +54,26 @@ public sealed class DeviceSchemeMappingConfig
     public bool RequireMacAuthorized { get; set; }
 
     /// <summary>
-    /// 功耗方案列表
+    /// 系统/产品/主板厂商匹配片段（来自 SMBIOS）
     /// </summary>
-    public List<PowerSchemeConfig> Schemes { get; set; } = new();
+    public string[] HardwareManufacturerContains { get; set; } = [];
+
+    /// <summary>
+    /// 系统/产品/主板型号匹配片段（来自 SMBIOS）
+    /// </summary>
+    public string[] HardwareModelContains { get; set; } = [];
 
     /// <summary>
     /// 转换为 DeviceSchemeMapping
     /// </summary>
-    public DeviceSchemeMapping ToMapping()
+    public DeviceSchemeMapping ToMapping(PowerScheme[] schemes)
     {
-        var condition = new DeviceVerificationCondition(Platform, RequireMacAuthorized);
-        var schemes = Schemes.Select(s => new PowerScheme(s.StapmWatts, s.FastWatts, s.SlowWatts)).ToArray();
-        return new DeviceSchemeMapping(Name, condition, schemes);
+        var condition = new DeviceVerificationCondition(
+            Platform,
+            RequireMacAuthorized,
+            HardwareManufacturerContains ?? [],
+            HardwareModelContains ?? []);
+        return new DeviceSchemeMapping(Name, SchemeKey, condition, schemes);
     }
 }
 

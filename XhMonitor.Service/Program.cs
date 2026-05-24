@@ -202,6 +202,12 @@ builder.Services.AddSingleton<IGpuVendorDetector>(sp =>
     return new WmiGpuVendorDetector(logger);
 });
 
+builder.Services.AddSingleton<IHardwarePlatformDetector>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<WmiHardwarePlatformDetector>>();
+    return new WmiHardwarePlatformDetector(logger);
+});
+
 builder.Services.AddSingleton<IRyzenAdjCli>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
@@ -236,8 +242,9 @@ builder.Services.AddSingleton<IDeviceVerifier>(sp =>
     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
     var httpClient = httpClientFactory.CreateClient(nameof(DeviceVerifier));
     var options = sp.GetRequiredService<IOptions<DeviceVerificationOptions>>();
+    var hardwarePlatformDetector = sp.GetRequiredService<IHardwarePlatformDetector>();
     var logger = sp.GetRequiredService<ILogger<DeviceVerifier>>();
-    return new DeviceVerifier(httpClient, options, logger);
+    return new DeviceVerifier(httpClient, options, hardwarePlatformDetector, logger);
 });
 
 builder.Services.AddSingleton<IPowerProvider>(sp =>
@@ -248,10 +255,9 @@ builder.Services.AddSingleton<IPowerProvider>(sp =>
         return new NullPowerProvider();
     }
 
-    // Only verified devices may load RyzenAdj/WinRing0. Keep this before resolving IRyzenAdjCli.
+    // Only supported AMD platforms may load RyzenAdj/WinRing0. Keep this before resolving IRyzenAdjCli.
     var deviceVerifier = sp.GetRequiredService<IDeviceVerifier>();
-    var deviceName = deviceVerifier.GetVerifiedDeviceName();
-    if (deviceName == null)
+    if (!deviceVerifier.IsPowerMonitoringEnabled())
     {
         return new NullPowerProvider();
     }
@@ -265,9 +271,17 @@ builder.Services.AddSingleton<IPowerProvider>(sp =>
     var config = sp.GetRequiredService<IConfiguration>();
     var pollSeconds = config.GetValue<int>("Power:PollingIntervalSeconds", 3);
     var pollingInterval = pollSeconds <= 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(pollSeconds);
-    var schemes = deviceVerifier.GetSchemesForDevice(deviceName);
-    var logger = sp.GetRequiredService<ILogger<RyzenAdjPowerProvider>>();
-    return new RyzenAdjPowerProvider(cli, pollingInterval, schemes, logger);
+    var deviceName = deviceVerifier.GetVerifiedDeviceName();
+    var schemes = deviceName == null ? [] : deviceVerifier.GetSchemesForDevice(deviceName);
+    var powerLogger = sp.GetRequiredService<ILogger<RyzenAdjPowerProvider>>();
+    if (schemes is not { Length: > 0 })
+    {
+        powerLogger.LogWarning(
+            "Power switching disabled for platform amd_395/device {DeviceName}: no matching SchemeKey profile configured. Power monitoring remains enabled.",
+            deviceName ?? "(none)");
+    }
+
+    return new RyzenAdjPowerProvider(cli, pollingInterval, schemes, powerLogger);
 });
 
 builder.Services.AddSingleton<ISystemMetricProvider, SystemMetricProvider>(sp =>

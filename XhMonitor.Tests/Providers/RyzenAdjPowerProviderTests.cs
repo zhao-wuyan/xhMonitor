@@ -58,6 +58,33 @@ public class RyzenAdjPowerProviderTests
     }
 
     [Fact]
+    public async Task DoneWhen_NoSchemesConfigured_GetStatusStillWorksButSwitchFails()
+    {
+        var cli = new Mock<IRyzenAdjCli>();
+        cli.SetupGet(x => x.IsAvailable).Returns(true);
+        cli.Setup(x => x.GetSnapshotAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RyzenAdjSnapshot(
+                StapmLimit: 60000,
+                StapmValue: 42000,
+                FastLimit: 90000,
+                FastValue: 80000,
+                SlowLimit: 60000,
+                SlowValue: 45000));
+
+        var provider = new RyzenAdjPowerProvider(cli.Object, TimeSpan.Zero, [], logger: null);
+
+        var status = await provider.GetStatusAsync();
+        var switchResult = await provider.SwitchToNextSchemeAsync();
+
+        status.Should().NotBeNull();
+        status!.LimitWatts.Should().BeApproximately(60.0, 0.001);
+        status.SchemeIndex.Should().BeNull();
+        switchResult.Success.Should().BeFalse();
+        switchResult.Message.Should().Contain("no power schemes configured");
+        cli.Verify(x => x.ApplyLimitsAsync(It.IsAny<PowerScheme>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task DoneWhen_GetStatusAsync_DisablesAfter3StartupFailures()
     {
         var cli = new Mock<IRyzenAdjCli>();
