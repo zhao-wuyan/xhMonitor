@@ -1,0 +1,31 @@
+XhMonitor.Core/Services/DeviceVerifier.cs
+  s_96ed1f6870c9c0::t_d6e4a38131532d 219-228,274
+docs/appsettings-reference.md
+  s_96ed1f6870c9c0::t_402505399144ff 48,53
+README.md
+  s_96ed1f6870c9c0::t_402505399144ff 229
+XhMonitor.Tests/Services/DeviceVerifierTests.cs
+  s_96ed1f6870c9c0::t_5be557f578917d 39,41,58
+  s_96ed1f6870c9c0::t_ae4d7b67691fc9 117
+  s_96ed1f6870c9c0::t_5c2017c923e680 61
+XhMonitor.Service/appsettings.json
+  s_96ed1f6870c9c0::t_36c6acb2a7f4ad 167
+XhMonitor.Core/Configuration/DeviceVerificationOptions.cs
+  s_96ed1f6870c9c0::t_4920805cb1d4a3 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "b6c211d3407977c4d1ef57753317602c7fab2a41",
+  "prompts": {},
+  "sessions": {
+    "s_96ed1f6870c9c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5846-9b40-7400-84a5-8bfdbcdea520",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
