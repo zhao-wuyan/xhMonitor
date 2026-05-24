@@ -23,7 +23,17 @@ public interface IDeviceVerifier
     PowerScheme[]? GetSchemesForDevice(string deviceName);
 
     /// <summary>
-    /// 检查功耗切换是否已启用（设备验证通过）
+    /// 检查功耗监控是否已启用（平台验证通过）
+    /// </summary>
+    bool IsPowerMonitoringEnabled();
+
+    /// <summary>
+    /// 异步检查功耗监控是否已启用（确保初始化完成）
+    /// </summary>
+    Task<bool> IsPowerMonitoringEnabledAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// 检查功耗切换是否已启用（设备验证通过且已配置方案）
     /// </summary>
     bool IsPowerSwitchEnabled();
 

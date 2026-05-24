@@ -43,7 +43,7 @@ public sealed class RyzenAdjPowerProvider : IPowerProvider
     {
         _ryzenAdj = ryzenAdj ?? throw new ArgumentNullException(nameof(ryzenAdj));
         _pollingInterval = pollingInterval < TimeSpan.Zero ? TimeSpan.Zero : pollingInterval;
-        _schemes = schemes is { Length: > 0 } ? schemes : DefaultSchemes;
+        _schemes = schemes ?? DefaultSchemes;
         _logger = logger;
     }
 
@@ -124,6 +124,12 @@ public sealed class RyzenAdjPowerProvider : IPowerProvider
         if (!IsSupported())
         {
             return PowerSchemeSwitchResult.Fail("RyzenAdj not available");
+        }
+
+        if (_schemes.Length == 0)
+        {
+            _logger?.LogWarning("[RyzenAdjPowerProvider] Power switching disabled because no power schemes are configured");
+            return PowerSchemeSwitchResult.Fail("Power switching disabled: no power schemes configured");
         }
 
         await _mutex.WaitAsync(ct).ConfigureAwait(false);
