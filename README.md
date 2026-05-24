@@ -179,7 +179,13 @@ await connection.start();
 
 ### 手动采集功耗设备识别信息
 
-功耗方案会从 SMBIOS/WMI 读取硬件平台信息。需要排查设备识别时，复制下面代码块内部内容到 PowerShell 直接执行即可；不需要保存 `.ps1` 文件，也不需要管理员权限。
+功耗方案会从 SMBIOS/WMI 读取硬件平台信息。需要排查设备识别时，优先复制下面“一行版”到 PowerShell 直接执行；不需要保存 `.ps1` 文件，也不需要管理员权限。PowerShell 的续行符是反引号 `` ` ``，不是 Linux shell 的 `\`，而且行尾不能有空格，所以这里用分号拼成单条命令更稳。
+
+```powershell
+& { $ErrorActionPreference = 'Stop'; function n($v) { if ([string]::IsNullOrWhiteSpace([string]$v)) { $null } else { ([string]$v).Trim() } }; $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem; $systemProduct = Get-CimInstance -ClassName Win32_ComputerSystemProduct; $baseBoard = Get-CimInstance -ClassName Win32_BaseBoard; $bios = Get-CimInstance -ClassName Win32_BIOS; $processor = Get-CimInstance -ClassName Win32_Processor | Select-Object -First 1; $hardware = [ordered]@{ system_manufacturer = n $computerSystem.Manufacturer; system_model = n $computerSystem.Model; product_vendor = n $systemProduct.Vendor; product_name = n $systemProduct.Name; baseboard_manufacturer = n $baseBoard.Manufacturer; baseboard_product = n $baseBoard.Product; bios_manufacturer = n $bios.Manufacturer; bios_version = n $bios.SMBIOSBIOSVersion; processor_name = n $processor.Name }; $matchesSixUnited = @($hardware.system_manufacturer, $hardware.product_vendor, $hardware.baseboard_manufacturer) -match '(?i)Six United|Sixunited'; $matchesAxb3502 = @($hardware.system_model, $hardware.product_name, $hardware.baseboard_product) -match '(?i)AXB35-02'; $matchesAmd395 = $hardware.processor_name -match '(?i)AMD Ryzen AI Max.*395'; $isSupported = [bool]$matchesSixUnited -and [bool]$matchesAxb3502; Write-Host ("XhMonitor amd_395 power monitoring verification: " + $(if ($matchesAmd395) { "PASS" } else { "FAIL" })); Write-Host ("XhMonitor AXB35-02 power switching verification: " + $(if ($isSupported) { "PASS" } else { "FAIL" })); [pscustomobject]@{ matches_amd395_monitoring = [bool]$matchesAmd395; matches_six_united_axb3502 = $isSupported; manufacturer_match = [bool]$matchesSixUnited; model_match = [bool]$matchesAxb3502 } | Format-List; [pscustomobject]$hardware | Format-List }
+```
+
+下面是同一逻辑的展开版，便于阅读和调整字段：
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -188,6 +194,7 @@ $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem
 $systemProduct = Get-CimInstance -ClassName Win32_ComputerSystemProduct
 $baseBoard = Get-CimInstance -ClassName Win32_BaseBoard
 $bios = Get-CimInstance -ClassName Win32_BIOS
+$processor = Get-CimInstance -ClassName Win32_Processor | Select-Object -First 1
 
 $hardware = [ordered]@{
     system_manufacturer    = n $computerSystem.Manufacturer
@@ -198,15 +205,19 @@ $hardware = [ordered]@{
     baseboard_product      = n $baseBoard.Product
     bios_manufacturer      = n $bios.Manufacturer
     bios_version           = n $bios.SMBIOSBIOSVersion
+    processor_name         = n $processor.Name
 }
 
 $matchesSixUnited = @($hardware.system_manufacturer, $hardware.product_vendor, $hardware.baseboard_manufacturer) -match '(?i)Six United|Sixunited'
 $matchesAxb3502 = @($hardware.system_model, $hardware.product_name, $hardware.baseboard_product) -match '(?i)AXB35-02'
+$matchesAmd395 = $hardware.processor_name -match '(?i)AMD Ryzen AI Max.*395'
 $isSupported = [bool]$matchesSixUnited -and [bool]$matchesAxb3502
 
-Write-Host ("XhMonitor AXB35-02 hardware verification: " + $(if ($isSupported) { "PASS" } else { "FAIL" }))
+Write-Host ("XhMonitor amd_395 power monitoring verification: " + $(if ($matchesAmd395) { "PASS" } else { "FAIL" }))
+Write-Host ("XhMonitor AXB35-02 power switching verification: " + $(if ($isSupported) { "PASS" } else { "FAIL" }))
 
 [pscustomobject]@{
+    matches_amd395_monitoring    = [bool]$matchesAmd395
     matches_six_united_axb3502 = $isSupported
     manufacturer_match         = [bool]$matchesSixUnited
     model_match                = [bool]$matchesAxb3502
@@ -215,7 +226,7 @@ Write-Host ("XhMonitor AXB35-02 hardware verification: " + $(if ($isSupported) {
 [pscustomobject]$hardware | Format-List
 ```
 
-当前功耗监控启用条件为平台识别到 `amd_395`。默认功耗切换方案识别条件为：`system_manufacturer` / `product_vendor` / `baseboard_manufacturer` 任一字段包含 `Six United` 或 `Sixunited`，并且 `system_model` / `product_name` / `baseboard_product` 任一字段包含 `AXB35-02`。
+当前功耗监控启用条件为平台识别到 `amd_395`；启动阶段如果 NovaStudio `/device_info` 暂不可用，会用 `processor_name` 包含 `AMD Ryzen AI Max` 和 `395` 作为硬件兜底。默认功耗切换方案识别条件为：`system_manufacturer` / `product_vendor` / `baseboard_manufacturer` 任一字段包含 `Six United` 或 `Sixunited`，并且 `system_model` / `product_name` / `baseboard_product` 任一字段包含 `AXB35-02`。
 
 功耗切换档位通过 `Power:DeviceVerification:SchemeProfiles` 统一配置，设备识别项通过 `SchemeKey` 绑定对应方案。`SchemeKey` 缺失、没有匹配 profile 或未命中 AXB35-02 设备规则时，只禁用功耗切换并写日志，不影响 `amd_395` 平台的功耗监控和展示。
 

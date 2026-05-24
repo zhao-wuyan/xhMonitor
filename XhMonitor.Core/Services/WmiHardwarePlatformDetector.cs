@@ -22,6 +22,7 @@ public sealed class WmiHardwarePlatformDetector(ILogger<WmiHardwarePlatformDetec
             var systemProduct = QueryFirst("Win32_ComputerSystemProduct", "Vendor", "Name");
             var baseBoard = QueryFirst("Win32_BaseBoard", "Manufacturer", "Product");
             var bios = QueryFirst("Win32_BIOS", "Manufacturer", "SMBIOSBIOSVersion");
+            var processor = QueryFirst("Win32_Processor", "Name");
 
             return new HardwarePlatformInfo(
                 SystemManufacturer: GetValue(computerSystem, "Manufacturer"),
@@ -31,7 +32,8 @@ public sealed class WmiHardwarePlatformDetector(ILogger<WmiHardwarePlatformDetec
                 BaseBoardManufacturer: GetValue(baseBoard, "Manufacturer"),
                 BaseBoardProduct: GetValue(baseBoard, "Product"),
                 BiosManufacturer: GetValue(bios, "Manufacturer"),
-                BiosVersion: GetValue(bios, "SMBIOSBIOSVersion"));
+                BiosVersion: GetValue(bios, "SMBIOSBIOSVersion"),
+                ProcessorName: GetValue(processor, "Name"));
         }
         catch (Exception ex)
         {

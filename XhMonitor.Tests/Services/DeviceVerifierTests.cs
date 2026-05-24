@@ -24,7 +24,8 @@ public class DeviceVerifierTests
                 BaseBoardManufacturer: "Six United Intelligent Tech. CO.,Ltd.",
                 BaseBoardProduct: "AXB35-02",
                 BiosManufacturer: "American Megatrends International, LLC.",
-                BiosVersion: "0.12.T90")));
+                BiosVersion: "0.12.T90",
+                ProcessorName: "AMD Ryzen AI Max+ 395 w/ Radeon 8060S")));
 
         await verifier.GetDeviceInfoAsync();
 
@@ -50,11 +51,37 @@ public class DeviceVerifierTests
                 BaseBoardManufacturer: null,
                 BaseBoardProduct: null,
                 BiosManufacturer: null,
-                BiosVersion: null)));
+                BiosVersion: null,
+                ProcessorName: null)));
 
         var info = await verifier.GetDeviceInfoAsync();
 
         info.Should().NotBeNull();
+        verifier.GetVerifiedDeviceName().Should().BeNull();
+        verifier.GetDisabledReason().Should().Be("当前设备不支持此功能");
+        verifier.IsPowerMonitoringEnabled().Should().BeTrue();
+        verifier.IsPowerSwitchEnabled().Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DoneWhen_HardwareCpuIsAmd395ButModelDoesNotMatch_EnablesMonitoringOnlyWithoutHttpEndpoint()
+    {
+        var verifier = new DeviceVerifier(
+            new HttpClient(new ThrowingHttpMessageHandler()),
+            Options.Create(CreateOptions()),
+            new StubHardwarePlatformDetector(new HardwarePlatformInfo(
+                SystemManufacturer: "Other Vendor",
+                SystemModel: "Other Model",
+                SystemProductVendor: null,
+                SystemProductName: null,
+                BaseBoardManufacturer: null,
+                BaseBoardProduct: null,
+                BiosManufacturer: null,
+                BiosVersion: null,
+                ProcessorName: "AMD Ryzen AI Max 395 w/ Radeon Graphics")));
+
+        await verifier.GetDeviceInfoAsync();
+
         verifier.GetVerifiedDeviceName().Should().BeNull();
         verifier.GetDisabledReason().Should().Be("当前设备不支持此功能");
         verifier.IsPowerMonitoringEnabled().Should().BeTrue();
@@ -108,7 +135,8 @@ public class DeviceVerifierTests
                 BaseBoardManufacturer: "Six United Intelligent Tech. CO.,Ltd.",
                 BaseBoardProduct: "AXB35-02",
                 BiosManufacturer: null,
-                BiosVersion: null)));
+                BiosVersion: null,
+                ProcessorName: "AMD Ryzen AI Max+ 395 w/ Radeon 8060S")));
 
         await verifier.GetDeviceInfoAsync();
 

@@ -197,6 +197,7 @@ public sealed class DeviceVerifier : IDeviceVerifier
         _cachedDeviceInfo = null;
         _cachedHardwarePlatformInfo = _hardwarePlatformDetector.Detect();
         LogHardwarePlatformInfo(_cachedHardwarePlatformInfo);
+        _powerMonitoringEnabled = IsHardwareSupportedForPowerMonitoring(_cachedHardwarePlatformInfo);
 
         foreach (var mapping in _deviceMappings.Values)
         {
@@ -208,7 +209,6 @@ public sealed class DeviceVerifier : IDeviceVerifier
             if (mapping.Matches(_cachedHardwarePlatformInfo))
             {
                 _verifiedDeviceName = mapping.Name;
-                _powerMonitoringEnabled = IsPlatformSupportedForPowerMonitoring(mapping.Condition.Platform);
                 _disabledReason = GetSwitchDisabledReason(mapping);
                 _logger?.LogInformation(
                     "[DeviceVerifier] Device verified by SMBIOS hardware platform: {DeviceName}, power_monitoring_enabled={PowerMonitoringEnabled}",
@@ -256,7 +256,8 @@ public sealed class DeviceVerifier : IDeviceVerifier
         }
 
         _cachedDeviceInfo = deviceInfo;
-        _powerMonitoringEnabled = IsPlatformSupportedForPowerMonitoring(deviceInfo?.Platform);
+        _powerMonitoringEnabled = _powerMonitoringEnabled ||
+            IsPlatformSupportedForPowerMonitoring(deviceInfo?.Platform);
 
         if (deviceInfo == null)
         {
@@ -294,10 +295,17 @@ public sealed class DeviceVerifier : IDeviceVerifier
     private static bool IsPlatformSupportedForPowerMonitoring(string? platform) =>
         string.Equals(platform, SupportedPowerMonitoringPlatform, StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsHardwareSupportedForPowerMonitoring(HardwarePlatformInfo hardware)
+    {
+        var processorName = hardware.ProcessorName ?? string.Empty;
+        return processorName.Contains("AMD Ryzen AI Max", StringComparison.OrdinalIgnoreCase) &&
+            processorName.Contains("395", StringComparison.OrdinalIgnoreCase);
+    }
+
     private void LogHardwarePlatformInfo(HardwarePlatformInfo hardware)
     {
         _logger?.LogInformation(
-            "[DeviceVerifier] SMBIOS platform: system_manufacturer={SystemManufacturer}, system_model={SystemModel}, product_vendor={ProductVendor}, product_name={ProductName}, baseboard_manufacturer={BaseBoardManufacturer}, baseboard_product={BaseBoardProduct}, bios_manufacturer={BiosManufacturer}, bios_version={BiosVersion}",
+            "[DeviceVerifier] SMBIOS platform: system_manufacturer={SystemManufacturer}, system_model={SystemModel}, product_vendor={ProductVendor}, product_name={ProductName}, baseboard_manufacturer={BaseBoardManufacturer}, baseboard_product={BaseBoardProduct}, bios_manufacturer={BiosManufacturer}, bios_version={BiosVersion}, processor_name={ProcessorName}",
             hardware.SystemManufacturer,
             hardware.SystemModel,
             hardware.SystemProductVendor,
@@ -305,7 +313,8 @@ public sealed class DeviceVerifier : IDeviceVerifier
             hardware.BaseBoardManufacturer,
             hardware.BaseBoardProduct,
             hardware.BiosManufacturer,
-            hardware.BiosVersion);
+            hardware.BiosVersion,
+            hardware.ProcessorName);
     }
 
     private static string? GetSwitchDisabledReason(DeviceSchemeMapping mapping) =>

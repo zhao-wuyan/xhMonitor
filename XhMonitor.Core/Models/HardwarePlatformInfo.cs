@@ -8,7 +8,8 @@ public sealed record HardwarePlatformInfo(
     string? BaseBoardManufacturer,
     string? BaseBoardProduct,
     string? BiosManufacturer,
-    string? BiosVersion)
+    string? BiosVersion,
+    string? ProcessorName)
 {
-    public static HardwarePlatformInfo Empty { get; } = new(null, null, null, null, null, null, null, null);
+    public static HardwarePlatformInfo Empty { get; } = new(null, null, null, null, null, null, null, null, null);
 }
