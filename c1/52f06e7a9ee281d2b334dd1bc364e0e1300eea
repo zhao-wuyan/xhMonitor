@@ -1,0 +1,70 @@
+XhMonitor.Service/Program.cs
+  s_891a896ca77e7e::t_008c96b6931f87 277-278,282-283
+  s_891a896ca77e7e::t_b91281957385a9 205-210,245,247
+  s_891a896ca77e7e::t_4bf4b2f89a5405 258,260,274-275,280-281
+  s_891a896ca77e7e::t_4efc85663c053c 276,279,284
+README.md
+  s_891a896ca77e7e::t_75a584c1906843 180,184,187-192,201-202,206,208-209,213
+  s_891a896ca77e7e::t_63481624fcc5df 182,185-186,193-200,203-205,207,210-212,214-215
+  s_891a896ca77e7e::t_308aee4762fe54 218-220
+  s_891a896ca77e7e::t_4ed417566a92f9 221
+XhMonitor.Core/Models/HardwarePlatformInfo.cs
+  s_891a896ca77e7e::t_5ea308d9cf9596 1-14
+XhMonitor.Tests/Services/DeviceVerifierTests.cs
+  s_891a896ca77e7e::t_00b7ffcc1cc010 1-32,34-37,39-57,90,120-135,137-147,149-151,153,163-184
+  s_891a896ca77e7e::t_a1be8501b78cfc 33,38,60-61,91,117,136
+  s_891a896ca77e7e::t_d36ae3c9c9c3e9 58-59,62-70,72,74,79-89
+  s_891a896ca77e7e::t_daecf3d35ec887 95,100,103-111,113-115,118-119
+  s_891a896ca77e7e::t_8eab6e32578dc6 116
+  s_891a896ca77e7e::t_9d6c3707db14c1 71,73,75-78,92-94,96-99,101-102,112,148,152,154-162
+docs/appsettings-reference.md
+  s_891a896ca77e7e::t_df051a2ccc5587 53
+  s_891a896ca77e7e::t_29ffef75bbef36 50-51
+XhMonitor.Core/Interfaces/IDeviceVerifier.cs
+  s_891a896ca77e7e::t_6c2f8b10c31527 26-36
+XhMonitor.Core/Services/WmiHardwarePlatformDetector.cs
+  s_891a896ca77e7e::t_f22a493df317f2 1-70
+XhMonitor.Core/Services/DeviceVerifier.cs
+  s_891a896ca77e7e::t_60f131051e0840 52,56-57
+  s_891a896ca77e7e::t_eded255ea3f693 16-17,27,87-97,195,211,214-220,259,293-295
+  s_891a896ca77e7e::t_c8cf5c96567714 100,106,114-116,212,278,310-312
+  s_891a896ca77e7e::t_1e03ab7ab12e2a 117-141
+  s_891a896ca77e7e::t_8b7e332cdce7ff 21,25,36-44,48,194,196-208,296-308
+  s_891a896ca77e7e::t_7374ca56732dca 60
+  s_891a896ca77e7e::t_604e39eb1382ae 51,53-55
+  s_891a896ca77e7e::t_7c3aa01099b4a7 270-274
+XhMonitor.Tests/Providers/RyzenAdjPowerProviderTests.cs
+  s_891a896ca77e7e::t_0f995319b443ad 61-84
+XhMonitor.Service/appsettings.json
+  s_891a896ca77e7e::t_b8feae83122d0a 20-21,182,186-191
+  s_891a896ca77e7e::t_e26ea7df44a0eb 171-179,183
+XhMonitor.Core/Interfaces/IHardwarePlatformDetector.cs
+  s_891a896ca77e7e::t_cae44ba7e77add 1-8
+XhMonitor.Core/Configuration/DeviceVerificationOptions.cs
+  s_891a896ca77e7e::t_fc0ba6a6e4f577 69
+  s_891a896ca77e7e::t_d1555bc07de288 24-28,41-44,76
+  s_891a896ca77e7e::t_a5c9bbee0f94a9 74-75
+  s_891a896ca77e7e::t_8cb21a77a1d82a 45,57-62,64,71-73
+XhMonitor.Core/Models/DeviceSchemeMapping.cs
+  s_891a896ca77e7e::t_478d0679fd5cd6 21-24,45
+  s_891a896ca77e7e::t_74a3f5a8942281 17
+  s_891a896ca77e7e::t_ea8d90a08a2802 8-10,43-44,50-77
+XhMonitor.Core/Providers/RyzenAdjPowerProvider.cs
+  s_891a896ca77e7e::t_f945ed43928d82 46,129-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "c152f06e7a9ee281d2b334dd1bc364e0e1300eea",
+  "prompts": {},
+  "sessions": {
+    "s_891a896ca77e7e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e57e9-dc08-7cb1-b11c-609f4142e058",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
