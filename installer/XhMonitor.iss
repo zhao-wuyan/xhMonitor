@@ -35,6 +35,9 @@
 #ifndef DotNetDesktopRuntimeInstallerFileName
   #define DotNetDesktopRuntimeInstallerFileName "windowsdesktop-runtime-8.0.27-win-x64.exe"
 #endif
+#ifndef PawnIOInstallerFileName
+  #define PawnIOInstallerFileName "PawnIO_setup.exe"
+#endif
 #define DotNetRuntimeDownloadUrl "https://dotnet.microsoft.com/download/dotnet/8.0"
 
 ; 根据构建类型设置输出文件名
@@ -108,6 +111,8 @@ english.StartupTask=Start automatically with Windows
 english.SystemSettings=System Settings:
 english.AutoInstallDotNetRuntime=Auto install required .NET runtimes
 english.AutoInstallDotNetRuntimeHint=Silently install the .NET 8 runtimes required by XhMonitor if missing
+english.AutoInstallPawnIO=Auto install PawnIO hardware driver
+english.AutoInstallPawnIOHint=Install PawnIO for LibreHardwareMonitor builds that support safer CPU sensor access
 ; 中文消息（启用中文语言后生效）
 ; chinesesimplified.CreateDesktopIcon=创建桌面快捷方式(&D)
 ; chinesesimplified.CreateQuickLaunchIcon=创建快速启动栏快捷方式(&Q)
@@ -118,10 +123,13 @@ english.AutoInstallDotNetRuntimeHint=Silently install the .NET 8 runtimes requir
 chinesesimplified.SystemSettings=系统设置：
 chinesesimplified.AutoInstallDotNetRuntime=自动安装所需的 .NET 运行环境
 chinesesimplified.AutoInstallDotNetRuntimeHint=若缺少 XhMonitor 所需的 .NET 8 运行环境，则静默安装后继续
+chinesesimplified.AutoInstallPawnIO=自动安装 PawnIO 硬件驱动
+chinesesimplified.AutoInstallPawnIOHint=为支持 PawnIO 的 LibreHardwareMonitor 版本安装更安全的 CPU 传感器访问驱动
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 ; Name: "startupicon"; Description: "{cm:StartupTask}"; GroupDescription: "{cm:SystemSettings}"; Flags: unchecked
+Name: "autoinstallpawnio"; Description: "{cm:AutoInstallPawnIO}"; GroupDescription: "{cm:SystemSettings}"
 ; 仅 LiteNet8 版本显示自动安装运行时的勾选框
 #if BuildType == "LiteNet8"
 Name: "autoinstalldotnetruntime"; Description: "{cm:AutoInstallDotNetRuntime}"; GroupDescription: "{cm:SystemSettings}"
@@ -138,6 +146,9 @@ Source: "..\release\XhMonitor-v{#MyAppVersion}\Service\*"; DestDir: "{app}\Servi
 Source: "..\release\XhMonitor-v{#MyAppVersion}\启动服务.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\release\XhMonitor-v{#MyAppVersion}\停止服务.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\release\XhMonitor-v{#MyAppVersion}\README.txt"; DestDir: "{app}"; Flags: ignoreversion
+
+; PawnIO is only used by newer LibreHardwareMonitor builds, but bundling it here keeps the installer ready for that path.
+Source: "..\tools\PawnIO\{#PawnIOInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy; Tasks: autoinstallpawnio
 
 #if BuildType == "LiteNet8"
 ; LiteNet8 版本：将 .NET 运行时安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
@@ -177,6 +188,7 @@ Type: filesandordirs; Name: "{app}\Service\*.db-wal"
 [Code]
 const
   DotNetRuntimeSilentArgs = '/install /quiet /norestart';
+  PawnIOInstallerSilentArgs = '-install -silent';
   DotNetCoreSharedFrameworkName = 'Microsoft.NETCore.App';
   AspNetCoreSharedFrameworkName = 'Microsoft.AspNetCore.App';
   WindowsDesktopSharedFrameworkName = 'Microsoft.WindowsDesktop.App';
@@ -328,6 +340,130 @@ begin
 #endif
 end;
 
+function IsPawnIOInstalled(): Boolean;
+var
+  ResultCode: Integer;
+  DisplayName: String;
+begin
+  if Exec('sc.exe', 'query PawnIO', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\PawnIO') then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegValueExists(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO', 'DisplayName') then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegValueExists(HKLM32, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO', 'DisplayName') then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegValueExists(HKCU, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO', 'DisplayName') then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO_is1', 'DisplayName', DisplayName) and
+     (Pos('PawnIO', DisplayName) > 0) then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegQueryStringValue(HKLM32, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO_is1', 'DisplayName', DisplayName) and
+     (Pos('PawnIO', DisplayName) > 0) then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegQueryStringValue(HKCU, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO_is1', 'DisplayName', DisplayName) and
+     (Pos('PawnIO', DisplayName) > 0) then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if RegKeyExists(HKLM64, 'SOFTWARE\PawnIO') or
+     RegKeyExists(HKLM32, 'SOFTWARE\PawnIO') or
+     RegKeyExists(HKCU, 'SOFTWARE\PawnIO') or
+     RegKeyExists(HKLM64, 'SOFTWARE\namazso\PawnIO') or
+     RegKeyExists(HKLM32, 'SOFTWARE\namazso\PawnIO') or
+     RegKeyExists(HKCU, 'SOFTWARE\namazso\PawnIO') then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  Result := False;
+end;
+
+function ShouldAutoInstallPawnIO(): Boolean;
+begin
+  Result := WizardIsTaskSelected('autoinstallpawnio') and (not IsPawnIOInstalled());
+end;
+
+function InstallBundledPawnIOIfNeeded(var NeedsRestart: Boolean): String;
+var
+  InstallerPath: String;
+  ResultCode: Integer;
+begin
+  Result := '';
+
+  if not ShouldAutoInstallPawnIO() then
+    exit;
+
+  Log('Auto-install PawnIO requested and PawnIO service is not installed.');
+
+  try
+    ExtractTemporaryFile('{#PawnIOInstallerFileName}');
+  except
+    Result := 'Failed to extract bundled PawnIO installer.';
+    Log(Result);
+    exit;
+  end;
+
+  InstallerPath := ExpandConstant('{tmp}\{#PawnIOInstallerFileName}');
+  if not FileExists(InstallerPath) then
+  begin
+    Result := 'Bundled PawnIO installer not found: ' + InstallerPath;
+    Log(Result);
+    exit;
+  end;
+
+  if not Exec(InstallerPath, PawnIOInstallerSilentArgs, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    Result := 'Failed to execute bundled PawnIO installer.';
+    Log(Result);
+    exit;
+  end;
+
+  if (ResultCode <> 0) and (ResultCode <> 3010) and (ResultCode <> 1641) then
+  begin
+    Result := 'Bundled PawnIO installer exit code: ' + IntToStr(ResultCode);
+    Log(Result);
+    exit;
+  end;
+
+  if (ResultCode = 3010) or (ResultCode = 1641) then
+    NeedsRestart := True;
+
+  Sleep(1500);
+  Log('PawnIO silent installation completed.');
+end;
+
 function InstallBundledRuntime(const InstallerFileName: String; const RuntimeDisplayName: String; var NeedsRestart: Boolean): Boolean;
 var
   InstallerPath: String;
@@ -425,6 +561,10 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := InstallRequiredDotNetRuntimesIfNeeded(NeedsRestart);
+  if Result <> '' then
+    exit;
+
+  Result := InstallBundledPawnIOIfNeeded(NeedsRestart);
 end;
 
 procedure OpenUrl(const Url: String);
