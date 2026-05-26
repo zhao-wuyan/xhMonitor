@@ -92,3 +92,6 @@ xhmonitor.db
 !tools/RyzenAdj/*.dll
 !tools/RyzenAdj/*.sys
 !tools/RyzenAdj/VERSION.txt
+!tools/PawnIO/
+!tools/PawnIO/PawnIO_setup.exe
+!tools/PawnIO/VERSION.txt
