@@ -1,0 +1,28 @@
+installer/XhMonitor.iss
+  s_1a77a1dfe7dc8d::t_dcdab6e1d645c4 132
+  s_1a77a1dfe7dc8d::t_5f7766f520f274 191
+  s_1a77a1dfe7dc8d::t_be5615434b4039 346-410
+  s_1a77a1dfe7dc8d::t_7317349dc5618e 38-40,114-115,126-127,150-151,343-345,413-466,564-567
+scripts/Update-PawnIO.ps1
+  s_1a77a1dfe7dc8d::t_7317349dc5618e 1-38
+tools/PawnIO/VERSION.txt
+  s_1a77a1dfe7dc8d::t_2ecb0be7987a1e 1
+.gitignore
+  s_1a77a1dfe7dc8d::t_7317349dc5618e 95-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "646fe3d47a4e8fc475638e30e22423ff84154100",
+  "prompts": {},
+  "sessions": {
+    "s_1a77a1dfe7dc8d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e6259-cc00-7131-8cd8-91711840a1c4",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
