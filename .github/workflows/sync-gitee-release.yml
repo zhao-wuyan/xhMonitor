@@ -19,6 +19,7 @@ jobs:
       GITEE_OWNER: zhaowuyan
       GITEE_REPO: xhMonitor
       GITEE_API_BASE: https://gitee.com/api/v5
+      GITEE_MAX_ATTACHMENT_BYTES: 104857600
 
     steps:
       - name: Checkout
@@ -260,7 +261,17 @@ jobs:
 
             for asset in "${assets[@]}"; do
               local name
+              local size_bytes
+              local size_mb
               name="$(basename "$asset")"
+              size_bytes="$(stat -c '%s' "$asset")"
+              size_mb="$(awk "BEGIN { printf \"%.2f\", $size_bytes / 1024 / 1024 }")"
+
+              if (( size_bytes > GITEE_MAX_ATTACHMENT_BYTES )); then
+                echo "Skipping Gitee attachment: $name (${size_mb} MB) exceeds Gitee 100 MB release attachment limit."
+                continue
+              fi
+
               local attachment_id
               attachment_id="$(jq -r --arg name "$name" '.[]? | select(.name == $name) | .id' attachments.json | head -n 1)"
 
@@ -269,8 +280,9 @@ jobs:
                 api_delete "/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id/attach_files/$attachment_id" > /dev/null
               fi
 
-              echo "Uploading Gitee attachment: $name"
-              curl -sS -X POST "$GITEE_API_BASE/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id/attach_files" \
+              echo "Uploading Gitee attachment: $name (${size_mb} MB)"
+              curl --fail-with-body --show-error --connect-timeout 30 --max-time 900 \
+                -X POST "$GITEE_API_BASE/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id/attach_files" \
                 -F "access_token=$GITEE_TOKEN" \
                 -F "file=@$asset" > upload-response.json
             done
