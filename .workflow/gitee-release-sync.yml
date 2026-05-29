@@ -144,11 +144,22 @@ stages:
             local title="$2"
             local body_file="$3"
             local release_id
+            local expected_body
 
             release_id="$(ensure_release "$tag" "$title" "$body_file")"
             api_patch "/repos/$GITEE_OWNER/$GITEE_REPO_NAME/releases/$release_id" \
               --data-urlencode "name=$title" \
               --data-urlencode "body@${body_file}" > release-update-response.json
+
+            expected_body="$(cat "$body_file")"
+            if [[ "$(jq -r '.name // ""' release-update-response.json)" != "$title" ||
+                  "$(jq -r '.body // ""' release-update-response.json)" != "$expected_body" ]]; then
+              echo "Gitee release metadata PATCH did not persist expected name/body for tag: $tag" >&2
+              echo "Update response:" >&2
+              cat release-update-response.json >&2
+              exit 1
+            fi
+
             echo "$release_id"
           }
 

@@ -158,6 +158,78 @@ public sealed class GitHubAppUpdateServiceTests
     }
 
     [Fact]
+    public async Task CheckForUpdatesAsync_ShouldResolveSourceRelease_FromLatestTagCommit()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var requestedUris = new List<string>();
+        using var handler = new FakeHttpMessageHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!.AbsoluteUri);
+            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/latest", StringComparison.Ordinal))
+            {
+                return CreateJsonResponse("""
+                {
+                  "tag_name": "latest",
+                  "name": "v0.2.24",
+                  "body": "Source release: v0.2.24",
+                  "assets": []
+                }
+                """);
+            }
+
+            if (request.RequestUri.AbsoluteUri.EndsWith("/tags", StringComparison.Ordinal))
+            {
+                return CreateJsonResponse("""
+                [
+                  {
+                    "name": "latest",
+                    "commit": { "sha": "5a4b8a38224b7d2630bb000384127407ea5a7f3e" }
+                  },
+                  {
+                    "name": "v0.2.24",
+                    "commit": { "sha": "434124b1c85ad1a208b72ed6410acdcc58eeda2b" }
+                  },
+                  {
+                    "name": "v0.2.25",
+                    "commit": { "sha": "5a4b8a38224b7d2630bb000384127407ea5a7f3e" }
+                  }
+                ]
+                """);
+            }
+
+            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/v0.2.25", StringComparison.Ordinal))
+            {
+                return CreateJsonResponse("""
+                {
+                  "tag_name": "v0.2.25",
+                  "name": "0.2.25",
+                  "assets": [
+                    {
+                      "name": "XhMonitor-v0.2.25-Lite-Setup.exe",
+                      "browser_download_url": "https://example.com/download/XhMonitor-v0.2.25-Lite-Setup.exe"
+                    }
+                  ]
+                }
+                """);
+            }
+
+            throw new InvalidOperationException($"Unexpected request: {request.RequestUri}");
+        });
+
+        var service = CreateService(handler, tempDir.Path);
+
+        var status = await service.CheckForUpdatesAsync();
+
+        status.State.Should().Be(AppUpdateState.UpdateAvailable);
+        status.LatestVersion.Should().Be("0.2.25");
+        status.ReleaseTag.Should().Be("v0.2.25");
+        status.InstallerAssetName.Should().Be("XhMonitor-v0.2.25-Lite-Setup.exe");
+        requestedUris.Should().Contain(uri => uri.EndsWith("/tags", StringComparison.Ordinal));
+        requestedUris.Should().Contain(uri => uri.EndsWith("/releases/tags/v0.2.25", StringComparison.Ordinal));
+        requestedUris.Should().NotContain(uri => uri.EndsWith("/releases/tags/v0.2.24", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task CheckForUpdatesAsync_ShouldReturnUpToDate_AndDeleteInstallerMatchingCurrentVersion()
     {
         using var tempDir = new TemporaryDirectory();

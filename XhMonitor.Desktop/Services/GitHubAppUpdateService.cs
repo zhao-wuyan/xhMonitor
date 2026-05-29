@@ -15,6 +15,7 @@ namespace XhMonitor.Desktop.Services;
 public sealed class GitHubAppUpdateService : IAppUpdateService
 {
     private static readonly Regex VersionRegex = new(@"(?<!\d)(\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled);
+    private static readonly Regex ReleaseTagNameRegex = new(@"^[vV](\d+\.\d+\.\d+(?:\.\d+)?)$", RegexOptions.Compiled);
     private static readonly Regex SourceReleaseTagRegex = new(@"(?:Source release|同步自正式 release)\s*:?\s*(v\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly TimeSpan DownloadProgressUpdateInterval = TimeSpan.FromMilliseconds(250);
     private const string InstallerSearchPattern = "XhMonitor-v*-Lite-Setup.exe";
@@ -75,17 +76,29 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
                 return _currentStatus;
             }
 
-            if (!TryResolveRelease(release, out var resolvedRelease, out var resolveError))
+            var sourceRelease = await TryGetSourceReleaseAsync(release, cancellationToken).ConfigureAwait(false);
+            ResolvedUpdateRelease? resolvedRelease = null;
+            string? resolveError = null;
+            if (sourceRelease != null)
             {
-                var sourceRelease = await TryGetSourceReleaseAsync(release, cancellationToken).ConfigureAwait(false);
-                if (sourceRelease == null ||
-                    !TryResolveRelease(sourceRelease, out resolvedRelease, out resolveError))
+                if (TryResolveRelease(sourceRelease, out var sourceResolvedRelease, out resolveError))
                 {
-                    _latestRelease = null;
-                    SetStatus(CreateSourceUnavailableStatus(
-                        resolveError ?? "latest release 缺少可用安装包。"));
-                    return _currentStatus;
+                    resolvedRelease = sourceResolvedRelease;
                 }
+            }
+
+            if (resolvedRelease == null &&
+                TryResolveRelease(release, out var latestResolvedRelease, out resolveError))
+            {
+                resolvedRelease = latestResolvedRelease;
+            }
+
+            if (resolvedRelease == null)
+            {
+                _latestRelease = null;
+                SetStatus(CreateSourceUnavailableStatus(
+                    resolveError ?? "latest release 缺少可用安装包。"));
+                return _currentStatus;
             }
 
             if (resolvedRelease.Version <= currentVersion)
@@ -390,7 +403,11 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         GitHubReleaseDto latestRelease,
         CancellationToken cancellationToken)
     {
-        var sourceTag = TryExtractSourceReleaseTag(latestRelease.Body);
+        var sourceTag = await TryGetSourceReleaseTagFromLatestTagAsync(
+            latestRelease.TagName,
+            cancellationToken).ConfigureAwait(false)
+            ?? TryExtractSourceReleaseTag(latestRelease.Body);
+
         if (string.IsNullOrWhiteSpace(sourceTag) ||
             string.Equals(sourceTag, latestRelease.TagName, StringComparison.OrdinalIgnoreCase))
         {
@@ -398,6 +415,82 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         }
 
         return await TryGetManagedReleaseAsync(sourceTag, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<string?> TryGetSourceReleaseTagFromLatestTagAsync(
+        string? latestTagName,
+        CancellationToken cancellationToken)
+    {
+        var preferredTag = (_options.PreferredReleaseTag ?? string.Empty).Trim();
+        var latestTag = string.IsNullOrWhiteSpace(latestTagName)
+            ? preferredTag
+            : latestTagName.Trim();
+
+        if (string.IsNullOrWhiteSpace(latestTag) ||
+            !string.Equals(latestTag, preferredTag, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            var tags = await TryGetRepositoryTagsAsync(cancellationToken).ConfigureAwait(false);
+            var latestRef = tags.FirstOrDefault(tag =>
+                string.Equals(tag.Name, latestTag, StringComparison.OrdinalIgnoreCase));
+            var latestSha = latestRef?.Commit?.Sha;
+            if (string.IsNullOrWhiteSpace(latestSha))
+            {
+                return null;
+            }
+
+            return tags
+                .Select(tag => new
+                {
+                    tag.Name,
+                    tag.Commit?.Sha,
+                    Version = TryExtractReleaseTagVersion(tag.Name)
+                })
+                .Where(tag =>
+                    tag.Version != null &&
+                    string.Equals(tag.Sha, latestSha, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(tag => tag.Version)
+                .Select(tag => tag.Name)
+                .FirstOrDefault();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogDebug(ex, "Failed to resolve source release tag from repository tags.");
+            return null;
+        }
+    }
+
+    private async Task<GitRepositoryTagDto[]> TryGetRepositoryTagsAsync(CancellationToken cancellationToken)
+    {
+        var owner = (_options.Owner ?? string.Empty).Trim();
+        var repository = (_options.Repository ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repository))
+        {
+            return Array.Empty<GitRepositoryTagDto>();
+        }
+
+        var apiBaseUrl = ResolveReleaseApiBaseUrl();
+        var tagsUri = new Uri(
+            $"{apiBaseUrl}/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repository)}/tags");
+
+        var client = CreateHttpClient();
+        using var response = await client.GetAsync(tagsUri, cancellationToken).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return Array.Empty<GitRepositoryTagDto>();
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        return await JsonSerializer.DeserializeAsync<GitRepositoryTagDto[]>(
+            contentStream,
+            _jsonSerializerOptions,
+            cancellationToken).ConfigureAwait(false) ?? Array.Empty<GitRepositoryTagDto>();
     }
 
     private string ResolveReleaseApiBaseUrl()
@@ -520,6 +613,19 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
 
         var match = SourceReleaseTagRegex.Match(rawText);
         return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private static Version? TryExtractReleaseTagVersion(string? tagName)
+    {
+        if (string.IsNullOrWhiteSpace(tagName))
+        {
+            return null;
+        }
+
+        var match = ReleaseTagNameRegex.Match(tagName);
+        return match.Success && Version.TryParse(match.Groups[1].Value, out var version)
+            ? version
+            : null;
     }
 
     private string ResolveDownloadDirectory()
@@ -743,5 +849,17 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             : !string.IsNullOrWhiteSpace(DownloadUrl)
                 ? DownloadUrl
                 : Url;
+    }
+
+    private sealed class GitRepositoryTagDto
+    {
+        public string? Name { get; set; }
+
+        public GitRepositoryCommitDto? Commit { get; set; }
+    }
+
+    private sealed class GitRepositoryCommitDto
+    {
+        public string? Sha { get; set; }
     }
 }
