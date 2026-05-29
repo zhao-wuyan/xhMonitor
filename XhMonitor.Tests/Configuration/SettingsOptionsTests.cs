@@ -14,6 +14,9 @@ public class SettingsOptionsTests
 
         settings.IntervalSeconds.Should().Be(5);
         settings.SystemUsageIntervalSeconds.Should().Be(1);
+        settings.LlamaMetricsIntervalSeconds.Should().Be(1);
+        settings.LlamaMetricsFailureBackoffThreshold.Should().Be(0);
+        settings.LlamaMetricsFailureBackoffSeconds.Should().Be(60);
     }
 
     [Fact]
@@ -39,7 +42,10 @@ public class SettingsOptionsTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Monitor:IntervalSeconds"] = "10",
-                ["Monitor:SystemUsageIntervalSeconds"] = "2"
+                ["Monitor:SystemUsageIntervalSeconds"] = "2",
+                ["Monitor:LlamaMetricsIntervalSeconds"] = "3",
+                ["Monitor:LlamaMetricsFailureBackoffThreshold"] = "4",
+                ["Monitor:LlamaMetricsFailureBackoffSeconds"] = "30"
             })
             .Build();
 
@@ -48,6 +54,9 @@ public class SettingsOptionsTests
         settings.Should().NotBeNull();
         settings!.IntervalSeconds.Should().Be(10);
         settings.SystemUsageIntervalSeconds.Should().Be(2);
+        settings.LlamaMetricsIntervalSeconds.Should().Be(3);
+        settings.LlamaMetricsFailureBackoffThreshold.Should().Be(4);
+        settings.LlamaMetricsFailureBackoffSeconds.Should().Be(30);
     }
 
     [Fact]

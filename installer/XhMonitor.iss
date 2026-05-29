@@ -80,7 +80,8 @@ LZMAUseSeparateProcess=yes
 
 ; 权限设置
 PrivilegesRequired=admin
-PrivilegesRequiredOverridesAllowed=dialog
+; PawnIO installs a kernel driver/service, so the setup must stay elevated.
+; Do not allow current-user install mode because bundled driver installers then fail silently.
 
 ; 界面设置
 WizardStyle=modern

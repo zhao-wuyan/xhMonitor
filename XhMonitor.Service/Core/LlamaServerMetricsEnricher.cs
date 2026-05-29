@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 using XhMonitor.Core.Models;
+using XhMonitor.Service.Configuration;
 
 namespace XhMonitor.Service.Core;
 
@@ -15,13 +17,21 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
     private readonly HttpClient _httpClient;
     private readonly SemaphoreSlim _httpSemaphore = new(2, 2);
     private readonly Dictionary<int, LlamaProcessState> _states = new();
+    private readonly object _failureStateLock = new();
+    private readonly Dictionary<int, LlamaMetricsFailureState> _failureStates = new();
+    private readonly int _failureBackoffThreshold;
+    private readonly TimeSpan _failureBackoffDuration;
 
     public LlamaServerMetricsEnricher(
         IHttpClientFactory httpClientFactory,
-        ILogger<LlamaServerMetricsEnricher> logger)
+        ILogger<LlamaServerMetricsEnricher> logger,
+        IOptions<MonitorSettings>? monitorOptions = null)
     {
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("llama-metrics");
+        var settings = monitorOptions?.Value ?? new MonitorSettings();
+        _failureBackoffThreshold = settings.LlamaMetricsFailureBackoffThreshold;
+        _failureBackoffDuration = TimeSpan.FromSeconds(settings.LlamaMetricsFailureBackoffSeconds);
     }
 
     public async Task EnrichAsync(IReadOnlyList<ProcessMetrics> metrics, CancellationToken cancellationToken = default)
@@ -52,6 +62,11 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
             }
 
             SetMetric(processMetrics, LlamaMetricKeys.Port, port, string.Empty, "Port");
+            if (ShouldSkipPortForBackoff(port))
+            {
+                continue;
+            }
+
             tasks.Add(EnrichSingleAsync(processMetrics, port, cancellationToken));
         }
 
@@ -71,14 +86,17 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
             var metricsText = await FetchMetricsTextAsync(port, cancellationToken).ConfigureAwait(false);
             if (metricsText == null)
             {
+                RecordFailure(port);
                 return;
             }
 
             if (!LlamaPrometheusTextParser.TryParse(metricsText.AsSpan(), out var snapshot))
             {
+                RecordFailure(port);
                 return;
             }
 
+            ResetFailure(port);
             var nowTicks = Stopwatch.GetTimestamp();
             var pid = processMetrics.Info.ProcessId;
 
@@ -279,6 +297,66 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
         }
     }
 
+    private bool ShouldSkipPortForBackoff(int port)
+    {
+        if (_failureBackoffThreshold <= 0)
+        {
+            return false;
+        }
+
+        lock (_failureStateLock)
+        {
+            if (!_failureStates.TryGetValue(port, out var state))
+            {
+                return false;
+            }
+
+            if (state.FailedCount < _failureBackoffThreshold)
+            {
+                return false;
+            }
+
+            var elapsed = Stopwatch.GetElapsedTime(state.LastFailureTicks);
+            if (elapsed < _failureBackoffDuration)
+            {
+                return true;
+            }
+
+            _failureStates.Remove(port);
+            return false;
+        }
+    }
+
+    private void RecordFailure(int port)
+    {
+        if (_failureBackoffThreshold <= 0)
+        {
+            return;
+        }
+
+        lock (_failureStateLock)
+        {
+            var failedCount = _failureStates.TryGetValue(port, out var state)
+                ? state.FailedCount + 1
+                : 1;
+
+            _failureStates[port] = new LlamaMetricsFailureState(failedCount, Stopwatch.GetTimestamp());
+        }
+    }
+
+    private void ResetFailure(int port)
+    {
+        lock (_failureStateLock)
+        {
+            if (_failureStates.Count == 0)
+            {
+                return;
+            }
+
+            _failureStates.Remove(port);
+        }
+    }
+
     private static bool IsBusySample(LlamaProcessState state, LlamaPrometheusSnapshot snapshot)
     {
         // 某些 llama-server 构建下 `llamacpp:requests_processing` 不可靠（可能长期保持非 0）。
@@ -312,6 +390,8 @@ public sealed class LlamaServerMetricsEnricher : IProcessMetricsEnricher
         public double? DecodeTotal { get; init; }
         public required double OutTokensLive { get; init; }
     }
+
+    private readonly record struct LlamaMetricsFailureState(int FailedCount, long LastFailureTicks);
 }
 
 internal static class LlamaMetricKeys

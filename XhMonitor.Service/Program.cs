@@ -148,9 +148,12 @@ builder.Services.AddSingleton<ILibreHardwareManager>(sp =>
 {
     var logger = sp.GetRequiredService<ILogger<LibreHardwareManager>>();
     var monitorOptions = sp.GetRequiredService<IOptions<MonitorSettings>>();
+    var hardwareOptions = sp.GetRequiredService<IConfiguration>()
+        .GetSection("MetricProviders:LibreHardwareMonitor")
+        .Get<LibreHardwareMonitorOptions>() ?? new LibreHardwareMonitorOptions();
     // 保留防御性保护，避免外部依赖收到无效间隔导致异常。
     var systemIntervalSeconds = Math.Max(1, monitorOptions.Value.SystemUsageIntervalSeconds);
-    return new LibreHardwareManager(logger, TimeSpan.FromSeconds(systemIntervalSeconds));
+    return new LibreHardwareManager(logger, TimeSpan.FromSeconds(systemIntervalSeconds), hardwareOptions);
 });
 
 builder.Services.AddSingleton<BuiltInMetricProviderFactory>();
