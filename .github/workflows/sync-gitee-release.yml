@@ -20,6 +20,7 @@ jobs:
       GITEE_REPO: xhMonitor
       GITEE_API_BASE: https://gitee.com/api/v5
       GITEE_MAX_ATTACHMENT_BYTES: 104857600
+      GITEE_ASSET_INCLUDE_REGEX: '^XhMonitor-v[0-9]+(\.[0-9]+){2,3}-Lite(-Net8)?(-Setup\.exe|\.zip)$'
 
     steps:
       - name: Checkout
@@ -266,6 +267,11 @@ jobs:
               name="$(basename "$asset")"
               size_bytes="$(stat -c '%s' "$asset")"
               size_mb="$(awk "BEGIN { printf \"%.2f\", $size_bytes / 1024 / 1024 }")"
+
+              if [[ ! "$name" =~ $GITEE_ASSET_INCLUDE_REGEX ]]; then
+                echo "Skipping Gitee attachment: $name (${size_mb} MB) is not required for Gitee update distribution."
+                continue
+              fi
 
               if (( size_bytes > GITEE_MAX_ATTACHMENT_BYTES )); then
                 echo "Skipping Gitee attachment: $name (${size_mb} MB) exceeds Gitee 100 MB release attachment limit."
