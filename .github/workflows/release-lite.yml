@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build-assets:
@@ -354,3 +355,11 @@ jobs:
         run: |
           Write-Host "Triggering sync-latest-release workflow for tag: $env:TAG"
           gh workflow run sync-latest-release.yml -f source_tag="$env:TAG"
+
+      - name: Trigger sync-gitee-release workflow
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Write-Host "Triggering sync-gitee-release workflow for tag: $env:TAG"
+          gh workflow run sync-gitee-release.yml -f source_tag="$env:TAG"

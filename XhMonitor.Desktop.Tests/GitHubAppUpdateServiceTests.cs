@@ -56,7 +56,7 @@ public sealed class GitHubAppUpdateServiceTests
         using var tempDir = new TemporaryDirectory();
         using var handler = new FakeHttpMessageHandler(request =>
         {
-            request.RequestUri!.AbsoluteUri.Should().Contain("/releases/tags/latest");
+            request.RequestUri!.AbsoluteUri.Should().Be("https://gitee.com/api/v5/repos/zhaowuyan/xhMonitor/releases/tags/latest");
             return CreateJsonResponse("""
             {
               "tag_name": "latest",
@@ -70,6 +70,32 @@ public sealed class GitHubAppUpdateServiceTests
             }
             """);
         });
+
+        var service = CreateService(handler, tempDir.Path);
+
+        var status = await service.CheckForUpdatesAsync();
+
+        status.State.Should().Be(AppUpdateState.UpdateAvailable);
+        status.LatestVersion.Should().Be("0.2.13");
+        status.InstallerAssetName.Should().Be("XhMonitor-v0.2.13-Lite-Setup.exe");
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsync_ShouldResolveGiteeDownloadUrlField()
+    {
+        using var tempDir = new TemporaryDirectory();
+        using var handler = new FakeHttpMessageHandler(_ => CreateJsonResponse("""
+        {
+          "tag_name": "latest",
+          "name": "v0.2.13",
+          "assets": [
+            {
+              "name": "XhMonitor-v0.2.13-Lite-Setup.exe",
+              "download_url": "https://gitee.com/zhaowuyan/xhMonitor/releases/download/latest/XhMonitor-v0.2.13-Lite-Setup.exe"
+            }
+          ]
+        }
+        """));
 
         var service = CreateService(handler, tempDir.Path);
 
@@ -327,7 +353,8 @@ public sealed class GitHubAppUpdateServiceTests
         launcher ??= new FakeInstallerLauncher();
         var options = Options.Create(new AppUpdateOptions
         {
-            Owner = "zhao-wuyan",
+            ReleaseApiBaseUrl = "https://gitee.com/api/v5/repos",
+            Owner = "zhaowuyan",
             Repository = "xhMonitor",
             PreferredReleaseTag = "latest",
             TargetAssetTemplate = "XhMonitor-v{version}-Lite-Setup.exe",

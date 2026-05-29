@@ -343,8 +343,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         var client = _httpClientFactory.CreateClient();
         client.Timeout = TimeSpan.FromSeconds(Math.Max(5, _options.RequestTimeoutSeconds));
         client.DefaultRequestHeaders.UserAgent.ParseAdd($"XhMonitor/{_appVersionService.CurrentVersionText}");
-        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
         return client;
     }
 
@@ -361,10 +360,11 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             return null;
         }
 
-        var client = CreateHttpClient();
+        var apiBaseUrl = ResolveReleaseApiBaseUrl();
         var releaseUri = new Uri(
-            $"https://api.github.com/repos/{owner}/{repository}/releases/tags/{Uri.EscapeDataString(releaseTag)}");
+            $"{apiBaseUrl}/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repository)}/releases/tags/{Uri.EscapeDataString(releaseTag)}");
 
+        var client = CreateHttpClient();
         using var response = await client.GetAsync(releaseUri, cancellationToken).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
@@ -378,6 +378,15 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             contentStream,
             _jsonSerializerOptions,
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private string ResolveReleaseApiBaseUrl()
+    {
+        var rawBaseUrl = string.IsNullOrWhiteSpace(_options.ReleaseApiBaseUrl)
+            ? "https://gitee.com/api/v5/repos"
+            : _options.ReleaseApiBaseUrl.Trim();
+
+        return rawBaseUrl.TrimEnd('/');
     }
 
     private bool TryResolveRelease(
@@ -434,7 +443,8 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             installerAsset = liteAsset;
         }
 
-        if (installerAsset == null || string.IsNullOrWhiteSpace(installerAsset.BrowserDownloadUrl))
+        var installerDownloadUrl = installerAsset?.EffectiveDownloadUrl;
+        if (installerAsset == null || string.IsNullOrWhiteSpace(installerDownloadUrl))
         {
             errorMessage = $"latest release 中未找到安装包 {expectedAssetName}。";
             return false;
@@ -455,7 +465,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             versionText,
             release.TagName ?? _options.PreferredReleaseTag,
             installerAsset.Name,
-            installerAsset.BrowserDownloadUrl,
+            installerDownloadUrl,
             installerPath);
         return true;
     }
@@ -687,6 +697,18 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("browser_download_url")]
-        public string BrowserDownloadUrl { get; set; } = string.Empty;
+        public string? BrowserDownloadUrl { get; set; }
+
+        [JsonPropertyName("download_url")]
+        public string? DownloadUrl { get; set; }
+
+        public string? Url { get; set; }
+
+        [JsonIgnore]
+        public string? EffectiveDownloadUrl => !string.IsNullOrWhiteSpace(BrowserDownloadUrl)
+            ? BrowserDownloadUrl
+            : !string.IsNullOrWhiteSpace(DownloadUrl)
+                ? DownloadUrl
+                : Url;
     }
 }
