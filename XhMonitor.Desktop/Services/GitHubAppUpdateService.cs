@@ -15,6 +15,7 @@ namespace XhMonitor.Desktop.Services;
 public sealed class GitHubAppUpdateService : IAppUpdateService
 {
     private static readonly Regex VersionRegex = new(@"(?<!\d)(\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled);
+    private static readonly Regex SourceReleaseTagRegex = new(@"(?:Source release|同步自正式 release)\s*:?\s*(v\d+\.\d+\.\d+(?:\.\d+)?)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly TimeSpan DownloadProgressUpdateInterval = TimeSpan.FromMilliseconds(250);
     private const string InstallerSearchPattern = "XhMonitor-v*-Lite-Setup.exe";
     private const string NoNewVersionMessage = "未找到新版本";
@@ -65,7 +66,7 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             var currentVersion = _appVersionService.CurrentVersion;
             CleanupInstallerCache(currentVersion);
 
-            var release = await TryGetManagedLatestReleaseAsync(cancellationToken).ConfigureAwait(false);
+            var release = await TryGetManagedReleaseAsync(_options.PreferredReleaseTag, cancellationToken).ConfigureAwait(false);
             if (release == null)
             {
                 _latestRelease = null;
@@ -76,10 +77,15 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
 
             if (!TryResolveRelease(release, out var resolvedRelease, out var resolveError))
             {
-                _latestRelease = null;
-                SetStatus(CreateSourceUnavailableStatus(
-                    resolveError ?? "latest release 缺少可用安装包。"));
-                return _currentStatus;
+                var sourceRelease = await TryGetSourceReleaseAsync(release, cancellationToken).ConfigureAwait(false);
+                if (sourceRelease == null ||
+                    !TryResolveRelease(sourceRelease, out resolvedRelease, out resolveError))
+                {
+                    _latestRelease = null;
+                    SetStatus(CreateSourceUnavailableStatus(
+                        resolveError ?? "latest release 缺少可用安装包。"));
+                    return _currentStatus;
+                }
             }
 
             if (resolvedRelease.Version <= currentVersion)
@@ -347,11 +353,11 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         return client;
     }
 
-    private async Task<GitHubReleaseDto?> TryGetManagedLatestReleaseAsync(CancellationToken cancellationToken)
+    private async Task<GitHubReleaseDto?> TryGetManagedReleaseAsync(string? tag, CancellationToken cancellationToken)
     {
         var owner = (_options.Owner ?? string.Empty).Trim();
         var repository = (_options.Repository ?? string.Empty).Trim();
-        var releaseTag = (_options.PreferredReleaseTag ?? string.Empty).Trim();
+        var releaseTag = (tag ?? string.Empty).Trim();
 
         if (string.IsNullOrWhiteSpace(owner) ||
             string.IsNullOrWhiteSpace(repository) ||
@@ -378,6 +384,20 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
             contentStream,
             _jsonSerializerOptions,
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<GitHubReleaseDto?> TryGetSourceReleaseAsync(
+        GitHubReleaseDto latestRelease,
+        CancellationToken cancellationToken)
+    {
+        var sourceTag = TryExtractSourceReleaseTag(latestRelease.Body);
+        if (string.IsNullOrWhiteSpace(sourceTag) ||
+            string.Equals(sourceTag, latestRelease.TagName, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return await TryGetManagedReleaseAsync(sourceTag, cancellationToken).ConfigureAwait(false);
     }
 
     private string ResolveReleaseApiBaseUrl()
@@ -489,6 +509,17 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         }
 
         return FormatVersion(version);
+    }
+
+    private static string? TryExtractSourceReleaseTag(string? rawText)
+    {
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            return null;
+        }
+
+        var match = SourceReleaseTagRegex.Match(rawText);
+        return match.Success ? match.Groups[1].Value : null;
     }
 
     private string ResolveDownloadDirectory()
@@ -688,6 +719,8 @@ public sealed class GitHubAppUpdateService : IAppUpdateService
         public string? TagName { get; set; }
 
         public string? Name { get; set; }
+
+        public string? Body { get; set; }
 
         public GitHubAssetDto[]? Assets { get; set; }
     }

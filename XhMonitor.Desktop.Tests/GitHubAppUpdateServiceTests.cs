@@ -107,6 +107,57 @@ public sealed class GitHubAppUpdateServiceTests
     }
 
     [Fact]
+    public async Task CheckForUpdatesAsync_ShouldResolveSourceRelease_WhenLatestOnlyPointsToRealTag()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var requestedUris = new List<string>();
+        using var handler = new FakeHttpMessageHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!.AbsoluteUri);
+            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/latest", StringComparison.Ordinal))
+            {
+                return CreateJsonResponse("""
+                {
+                  "tag_name": "latest",
+                  "name": "v0.2.13",
+                  "body": "Source release: v0.2.13",
+                  "assets": []
+                }
+                """);
+            }
+
+            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/v0.2.13", StringComparison.Ordinal))
+            {
+                return CreateJsonResponse("""
+                {
+                  "tag_name": "v0.2.13",
+                  "name": "0.2.13",
+                  "assets": [
+                    {
+                      "name": "XhMonitor-v0.2.13-Lite-Setup.exe",
+                      "browser_download_url": "https://example.com/download/XhMonitor-v0.2.13-Lite-Setup.exe"
+                    }
+                  ]
+                }
+                """);
+            }
+
+            throw new InvalidOperationException($"Unexpected request: {request.RequestUri}");
+        });
+
+        var service = CreateService(handler, tempDir.Path);
+
+        var status = await service.CheckForUpdatesAsync();
+
+        status.State.Should().Be(AppUpdateState.UpdateAvailable);
+        status.LatestVersion.Should().Be("0.2.13");
+        status.ReleaseTag.Should().Be("v0.2.13");
+        status.InstallerAssetName.Should().Be("XhMonitor-v0.2.13-Lite-Setup.exe");
+        requestedUris.Should().Contain(uri => uri.EndsWith("/releases/tags/latest", StringComparison.Ordinal));
+        requestedUris.Should().Contain(uri => uri.EndsWith("/releases/tags/v0.2.13", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task CheckForUpdatesAsync_ShouldReturnUpToDate_AndDeleteInstallerMatchingCurrentVersion()
     {
         using var tempDir = new TemporaryDirectory();

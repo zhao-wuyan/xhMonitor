@@ -89,6 +89,14 @@ stages:
               -d "access_token=$GIT_TOKEN"
           }
 
+          api_patch() {
+            local path="$1"
+            shift
+            curl -sS -X PATCH "$GITEE_API_BASE$path" \
+              -d "access_token=$GIT_TOKEN" \
+              "$@"
+          }
+
           get_release_id() {
             local tag="$1"
             local status
@@ -129,6 +137,19 @@ stages:
               --data-urlencode "target_commitish=dev" > release-create-response.json
 
             jq -r '.id' release-create-response.json
+          }
+
+          upsert_release_metadata() {
+            local tag="$1"
+            local title="$2"
+            local body_file="$3"
+            local release_id
+
+            release_id="$(ensure_release "$tag" "$title" "$body_file")"
+            api_patch "/repos/$GITEE_OWNER/$GITEE_REPO_NAME/releases/$release_id" \
+              --data-urlencode "name=$title" \
+              --data-urlencode "body@${body_file}" > release-update-response.json
+            echo "$release_id"
           }
 
           delete_release_if_exists() {
@@ -222,11 +243,11 @@ stages:
 
           wait_for_latest_tag
           {
-            echo "同步自正式 release $TAG"
+            echo "Source release: $TAG"
+            echo "同步自正式 release: $TAG"
             echo
             cat release-body.txt
           } > latest-release-body.txt
 
-          delete_release_if_exists latest
-          LATEST_RELEASE_ID="$(ensure_release latest "v$VERSION" "latest-release-body.txt")"
-          upload_assets_with_overwrite "$LATEST_RELEASE_ID" "${ASSETS[@]}"
+          LATEST_RELEASE_ID="$(upsert_release_metadata latest "v$VERSION" "latest-release-body.txt")"
+          echo "Gitee latest release metadata updated: $LATEST_RELEASE_ID"

@@ -176,6 +176,14 @@ jobs:
               -d "access_token=$GITEE_TOKEN"
           }
 
+          api_patch() {
+            local path="$1"
+            shift
+            curl -sS -X PATCH "$GITEE_API_BASE$path" \
+              -d "access_token=$GITEE_TOKEN" \
+              "$@"
+          }
+
           get_tag_commit_sha() {
             local tag="$1"
             local remote_ref
@@ -245,6 +253,19 @@ jobs:
             jq -r '.id' release-create-response.json
           }
 
+          upsert_release_metadata() {
+            local tag="$1"
+            local title="$2"
+            local body_file="$3"
+            local release_id
+
+            release_id="$(ensure_release "$tag" "$title" "$body_file")"
+            api_patch "/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id" \
+              --data-urlencode "name=$title" \
+              --data-urlencode "body@${body_file}" > release-update-response.json
+            echo "$release_id"
+          }
+
           delete_release_if_exists() {
             local tag="$1"
             local release_id
@@ -293,13 +314,13 @@ jobs:
           SOURCE_RELEASE_ID="$(ensure_release "$TAG" "$TAG" "release-body.txt")"
           upload_asset_with_overwrite "$SOURCE_RELEASE_ID" "$LITE_SETUP_PATH"
 
-          delete_release_if_exists latest
           ensure_tag latest "$SOURCE_COMMIT"
           {
-            echo "同步自正式 release $TAG"
+            echo "Source release: $TAG"
+            echo "同步自正式 release: $TAG"
             echo
             cat release-body.txt
           } > latest-release-body.txt
 
-          LATEST_RELEASE_ID="$(ensure_release latest "v$VERSION" "latest-release-body.txt")"
-          upload_asset_with_overwrite "$LATEST_RELEASE_ID" "$LITE_SETUP_PATH"
+          LATEST_RELEASE_ID="$(upsert_release_metadata latest "v$VERSION" "latest-release-body.txt")"
+          echo "Gitee latest release metadata updated: $LATEST_RELEASE_ID"

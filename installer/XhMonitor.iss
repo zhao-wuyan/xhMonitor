@@ -80,8 +80,7 @@ LZMAUseSeparateProcess=yes
 
 ; 权限设置
 PrivilegesRequired=admin
-; PawnIO installs a kernel driver/service, so the setup must stay elevated.
-; Do not allow current-user install mode because bundled driver installers then fail silently.
+; XhMonitor installs and manages a Windows service, so the setup must stay elevated.
 
 ; 界面设置
 WizardStyle=modern
@@ -130,7 +129,9 @@ chinesesimplified.AutoInstallPawnIOHint=为支持 PawnIO 的 LibreHardwareMonito
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 ; Name: "startupicon"; Description: "{cm:StartupTask}"; GroupDescription: "{cm:SystemSettings}"; Flags: unchecked
+#if BuildType != "Lite"
 Name: "autoinstallpawnio"; Description: "{cm:AutoInstallPawnIO}"; GroupDescription: "{cm:SystemSettings}"
+#endif
 ; 仅 LiteNet8 版本显示自动安装运行时的勾选框
 #if BuildType == "LiteNet8"
 Name: "autoinstalldotnetruntime"; Description: "{cm:AutoInstallDotNetRuntime}"; GroupDescription: "{cm:SystemSettings}"
@@ -148,8 +149,10 @@ Source: "..\release\XhMonitor-v{#MyAppVersion}\启动服务.bat"; DestDir: "{app
 Source: "..\release\XhMonitor-v{#MyAppVersion}\停止服务.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\release\XhMonitor-v{#MyAppVersion}\README.txt"; DestDir: "{app}"; Flags: ignoreversion
 
-; PawnIO is only used by newer LibreHardwareMonitor builds, but bundling it here keeps the installer ready for that path.
+; Keep the plain Lite setup lean for upgrade installs. Driver/runtime dependencies belong in heavier installers.
+#if BuildType != "Lite"
 Source: "..\tools\PawnIO\{#PawnIOInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy; Tasks: autoinstallpawnio
+#endif
 
 #if BuildType == "LiteNet8"
 ; LiteNet8 版本：将 .NET 运行时安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
@@ -413,7 +416,11 @@ end;
 
 function ShouldAutoInstallPawnIO(): Boolean;
 begin
+#if BuildType == "Lite"
+  Result := False;
+#else
   Result := WizardIsTaskSelected('autoinstallpawnio') and (not IsPawnIOInstalled());
+#endif
 end;
 
 function InstallBundledPawnIOIfNeeded(var NeedsRestart: Boolean): String;
