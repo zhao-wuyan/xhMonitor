@@ -1,0 +1,29 @@
+.github/workflows/sync-gitee-release.yml
+  s_8dfd8c2ce31575::t_0d0c6ae81bae67 261,267-276
+XhMonitor.Desktop.Tests/GitHubAppUpdateServiceTests.cs
+  s_8dfd8c2ce31575::t_8733a82cc85c8e 161-229
+XhMonitor.Desktop/Services/GitHubAppUpdateService.cs
+  s_8dfd8c2ce31575::t_5fb2b331ed9180 79,97-101
+  s_8dfd8c2ce31575::t_b32f8f97520ff7 18,103,406-410,420-459,461-495,618-630,853-863
+  s_8dfd8c2ce31575::t_caccc30403db3c 80,84,86,90-96
+  s_8dfd8c2ce31575::t_0ac7adc8c80b42 460
+  s_8dfd8c2ce31575::t_8117ad5635ac87 81-82
+.workflow/gitee-release-sync.yml
+  s_8dfd8c2ce31575::t_5b6ac0be9c338f 147,153-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6955c0df6ea1f707ab4ec4084601b5d5d989ed8e",
+  "prompts": {},
+  "sessions": {
+    "s_8dfd8c2ce31575": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e729d-3fe3-7e30-95e1-52344f3dfe35",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
