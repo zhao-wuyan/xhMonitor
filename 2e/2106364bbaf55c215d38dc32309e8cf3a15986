@@ -1,0 +1,21 @@
+.workflow/gitee-release-sync.yml
+  s_8dfd8c2ce31575::t_7e426125c2d00c 151
+.github/workflows/sync-gitee-release.yml
+  s_8dfd8c2ce31575::t_bf45f25e2dc938 265
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2e2106364bbaf55c215d38dc32309e8cf3a15986",
+  "prompts": {},
+  "sessions": {
+    "s_8dfd8c2ce31575": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e729d-3fe3-7e30-95e1-52344f3dfe35",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
