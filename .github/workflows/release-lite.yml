@@ -7,7 +7,6 @@ on:
 permissions:
   actions: write
   contents: write
-  actions: write
 
 jobs:
   build-assets:
