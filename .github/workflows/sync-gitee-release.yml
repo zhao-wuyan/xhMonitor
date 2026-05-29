@@ -1,4 +1,4 @@
-name: Sync Gitee Release
+name: Trigger Gitee Release Sync
 
 on:
   workflow_dispatch:
@@ -18,9 +18,6 @@ jobs:
       GH_REPO: ${{ github.repository }}
       GITEE_OWNER: zhaowuyan
       GITEE_REPO: xhMonitor
-      GITEE_API_BASE: https://gitee.com/api/v5
-      GITEE_MAX_ATTACHMENT_BYTES: 104857600
-      GITEE_ASSET_INCLUDE_REGEX: '^XhMonitor-v[0-9]+(\.[0-9]+){2,3}-Lite(-Net8)?-Setup\.exe$'
 
     steps:
       - name: Checkout
@@ -98,23 +95,7 @@ jobs:
           echo "Timed out waiting for GitHub release assets." >&2
           exit 1
 
-      - name: Download GitHub assets and release notes
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-
-          rm -rf gitee-assets
-          mkdir -p gitee-assets
-
-          gh release download "$TAG" -R "$GH_REPO" -D gitee-assets
-          gh release view "$TAG" -R "$GH_REPO" --json body --jq '.body // ""' > release-body.txt
-
-          echo "Downloaded assets:"
-          ls -lah gitee-assets
-
-      - name: Push source tag to Gitee
+      - name: Push release tags to Gitee
         shell: bash
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
@@ -127,190 +108,12 @@ jobs:
           fi
 
           git remote add gitee "https://${GITEE_OWNER}:${GITEE_TOKEN}@gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git"
-          git push gitee "refs/tags/$TAG:refs/tags/$TAG"
+          if git ls-remote --exit-code gitee "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Gitee tag already exists: $TAG"
+          else
+            git push gitee "refs/tags/$TAG:refs/tags/$TAG"
+          fi
+
           git tag -f latest "$SOURCE_COMMIT"
           git push gitee "refs/tags/latest:refs/tags/latest" --force
-
-      - name: Sync Gitee tags and releases
-        shell: bash
-        env:
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          if [[ -z "${GITEE_TOKEN:-}" ]]; then
-            echo "Missing GitHub secret: GITEE_TOKEN" >&2
-            exit 1
-          fi
-
-          api_get() {
-            local path="$1"
-            local body_file="${2:-}"
-            if [[ -n "$body_file" ]]; then
-              curl -sS -G "$GITEE_API_BASE$path" \
-                --data-urlencode "access_token=$GITEE_TOKEN" \
-                -w "%{http_code}" \
-                -o "$body_file"
-            else
-              curl -sS -G "$GITEE_API_BASE$path" \
-                --data-urlencode "access_token=$GITEE_TOKEN"
-            fi
-          }
-
-          api_post() {
-            local path="$1"
-            shift
-            curl -sS -X POST "$GITEE_API_BASE$path" \
-              -d "access_token=$GITEE_TOKEN" \
-              "$@"
-          }
-
-          api_delete() {
-            local path="$1"
-            curl -sS -X DELETE "$GITEE_API_BASE$path" \
-              -d "access_token=$GITEE_TOKEN"
-          }
-
-          get_tag_commit_sha() {
-            local tag="$1"
-            local remote_ref
-
-            remote_ref="$(git ls-remote gitee "refs/tags/$tag^{}" | awk '{print $1}' | head -n 1)"
-            if [[ -n "$remote_ref" ]]; then
-              echo "$remote_ref"
-              return
-            fi
-
-            git ls-remote gitee "refs/tags/$tag" | awk '{print $1}' | head -n 1
-          }
-
-          ensure_tag() {
-            local tag="$1"
-            local target="$2"
-            local current_sha
-
-            current_sha="$(get_tag_commit_sha "$tag")"
-            if [[ "$current_sha" != "$target" ]]; then
-              echo "Gitee tag $tag points to '${current_sha:-missing}', expected $target." >&2
-              exit 1
-            fi
-
-            echo "Gitee tag verified: $tag -> $target"
-          }
-
-          delete_release_if_exists() {
-            local tag="$1"
-            local release_id
-
-            release_id="$(get_release_id "$tag")"
-            if [[ -z "$release_id" || "$release_id" == "null" ]]; then
-              return
-            fi
-
-            echo "Deleting existing Gitee release for tag: $tag"
-            api_delete "/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id" > /dev/null
-          }
-
-          get_release_id() {
-            local tag="$1"
-            local status
-            status="$(api_get "/repos/$GITEE_OWNER/$GITEE_REPO/releases/tags/$tag" "release-response.json")"
-
-            if [[ "$status" == "200" ]]; then
-              jq -r '.id' release-response.json
-              return
-            fi
-
-            if [[ "$status" == "404" ]]; then
-              echo ""
-              return
-            fi
-
-            echo "Failed to check Gitee release $tag, HTTP $status" >&2
-            cat release-response.json >&2
-            exit 1
-          }
-
-          ensure_release() {
-            local tag="$1"
-            local title="$2"
-            local body_file="$3"
-            local release_id
-
-            release_id="$(get_release_id "$tag")"
-            if [[ -n "$release_id" && "$release_id" != "null" ]]; then
-              echo "$release_id"
-              return
-            fi
-
-            echo "Creating Gitee release: $tag" >&2
-            api_post "/repos/$GITEE_OWNER/$GITEE_REPO/releases" \
-              --data-urlencode "tag_name=$tag" \
-              --data-urlencode "name=$title" \
-              --data-urlencode "body@${body_file}" \
-              --data-urlencode "target_commitish=dev" > release-create-response.json
-
-            jq -r '.id' release-create-response.json
-          }
-
-          upload_assets_with_overwrite() {
-            local release_id="$1"
-            shift
-            local assets=("$@")
-
-            api_get "/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id/attach_files" > attachments.json
-
-            for asset in "${assets[@]}"; do
-              local name
-              local size_bytes
-              local size_mb
-              name="$(basename "$asset")"
-              size_bytes="$(stat -c '%s' "$asset")"
-              size_mb="$(awk "BEGIN { printf \"%.2f\", $size_bytes / 1024 / 1024 }")"
-
-              if [[ ! "$name" =~ $GITEE_ASSET_INCLUDE_REGEX ]]; then
-                echo "Skipping Gitee attachment: $name (${size_mb} MB) is not required for Gitee update distribution."
-                continue
-              fi
-
-              if (( size_bytes > GITEE_MAX_ATTACHMENT_BYTES )); then
-                echo "Skipping Gitee attachment: $name (${size_mb} MB) exceeds Gitee 100 MB release attachment limit."
-                continue
-              fi
-
-              local attachment_id
-              attachment_id="$(jq -r --arg name "$name" '.[]? | select(.name == $name) | .id' attachments.json | head -n 1)"
-
-              if [[ -n "$attachment_id" && "$attachment_id" != "null" ]]; then
-                echo "Deleting existing Gitee attachment: $name"
-                api_delete "/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id/attach_files/$attachment_id" > /dev/null
-              fi
-
-              echo "Uploading Gitee attachment: $name (${size_mb} MB)"
-              curl --fail-with-body --show-error --connect-timeout 30 --max-time 900 \
-                -X POST "$GITEE_API_BASE/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id/attach_files" \
-                -F "access_token=$GITEE_TOKEN" \
-                -F "file=@$asset" > upload-response.json
-            done
-          }
-
-          mapfile -t ASSETS < <(find gitee-assets -maxdepth 1 -type f | sort)
-          if [[ "${#ASSETS[@]}" -eq 0 ]]; then
-            echo "No assets downloaded from GitHub release." >&2
-            exit 1
-          fi
-
-          ensure_tag "$TAG" "$SOURCE_COMMIT"
-          SOURCE_RELEASE_ID="$(ensure_release "$TAG" "$TAG" "release-body.txt")"
-          upload_assets_with_overwrite "$SOURCE_RELEASE_ID" "${ASSETS[@]}"
-
-          delete_release_if_exists latest
-          ensure_tag latest "$SOURCE_COMMIT"
-          {
-            echo "同步自正式 release $TAG"
-            echo
-            cat release-body.txt
-          } > latest-release-body.txt
-
-          LATEST_RELEASE_ID="$(ensure_release latest "v$VERSION" "latest-release-body.txt")"
-          upload_assets_with_overwrite "$LATEST_RELEASE_ID" "${ASSETS[@]}"
+          echo "Gitee tags are ready. Gitee Go should sync release attachments from GitHub."
