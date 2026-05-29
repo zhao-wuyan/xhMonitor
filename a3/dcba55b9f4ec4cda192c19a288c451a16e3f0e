@@ -1,0 +1,36 @@
+XhMonitor.Desktop/Configuration/AppUpdateOptions.cs
+  s_03374848d1f31f::t_a59796de3adfdd 5-7
+XhMonitor.Desktop/appsettings.json
+  s_03374848d1f31f::t_a59796de3adfdd 4-5
+XhMonitor.Desktop.Tests/GitHubAppUpdateServiceTests.cs
+  s_03374848d1f31f::t_7961c31b6a11a7 83-108
+  s_03374848d1f31f::t_a59796de3adfdd 59,356-357
+.github/workflows/release-lite.yml
+  s_03374848d1f31f::t_7243dbadc84703 9
+  s_03374848d1f31f::t_af1f00f32da89a 358-365
+XhMonitor.Desktop/Services/GitHubAppUpdateService.cs
+  s_03374848d1f31f::t_a59796de3adfdd 346,363,365,367,383-391
+  s_03374848d1f31f::t_f0f5ecb4058005 446-447,468,700-712
+.github/workflows/sync-gitee-release.yml
+  s_03374848d1f31f::t_a59796de3adfdd 1-23,29-113,131-171,173,179,189,193-195,210-284,286-288,291-298
+  s_03374848d1f31f::t_f85b9282f4a0b1 24-28,114-126,128
+  s_03374848d1f31f::t_83cf15a060b2c5 127
+  s_03374848d1f31f::t_0a4a0b9e1f3faa 129-130,172,174-178,182,190-192,196,285,290
+  s_03374848d1f31f::t_26eb0ccea62a62 180-181,183-188,197-209,289
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a3dcba55b9f4ec4cda192c19a288c451a16e3f0e",
+  "prompts": {},
+  "sessions": {
+    "s_03374848d1f31f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e71f2-2b8c-7c61-b55b-241e795af2ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
