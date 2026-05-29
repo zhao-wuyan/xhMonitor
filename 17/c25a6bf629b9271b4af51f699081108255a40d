@@ -1,0 +1,73 @@
+XhMonitor.Service/appsettings.json
+  s_577fa05e5793ac::t_3e384b754858e6 65-67,155-165
+.workflow/.scratchpad/dump-memory-analysis/desktop-strings.txt
+  s_577fa05e5793ac::t_36eaabb8ce7b11 1-2
+.workflow/.scratchpad/dump-memory-analysis/service-dotnet-dump.txt
+  s_577fa05e5793ac::t_20b159919db812 1-10579
+XhMonitor.Service/Program.cs
+  s_577fa05e5793ac::t_77d347b340e179 151-153,156
+installer/XhMonitor.iss
+  s_03374848d1f31f::t_35d1dfe3d0b624 83-84
+XhMonitor.Service/Configuration/MonitorSettings.cs
+  s_577fa05e5793ac::t_2157bc4f870c6f 29-31,35-38
+  s_577fa05e5793ac::t_ffa4eb7e3f3a3e 32
+XhMonitor.Service/Core/LlamaServerMetricsEnricher.cs
+  s_577fa05e5793ac::t_c86393a4e5170d 20,302-327,337-344,349-357
+  s_577fa05e5793ac::t_5ebad70d80b2d2 4,6,21-23,27-28,32-34,65-69,89,95,99,300,330-334,347,359,393-394
+XhMonitor.Tests/Services/LlamaServerMetricsParsingTests.cs
+  s_577fa05e5793ac::t_0ff3f5fcea14b0 5,8,230-253,264-284
+.workflow/.scratchpad/dump-memory-analysis/service-old-dotnet-dump.txt
+  s_577fa05e5793ac::t_a49fbf11a9d86d 1-5863
+XhMonitor.Core/Configuration/LibreHardwareMonitorOptions.cs
+  s_577fa05e5793ac::t_c8f5b568f75eb0 1-12
+.workflow/.scratchpad/dump-memory-analysis/service-strings.txt
+  s_577fa05e5793ac::t_36eaabb8ce7b11 1-2
+.workflow/.scratchpad/dump-memory-analysis/desktop-dotnet-dump.txt
+  s_577fa05e5793ac::t_c95bd946a32c5a 1-8363
+.workflow/.scratchpad/dump-memory-analysis/desktop2-dotnet-dump.txt
+  s_577fa05e5793ac::t_c62d8497c0a097 1-28
+  s_577fa05e5793ac::t_c1ef057cd37c96 29-5061
+XhMonitor.Desktop.Tests/GitHubAppUpdateServiceTests.cs
+  s_03374848d1f31f::t_5f4c9fb8eaaa6d 321-322,325,384,386,388
+  s_03374848d1f31f::t_749443e3303df0 103
+XhMonitor.Tests/Configuration/SettingsOptionsTests.cs
+  s_577fa05e5793ac::t_2893df56c0d025 18
+  s_577fa05e5793ac::t_b0b73fcf4deea9 17,19,45-48,57-59
+docs/memory-optimization-experiments.md
+  s_577fa05e5793ac::t_ebac0aef052e5b 107-146
+  s_577fa05e5793ac::t_16622a2a6a133b 43
+  s_577fa05e5793ac::t_97b20e62adae95 1-42,44-105
+  s_577fa05e5793ac::t_1dc7a36b9c3d26 106
+XhMonitor.Core/Services/LibreHardwareManager.cs
+  s_577fa05e5793ac::t_2ed0e8e16dc5db 3
+  s_577fa05e5793ac::t_ed5c4df312d4e5 19,26-29,33,41-47
+.workflow/.scratchpad/dump-memory-analysis/service2-dotnet-dump.txt
+  s_577fa05e5793ac::t_c1ef057cd37c96 31-5750
+  s_577fa05e5793ac::t_c62d8497c0a097 1-30
+.workflow/.scratchpad/dump-memory-analysis/desktop-old-dotnet-dump.txt
+  s_577fa05e5793ac::t_a49fbf11a9d86d 1-5083
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "17c25a6bf629b9271b4af51f699081108255a40d",
+  "prompts": {},
+  "sessions": {
+    "s_03374848d1f31f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e71f2-2b8c-7c61-b55b-241e795af2ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    },
+    "s_577fa05e5793ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e692d-d358-7410-a110-65231ac82539",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
