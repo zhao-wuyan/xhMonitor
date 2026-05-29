@@ -2,8 +2,10 @@ using System.Diagnostics;
 using System.Net;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using XhMonitor.Core.Models;
+using XhMonitor.Service.Configuration;
 using XhMonitor.Service.Core;
 
 namespace XhMonitor.Tests.Services;
@@ -225,6 +227,30 @@ public class LlamaServerMetricsParsingTests
         processMetrics.Metrics[LlamaMetricKeys.Port].Value.Should().Be(1234);
     }
 
+    [Fact]
+    public async Task EnrichAsync_WhenMetricsRepeatedlyFails_ShouldBackOffRequests()
+    {
+        var handler = new CountingFailureHttpMessageHandler();
+        var httpClientFactory = new StubHttpClientFactory(new HttpClient(handler));
+        var enricher = new LlamaServerMetricsEnricher(
+            httpClientFactory,
+            Mock.Of<ILogger<LlamaServerMetricsEnricher>>(),
+            Options.Create(new MonitorSettings
+            {
+                LlamaMetricsFailureBackoffThreshold = 2,
+                LlamaMetricsFailureBackoffSeconds = 60
+            }));
+
+        var processMetrics = CreateLlamaProcessMetrics(port: 1278);
+
+        await enricher.EnrichAsync([processMetrics], CancellationToken.None);
+        await enricher.EnrichAsync([processMetrics], CancellationToken.None);
+        await enricher.EnrichAsync([processMetrics], CancellationToken.None);
+
+        handler.RequestCount.Should().Be(2);
+        processMetrics.Metrics.Should().ContainKey(LlamaMetricKeys.Port);
+    }
+
     private sealed class StubHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => httpClient;
@@ -235,4 +261,29 @@ public class LlamaServerMetricsParsingTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             => Task.FromException<HttpResponseMessage>(new TaskCanceledException("Simulated timeout"));
     }
+
+    private sealed class CountingFailureHttpMessageHandler : HttpMessageHandler
+    {
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotImplemented));
+        }
+    }
+
+    private static ProcessMetrics CreateLlamaProcessMetrics(int port)
+        => new()
+        {
+            Info = new ProcessInfo
+            {
+                ProcessId = 1234,
+                ProcessName = "llama-server",
+                DisplayName = "llama-server: backoff-test",
+                CommandLine = $"llama-server.exe --metrics --port {port}"
+            },
+            Metrics = new Dictionary<string, MetricValue>(),
+            Timestamp = DateTime.UtcNow
+        };
 }

@@ -1,5 +1,6 @@
 using LibreHardwareMonitor.Hardware;
 using Microsoft.Extensions.Logging;
+using XhMonitor.Core.Configuration;
 using XhMonitor.Core.Interfaces;
 using XhMonitor.Core.Models;
 
@@ -15,16 +16,21 @@ public class LibreHardwareManager : ILibreHardwareManager, IAsyncDisposable
     private readonly Lazy<Computer?> _computer;
     private readonly SemaphoreSlim _updateLock = new(1, 1);
     private readonly TimeSpan _snapshotLifetime;
+    private readonly LibreHardwareMonitorOptions _options;
     private IReadOnlyList<SensorReading> _snapshot = [];
     private DateTime _snapshotAt = DateTime.MinValue;
     private bool _disposed;
 
     public bool IsAvailable { get; private set; }
 
-    public LibreHardwareManager(ILogger<LibreHardwareManager>? logger = null, TimeSpan? snapshotLifetime = null)
+    public LibreHardwareManager(
+        ILogger<LibreHardwareManager>? logger = null,
+        TimeSpan? snapshotLifetime = null,
+        LibreHardwareMonitorOptions? options = null)
     {
         _logger = logger;
         _snapshotLifetime = snapshotLifetime ?? TimeSpan.FromSeconds(1);
+        _options = options ?? new LibreHardwareMonitorOptions();
         _computer = new Lazy<Computer?>(() =>
         {
             try
@@ -32,13 +38,13 @@ public class LibreHardwareManager : ILibreHardwareManager, IAsyncDisposable
                 // 配置硬件监控类型 - Configure hardware monitoring types
                 var computer = new Computer
                 {
-                    IsCpuEnabled = true,              // 启用CPU监控 - Enable CPU monitoring
-                    IsGpuEnabled = true,              // 启用GPU监控 - Enable GPU monitoring
-                    IsMemoryEnabled = true,           // 启用内存监控 - Enable memory monitoring
-                    IsMotherboardEnabled = false,     // 禁用主板监控 - Disable motherboard monitoring
-                    IsControllerEnabled = false,      // 禁用控制器监控 - Disable controller monitoring
-                    IsNetworkEnabled = true,          // 启用网络监控 - Enable network monitoring
-                    IsStorageEnabled = true           // 启用存储监控 - Enable storage monitoring
+                    IsCpuEnabled = _options.EnableCpu,
+                    IsGpuEnabled = _options.EnableGpu,
+                    IsMemoryEnabled = _options.EnableMemory,
+                    IsMotherboardEnabled = _options.EnableMotherboard,
+                    IsControllerEnabled = _options.EnableController,
+                    IsNetworkEnabled = _options.EnableNetwork,
+                    IsStorageEnabled = _options.EnableStorage
                 };
 
                 computer.Open();

@@ -100,7 +100,7 @@ public sealed class GitHubAppUpdateServiceTests
         }
         """));
 
-        var service = CreateService(handler, tempDir.Path);
+        var service = CreateService(handler, tempDir.Path, currentVersion: new Version(0, 2, 17));
 
         var status = await service.CheckForUpdatesAsync();
 
@@ -318,10 +318,11 @@ public sealed class GitHubAppUpdateServiceTests
         HttpMessageHandler handler,
         string downloadDirectory,
         FakeTrayIconService? trayIconService = null,
-        FakeInstallerLauncher? launcher = null)
+        FakeInstallerLauncher? launcher = null,
+        Version? currentVersion = null)
     {
         var httpClientFactory = new FakeHttpClientFactory(handler);
-        var appVersionService = new FakeAppVersionService();
+        var appVersionService = new FakeAppVersionService(currentVersion ?? new Version(0, 2, 9));
         trayIconService ??= new FakeTrayIconService();
         launcher ??= new FakeInstallerLauncher();
         var options = Options.Create(new AppUpdateOptions
@@ -380,11 +381,11 @@ public sealed class GitHubAppUpdateServiceTests
         }
     }
 
-    private sealed class FakeAppVersionService : IAppVersionService
+    private sealed class FakeAppVersionService(Version currentVersion) : IAppVersionService
     {
-        public Version CurrentVersion => new(0, 2, 9);
+        public Version CurrentVersion { get; } = currentVersion;
 
-        public string CurrentVersionText => "0.2.17";
+        public string CurrentVersionText => $"{CurrentVersion.Major}.{CurrentVersion.Minor}.{CurrentVersion.Build}";
     }
 
     private sealed class FakeTrayIconService : ITrayIconService

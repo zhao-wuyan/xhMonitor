@@ -24,4 +24,16 @@ public sealed class MonitorSettings
     /// </summary>
     [Range(0, 3600)]
     public int LlamaMetricsIntervalSeconds { get; set; } = 1;
+
+    /// <summary>
+    /// llama-server (/metrics) 连续失败达到该次数后进入退避。0 表示不退避。
+    /// </summary>
+    [Range(0, 100)]
+    public int LlamaMetricsFailureBackoffThreshold { get; set; }
+
+    /// <summary>
+    /// llama-server (/metrics) 失败退避时长（秒）。
+    /// </summary>
+    [Range(1, 3600)]
+    public int LlamaMetricsFailureBackoffSeconds { get; set; } = 60;
 }
