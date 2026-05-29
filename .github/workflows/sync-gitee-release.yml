@@ -262,6 +262,7 @@ jobs:
 
             release_id="$(ensure_release "$tag" "$title" "$body_file")"
             api_patch "/repos/$GITEE_OWNER/$GITEE_REPO/releases/$release_id" \
+              --data-urlencode "tag_name=$tag" \
               --data-urlencode "name=$title" \
               --data-urlencode "body@${body_file}" > release-update-response.json
 
