@@ -1,0 +1,27 @@
+XhMonitor.Desktop/Services/GitHubAppUpdateService.cs
+  s_8dfd8c2ce31575::t_cc4c0eba4078f6 18,69,80-88,356,360,389-402,514-524,723
+.workflow/gitee-release-sync.yml
+  s_8dfd8c2ce31575::t_d80ed57161e600 92-99,142-154,246-247,252-253
+XhMonitor.Desktop.Tests/GitHubAppUpdateServiceTests.cs
+  s_8dfd8c2ce31575::t_35cbedfe8afafa 110-157
+.github/workflows/sync-gitee-release.yml
+  s_8dfd8c2ce31575::t_a233404a804057 179-186,256-268,319-320,325-326
+installer/XhMonitor.iss
+  s_8dfd8c2ce31575::t_7497f1530ed7ab 83,132,134,152-153,155,419-421
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5a4b8a38224b7d2630bb000384127407ea5a7f3e",
+  "prompts": {},
+  "sessions": {
+    "s_8dfd8c2ce31575": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e729d-3fe3-7e30-95e1-52344f3dfe35",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
