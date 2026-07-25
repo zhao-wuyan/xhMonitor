@@ -1,0 +1,56 @@
+// POC 验证目标：
+// 1. Slint 透明无边框窗口 + 始终置顶
+// 2. 点击穿透（WS_EX_TRANSPARENT）动态切换，通过 RegisterHotKey Ctrl+Alt+M 触发
+// 3. 任务栏附近定位（FindWindow("Shell_TrayWnd") + GetWindowRect + SetWindowPos）
+// 4. Slint 自定义动画渲染（矩形脉冲）
+
+export component AppWindow inherits Window {
+    // 唯一标题供 FindWindowW+PID 双重验证使用；不显示给用户（no-frame）
+    title: "xhm-poc-slint";
+    background: transparent;
+    no-frame: true;
+    always-on-top: true;
+    width: 260px;
+    height: 72px;
+
+    in-out property <string> status-text: "click-through: ON";
+    in-out property <string> info-text:   "POC — Ctrl+Alt+M to toggle";
+
+    // 脉冲动画验证 Slint 渲染能力
+    property <float> pulse: 0.2;
+    animate pulse { duration: 1400ms; iteration-count: -1; easing: ease-in-out; }
+    init => { pulse = 1.0; }
+
+    Rectangle {
+        background: #0c0c0ee8;
+        border-radius: 10px;
+        border-color: rgba(86, 180, 233, root.pulse * 0.55);
+        border-width: 1px;
+
+        VerticalLayout {
+            padding-left: 10px; padding-right: 10px;
+            padding-top: 8px;   padding-bottom: 8px;
+            spacing: 5px;
+
+            Text {
+                text: "xhMonitor — Slint Desktop POC";
+                color: #ffffffaa;
+                font-size: 10px;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Text {
+                    text: root.info-text;
+                    color: #56b4e9;
+                    font-size: 11px;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: root.status-text;
+                    color: #e69f00;
+                    font-size: 10px;
+                }
+            }
+        }
+    }
+}

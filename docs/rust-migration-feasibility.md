@@ -294,12 +294,82 @@ function Get-ProcessTreeMemory {
 
 ---
 
-## 7. 结论
+## 7. 结论（更新：已有 POC 实测数据）
 
-1. **Service 短期内不适合完整 Rust 化**：SignalR Hub 协议和 LibreHardwareMonitor 是双重阻断，绕过任一条均引入高风险或功能退化。
+1. **SignalR 不再是阻断项**：已确认迁移到 SSE；Hub 全部方法为单向推送，`axum` SSE 实现已验证端到端数据流。
 
-2. **Desktop 是更值得先投入的方向**：内存浪费主体是 CLR+WPF 运行时（~136 MiB），替换框架可消除此开销；React 前端已存在，Tauri 路径可最大化复用。
+2. **Rust Service + LHM bridge 架构可行，内存收益显著**：combined release 稳态 Private Bytes **26.2 MiB**（Rust 服务 3.7 + LHM bridge 22.5），对比当前 .NET Service ~89–103 MiB，节省 **63–77 MiB**。
 
-3. **所有内存数字（非 C# 基线部分）均为待验证预期**：必须按 4.4 方法论在相同场景下实测，特别是 Tauri 需测量整个 WebView2 进程树，而不仅是主进程。
+3. **Slint Desktop：必须使用软件渲染器**。GPU 渲染器（默认 wgpu/DirectX）在本机 3840×2160 显示器上 Private Bytes **208 MiB**，劣于 WPF 基线（149 MiB）。软件渲染器（`SLINT_BACKEND=winit-software`）Private Bytes **3.8 MiB**。Win32 集成（HWND 定位、topmost、任务栏贴近、Ctrl+Alt+M 热键）全部通过。
 
-4. **建议下一步**：在此分支上创建 `poc/desktop-tauri` 子目录，搭建最小 Tauri 壳，优先验证点击穿透 + 任务栏嵌入 + WebView2 进程树内存三项，给出可量化的决策数据。
+4. **LHM bridge 传感器覆盖待管理员权限验证**：非提权运行时 `cpu_temp=null`、`disk_read/write=0`；`gpu_temp`/`gpu_load`/`net` 正常。见第 8 节用户需自行验证项。
+
+---
+
+## 8. POC 实测记录（2026-07-25）
+
+### 8.1 Rust Service + LHM bridge
+
+**测量条件**：release build，SSE 客户端保持连接，60s 稳态后采样。
+
+| 进程 | Private Bytes | Working Set | CPU (累计) |
+|------|---:|---:|---:|
+| `xhm-poc-service` (Rust release) | 3.7 MiB | 9.9 MiB | 1.89s |
+| `lhm-bridge` (.NET 8 self-contained) | 22.5 MiB | 57.1 MiB | 5.77s |
+| **合计** | **26.2 MiB** | **67.0 MiB** | — |
+| 当前 `XhMonitor.Service`（基线） | ~89–103 MiB | — | — |
+
+**已验证**：
+- LHM bridge JSON Lines 输出（stdout IPC）→ Rust 解析 → SSE 事件流 → curl 客户端端到端 ✅
+- rusqlite 持久化写入（50 行真实传感器快照） ✅
+- 进程级指标采集（`CreateToolhelp32Snapshot` + `GetProcessMemoryInfo`） ✅
+- LHM bridge self-contained 单文件发布大小：~70 MiB exe
+
+**非提权运行时 LHM 传感器覆盖**：
+
+| 传感器 | 状态 | 说明 |
+|------|------|------|
+| `gpu_temp` | ✅ 52–53°C | 无需提权 |
+| `gpu_load` | ✅ 27–32% | 无需提权 |
+| `net_up/down_mbps` | ✅ | 无需提权 |
+| `cpu_temp` | ❌ null | **需管理员权限**（MSR/WinRing0） |
+| `disk_read/write_mbps` | ⚠️ 0 | **需管理员权限**或传感器枚举未成功 |
+
+### 8.2 Slint Desktop
+
+**测量条件**：release build，独立单进程，30s 稳态后采样（已确认单 PID）。
+
+| 渲染后端 | Private Bytes | Working Set | 对比 WPF 基线 |
+|------|---:|---:|------|
+| GPU（默认 wgpu/DirectX） | 208.2 MiB | 109.5 MiB | ❌ 高出 ~59 MiB |
+| **软件渲染 (`winit-software`)** | **3.8 MiB** | **22.3 MiB** | ✅ 节省 ~145 MiB |
+| WPF 基线（`XhMonitor.Desktop`） | ~149 MiB | — | 参考 |
+
+> **观察**：GPU 后端（默认）Private Bytes 208.2 MiB，高于 WPF 基线约 59 MiB；根因未经 profiling 确认，不作推断。软件后端 3.8 MiB，但 CPU 占用和渲染质量未在本 POC 中测量。
+> **待验证**：软件渲染的 CPU 占用率（稳态，动画开启）；动画视觉效果是否达到设计要求。
+> **当前结论**：若软件后端 CPU 占用和视觉效果可接受，`SLINT_BACKEND=winit-software` 是显著改善内存的可行路径，需写入启动脚本；若不可接受，需 profiling GPU 后端根因后再决策。
+
+**Win32 集成验证结果**（从进程日志）：
+
+| 能力 | 结果 |
+|------|------|
+| `EnumWindows` + `GetWindowThreadProcessId` PID 验证 HWND | ✅ `HWND(0x2b05b4)` 正确找到 |
+| 置顶 (`HWND_TOPMOST` + `SetWindowPos`) | ✅ |
+| 任务栏附近定位 (`FindWindow("Shell_TrayWnd")` + `GetWindowRect`) | ✅ 定位于 (3352, 2082)，任务栏 (0,2076,3840,2160) |
+| 点击穿透 (`WS_EX_TRANSPARENT` + `WS_EX_LAYERED`) | ✅ 启动时自动开启 |
+| 全局热键 Ctrl+Alt+M (`RegisterHotKey`) | ✅ 注册成功 |
+| 视觉确认（窗口外观/动画/热键实际效果） | **⬜ 需用户在屏幕上确认** |
+
+### 8.3 待用户完成的验证项（需管理员权限）
+
+在管理员命令提示符中运行，观察5秒输出：
+
+```powershell
+# 以管理员身份运行
+poc\lhm-bridge\bin\Release\net8.0\win-x64\publish\lhm-bridge.exe
+```
+
+**验证标准**：
+- `cpu_temp` 应为非 null 的合理温度值（通常 40–90°C）
+- 复制粘贴一个大文件时，`disk_read_mbps` 或 `disk_write_mbps` 应 > 0
+- 若任一项仍为 null/0，需检查 WinRing0 驱动加载状态（见风险矩阵条目）

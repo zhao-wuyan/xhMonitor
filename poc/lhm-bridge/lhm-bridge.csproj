@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- 与项目主目标框架对齐 -->
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 验证 self-contained 发布是否正常 -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <!-- LHM 大量使用反射，先不裁剪；裁剪后是否能运行是单独验证项 -->
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 与 XhMonitor.Core 使用相同版本约束 -->
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.*" />
+    <PackageReference Include="System.Text.Json" Version="8.*" />
+  </ItemGroup>
+</Project>
