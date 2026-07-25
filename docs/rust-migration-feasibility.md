@@ -69,15 +69,27 @@ xhMonitor 是常驻后台的监视器程序，理想形态是"低感知、低占
 
 ### 3.3 LibreHardwareMonitor——核心能力阻断
 
-LHM 负责：CPU 包功耗、各核温度、GPU 核心/显存温度与频率、磁盘读写速率（SMART）、主板传感器。这些数据通过 LHM 封装的 WinRing0 内核驱动访问。
+**本项目消费的 LHM 传感器类型**（来自 `SystemMetricProvider` + `LibreHardwareMonitorGpuProvider` 代码审查；底层实现路径需对照 LHM 源码或运行时日志确认，此处不作推断）：
 
-目前无 Rust crate 可替代 LHM 的完整传感器能力。可选策略：
+| 传感器 | HardwareType | SensorType | 底层实现路径 |
+|--------|-------------|-----------|------------|
+| CPU 温度（Tctl/Tdie/Core Max） | `Cpu` | `Temperature` | 待以 LHM 源码 / 运行时日志验证 |
+| GPU 温度（Hot Spot） | `GpuAmd/GpuNvidia/GpuIntel` | `Temperature` | 待以 LHM 源码 / 运行时日志验证 |
+| GPU 负载（GPU Core/GPU Usage） | `GpuAmd/GpuNvidia/GpuIntel` | `Load` | 待以 LHM 源码 / 运行时日志验证 |
+| 网络上传/下载速率 | `Network` | `Throughput` | 待以 LHM 源码 / 运行时日志验证 |
+| 磁盘读写速率 | `Storage` | `Throughput` | 待以 LHM 源码 / 运行时日志验证 |
+| 磁盘总空间/剩余空间 | `Storage` | `Data` | 待以 LHM 源码 / 运行时日志验证 |
 
-| 策略 | 描述 | 代价 |
-|------|------|------|
-| 继续使用 LHM（.NET 壳留存） | LHM 作为 .NET 库必须保留 .NET 主机 | Service 无法完全 Rust 化 |
-| LHM as subprocess | 将 LHM 封装为独立 .NET 小进程，通过 IPC 向 Rust 主服务暴露传感器数据 | 需要新增 IPC 层，维护成本增加 |
-| 直接 WinRing0 / PDH 替代 | 用 Rust + `windows` crate 直接调 PDH、DXGI、WMI，放弃 LHM 中温度/功耗等传感器 | 功能退化，温度/功耗数据丢失 |
+> 注：以上仅说明本项目请求的 HardwareType + SensorType 组合，不能从中推断 LHM 的底层实现是否依赖 WinRing0 内核驱动。在 Rust 迁移前，需针对每类传感器逐项查验 LHM 源码（`LibreHardwareMonitor/Hardware/` 对应子目录）或捕获运行时日志，确认哪些路径需要内核级访问。
+
+**可选策略**：
+
+| 策略 | 描述 | 代价 | 评级 |
+|------|------|------|------|
+| **LHM as subprocess**（推荐） | 将 LHM 封装为独立 .NET 小进程，JSON Lines 输出，Rust 通过 stdin/stdout 或 named pipe 读取 | 需新增 IPC 层；LHM 进程内存待实测 | ✅ 最低迁移风险，仍待 POC |
+| 继续使用 LHM（.NET 壳留存） | LHM 作为 .NET 库留在 Service 进程 | Service 无法完全 Rust 化 | ✅ 零风险，现状维持 |
+| WinRing0 FFI（只读 POC） | Rust 通过 FFI 调用已随包发布的 `WinRing0x64.dll`，尝试复现温度/功耗读取 | ⚠️ **高维护成本**：(1) dll 存在≠驱动已加载，需管理员权限显式安装 `WinRing0x64.sys`；(2) Windows 11 启用 HVCI 时老版本 WinRing0 可能被阻断；(3) AMD Zen 5 / AI MAX 395 的 SMU 温度寄存器布局未经验证，不能使用固定 MSR 偏移；(4) 监控工具不应暴露 `WriteMsr`。仅作 POC，不作计划 | ⚠️ 须先逐项对照 LHM 源码验证寄存器映射，结论未知 |
+| PDH / DXGI 直接替代（功能降级） | 用 `windows` crate 替代 LHM，温度/GPU负载精度降级或缺失 | 温度数据丢失，GPU 负载仅能用 DXGI 性能计数器（AMD 精度有限） | ❌ 功能退化，仅在明确放弃温度数据时考虑 |
 
 ### 3.4 Service Rust 化内存预期
 
@@ -273,6 +285,8 @@ function Get-ProcessTreeMemory {
 | Win32 特性不完整 | 点击穿透/AppBar 在非 WPF 框架下缺失 | 高 | POC 第一步必须验证这三个特性 |
 | UI 重写工作量低估 | Slint/Flutter 路径 | 高 | 设置明确工时预算上限；超出则维持现状 |
 | "Never break backward compatibility" 违反 | SignalR/API shape 变更未同步客户端 | 严重 | 架构约束 spec 要求变更前检查所有消费者 |
+| WinRing0 FFI 驱动加载失败 / HVCI 阻断 | 在 Service Rust 化过程中尝试直接调用 WinRing0 读取温度/功耗 | 高 | 将 WinRing0 FFI 仅作只读 POC；必须先验证驱动加载、管理员权限、HVCI 策略和目标 CPU 寄存器映射，不作生产计划 |
+| WinRing0 寄存器映射未验证 | AMD Zen 5 / AI MAX 395 MSR 布局与 Zen 3/4 文档不同 | 高 | 使用前须逐项对照 LHM 源码（`Hardware/CPU/AMD` 路径）确认寄存器偏移和固件 variant 处理 |
 
 ---
 
