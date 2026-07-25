@@ -49,25 +49,29 @@ xhMonitor 是常驻后台的监视器程序，理想形态是"低感知、低占
 | DXGI | VRAM 检测 | `windows` crate DXGI bindings ✅ |
 | Microsoft.Extensions.Hosting | DI + BackgroundService | `tokio` tasks ✅ |
 
-### 3.2 SignalR 协议——阻断级风险
+### 3.2 推送协议迁移：SignalR → SSE
 
-**问题核心**：SignalR 是 Microsoft 私有 Hub 协议，包含协商握手（`/negotiate`）、transport 协商、帧格式（JSON/MessagePack）。`tokio-tungstenite` 仅提供裸 WebSocket，**不实现 SignalR Hub Protocol**。
+**已确认决策（2026-07-25）**：SignalR Hub 替换为 SSE（Server-Sent Events）。
 
-当前两个 SignalR 消费者：
-- `xhmonitor-web`：使用 `@microsoft/signalr` npm 包，订阅 `metrics.system`、`metrics.processes` 等事件
-- `XhMonitor.Desktop`：使用 `Microsoft.AspNetCore.SignalR.Client`，`SignalRService.cs` 管理连接生命周期
+理由：本项目所有 Hub 方法（`ReceiveHardwareLimits`、`ReceiveSystemUsage`、`ReceiveProcessMetrics`、`ReceiveProcessMetricsLite`、`ReceiveProcessMetadata`）均为**服务端单向推送**，SignalR 的双向 RPC 能力从未使用。SSE 是此场景的自然协议选择，Rust `axum` 内建支持。
 
-**可行路径**：
+**各端迁移工作**：
 
-| 路径 | 描述 | 工作量 | 风险 |
-|------|------|------|------|
-| A. 保留 SignalR 兼容层 | Rust 端实现 SignalR 服务端协议（或保留薄 .NET SignalR proxy 进程） | 极高 / 无成熟 Rust crate | 高 |
-| B. 协议原子迁移 | 同步将 Service SignalR Hub、React 客户端、Desktop 客户端全部迁移到自定义 WebSocket/SSE 协议 | 高（三端联动） | 高，且违反"不破坏兼容"原则 |
-| C. **混合架构**：Service 继续托管在 .NET，仅将重量级采集逻辑提取为 Rust subprocess | Service 进程仍用 ASP.NET Core + SignalR，Rust 子进程负责 LHM 替代采集，通过 stdin/stdout 或 named pipe 交互 | 中 | 低，可渐进 |
+| 端 | 当前 | 迁移后 |
+|------|------|------|
+| Service | ASP.NET Core SignalR Hub | `axum` SSE 端点（`/hubs/metrics`） |
+| React (`xhmonitor-web`) | `@microsoft/signalr` | `@microsoft/fetch-event-source`（支持自定义 headers） |
+| Desktop（Slint/Rust 目标） | `Microsoft.AspNetCore.SignalR.Client` | `eventsource-client` crate 或 `reqwest` streaming SSE 客户端（Rust） |
 
-> **结论**：纯 Rust Service 替换在 SignalR 约束下不可行于短期。路径 C（.NET 保留 SignalR 壳，Rust 做采集内核）是唯一近期可落地的混合策略，且不破坏任何客户端兼容性。
+> 三端需原子同步上线。迁移后客户端按事件名（`system-usage`、`process-metrics` 等）分发，替代 SignalR hub 方法名路由。
 
-### 3.3 LibreHardwareMonitor——核心能力阻断
+**此决策的影响**：SignalR 不再是 Rust Service 化的阻断项。
+
+### 3.3 LibreHardwareMonitor——采集层架构决策
+
+> **架构决策（2026-07-25）**：
+> - **系统级指标**（CPU/GPU 温度、负载、网络速率、磁盘速率、功耗等）：**统一由 LHM bridge 提供**，不单独用 PDH/DXGI/WMI 重新实现。理由：各指标的个别实现精度与一致性存疑，LHM 已是经过验证的统一抽象层。
+> - **进程级指标**（per-process CPU%、内存、GPU 进程占用等）：保留现有采集方式（`windows` crate PDH、`NtQueryInformationProcess`、`D3DKMTQueryStatistics`），与 LHM bridge 互不干涉。
 
 **本项目消费的 LHM 传感器类型**（来自 `SystemMetricProvider` + `LibreHardwareMonitorGpuProvider` 代码审查；底层实现路径需对照 LHM 源码或运行时日志确认，此处不作推断）：
 
@@ -82,14 +86,14 @@ xhMonitor 是常驻后台的监视器程序，理想形态是"低感知、低占
 
 > 注：以上仅说明本项目请求的 HardwareType + SensorType 组合，不能从中推断 LHM 的底层实现是否依赖 WinRing0 内核驱动。在 Rust 迁移前，需针对每类传感器逐项查验 LHM 源码（`LibreHardwareMonitor/Hardware/` 对应子目录）或捕获运行时日志，确认哪些路径需要内核级访问。
 
-**可选策略**：
+**迁移策略**：
 
 | 策略 | 描述 | 代价 | 评级 |
 |------|------|------|------|
-| **LHM as subprocess**（推荐） | 将 LHM 封装为独立 .NET 小进程，JSON Lines 输出，Rust 通过 stdin/stdout 或 named pipe 读取 | 需新增 IPC 层；LHM 进程内存待实测 | ✅ 最低迁移风险，仍待 POC |
+| **LHM as subprocess**（已选定） | 将 LHM 封装为独立 .NET 小进程，JSON Lines 输出，Rust 通过 stdin/stdout 或 named pipe 读取；提供全部系统级传感器数据 | 需新增 IPC 层；LHM 进程内存待实测 | ✅ 最低迁移风险，仍待 POC |
 | 继续使用 LHM（.NET 壳留存） | LHM 作为 .NET 库留在 Service 进程 | Service 无法完全 Rust 化 | ✅ 零风险，现状维持 |
-| WinRing0 FFI（只读 POC） | Rust 通过 FFI 调用已随包发布的 `WinRing0x64.dll`，尝试复现温度/功耗读取 | ⚠️ **高维护成本**：(1) dll 存在≠驱动已加载，需管理员权限显式安装 `WinRing0x64.sys`；(2) Windows 11 启用 HVCI 时老版本 WinRing0 可能被阻断；(3) AMD Zen 5 / AI MAX 395 的 SMU 温度寄存器布局未经验证，不能使用固定 MSR 偏移；(4) 监控工具不应暴露 `WriteMsr`。仅作 POC，不作计划 | ⚠️ 须先逐项对照 LHM 源码验证寄存器映射，结论未知 |
-| PDH / DXGI 直接替代（功能降级） | 用 `windows` crate 替代 LHM，温度/GPU负载精度降级或缺失 | 温度数据丢失，GPU 负载仅能用 DXGI 性能计数器（AMD 精度有限） | ❌ 功能退化，仅在明确放弃温度数据时考虑 |
+| WinRing0 FFI（只读 POC） | Rust 通过 FFI 调用已随包发布的 `WinRing0x64.dll`，尝试复现温度/功耗读取 | ⚠️ **高维护成本**：(1) dll 存在≠驱动已加载；(2) HVCI 可能阻断；(3) AMD Zen 5 / AI MAX 395 寄存器布局未验证；(4) 不应暴露 `WriteMsr` | ⚠️ 仅作只读 POC，不作生产计划 |
+| ~~PDH / DXGI 系统级直接替代~~ | ~~用 `windows` crate 逐项替代 LHM 系统指标~~ | ~~精度/一致性存疑~~ | ❌ **已排除**——系统级指标统一由 LHM bridge 提供，此路径不再考虑 |
 
 ### 3.4 Service Rust 化内存预期
 
@@ -125,7 +129,7 @@ Desktop GC 堆仅 13 MiB，私有字节 ~149 MiB。**差值 ~136 MiB 来自运�
 | 透明悬浮窗（无背景） | `WS_EX_LAYERED` + `AllowsTransparency` | 所有候选框架均支持 ✅ |
 | 点击穿透 (`WS_EX_TRANSPARENT`) | `SetWindowLong` 动态切换 | 需要框架暴露 Win32 style 或提供 FFI ⚠️ |
 | 始终置顶 (`HWND_TOPMOST`) | `SetWindowPos` | 所有候选框架均支持 ✅ |
-| 任务栏嵌入窗口（`TaskbarMetricsWindow`） | `AppBar` API (`SHAppBarMessage`) | 需要 Win32 FFI，框架无内建支持 ⚠️ |
+| 任务栏附近定位（`TaskbarMetricsWindow`） | `FindWindow("Shell_TrayWnd")` + `GetWindowRect` + `SetWindowPos`；**不使用 AppBar/SHAppBarMessage**（已读 `TaskbarPlacementService.cs` 确认） | 需要 Win32 FFI；`FindWindow`/`GetWindowRect`/`SetWindowPos` 均为标准 P/Invoke，Slint FFI 可直接调用 ⚠️ |
 | 系统托盘 + 右键菜单 | `TrayIconService` / WinForms `NotifyIcon` | Tauri/Slint/Flutter 均有支持 ✅ |
 | 全局热键 (`RegisterHotKey`) | Win32 P/Invoke | 需要框架提供或 FFI ⚠️ |
 | 边缘吸附拖拽 | 自定义拖拽逻辑 + 屏幕坐标计算 | 可在任意框架中实现 ✅ |
