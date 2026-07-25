@@ -76,6 +76,7 @@ return 0;
 static LhmSnapshot BuildSnapshot(Computer computer)
 {
     double? cpuTemp = null, gpuTemp = null, gpuLoad = null;
+    string? cpuTempLabel = null;
     double  netUp = 0, netDown = 0, diskRead = 0, diskWrite = 0;
 
     foreach (var hw in computer.Hardware)
@@ -83,13 +84,13 @@ static LhmSnapshot BuildSnapshot(Computer computer)
         switch (hw.HardwareType)
         {
             case HardwareType.Cpu:
-                cpuTemp = SelectTemperature(hw);
+                (cpuTemp, cpuTempLabel) = SelectTemperatureWithLabel(hw);
                 break;
 
             case HardwareType.GpuAmd:
             case HardwareType.GpuNvidia:
             case HardwareType.GpuIntel:
-                gpuTemp ??= SelectTemperature(hw);
+                if (gpuTemp == null) (gpuTemp, _) = SelectTemperatureWithLabel(hw);
                 gpuLoad ??= SelectGpuLoad(hw);
                 break;
 
@@ -121,11 +122,11 @@ static LhmSnapshot BuildSnapshot(Computer computer)
     }
 
     return new LhmSnapshot(
-        Timestamp:   DateTime.UtcNow,
-        CpuTemp:     cpuTemp.HasValue ? Math.Round(cpuTemp.Value, 1) : null,
-        GpuTemp:     gpuTemp.HasValue ? Math.Round(gpuTemp.Value, 1) : null,
-        GpuLoad:     gpuLoad.HasValue ? Math.Round(gpuLoad.Value,  1) : null,
-        // Throughput sensors in LHM are in bytes/s; convert to MB/s
+        Timestamp:       DateTime.UtcNow,
+        CpuTemp:         cpuTemp.HasValue ? Math.Round(cpuTemp.Value, 1) : null,
+        CpuTempLabel:    cpuTempLabel,
+        GpuTemp:         gpuTemp.HasValue ? Math.Round(gpuTemp.Value, 1) : null,
+        GpuLoad:         gpuLoad.HasValue ? Math.Round(gpuLoad.Value,  1) : null,
         NetUploadMbps:   Math.Round(netUp   / 1_048_576.0, 3),
         NetDownloadMbps: Math.Round(netDown / 1_048_576.0, 3),
         DiskReadMbps:    Math.Round(diskRead  / 1_048_576.0, 3),
@@ -133,7 +134,7 @@ static LhmSnapshot BuildSnapshot(Computer computer)
     );
 }
 
-static double? SelectTemperature(IHardware hw)
+static (double? Value, string? Label) SelectTemperatureWithLabel(IHardware hw)
 {
     // 与 SystemMetricProvider.SelectPreferredTemperatureSensor 逻辑对齐
     ISensor? best = null;
@@ -145,19 +146,20 @@ static double? SelectTemperature(IHardware hw)
 
         if (best == null) { best = s; continue; }
         var n = s.Name;
-        if (n.Equals("Core Max",     StringComparison.OrdinalIgnoreCase)) { best = s; break; }
-        if (n.Contains("Package",    StringComparison.OrdinalIgnoreCase) ||
-            n.Contains("Tctl",       StringComparison.OrdinalIgnoreCase) ||
-            n.Contains("Tdie",       StringComparison.OrdinalIgnoreCase) ||
-            n.Contains("Hot Spot",   StringComparison.OrdinalIgnoreCase))
+        if (n.Equals("Core Max",  StringComparison.OrdinalIgnoreCase)) { best = s; break; }
+        if (n.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
+            n.Contains("Tctl",    StringComparison.OrdinalIgnoreCase) ||
+            n.Contains("Tdie",    StringComparison.OrdinalIgnoreCase) ||
+            n.Contains("Hot Spot",StringComparison.OrdinalIgnoreCase))
             best = s;
     }
-    return best?.Value.HasValue == true ? (double?)best.Value!.Value : null;
+    return best?.Value.HasValue == true
+        ? ((double?)best.Value!.Value, best.Name)
+        : (null, null);
 }
 
 static double? SelectGpuLoad(IHardware hw)
 {
-    // 与 LibreHardwareMonitorGpuProvider.GetSystemTotalAsync 逻辑对齐
     ISensor? core = null, engine = null;
     foreach (var s in hw.Sensors)
     {
@@ -175,14 +177,15 @@ static double? SelectGpuLoad(IHardware hw)
 // ── types ───────────────────────────────────────────────────────────────────
 
 record LhmSnapshot(
-    [property: JsonPropertyName("ts")]            DateTime  Timestamp,
-    [property: JsonPropertyName("cpu_temp")]       double?   CpuTemp,
-    [property: JsonPropertyName("gpu_temp")]       double?   GpuTemp,
-    [property: JsonPropertyName("gpu_load")]       double?   GpuLoad,
-    [property: JsonPropertyName("net_up_mbps")]    double    NetUploadMbps,
-    [property: JsonPropertyName("net_down_mbps")]  double    NetDownloadMbps,
-    [property: JsonPropertyName("disk_read_mbps")] double    DiskReadMbps,
-    [property: JsonPropertyName("disk_write_mbps")]double    DiskWriteMbps
+    [property: JsonPropertyName("ts")]               DateTime  Timestamp,
+    [property: JsonPropertyName("cpu_temp")]          double?   CpuTemp,
+    [property: JsonPropertyName("cpu_temp_label")]    string?   CpuTempLabel,
+    [property: JsonPropertyName("gpu_temp")]          double?   GpuTemp,
+    [property: JsonPropertyName("gpu_load")]          double?   GpuLoad,
+    [property: JsonPropertyName("net_up_mbps")]       double    NetUploadMbps,
+    [property: JsonPropertyName("net_down_mbps")]     double    NetDownloadMbps,
+    [property: JsonPropertyName("disk_read_mbps")]    double    DiskReadMbps,
+    [property: JsonPropertyName("disk_write_mbps")]   double    DiskWriteMbps
 );
 
 class UpdateVisitor : IVisitor

@@ -114,7 +114,10 @@ pub fn set_click_through(hwnd: HWND, enable: bool) {
 /// 与 TaskbarPlacementService 相同策略：
 /// FindWindow("Shell_TrayWnd") → GetWindowRect → SetWindowPos
 /// 不使用 AppBar/SHAppBarMessage（已读源码确认）
-pub fn position_near_taskbar(hwnd: HWND, win_w: i32, win_h: i32) {
+/// 与 TaskbarPlacementService 相同策略：
+/// FindWindow("Shell_TrayWnd") → GetWindowRect → SetWindowPos（仅位置，不改尺寸）
+/// 尺寸由 Slint 控制（逻辑像素），SetWindowPos 参数为物理像素，不可混用。
+pub fn position_near_taskbar(hwnd: HWND) {
     unsafe {
         let Ok(taskbar) = FindWindowW(w!("Shell_TrayWnd"), None) else {
             println!("[win32] Shell_TrayWnd not found");
@@ -123,16 +126,32 @@ pub fn position_near_taskbar(hwnd: HWND, win_w: i32, win_h: i32) {
         let mut tr = RECT::default();
         if GetWindowRect(taskbar, &mut tr).is_err() { return; }
 
-        // Centre vertically in taskbar, 220px gap left of tray area
+        // 取窗口自身的物理尺寸（已由 Slint 设置，含 DPI 缩放）
+        let mut wr = RECT::default();
+        if GetWindowRect(hwnd, &mut wr).is_err() { return; }
+        let win_w = wr.right  - wr.left;
+        let win_h = wr.bottom - wr.top;
+
+        // 竖向居中于任务栏，水平留 220px 托盘空间
         let left = tr.right - win_w - 220 - 8;
         let top  = tr.top + (tr.bottom - tr.top - win_h) / 2;
 
-        let _ = SetWindowPos(hwnd, HWND_TOPMOST, left, top, win_w, win_h, SWP_NOACTIVATE);
-        println!("[win32] placed at ({left}, {top}), taskbar=({},{},{},{})",
+        // SWP_NOSIZE：只移位置，不覆盖 Slint 已设定的物理尺寸
+        let _ = SetWindowPos(hwnd, HWND_TOPMOST, left, top, 0, 0,
+            SWP_NOSIZE | SWP_NOACTIVATE);
+        println!("[win32] placed at ({left}, {top}), win_physical=({win_w}x{win_h}), taskbar=({},{},{},{})",
             tr.left, tr.top, tr.right, tr.bottom);
     }
 }
 
+/// 置于屏幕左上角（物理像素 8,8），不改变 Slint 已设定的窗口尺寸
+pub fn position_top_left(hwnd: HWND) {
+    unsafe {
+        let _ = SetWindowPos(hwnd, HWND_TOPMOST, 8, 8, 0, 0,
+            SWP_NOSIZE | SWP_NOACTIVATE);
+        println!("[win32] positioned top-left (8,8)");
+    }
+}
 // ── global hotkey Ctrl+Alt+M ─────────────────────────────────────────────────
 
 /// Registers Ctrl+Alt+M on a dedicated thread.

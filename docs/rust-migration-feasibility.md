@@ -325,15 +325,19 @@ function Get-ProcessTreeMemory {
 - 进程级指标采集（`CreateToolhelp32Snapshot` + `GetProcessMemoryInfo`） ✅
 - LHM bridge self-contained 单文件发布大小：~70 MiB exe
 
-**非提权运行时 LHM 传感器覆盖**：
+**LHM 传感器覆盖（提权后完整验证，2026-07-25）**：
 
-| 传感器 | 状态 | 说明 |
-|------|------|------|
-| `gpu_temp` | ✅ 52–53°C | 无需提权 |
-| `gpu_load` | ✅ 27–32% | 无需提权 |
-| `net_up/down_mbps` | ✅ | 无需提权 |
-| `cpu_temp` | ❌ null | **需管理员权限**（MSR/WinRing0） |
-| `disk_read/write_mbps` | ⚠️ 0 | **需管理员权限**或传感器枚举未成功 |
+| 传感器 | 非提权 | 提权后 | 实测值 |
+|------|------|------|------|
+| `gpu_temp` | ✅ | ✅ | 52°C |
+| `gpu_load` | ✅ | ✅ | 29–33% |
+| `net_up/down_mbps` | ✅ | ✅ | 正常波动 |
+| `cpu_temp` | ❌ null | ⚠️ | 72–77°C（数值合理，传感器标签未对照）—— 见下方说明 |
+| `disk_write_mbps` | ⚠️ 0 | ✅ | 0.17–0.96 MB/s |
+| `disk_read_mbps` | ⚠️ 0 | ✅ | 0–0.06 MB/s |
+
+> **cpu_temp 标签待验证**：bridge 当前仅输出聚合温度值，未记录 LHM 实际选用的 sensor label（Tctl/Tdie/CPU Package/Core Max）。需在管理员环境下同时运行 bridge 和现有 XhMonitor.Service，对照两者读数与 sensor label 后，才能确认 bridge 取的是正确传感器。已在 bridge 代码中添加 `cpu_temp_label` 字段（见下一次 publish）。
+> 其余传感器（gpu_temp/gpu_load/disk/net）链路已验证通过。
 
 ### 8.2 Slint Desktop
 
