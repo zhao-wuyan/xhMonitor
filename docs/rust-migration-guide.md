@@ -244,7 +244,7 @@ pub struct MockLhmReader { snapshot: Option<LhmSnapshot> }  // 测试用
 - ✅ 置顶（`HWND_TOPMOST` + `SWP_NOSIZE`，不覆盖 Slint 逻辑尺寸）
 - ✅ 任务栏贴近定位
 - ⚠️ 点击穿透（实现已确认，交互行为待手动验证）
-- ⚠️ 全局热键 **Ctrl+Alt+Shift+X**（注册已确认；FloatingWindow.xaml.cs via RegisterHotKey/WndProc）；切换行为待手动验证。POC 使用 Ctrl+Alt+M 是 POC 自定义值，迁移需对齐原版。
+- ❌ 全局热键（Ctrl+Alt+Shift+X）**不迁移**（用户决策，POC 已移除）
 
 需新增实现：
 - `TaskbarPlacementService` 等价逻辑：`FindWindow("Shell_TrayWnd")` + `FindWindowEx("TrayNotifyWnd" / "MSTaskListWClass")`，检测任务栏边缘（Bottom/Top/Left/Right），8px/6px 间距，虚拟屏幕边界 clamp（TaskbarPlacementService.cs）
@@ -268,7 +268,7 @@ pub struct MockLhmReader { snapshot: Option<LhmSnapshot> }  // 测试用
 | 长按缩小动画（2s ScaleTransform → 0.90） | FloatingWindow.xaml.cs | Slint `animate` + Timer | P2-核心 |
 | 点击反馈关键帧动画（50ms/150ms） | FloatingWindow.xaml.cs | Slint keyframe animation | P2-核心 |
 | Kill 按钮二次确认 + 倒计时圆弧动画 | FloatingWindow.xaml.cs | Slint Canvas arc + Timer | P2-核心 |
-| 全局热键 Ctrl+Alt+Shift+X（点击穿透切换） | FloatingWindow.xaml.cs:RegisterHotKey | Win32 RegisterHotKey；**POC 当前使用 Ctrl+Alt+M（自定义值），P2 必须改为 Ctrl+Alt+Shift+X 以对齐原版** | P2-核心 |
+| 全局热键（原版 Ctrl+Alt+Shift+X） | FloatingWindow.xaml.cs | **不迁移（用户决策）** | — |
 | TaskbarMetricsWindow：边缘停靠 + 4 种柱状样式（文字/进度条 × 横/竖） | TaskbarMetricsWindow.xaml | Slint 第二个窗口 + orientation binding | P2-核心 |
 | 托盘图标 + 上下文菜单（管理员模式、Web 界面等） | TrayIconService.cs | WinForms NotifyIcon（保留策略）或 win32 Shell_NotifyIcon | P2-核心 |
 | 设置窗口（切换监控项、关键词、功耗预设） | SettingsWindow.xaml | Slint 设置页 | P2-扩展 |
