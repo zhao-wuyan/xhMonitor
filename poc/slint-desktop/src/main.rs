@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 win32::position_top_left(hwnd);
                 win32::set_click_through(hwnd, false);
                 if let Some(app) = weak.upgrade() {
-                    app.set_status_text("click-through: OFF (Ctrl+Alt+M)".into());
+                    app.set_status_text("穿透: OFF".into());
                 }
             },
         );
@@ -45,11 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let Some(hwnd) = win32::find_own_hwnd(WINDOW_TITLE) else { return; };
             win32::set_click_through(hwnd, enabled);
-            app.set_status_text(if enabled {
-                "click-through: ON  (Ctrl+Alt+M)".into()
-            } else {
-                "click-through: OFF (Ctrl+Alt+M)".into()
-            });
+            app.set_status_text(if enabled { "穿透: ON".into() } else { "穿透: OFF".into() });
         });
     }
 

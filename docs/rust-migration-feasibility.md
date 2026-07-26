@@ -353,16 +353,19 @@ function Get-ProcessTreeMemory {
 > **待验证**：软件渲染的 CPU 占用率（稳态，动画开启）；动画视觉效果是否达到设计要求。
 > **当前结论**：若软件后端 CPU 占用和视觉效果可接受，`SLINT_BACKEND=winit-software` 是显著改善内存的可行路径，需写入启动脚本；若不可接受，需 profiling GPU 后端根因后再决策。
 
-**Win32 集成验证结果**（从进程日志）：
+> ⚠️ **POC 范围说明**：此 POC 仅验证 Slint 作为宿主框架的 Win32 集成能力（透明窗口、置顶、定位、热键），**不复原原版悬浮窗的布局、数据绑定、有机矩阵动画和交互逻辑**。原版 UI 能力需在后续迁移中单独实现和验证。
+
+**Win32 宿主能力验证结果**（截图确认 2026-07-25）：
 
 | 能力 | 结果 |
 |------|------|
-| `EnumWindows` + `GetWindowThreadProcessId` PID 验证 HWND | ✅ `HWND(0x2b05b4)` 正确找到 |
-| 置顶 (`HWND_TOPMOST` + `SetWindowPos`) | ✅ |
-| 任务栏附近定位 (`FindWindow("Shell_TrayWnd")` + `GetWindowRect`) | ✅ 定位于 (3352, 2082)，任务栏 (0,2076,3840,2160) |
-| 点击穿透 (`WS_EX_TRANSPARENT` + `WS_EX_LAYERED`) | ✅ 启动时自动开启 |
-| 全局热键 Ctrl+Alt+M (`RegisterHotKey`) | ✅ 注册成功 |
-| 视觉确认（窗口外观/动画/热键实际效果） | **⬜ 需用户在屏幕上确认** |
+| `EnumWindows` + `GetWindowThreadProcessId` PID 验证 HWND | ✅ 已验证 |
+| 置顶 (`HWND_TOPMOST` + `SetWindowPos`) | ✅ 已验证 |
+| 任务栏附近定位 / 左上角定位（`SWP_NOSIZE`，不覆盖 Slint 逻辑尺寸） | ✅ 已验证（截图确认窗口完整无裁切） |
+| 点击穿透 (`WS_EX_TRANSPARENT` + `WS_EX_LAYERED`)，默认关闭 | ⚠️ 实现与样式写入已确认（日志）；穿透/恢复的实际鼠标行为待手动验证 |
+| 全局热键 Ctrl+Alt+M (`RegisterHotKey`) | ⚠️ 注册已确认（日志）；实际按键触发穿透切换待手动验证 |
+| 软件渲染 CPU 占用率（稳态） | ⬜ 未测量 |
+| 原版悬浮窗布局 / 数据绑定 / 有机矩阵动画 | ⬜ 未实现（超出 POC 范围） |
 
 ### 8.3 待用户完成的验证项（需管理员权限）
 
