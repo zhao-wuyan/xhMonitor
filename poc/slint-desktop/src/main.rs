@@ -1,7 +1,5 @@
 slint::include_modules!();
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use slint::ComponentHandle;
 
 mod win32;
@@ -36,19 +34,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::mem::forget(timer);
     }
 
-    // ── 热键 Ctrl+Alt+M 切换穿透 ─────────────────────────────────────────
-    {
-        let click_through = Arc::new(AtomicBool::new(false));  // 默认关闭
-        win32::start_hotkey_thread(app.as_weak(), move |app| {
-            let enabled = !click_through.load(Ordering::Relaxed);
-            click_through.store(enabled, Ordering::Relaxed);
-
-            let Some(hwnd) = win32::find_own_hwnd(WINDOW_TITLE) else { return; };
-            win32::set_click_through(hwnd, enabled);
-            app.set_status_text(if enabled { "穿透: ON".into() } else { "穿透: OFF".into() });
-        });
-    }
-
     // ── 内存定期上报（10s）────────────────────────────────────────────────
     {
         let timer = slint::Timer::default();
@@ -61,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     win32::print_memory();
-    println!("[poc] 左上角，不穿透；Ctrl+Alt+M 切换穿透；关闭窗口退出");
+    println!("[poc] 左上角，不穿透；关闭窗口退出");
     app.run()?;
     Ok(())
 }

@@ -4,11 +4,10 @@
 // 2. WS_EX_TRANSPARENT 点击穿透切换（必须配合 WS_EX_LAYERED）
 // 3. HWND_TOPMOST 始终置顶
 // 4. FindWindow("Shell_TrayWnd") + GetWindowRect + SetWindowPos 任务栏附近定位
-// 5. RegisterHotKey Ctrl+Alt+M（独立线程），invoke_from_event_loop 回调 Slint
+// 5. （热键已移除）
 
 use std::sync::Arc;
 use parking_lot::Mutex;
-use slint::Weak;
 
 use windows::Win32::{
     Foundation::{HWND, RECT, LPARAM, BOOL, TRUE, FALSE},
@@ -19,10 +18,6 @@ use windows::Win32::{
         GWL_EXSTYLE, HWND_TOPMOST,
         SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
         WS_EX_LAYERED, WS_EX_TRANSPARENT,
-        GetMessageW, MSG, WM_HOTKEY,
-    },
-    UI::Input::KeyboardAndMouse::{
-        RegisterHotKey, MOD_CONTROL, MOD_ALT,
     },
     System::{
         ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS},
@@ -152,48 +147,6 @@ pub fn position_top_left(hwnd: HWND) {
         println!("[win32] positioned top-left (8,8)");
     }
 }
-// ── global hotkey Ctrl+Alt+M ─────────────────────────────────────────────────
-
-/// Registers Ctrl+Alt+M on a dedicated thread.
-/// WS_EX_TRANSPARENT means the window gets no mouse events — hotkey is the only toggle.
-pub fn start_hotkey_thread<A>(app_weak: Weak<A>, on_toggle: impl Fn(&A) + Send + 'static)
-where
-    A: slint::ComponentHandle + 'static,
-{
-    let cb = Arc::new(Mutex::new(on_toggle));
-    std::thread::Builder::new()
-        .name("hotkey".into())
-        .spawn(move || {
-            const HOTKEY_ID: i32 = 1;
-            const VK_M: u32      = 0x4D;
-
-            unsafe {
-                if RegisterHotKey(None, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_M).is_err() {
-                    eprintln!("[win32] RegisterHotKey Ctrl+Alt+M failed (already in use?)");
-                    return;
-                }
-                println!("[win32] hotkey Ctrl+Alt+M registered");
-
-                let mut msg = MSG::default();
-                loop {
-                    // GetMessageW returns BOOL: >0 normal, 0 WM_QUIT, -1 error
-                    let r = GetMessageW(&mut msg, None, WM_HOTKEY, WM_HOTKEY);
-                    if r.0 <= 0 { break; }
-                    if msg.message == WM_HOTKEY && msg.wParam.0 as i32 == HOTKEY_ID {
-                        let cb2 = cb.clone();
-                        let w2  = app_weak.clone();
-                        slint::invoke_from_event_loop(move || {
-                            if let Some(app) = w2.upgrade() {
-                                (cb2.lock())(&app);
-                            }
-                        }).ok();
-                    }
-                }
-            }
-        })
-        .expect("hotkey thread spawn failed");
-}
-
 // ── memory reporter ───────────────────────────────────────────────────────────
 
 pub fn print_memory() {
