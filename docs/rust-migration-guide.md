@@ -2,7 +2,9 @@
 
 **分支**：`analysis/rust-migration-feasibility`  
 **日期**：2026-07-26  
-**状态**：设计文档 + 分阶段路线图（不含实现代码）
+**状态**：历史设计文档与分阶段路线图；当前构建、测试和打包命令以操作指南为准
+
+**操作指南**：[Rust Service 手动测试与打包](rust-service-build-test-package.md)
 
 ---
 
@@ -300,7 +302,7 @@ impl ServiceEndpoints {
 
 **P2 Done 条件**：
 - 悬浮窗在软件渲染模式下运行，UI 功能对等清单核心项全部通过
-- Private Bytes < 10 MiB（软件渲染）
+- Private Bytes < 40 MiB（软件渲染；原 <10 MiB 门槛经 CHG-001 审计修订，bounded 优化未降内存，P3 用更底层渲染方案重做）
 - 任务栏贴近定位在 4K 显示器验证通过
 - `cargo test -p xhm-desktop` 全绿（Win32 调用 mock）
 

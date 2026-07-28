@@ -1,0 +1,227 @@
+{
+  "schema_version": "review-findings/1.0",
+  "scope": "xhm-desktop Run 010 post-execute repair: 5 changed files + 3 G3 parity fixes + bounded Tokio memory optimization",
+  "level": "standard",
+  "verdict": "WARN",
+  "reviewed_at": "2026-07-28T10:05:00+08:00",
+  "reviewer": "ReviewRun",
+  "dimensions_reviewed": ["correctness", "security", "performance", "architecture", "maintainability", "best-practices"],
+  "files_reviewed": [
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/src/lib.rs",
+    "xhm-desktop/src/ui/floating_window.rs",
+    "xhm-desktop/src/ui/floating_interactions.rs",
+    "xhm-desktop/ui/floating_window.slint"
+  ],
+  "severity_distribution": {
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 1,
+    "info": 4,
+    "total": 6
+  },
+  "critical_files": [],
+  "findings": [
+    {
+      "id": "COR-001",
+      "dimension": "correctness",
+      "category": "spec-compliance",
+      "severity": "medium",
+      "title": "Memory gate spec-doc contradiction: docs/rust-migration-guide.md:305 still says <10 MiB while amended goal says <40 MiB",
+      "description": "P2 Done condition in docs/rust-migration-guide.md:305 specifies 'Private Bytes < 10 MiB (软件渲染)'. The session amended G4 goal done_when from <10 MiB to <40 MiB via transition request amend-g4-memory-threshold-chg001 (status: applied). The amendment is honest — self-check SC-09 records the original <10 MiB gate as FAIL (33.66 MiB normal, 37.04 MiB UI_SMOKE, 0/60 below 10 MiB), SC-10 records the <40 MiB fallback as PASS, and the amendment reason documents the bounded optimization failure and unreachability within P2. However, the spec doc was neither superseded nor conflict-marked, leaving a code/spec contradiction: the operative acceptance threshold (<40 MiB) diverges from the documented spec (<10 MiB).",
+      "location": {
+        "file": "docs/rust-migration-guide.md",
+        "line": 305,
+        "end_line": 305,
+        "code_snippet": "Private Bytes < 10 MiB（软件渲染）"
+      },
+      "source": "tool+llm",
+      "tool_rule": null,
+      "suggested_fix": "Route the contradiction per review contract: mark as spec conflict (maestro spec conflict mark) since both thresholds are valid at different scopes (<10 MiB ideal P3 target, <40 MiB P2 reality), then adjudicate via knowledge audit. Do NOT edit the spec in place.",
+      "references": [
+        "runs/20260727-010-execute/outputs/self-check.json:SC-09",
+        "runs/20260727-010-execute/outputs/self-check.json:SC-10",
+        "runs/20260727-010-execute/outputs/memory-samples-post-repair.json",
+        "runs/20260727-006-execute/outputs/memory-samples.json"
+      ],
+      "effort": "low",
+      "confidence": "high",
+      "impact": {
+        "scope": "medium",
+        "affected_files": ["docs/rust-migration-guide.md"],
+        "blast_radius": "P2 acceptance criteria ambiguity; future reviewers may cite the stale <10 MiB threshold"
+      },
+      "spec_violation": "P2 Done condition Private Bytes < 10 MiB is UNMET against the original spec; amended <40 MiB is MET but spec doc not updated"
+    },
+    {
+      "id": "PRF-001",
+      "dimension": "performance",
+      "category": "memory-optimization",
+      "severity": "low",
+      "title": "Bounded Tokio current-thread optimization did not reduce memory (+2.5 MiB unexplained delta)",
+      "description": "Run 010 changed the SSE dedicated thread from new_multi_thread(2) to new_current_thread().enable_all() and narrowed tokio features to rt,sync,time,macros. The bounded optimization attempt is honest — self-check SC-08 records it as FAIL: post-repair UI_SMOKE min 37.039 MiB vs baseline UI_SMOKE min 34.504 MiB under identical measurement condition (release,winit-software,UI_SMOKE). The +2.535 MiB delta is explicitly flagged as 'unproven (no controlled runtime-only A/B performed)'. The optimization is functionally benign (no regression in SSE behavior) but did not achieve its memory-reduction goal. Deeper memory reduction requires P3-era renderer/backend substitution, outside P2 boundary.",
+      "location": {
+        "file": "xhm-desktop/src/lib.rs",
+        "line": 400,
+        "end_line": 402,
+        "code_snippet": "let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build();"
+      },
+      "source": "tool+llm",
+      "tool_rule": "cargo clippy -p xhm-desktop --all-targets -- -D warnings: clean (exit 0)",
+      "suggested_fix": "No code fix needed — the optimization is honest and functionally correct. The memory delta is unexplained without a controlled A/B; if memory reduction is required, pursue P3 renderer/backend substitution (deferred per session decisions).",
+      "references": [
+        "runs/20260727-010-execute/outputs/execution.json:evidence.memory_post_repair_ui_smoke",
+        "runs/20260727-010-execute/outputs/execution.json:evidence.memory_baseline_delta",
+        "runs/20260727-006-execute/outputs/memory-samples.json"
+      ],
+      "effort": "high",
+      "confidence": "high",
+      "impact": {
+        "scope": "low",
+        "affected_files": ["xhm-desktop/src/lib.rs", "xhm-desktop/Cargo.toml"],
+        "blast_radius": "No functional impact; memory optimization goal unmet but honestly recorded"
+      }
+    },
+    {
+      "id": "COR-002",
+      "dimension": "correctness",
+      "category": "g3-parity-locked-toggle",
+      "severity": "info",
+      "title": "panel_after_click Locked->Expanded parity verified exact match against C# FloatingWindowViewModel.cs:258-270",
+      "description": "panel_after_click at floating_window.rs:92-101 implements Expanded->Locked, Locked->Expanded, Collapsed->no-op, Clickthrough->no-op. This exactly matches C# OnBarClick (FloatingWindowViewModel.cs:258-270): Expanded->Locked, Locked->Expanded, Collapsed not responsive. The Rust impl adds an explicit Clickthrough=>Clickthrough arm (C# implicitly does nothing for Clickthrough in OnBarClick). The 4-variant PanelState enum (Collapsed, Expanded, Locked, Clickthrough) matches C# enum at FloatingWindowViewModel.cs:31. Deterministic test panel_after_click_parity_matches_csharp_locked_expanded_toggle (floating_window.rs:1113-1121) asserts all 4 transitions.",
+      "location": {
+        "file": "xhm-desktop/src/ui/floating_window.rs",
+        "line": 92,
+        "end_line": 101,
+        "code_snippet": "pub fn panel_after_click(panel: PanelState) -> PanelState { match panel { PanelState::Expanded => PanelState::Locked, PanelState::Locked => PanelState::Expanded, PanelState::Collapsed => PanelState::Collapsed, PanelState::Clickthrough => PanelState::Clickthrough, } }"
+      },
+      "source": "tool+llm",
+      "tool_rule": null,
+      "suggested_fix": "No fix needed — parity verified.",
+      "references": [
+        "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:258-270",
+        "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:31",
+        "xhm-desktop/src/desktop_state.rs:16-22"
+      ],
+      "effort": "low",
+      "confidence": "high",
+      "impact": null
+    },
+    {
+      "id": "COR-003",
+      "dimension": "correctness",
+      "category": "g3-parity-work-area-clamp",
+      "severity": "info",
+      "title": "clamp_rect_to_work_area pure helper correctly clamps unsnapped drag to monitor work area with edge-case coverage",
+      "description": "clamp_rect_to_work_area (floating_interactions.rs:419-432) is a pure, Win32-agnostic helper that clamps a window rect to the work area. It handles: invalid rects (returns original), oversized windows (left/top align to work_area origin via .max(work_area.left)), offscreen left/right/negative origin. Uses saturating_sub/saturating_add for overflow safety. finish_drag (floating_window.rs:857-885) calls this in the unsnapped branch, only invoking SetWindowPos when clamped position differs from current. Two deterministic tests cover offscreen/negative and oversized/invalid cases. The round_i32 helper (floating_interactions.rs:434-438) clamps to i32 range before casting — prevents UB.",
+      "location": {
+        "file": "xhm-desktop/src/ui/floating_interactions.rs",
+        "line": 419,
+        "end_line": 432,
+        "code_snippet": "pub fn clamp_rect_to_work_area(window: PhysicalRect, work_area: PhysicalRect) -> PhysicalRect { if !window.is_valid() || !work_area.is_valid() { return window; } let max_left = work_area.right.saturating_sub(width).max(work_area.left); ... }"
+      },
+      "source": "tool+llm",
+      "tool_rule": null,
+      "suggested_fix": "No fix needed — correct and well-tested.",
+      "references": [
+        "xhm-desktop/src/ui/floating_window.rs:857-885"
+      ],
+      "effort": "low",
+      "confidence": "high",
+      "impact": null
+    },
+    {
+      "id": "MNT-001",
+      "dimension": "maintainability",
+      "category": "g3-parity-pinned-listview",
+      "severity": "info",
+      "title": "Pinned cards capped ListView with max-visible-pinned and pinned-area-height correctly bounds geometry",
+      "description": "floating_window.slint:202-203 adds max-visible-pinned (3) and pinned-area-height = min(pinned-processes.length, max-visible-pinned) * 40px. The pinned-list ListView (slint:276-285) uses this capped height. The Shell window height (slint:184) uses min(218px, 96px + pinned-area-height) for collapsed state. The details rectangle (slint:289,291) uses y=92px+pinned-area-height and height=408px-pinned-area-height. This caps the pinned area at 3 cards (120px) with scrollable overflow via ListView. Architecture is clean: pure Slint property binding, no imperative code. Backward-compatible: processes list and details panel geometry consume the capped height.",
+      "location": {
+        "file": "xhm-desktop/ui/floating_window.slint",
+        "line": 202,
+        "end_line": 203,
+        "code_snippet": "property <int> max-visible-pinned: 3; property <length> pinned-area-height: min(root.pinned-processes.length, root.max-visible-pinned) * 40px;"
+      },
+      "source": "tool+llm",
+      "tool_rule": null,
+      "suggested_fix": "No fix needed — well-structured.",
+      "references": [
+        "xhm-desktop/ui/floating_window.slint:184",
+        "xhm-desktop/ui/floating_window.slint:276-285",
+        "xhm-desktop/ui/floating_window.slint:289-291"
+      ],
+      "effort": "low",
+      "confidence": "high",
+      "impact": null
+    },
+    {
+      "id": "SEC-001",
+      "dimension": "security",
+      "category": "anti-pattern-scan",
+      "severity": "info",
+      "title": "cargo clippy -p xhm-desktop --all-targets -- -D warnings: clean (exit 0) — no anti-patterns detected",
+      "description": "Anti-pattern check via cargo clippy -p xhm-desktop --all-targets -- -D warnings ran clean (exit code 0, re-verified during review). No warnings, no clippy violations across all 5 changed files and all targets. No unsafe code added. No hardcoded secrets. No SQL/command injection vectors. Saturating arithmetic in clamp_rect_to_work_area prevents integer overflow. The round_i32 helper clamps f64 to i32 range before casting. No backward-compatibility breaks: no public API signatures changed, tokio runtime change is internal to the SSE dedicated thread.",
+      "location": {
+        "file": "xhm-desktop/Cargo.toml",
+        "line": 20,
+        "end_line": 20,
+        "code_snippet": "tokio = { version = \"1\", features = [\"rt\", \"sync\", \"time\", \"macros\"] }"
+      },
+      "source": "tool",
+      "tool_rule": "cargo clippy -p xhm-desktop --all-targets -- -D warnings",
+      "suggested_fix": "No fix needed — clippy clean.",
+      "references": [],
+      "effort": "low",
+      "confidence": "high",
+      "impact": null
+    }
+  ],
+  "deep_dives": [],
+  "issue_candidates": [
+    {
+      "finding_ref": "COR-001",
+      "title": "[correctness] Memory gate spec-doc contradiction: docs <10 MiB vs amended goal <40 MiB",
+      "severity": "medium",
+      "priority": 3,
+      "location": "docs/rust-migration-guide.md:305",
+      "description": "P2 Done condition specifies <10 MiB; session amended G4 goal to <40 MiB via CHG-001 but spec doc not superseded or conflict-marked. Amendment is honest (SC-09 records FAIL, SC-10 records PASS, no suppressed thresholds, no fabricated evidence).",
+      "fix_direction": "Route per review contract: maestro spec conflict mark for the threshold dispute (both valid at different scopes), then adjudicate via knowledge audit. Do not edit spec in place.",
+      "notes": "Pre-existing condition escalated and amended; not a regression introduced by Run 010 code changes.",
+      "tags": ["review", "correctness", "spec-compliance", "memory-gate"]
+    }
+  ],
+  "antipattern_report": {
+    "tool": "cargo clippy",
+    "command": "cargo clippy -p xhm-desktop --all-targets -- -D warnings",
+    "exit_code": 0,
+    "status": "clean",
+    "warnings": 0,
+    "evidence": "Re-verified during review: exit code 0, no output (clean). Run 010 self-check SC-02 corroborates: 'Finished dev profile in 8.08s; clean'.",
+    "checked_at": "2026-07-28T10:03:00+08:00"
+  },
+  "memory_gate_amendment_honesty": {
+    "amendment_id": "amend-g4-memory-threshold-chg001",
+    "status": "applied",
+    "original_threshold": "< 10 MiB",
+    "amended_threshold": "< 40 MiB",
+    "original_gate_result": "FAIL",
+    "amended_gate_result": "PASS",
+    "suppressed_thresholds": false,
+    "fabricated_evidence": false,
+    "evidence_verified": {
+      "baseline_samples": "runs/20260727-006-execute/outputs/memory-samples.json: 60 samples, min 34.504 MiB, 0/60 below 10 MiB",
+      "post_repair_samples": "runs/20260727-010-execute/outputs/memory-samples-post-repair.json: 60 samples, min 37.039 MiB, 0/60 below 10 MiB",
+      "normal_release": "33.656 MiB (below 40 MiB amended threshold)",
+      "ui_smoke": "37.039 MiB (below 40 MiB amended threshold)",
+      "optimization_delta": "+2.535 MiB unexplained (no controlled A/B performed) — honestly flagged"
+    },
+    "spec_doc_updated": false,
+    "concern": "The spec doc (docs/rust-migration-guide.md:305) was not superseded or conflict-marked after the amendment. This leaves a code/spec contradiction that should be routed per the review contract."
+  },
+  "backward_compatibility": {
+    "breaks": false,
+    "details": "No public API signatures changed. Cargo.toml tokio features narrowed (rt,sync,time,macros) — internal to SSE dedicated thread. lib.rs runtime change (new_current_thread vs new_multi_thread) is internal. No Slint interface changes (pinned-area-height and max-visible-pinned are new internal properties, no existing property removed or renamed). clamp_rect_to_work_area is a new pure helper, no existing function modified."
+  }
+}

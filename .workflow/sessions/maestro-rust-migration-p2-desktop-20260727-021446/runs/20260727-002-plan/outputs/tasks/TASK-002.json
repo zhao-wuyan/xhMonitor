@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-002"
+  },
+  "id": "TASK-002",
+  "title": "验证 tray-icon 0.24.1 与 Slint active event loop 共存",
+  "description": "在 G1 先完成真实 Windows 托盘 go/no-go spike，锁定后续 G2 可采用的唯一托盘路径。",
+  "type": "spike",
+  "status": "pending",
+  "goal_ref": "G1",
+  "execute_step_id": "step-003-execute",
+  "wave_id": "WAVE-002",
+  "estimated_minutes": 45,
+  "requirement_refs": [
+    "GUIDE-P2-WIN-TRAY",
+    "GUIDE-P2-WIN-TRAY-MENU",
+    "P2-C12",
+    "SESSION-EC-06",
+    "BOUNDARY-SOFTWARE-RENDERER",
+    "BOUNDARY-SYSTEM-SETTINGS-READONLY",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [
+    "TASK-001"
+  ],
+  "files": [
+    "Cargo.lock",
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/src/main.rs",
+    "xhm-desktop/src/tray/mod.rs",
+    "xhm-desktop/src/tray/event_bridge.rs",
+    "xhm-desktop/ui/shell.slint"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/Services/TrayIconService.cs:42-78,96-126,128-187",
+    "XhMonitor.Desktop/XhMonitor.Desktop.csproj:9-25",
+    "XhMonitor.Desktop/Assets/icon.ico",
+    "poc/slint-desktop/src/main.rs:9-50",
+    ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-001-analyze/outputs/findings.json:304-310,333-338,362-366"
+  ],
+  "action": "锁定 tray-icon = \"0.24\"（Cargo.lock 解析为 0.24.1 证据），以官方 TrayIconBuilder、MenuEvent::set_event_handler 与 TrayIconEvent::set_event_handler 在 Windows active event loop 内完成事件、双击、通知和退出 spike。",
+  "implementation_steps": [
+    "使用 TrayIconBuilder 及 menu::{Menu, MenuItem, CheckMenuItem, PredefinedMenuItem, MenuEvent}；不得自创托盘 API。",
+    "用 TrayIconEvent::set_event_handler 和 MenuEvent::set_event_handler 接收事件，经 channel/active-loop forwarding 投递 UI 命令，callback 不直接写 Slint component。",
+    "建立 show_hide、open_web、click_through、admin_mode、settings、about、exit 七个 command id；双击映射 show_hide，管理员项 disabled 或仅提示 P3 启用。",
+    "只读复用 XhMonitor.Desktop/Assets/icon.ico；在 Slint Timer 持续运行时验证菜单、checked、双击、notification click 和退出清理。",
+    "仅在记录版本、Windows、backend 和最小复现的 NO-GO 后才允许直接 Shell_NotifyIcon fallback；最终只能保留一套活跃实现。"
+  ],
+  "convergence_criteria": [
+    "CLI：Cargo.lock 显示 tray-icon 0.24.1，源码使用官方 builder/event handler。",
+    "[UI-observable] 手工：动画运行时七项菜单、双击、checked、通知、show/hide 和 exit 不丢事件、不死锁。",
+    "Read：事件桥只向 active loop/UI queue 发命令。",
+    "手工：形成明确 GO；若 NO-GO，fallback 以同一矩阵通过且原路径不并存。"
+  ],
+  "verify": {
+    "commands": [
+      "$env:SLINT_BACKEND='winit-software'; cargo run -p xhm-desktop",
+      "cargo test -p xhm-desktop tray"
+    ],
+    "manual_scenarios": [
+      "连续执行七项 command、双击、通知点击；退出后确认无残留 icon/process。"
+    ],
+    "expected": "形成 G2 可复用的唯一托盘实现决策。"
+  },
+  "acceptance_evidence": [
+    "tray-icon 0.24.1 锁文件片段",
+    "GO/NO-GO 记录",
+    "菜单/通知/退出事件顺序日志与截图"
+  ],
+  "rollback": {
+    "steps": [
+      "移除 spike 接线和 tray 模块",
+      "恢复 TASK-001 main/shell 与依赖锁"
+    ],
+    "preserves": [
+      "软件壳",
+      "C# 托盘资产与路径"
+    ]
+  }
+}

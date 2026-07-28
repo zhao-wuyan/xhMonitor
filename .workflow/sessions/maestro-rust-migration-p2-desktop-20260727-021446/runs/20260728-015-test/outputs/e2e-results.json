@@ -1,0 +1,41 @@
+{
+  "_meta": { "kind": "e2e-results", "schema": "e2e-results/1.0", "role": "primary" },
+  "schema_version": "e2e-results/1.0",
+  "run_id": "20260728-015-test",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "summary": "Frontend-verify: xhm-desktop release binary launched with winit-software + UI_SMOKE. Orca computer-use accessibility tree confirmed live UI rendering: all 6 metric cells (NET/CPU/RAM/GPU/VRAM/POWER) display values, pinned process cards visible, PROCESSES list active, tray-ready status cycling. Window 620x520 at expected position.",
+  "screenshot": "outputs/frontend-screenshot.png",
+  "environment": {
+    "binary": "target/release/xhm-desktop.exe",
+    "mode": "release,winit-software,UI_SMOKE",
+    "pid_screenshot": 23628,
+    "window": { "title": "xhm-desktop", "width": 620, "height": 520 }
+  },
+  "observations": [
+    {
+      "id": "FV-01",
+      "requirement": "Software renderer produces visible UI",
+      "status": "pass",
+      "evidence": "Orca accessibility tree elementCount=85; all 6 metric cells text present (NET 18.2/74.6, CPU 37%/62C, RAM 21.5GB/32.0GB, GPU 86%/71C, VRAM 9.2GB/16.0GB, POWER 118W/max 160W)"
+    },
+    {
+      "id": "FV-02",
+      "requirement": "Pinned process cards visible",
+      "status": "pass",
+      "evidence": "Pinned list shows 'G3 Kill Smoke Target' and 'Fixture Process 02' with CPU/MEM/GPU columns and unpin X buttons"
+    },
+    {
+      "id": "FV-03",
+      "requirement": "Process list active",
+      "status": "pass",
+      "evidence": "PROCESSES header present; process list shows entries with PID, CPU, MEM columns; status text 'tray-ready #483' cycling"
+    },
+    {
+      "id": "FV-04",
+      "requirement": "No crash or panic during observation",
+      "status": "pass",
+      "evidence": "Process stable across multiple get-app-state polls; clean shutdown via Stop-Process"
+    }
+  ],
+  "status": "DONE"
+}

@@ -1,0 +1,286 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-004-execute",
+  "sequence": 4,
+  "parent_run_id": null,
+  "command": {
+    "name": "execute",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/execute.md",
+    "content_hash": "482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "resolved_prompt_hash": "482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "contract_hash": "2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-004-01",
+    "GATE-004-02",
+    "GATE-004-03",
+    "GATE-004-04",
+    "GATE-004-05",
+    "GATE-004-06",
+    "GATE-004-07",
+    "GATE-004-08",
+    "GATE-004-09",
+    "GATE-004-10",
+    "GATE-004-11"
+  ],
+  "output": {
+    "produces": [
+      "ART-004-001",
+      "ART-004-002",
+      "ART-004-003",
+      "ART-004-004",
+      "ART-004-005",
+      "ART-004-002",
+      "ART-004-005",
+      "ART-004-004",
+      "ART-004-001"
+    ],
+    "primary_artifact_id": null,
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260727-004-execute",
+    "command": "execute",
+    "verdict": "ready",
+    "summary": "G2 stabilization repaired compilation, Process32NextW mapping, and runtime resource ownership. Broken drag/snap production wiring was removed and deferred to G3. Build/test passed x3, clippy is clean, and dual-window smoke exited cleanly.",
+    "constraints": [],
+    "decisions": [
+      {
+        "id": "D-G2-11",
+        "text": "Remove incomplete drag/snap callbacks and defer correct production wiring to G3.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-G2-12",
+        "text": "Own controller, guard, timers, and SSE thread resources through TrayRuntime.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-CLI-1",
+        "status": "accepted",
+        "text": "drag/snap 端到端生产接线属于主悬浮窗交互（P2-核心），由 G3 execute Run 承接；PlacementCalculator 纯函数 + snap 距离/边界已表驱动测试覆盖。"
+      },
+      {
+        "id": "D-CLI-2",
+        "status": "accepted",
+        "text": "process.rs INVALID_HANDLE_VALUE/ERROR_NO_MORE_FILES 错误映射已修复；root PID 不存在返回 NotFound。"
+      }
+    ],
+    "concerns": [
+      "Drag/snap production wiring deferred to G3; G2 pure geometry remains tested.",
+      "Real placement smoke covered Bottom only; other edges remain pure-function coverage.",
+      "drag/snap 生产接线（TouchArea 逻辑坐标→物理坐标→SetWindowPos）未完成；pure geometry 已测试，端到端移动留至 G3 主悬浮窗交互。",
+      "真机四边定位仅验证 Bottom；Top/Left/Right 由纯函数表驱动测试覆盖。",
+      "release 构建超时未完成，debug 全绿且 clippy clean。"
+    ],
+    "artifact_refs": [
+      "ART-004-001",
+      "ART-004-002",
+      "ART-004-003",
+      "ART-004-004",
+      "ART-004-005",
+      "ART-004-002",
+      "ART-004-005",
+      "ART-004-004",
+      "ART-004-001"
+    ],
+    "next": [
+      {
+        "command": "verify",
+        "reason": "G2 stabilization complete; Run intentionally remains unsealed",
+        "needs": [
+          "current-plan",
+          "current-execution"
+        ]
+      }
+    ],
+    "details": {}
+  },
+  "started_at": "2026-07-27T15:00:06+08:00",
+  "completed_at": "2026-07-27T20:02:11+08:00",
+  "sealed_at": "2026-07-27T20:02:11+08:00",
+  "chain_step_id": "step-004-execute",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "plan",
+          "alias": "current-plan",
+          "required": false
+        },
+        {
+          "kind": "review-findings",
+          "alias": "latest-review",
+          "required": false
+        },
+        {
+          "kind": "fix-directions",
+          "alias": "latest-fix-directions",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        },
+        {
+          "kind": "priors",
+          "alias": "session-priors",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "execution",
+          "primary": false,
+          "path": "outputs/execution.json",
+          "alias": "current-execution"
+        },
+        {
+          "kind": "task-results",
+          "primary": false,
+          "path": "outputs/task-results.json"
+        },
+        {
+          "kind": "self-check",
+          "primary": false,
+          "path": "outputs/self-check.json"
+        },
+        {
+          "kind": "change-manifest",
+          "primary": false,
+          "path": "outputs/change-manifest.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "execution-complete",
+          "self-check-passed"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-27T07:00:06.415Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/execute.md",
+    "content_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "resolved_prompt_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "prepare_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "workflow_hash": "sha256:a07b36e4da5cdb979fd6ebddbe650d1180c7fcaf6c8ee86462bb05aeb5595211",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_00021841fa536d8f6488acec",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-27T15:00:06+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 8,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "--session {session}"
+    ],
+    "consumes": [
+      "ART-001-002",
+      "ART-002-004"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "plan",
+          "alias": "current-plan",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-002-plan",
+          "producer_run_hash": "sha256:e79170dad7557c6fe35f6697c229ab4ef632c6838eefec78168fd2a1ae1a7b2d",
+          "producer_status": "sealed",
+          "artifact_id": "ART-002-004",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "observed_artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "artifact_schema": "plan/1.0",
+          "artifact_registry_revision": 3,
+          "producer_contract_hash": "sha256:20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41"
+        },
+        "assessment_hash": "sha256:ce4fb0e0936438c65c0fbfa2b40222137855326d24cb92a4cfd9b3388967612d"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REUSE",
+        "reason_codes": [
+          "REUSE_ELIGIBLE"
+        ],
+        "consumer": {
+          "kind": "priors",
+          "alias": "session-priors",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-001-analyze",
+          "producer_run_hash": "sha256:0e6376c8a98e34c7743036d86f7f7d8c6d1c8496e6356adb476b6f740c75b2e1",
+          "producer_status": "sealed",
+          "artifact_id": "ART-001-002",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "observed_artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "artifact_schema": "priors/1.0",
+          "artifact_registry_revision": 3,
+          "producer_contract_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+        },
+        "assessment_hash": "sha256:358dbca7382095ebcbd0c1bdb672e141cd7e6b6df143abf266298fcd3fe7c80b"
+      }
+    ]
+  }
+}

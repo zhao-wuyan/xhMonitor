@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "self-check/1.0",
+  "run_id": "20260727-006-execute",
+  "goal_ref": "G4",
+  "check_items": [
+    {
+      "id": "SC-01",
+      "check": "cargo test -p xhm-desktop green x3 consecutive",
+      "status": "pass",
+      "evidence": "Rounds 1-3 each passed 125 tests with 0 failures"
+    },
+    {
+      "id": "SC-02",
+      "check": "cargo clippy -p xhm-desktop --all-targets -- -D warnings clean",
+      "status": "pass",
+      "evidence": "Final command returned OK"
+    },
+    {
+      "id": "SC-03",
+      "check": "Taskbar four presentation variants and four-edge normalization",
+      "status": "pass",
+      "evidence": "16 deterministic presentation/edge geometry cells plus production orientation assertions"
+    },
+    {
+      "id": "SC-04",
+      "check": "Value-only taskbar changes do not rebuild layout",
+      "status": "pass",
+      "evidence": "TaskbarRenderState remained at one rebuild for changed percentage/ratio and rebuilt for changed label token"
+    },
+    {
+      "id": "SC-05",
+      "check": "Settings writes remain within allowed subset",
+      "status": "pass",
+      "evidence": "wiremock GET/PUT passed; unknown and deferred keys never appear in serialized body"
+    },
+    {
+      "id": "SC-06",
+      "check": "Update check is one-request metadata-only behavior",
+      "status": "pass",
+      "evidence": "404/invalid/same/newer/server-error tests passed; newer test observed one received request"
+    },
+    {
+      "id": "SC-07",
+      "check": "Release winit-software taskbar/settings/About smoke",
+      "status": "pass",
+      "evidence": "release process started; logs recorded backend=winit-software, G4 windows opened, distinct HWNDs, taskbar placement and dual SSE runtime; Orca observed live xhm-desktop UI"
+    },
+    {
+      "id": "SC-08",
+      "check": "Private Bytes 60/60 below 10 MiB",
+      "status": "fail",
+      "evidence": "60 samples in outputs/memory-samples.json: min 34.504 MiB, max 34.719 MiB, below_10_count=0"
+    },
+    {
+      "id": "SC-09",
+      "check": "No prohibited hotkey or update side-effect source patterns",
+      "status": "pass",
+      "evidence": "both scoped regex scans returned No matches found"
+    },
+    {
+      "id": "SC-10",
+      "check": "Restricted projects remain untouched",
+      "status": "pass",
+      "evidence": "G4 write manifest contains only xhm-desktop and current Run outputs; no xhmonitor-web, XhMonitor.*, xhm-core or xhm-service write target"
+    }
+  ],
+  "overall": "fail",
+  "blocking_issues": [
+    "TASK-014 Private Bytes gate: observed 34.504-34.719 MiB versus required <10 MiB"
+  ],
+  "deferred_items": []
+}

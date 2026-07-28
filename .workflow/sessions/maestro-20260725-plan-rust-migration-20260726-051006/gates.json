@@ -1,0 +1,13 @@
+{
+  "schema_version": "gates/1.0",
+  "revision": 0,
+  "gates": {},
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "blocked": 0,
+    "failed": 0,
+    "active_gate_ids": [],
+    "blocking_run_id": null
+  }
+}

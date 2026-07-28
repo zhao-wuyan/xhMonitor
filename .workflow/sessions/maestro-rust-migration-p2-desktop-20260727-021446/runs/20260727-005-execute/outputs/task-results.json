@@ -1,0 +1,98 @@
+{
+  "_meta": {
+    "kind": "task-results",
+    "schema": "task-results/1.0",
+    "role": "attachment"
+  },
+  "schema_version": "task-results/1.0",
+  "run_id": "20260727-005-execute",
+  "goal_ref": "G3",
+  "tasks": [
+    {
+      "task_id": "TASK-009",
+      "plan_ref": "WAVE-009",
+      "title": "验证并固化 winit-software 有机动画组件",
+      "status": "completed",
+      "decision": "GO",
+      "files": [
+        "xhm-desktop/ui/components/organic_shell.slint",
+        "xhm-desktop/examples/organic_animation_spike.rs",
+        "xhm-desktop/ui/shell.slint"
+      ],
+      "convergence": {
+        "renderer": "winit-software release harness",
+        "states": "Floating, Dragging, DockTop, DockBottom, DockLeft, DockRight",
+        "geometry": "floating radius 6px; non-contact radius 8px; horizontal gap 12px; vertical gap 8px; snap margin 80px",
+        "dock_visuals": "Top/Bottom cyan 2px contact edge; Left/Right amber 2px contact edge",
+        "transition": "300ms cubic-bezier(0.19,1,0.22,1)",
+        "timelines": "long press 2000ms to 0.90 and 200ms recovery; click 0.92 at 50ms to 1.0 at 150ms; Kill 1000ms with circumference 43.98",
+        "dpi_matrix": "scale 1.0=716x539, 1.5=1066x789, 2.0=1416x1039; all six state and three timeline accessibility labels present"
+      },
+      "verify_commands": [
+        "cargo build -p xhm-desktop --example organic_animation_spike --release",
+        "SLINT_BACKEND=winit-software target/release/examples/organic_animation_spike.exe"
+      ]
+    },
+    {
+      "task_id": "TASK-010",
+      "plan_ref": "WAVE-010",
+      "title": "实现主悬浮窗指标、Pinned/ListView 与 Toast 呈现",
+      "status": "completed",
+      "files": [
+        "xhm-desktop/ui/floating_window.slint",
+        "xhm-desktop/src/ui/mod.rs",
+        "xhm-desktop/src/ui/floating_window.rs",
+        "xhm-desktop/src/lib.rs",
+        "xhm-desktop/ui/shell.slint"
+      ],
+      "convergence": {
+        "visual": "#990A0A0A-equivalent rgba background, 8px radius, software-rendered drop shadow",
+        "metrics": "CPU/GPU/RAM/VRAM/NET/Power plus per-disk read/write rows",
+        "thresholds": "<50 green #4ade80; <80 yellow #facc15; >=80 red #f87171; max<=0 memory green",
+        "progress": "ThinProgressBar height 3px and ratio clamped 0..1",
+        "models": "PinnedStack uses a model; process details use virtualized Slint ListView; collapsed projection contains only pinned rows",
+        "state": "shared G1 DesktopState reducer is projected on the Slint event loop; no second SSE client or reducer in the UI module",
+        "toast": "reusable 3-second overlay used by long-press, power, and Kill results",
+        "smoke": "Orca observed six metrics, threshold colors, two pinned cards, a 36-row scroll model, three disk rows, and stable 620x520 shell geometry"
+      },
+      "tests": 4,
+      "verify_commands": [
+        "cargo test -p xhm-desktop floating_window",
+        "cargo test -p xhm-desktop"
+      ]
+    },
+    {
+      "task_id": "TASK-011",
+      "plan_ref": "WAVE-011",
+      "title": "实现主窗拖拽、长按/点击、功耗与 Kill 状态机",
+      "status": "completed",
+      "files": [
+        "xhm-desktop/ui/floating_window.slint",
+        "xhm-desktop/src/ui/floating_window.rs",
+        "xhm-desktop/src/ui/floating_interactions.rs",
+        "xhm-desktop/src/ui/mod.rs",
+        "xhm-desktop/src/lib.rs"
+      ],
+      "convergence": {
+        "pointer_precedence": "strict >5 physical-pixel drag cancels click and long press; lost MouseUp cancel ends drag",
+        "coordinate_bridge": "TouchArea logical coordinates + per-window DPI + current physical RECT produce physical pointer coordinates",
+        "production_move": "continuous drag and release snap both call NativeWindowPositionOps::move_topmost, whose production implementation is SetWindowPos",
+        "snap": "snap_floating_window uses 24px boundary and monitor rcWork with occupied taskbar edge exclusion; real Left-edge smoke ended at x=0 with set_window_pos=true",
+        "long_press": "injected monotonic clock, 2000ms trigger, 0.90 visual scale, 200ms cancel/recovery; real 2150ms hold logged the trigger",
+        "click": "0.92 at 50ms and 1.0 at 150ms; panel lock transition remains deterministic",
+        "power": "existing RestClient sequence GET /api/v1/power/warmup then POST /api/v1/power/scheme/next; success and error return through Toast without worker-thread Slint writes",
+        "kill": "Idle to Confirming(1000ms/43.98) to Killing; second click dispatches one KillOnce call; safe process smoke returned Success and removed the row",
+        "hotkeys": "zero RegisterHotKey, WM_HOTKEY, or Ctrl+Alt+Shift+X matches"
+      },
+      "tests": 7,
+      "verify_commands": [
+        "cargo test -p xhm-desktop floating_interactions",
+        "cargo test -p xhm-desktop",
+        "cargo clippy -p xhm-desktop --all-targets -- -D warnings"
+      ]
+    }
+  ],
+  "new_tests": 11,
+  "full_suite_tests": 111,
+  "full_suite_passes": 3
+}

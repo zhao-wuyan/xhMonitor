@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-003"
+  },
+  "id": "TASK-003",
+  "title": "实现 exe-relative Service 发现与既有 REST 客户端",
+  "description": "按现有 PascalCase 文件、35181 默认端口和 xhm-service 路由建立可替换的 Desktop 服务连接边界。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G1",
+  "execute_step_id": "step-003-execute",
+  "wave_id": "WAVE-003",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "GUIDE-P2-SERVICE-DISCOVERY",
+    "G1-DONE",
+    "BOUNDARY-FROZEN-SSE",
+    "BOUNDARY-NO-SERVICE-CORE-WRITES",
+    "BOUNDARY-NO-CSHARP-CUTOVER",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [
+    "TASK-002"
+  ],
+  "files": [
+    "Cargo.toml",
+    "Cargo.lock",
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/src/config.rs",
+    "xhm-desktop/src/service_client/mod.rs",
+    "xhm-desktop/src/service_client/rest.rs",
+    "xhm-desktop/src/lib.rs"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/service-endpoints.json:1-8",
+    "XhMonitor.Desktop/service-endpoints.schema.json:1-30",
+    "XhMonitor.Desktop/Services/ServiceDiscovery.cs:13-186,221-230",
+    "xhm-service/src/state.rs:14-48",
+    "xhm-service/src/api/config.rs:69-85,208-250,291-370",
+    "xhm-service/src/api/power.rs:20-30,66-81,89-181",
+    "xhm-service/src/api/widget.rs:20-30,60-110",
+    "xhm-core/src/models.rs:294-343,372-431",
+    "docs/rust-migration-guide.md:280-307"
+  ],
+  "action": "从 current_exe().parent() 读取嵌套 PascalCase ServiceEndpoints.ApiBaseUrl/SignalRUrl，失败回退 http://localhost:35181，并以兼容 health probe 和精确 REST shape 消费既有服务。",
+  "implementation_steps": [
+    "SignalRUrl 只兼容读取；Rust realtime URL 始终由 API base 加 /api/v1/events 派生。",
+    "生产入口用 current_exe()?.parent()，测试注入 exe/base dir；缺失、不可读、坏 JSON、缺 wrapper、坏 URL、无 parent 均诊断后默认 35181，不 panic。",
+    "对 preferred..+10 做 300ms 异步 /api/v1/config/health probe；仅 200/503 且 status Healthy/Unhealthy 命中，使现有 35179 文件兼容 P1 35181。",
+    "REST 只绑定现有 config health/settings/admin-status、power warmup/scheme next、widgetconfig 路由；settings 使用 BTreeMap<String,BTreeMap<String,String>>，WidgetSettings/MetricClickConfig 复用 xhm-core。",
+    "HTTP transport 可替换；non-2xx 保留 status 与 error/message，不修改 xhm-service。"
+  ],
+  "convergence_criteria": [
+    "Test：文件缺失/权限/坏 JSON/坏 URL/legacy 35179 fixture 均确定回退且不 panic。",
+    "Test：注入时钟覆盖 preferred、+2 命中、全失败；默认端口精确 35181。",
+    "Test：mock HTTP 捕获 method/path/body 与服务端大小写和 shape 一致。",
+    "Read：SignalRUrl 未被用作 realtime URL，未创建新 API。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop config",
+      "cargo test -p xhm-desktop rest"
+    ],
+    "manual_scenarios": [
+      "用现有 35179 文件模拟 35181 health 命中并记录最终 API/SSE URL。"
+    ],
+    "expected": "文件系统、HTTP 和时钟边界确定且兼容。"
+  },
+  "acceptance_evidence": [
+    "配置 fixtures 与 URL 断言",
+    "mock HTTP request capture",
+    "受限目录零写入清单"
+  ],
+  "rollback": {
+    "steps": [
+      "移除 config/rest 模块与 manifest/export 变更"
+    ],
+    "preserves": [
+      "现有 endpoints 文件",
+      "xhm-service API"
+    ]
+  }
+}

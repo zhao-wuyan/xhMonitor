@@ -1,0 +1,438 @@
+{
+  "schema_version": "memory-samples/1.0",
+  "summary": {
+    "schema_version": "memory-samples/1.0",
+    "condition": "release,winit-software,main+taskbar,dual-SSE,post-repair,UI_SMOKE",
+    "count": 60,
+    "min_mib": 37.039,
+    "max_mib": 37.277,
+    "below_10_count": 0
+  },
+  "samples": [
+    {
+      "sample": 1,
+      "timestamp": "2026-07-27T23:54:47.5176888+08:00",
+      "pid": 3768,
+      "private_bytes": 38858752,
+      "private_mib": 37.059
+    },
+    {
+      "sample": 2,
+      "timestamp": "2026-07-27T23:54:48.5461898+08:00",
+      "pid": 3768,
+      "private_bytes": 38858752,
+      "private_mib": 37.059
+    },
+    {
+      "sample": 3,
+      "timestamp": "2026-07-27T23:54:49.5677456+08:00",
+      "pid": 3768,
+      "private_bytes": 38858752,
+      "private_mib": 37.059
+    },
+    {
+      "sample": 4,
+      "timestamp": "2026-07-27T23:54:50.5919991+08:00",
+      "pid": 3768,
+      "private_bytes": 38883328,
+      "private_mib": 37.082
+    },
+    {
+      "sample": 5,
+      "timestamp": "2026-07-27T23:54:51.6313832+08:00",
+      "pid": 3768,
+      "private_bytes": 38883328,
+      "private_mib": 37.082
+    },
+    {
+      "sample": 6,
+      "timestamp": "2026-07-27T23:54:52.6591868+08:00",
+      "pid": 3768,
+      "private_bytes": 38883328,
+      "private_mib": 37.082
+    },
+    {
+      "sample": 7,
+      "timestamp": "2026-07-27T23:54:53.6841928+08:00",
+      "pid": 3768,
+      "private_bytes": 38883328,
+      "private_mib": 37.082
+    },
+    {
+      "sample": 8,
+      "timestamp": "2026-07-27T23:54:54.7102933+08:00",
+      "pid": 3768,
+      "private_bytes": 38887424,
+      "private_mib": 37.086
+    },
+    {
+      "sample": 9,
+      "timestamp": "2026-07-27T23:54:55.7367452+08:00",
+      "pid": 3768,
+      "private_bytes": 38887424,
+      "private_mib": 37.086
+    },
+    {
+      "sample": 10,
+      "timestamp": "2026-07-27T23:54:56.7572748+08:00",
+      "pid": 3768,
+      "private_bytes": 38887424,
+      "private_mib": 37.086
+    },
+    {
+      "sample": 11,
+      "timestamp": "2026-07-27T23:54:57.7800752+08:00",
+      "pid": 3768,
+      "private_bytes": 39022592,
+      "private_mib": 37.215
+    },
+    {
+      "sample": 12,
+      "timestamp": "2026-07-27T23:54:58.8061984+08:00",
+      "pid": 3768,
+      "private_bytes": 39034880,
+      "private_mib": 37.227
+    },
+    {
+      "sample": 13,
+      "timestamp": "2026-07-27T23:54:59.8328163+08:00",
+      "pid": 3768,
+      "private_bytes": 39034880,
+      "private_mib": 37.227
+    },
+    {
+      "sample": 14,
+      "timestamp": "2026-07-27T23:55:00.8629115+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 15,
+      "timestamp": "2026-07-27T23:55:01.8814184+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 16,
+      "timestamp": "2026-07-27T23:55:02.9243782+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 17,
+      "timestamp": "2026-07-27T23:55:03.9417112+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 18,
+      "timestamp": "2026-07-27T23:55:04.9690391+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 19,
+      "timestamp": "2026-07-27T23:55:05.9998499+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 20,
+      "timestamp": "2026-07-27T23:55:07.0296778+08:00",
+      "pid": 3768,
+      "private_bytes": 39071744,
+      "private_mib": 37.262
+    },
+    {
+      "sample": 21,
+      "timestamp": "2026-07-27T23:55:08.0540131+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 22,
+      "timestamp": "2026-07-27T23:55:09.0791370+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 23,
+      "timestamp": "2026-07-27T23:55:10.1060603+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 24,
+      "timestamp": "2026-07-27T23:55:11.1358074+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 25,
+      "timestamp": "2026-07-27T23:55:12.1573711+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 26,
+      "timestamp": "2026-07-27T23:55:13.1876160+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 27,
+      "timestamp": "2026-07-27T23:55:14.2081655+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 28,
+      "timestamp": "2026-07-27T23:55:15.2322292+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 29,
+      "timestamp": "2026-07-27T23:55:16.2552816+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 30,
+      "timestamp": "2026-07-27T23:55:17.2814843+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 31,
+      "timestamp": "2026-07-27T23:55:18.3102232+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 32,
+      "timestamp": "2026-07-27T23:55:19.3367465+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 33,
+      "timestamp": "2026-07-27T23:55:20.3646383+08:00",
+      "pid": 3768,
+      "private_bytes": 39079936,
+      "private_mib": 37.27
+    },
+    {
+      "sample": 34,
+      "timestamp": "2026-07-27T23:55:21.3839120+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 35,
+      "timestamp": "2026-07-27T23:55:22.4108685+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 36,
+      "timestamp": "2026-07-27T23:55:23.4352492+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 37,
+      "timestamp": "2026-07-27T23:55:24.4639331+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 38,
+      "timestamp": "2026-07-27T23:55:25.4886537+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 39,
+      "timestamp": "2026-07-27T23:55:26.5175187+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 40,
+      "timestamp": "2026-07-27T23:55:27.5440425+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 41,
+      "timestamp": "2026-07-27T23:55:28.5692316+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 42,
+      "timestamp": "2026-07-27T23:55:29.5980435+08:00",
+      "pid": 3768,
+      "private_bytes": 39088128,
+      "private_mib": 37.277
+    },
+    {
+      "sample": 43,
+      "timestamp": "2026-07-27T23:55:30.6260105+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 44,
+      "timestamp": "2026-07-27T23:55:31.6484958+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 45,
+      "timestamp": "2026-07-27T23:55:32.6755147+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 46,
+      "timestamp": "2026-07-27T23:55:33.7001243+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 47,
+      "timestamp": "2026-07-27T23:55:34.7298025+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 48,
+      "timestamp": "2026-07-27T23:55:35.7523815+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 49,
+      "timestamp": "2026-07-27T23:55:36.7800298+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 50,
+      "timestamp": "2026-07-27T23:55:37.8107097+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 51,
+      "timestamp": "2026-07-27T23:55:38.8347188+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 52,
+      "timestamp": "2026-07-27T23:55:39.8539856+08:00",
+      "pid": 3768,
+      "private_bytes": 38973440,
+      "private_mib": 37.168
+    },
+    {
+      "sample": 53,
+      "timestamp": "2026-07-27T23:55:40.8853272+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 54,
+      "timestamp": "2026-07-27T23:55:41.9033996+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 55,
+      "timestamp": "2026-07-27T23:55:42.9347631+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 56,
+      "timestamp": "2026-07-27T23:55:43.9610455+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 57,
+      "timestamp": "2026-07-27T23:55:44.9895895+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 58,
+      "timestamp": "2026-07-27T23:55:46.0099260+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 59,
+      "timestamp": "2026-07-27T23:55:47.0295942+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    },
+    {
+      "sample": 60,
+      "timestamp": "2026-07-27T23:55:48.0552233+08:00",
+      "pid": 3768,
+      "private_bytes": 38838272,
+      "private_mib": 37.039
+    }
+  ],
+  "_meta": {
+    "kind": "memory-samples",
+    "schema": "memory-samples/1.0",
+    "role": "attachment"
+  }
+}

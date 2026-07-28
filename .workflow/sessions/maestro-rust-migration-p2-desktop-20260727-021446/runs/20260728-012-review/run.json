@@ -1,0 +1,247 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260728-012-review",
+  "sequence": 12,
+  "parent_run_id": null,
+  "command": {
+    "name": "review",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/review.md",
+    "content_hash": "188ae5203f4c085f9a15284b4cc0598d9e0b5ee658348760afaf666a87bb0a66",
+    "resolved_prompt_hash": "188ae5203f4c085f9a15284b4cc0598d9e0b5ee658348760afaf666a87bb0a66",
+    "contract_hash": "cf5f15e03994559fa3b7543ab838fd95137ebcf53210769936be2ac032b55679"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-012-01",
+    "GATE-012-02",
+    "GATE-012-03",
+    "GATE-012-04",
+    "GATE-012-05",
+    "GATE-012-06",
+    "GATE-012-07",
+    "GATE-012-08"
+  ],
+  "output": {
+    "produces": [
+      "ART-012-001",
+      "ART-012-002",
+      "ART-012-003",
+      "ART-012-004",
+      "ART-012-005"
+    ],
+    "primary_artifact_id": null,
+    "verdict": "ready_with_concerns"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260728-012-review",
+    "command": "review",
+    "verdict": "ready_with_concerns",
+    "summary": "P2 desktop review of Run 010 post-execute repair: 5 files reviewed across 6 dimensions. Clippy clean (exit 0). 3 G3 parity fixes verified exact against C# source. No backward-compat breaks. No anti-patterns. Memory gate amendment honest (no suppressed thresholds, no fabricated evidence). 1 medium finding: spec-doc <10 MiB vs amended <40 MiB contradiction not routed. 1 low finding: bounded Tokio optimization did not reduce memory (+2.5 MiB unexplained delta, honestly recorded). 4 info findings: parity verified, clamp correct, ListView capped, clippy clean. Run left unsealed.",
+    "constraints": [
+      {
+        "id": "C-RV-1",
+        "text": "Run artifacts only; product source read-only.",
+        "status": "locked"
+      },
+      {
+        "id": "C-RV-2",
+        "text": "No subagents; no agy/aug; Auggie MCP unavailable — target definitions pre-read by parent.",
+        "status": "locked"
+      },
+      {
+        "id": "C-RV-3",
+        "text": "Do NOT edit product source code; review is read-only analysis.",
+        "status": "locked"
+      },
+      {
+        "id": "C-RV-4",
+        "text": "Do not call session done/decide/next; leave Run unsealed.",
+        "status": "locked"
+      }
+    ],
+    "decisions": [
+      {
+        "id": "D-RV-1",
+        "text": "Verdict=ready_with_concerns: 1 medium finding (spec-doc contradiction), 0 critical, 0 high.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-RV-2",
+        "text": "Memory gate amendment honest: SC-09 FAIL (<10 MiB), SC-10 PASS (<40 MiB), no suppression, no fabrication.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-RV-3",
+        "text": "G3 parity all PASS: Locked toggle, pinned overflow, unsnapped clamp — verified against C# source.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-RV-4",
+        "text": "Antipattern check clean: cargo clippy -p xhm-desktop --all-targets -- -D warnings exit 0.",
+        "status": "accepted"
+      }
+    ],
+    "concerns": [
+      "completed with concerns"
+    ],
+    "artifact_refs": [
+      "ART-012-001",
+      "ART-012-002",
+      "ART-012-003",
+      "ART-012-004",
+      "ART-012-005"
+    ],
+    "next": [
+      {
+        "command": "maestro spec conflict mark",
+        "reason": "Route COR-001: memory gate threshold dispute (docs <10 MiB vs amended <40 MiB) for adjudication.",
+        "needs": []
+      },
+      {
+        "command": "P3 renderer/backend substitution",
+        "reason": "Deeper memory reduction deferred to P3 (outside P2 boundary).",
+        "needs": []
+      }
+    ],
+    "details": {}
+  },
+  "started_at": "2026-07-28T09:37:14+08:00",
+  "completed_at": "2026-07-28T09:54:04+08:00",
+  "sealed_at": "2026-07-28T09:54:04+08:00",
+  "chain_step_id": "step-010-review",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "execution",
+          "alias": "current-execution",
+          "required": true
+        },
+        {
+          "kind": "verification",
+          "alias": "latest-verification",
+          "required": false
+        },
+        {
+          "kind": "review-findings",
+          "alias": "prior-review",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "review-findings",
+          "primary": false,
+          "path": "outputs/review-findings.json",
+          "alias": "latest-review"
+        },
+        {
+          "kind": "spec-conflicts",
+          "primary": false,
+          "path": "outputs/spec-conflicts.json"
+        },
+        {
+          "kind": "issue-candidates",
+          "primary": false,
+          "path": "outputs/issue-candidates.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "dimension-coverage",
+          "severity-triaged"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:cf5f15e03994559fa3b7543ab838fd95137ebcf53210769936be2ac032b55679",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-28T01:37:14.835Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/review.md",
+    "content_hash": "sha256:188ae5203f4c085f9a15284b4cc0598d9e0b5ee658348760afaf666a87bb0a66",
+    "resolved_prompt_hash": "sha256:188ae5203f4c085f9a15284b4cc0598d9e0b5ee658348760afaf666a87bb0a66",
+    "prepare_hash": "sha256:188ae5203f4c085f9a15284b4cc0598d9e0b5ee658348760afaf666a87bb0a66",
+    "workflow_hash": "sha256:8bb1d81e90db737444a10947dcf3e10241a4750a7e3ef89624c48fa0168efbf1",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_ed9029779bf086a2a5aca7ab",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-28T09:37:14+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 45,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "--session {session}"
+    ],
+    "consumes": [
+      "ART-010-002"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "execution",
+          "alias": "current-execution",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-010-execute",
+          "producer_run_hash": "sha256:6a5090e2cbd3087bfa271cb9653473f7c58380d2f3299e7fc728756df00965a9",
+          "producer_status": "sealed",
+          "artifact_id": "ART-010-002",
+          "artifact_role": "primary",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+          "observed_artifact_hash": "sha256:e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+          "artifact_schema": "execution/1.0",
+          "artifact_registry_revision": 11,
+          "producer_contract_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+        },
+        "assessment_hash": "sha256:54b2bb200ed037a0878db28cacbebd29b198277508f56c6eac37cd92f1355231"
+      }
+    ]
+  }
+}

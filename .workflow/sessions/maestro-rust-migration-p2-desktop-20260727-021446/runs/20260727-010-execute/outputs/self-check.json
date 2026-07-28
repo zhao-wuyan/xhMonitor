@@ -1,0 +1,79 @@
+{
+  "schema_version": "self-check/1.0",
+  "run_id": "20260727-010-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "checks": [
+    {
+      "id": "SC-01",
+      "check": "cargo check -p xhm-desktop --all-targets",
+      "status": "pass",
+      "evidence": "Finished dev profile in 8.69s; no errors"
+    },
+    {
+      "id": "SC-02",
+      "check": "cargo clippy -p xhm-desktop --all-targets -- -D warnings",
+      "status": "pass",
+      "evidence": "Finished dev profile in 8.08s; clean"
+    },
+    {
+      "id": "SC-03",
+      "check": "cargo test -p xhm-desktop",
+      "status": "pass",
+      "evidence": "128 passed; 0 failed; includes new panel_after_click Locked->Expanded parity test and clamp_rect_to_work_area tests"
+    },
+    {
+      "id": "SC-04",
+      "check": "cargo build -p xhm-desktop --release",
+      "status": "pass",
+      "evidence": "Finished release profile in 75s"
+    },
+    {
+      "id": "SC-05",
+      "check": "G3 parity: Locked click -> Expanded (C# FloatingWindowViewModel.cs:258-270)",
+      "status": "pass",
+      "evidence": "panel_after_click_parity_matches_csharp_locked_expanded_toggle; floating_window.rs:92-101"
+    },
+    {
+      "id": "SC-06",
+      "check": "G3 parity: pinned overflow capped scrollable ListView",
+      "status": "pass",
+      "evidence": "floating_window.slint:202-203,276-291; max-visible-pinned=3, pinned-area-height capped, collapsed/details geometry consume capped height"
+    },
+    {
+      "id": "SC-07",
+      "check": "G3 parity: unsnapped drag release clamps to monitor work_area",
+      "status": "pass",
+      "evidence": "clamp_rect_to_work_area floating_interactions.rs:419-432; finish_drag floating_window.rs:857-885; 2 deterministic tests"
+    },
+    {
+      "id": "SC-08",
+      "check": "Bounded memory optimization attempt (Tokio current-thread + minimal features)",
+      "status": "fail",
+      "evidence": "post-repair UI_SMOKE 60 samples min 37.039 MiB vs baseline UI_SMOKE min 34.504 MiB under identical measurement condition; optimization did not reduce memory (+2.535 MiB). Cause of the delta is unproven (no controlled runtime-only A/B performed)."
+    },
+    {
+      "id": "SC-09",
+      "check": "Release Private Bytes < 10 MiB (original P2 gate)",
+      "status": "fail",
+      "evidence": "post-repair normal 33.66 MiB; UI_SMOKE 37.0 MiB; 0/60 below 10 MiB"
+    },
+    {
+      "id": "SC-10",
+      "check": "Release Private Bytes < 40 MiB (user-approved fallback acceptance)",
+      "status": "pass",
+      "evidence": "post-repair normal min 33.656 MiB; UI_SMOKE min 37.039 MiB; both below 40 MiB"
+    }
+  ],
+  "blocking_issues": [
+    "Original P2 gate Private Bytes < 10 MiB is not met; one bounded optimization attempt (Tokio current-thread + minimal features) did not reduce memory under the baseline measurement condition. User-approved fallback acceptance < 40 MiB is met (normal 33.66 MiB, UI_SMOKE 37.0 MiB) but requires G4 done_when / definition_of_done amendment via session amend (not done in this Run)."
+  ],
+  "deferred_items": [
+    "G4 done_when and boundary_contract.definition_of_done memory threshold amendment (< 10 MiB -> < 40 MiB) via --amend",
+    "Deeper memory reduction requires P3-era renderer/backend substitution, outside P2 boundary"
+  ],
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "attachment"
+  }
+}

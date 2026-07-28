@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "kind": "execution",
+    "schema": "execution/1.0",
+    "role": "primary",
+    "alias": "current-execution"
+  },
+  "stage": "execute",
+  "scope": "P1 Service 迁移：xhm-service 与 C# Service API 功能对等，可在 35181 并行运行",
+  "source_plan": "docs/rust-migration-guide.md §4 P1",
+  "status": "completed",
+  "tasks": [
+    { "id": "foundation", "status": "completed", "detail": "建立 xhm-service crate、RuntimeConfig/ServicePaths/AppState 与共享 trait 注入" },
+    { "id": "sqlite", "status": "completed", "detail": "实现 rusqlite MetricStore、既有 migration schema、聚合/清理/配置与 widget 持久化" },
+    { "id": "rest", "status": "completed", "detail": "实现 20 个 REST 端点并按 C# 状态码与 JSON 契约冒烟验证" },
+    { "id": "power", "status": "completed", "detail": "实现 RyzenAdj native 延迟加载、CLI 回退与设备权限/能力验证" },
+    { "id": "realtime", "status": "completed", "detail": "实现 SignalR negotiate/WS 文本协议与 SSE 双适配器、连接级订阅状态" },
+    { "id": "worker", "status": "completed", "detail": "实现系统/进程采集、SQLite 持久化、Full/Lite/Metadata 路由、聚合与清理循环" },
+    { "id": "lifecycle", "status": "completed", "detail": "实现 35181 binary、CORS、graceful shutdown 与 lhm-bridge child 回收" },
+    { "id": "memory", "status": "completed", "detail": "限制 sysinfo 采集字段及 bridge .NET GC heap；两个连续 60 秒窗口共 26 个样本全部小于 30 MiB" }
+  ],
+  "self_check": {
+    "result": "passed",
+    "commands": [
+      "cargo fmt --check",
+      "cargo test --workspace",
+      "cargo clippy --workspace --all-targets -- -D warnings",
+      "cargo build -p xhm-service --release",
+      "dotnet build lhm-bridge/lhm-bridge.csproj -c Release --no-restore",
+      "REST 20 endpoint smoke on 127.0.0.1:35181",
+      "SignalR negotiate + WebSocket subscription and SSE live-event smoke",
+      "Private Bytes sampling: 13 samples/60 s x 2"
+    ],
+    "tests_passed": 148,
+    "tests_failed": 0,
+    "lint_warnings": 0,
+    "notes": "无管理员权限、无真实 RyzenAdj 依赖时测试全绿；release service 使用实际 lhm-bridge child 完成实时推送与内存验证。"
+  },
+  "decisions": [
+    { "id": "D-P1-1", "decision": "保留 SignalR WS 文本协议供 Web 使用，并提供 SSE 给 Desktop" },
+    { "id": "D-P1-2", "decision": "所有部署路径从 current_exe().parent() 派生，service 固定并行端口 35181" },
+    { "id": "D-P1-3", "decision": "bridge child 使用 8 MiB GC heap hard limit、conserve-memory 9、non-concurrent GC 与 RetainVM=0，以满足组合 Private Bytes 门禁" }
+  ],
+  "concerns": [],
+  "next": [
+    "执行独立 review，复核 API 对等、双实时协议、生命周期与性能证据"
+  ]
+}

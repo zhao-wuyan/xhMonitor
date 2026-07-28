@@ -1,0 +1,108 @@
+{
+  "schema_version": "hypotheses/1.0",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-009-debug",
+  "completed_at": "2026-07-27T23:27:44+08:00",
+  "target": "xhm-desktop release Private Bytes exceeds the P2 <10 MiB target",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "rank": 1,
+      "hypothesis": "The 34.5 MiB baseline is primarily a time-growing leak or SSE retry/payload accumulation rather than startup footprint.",
+      "tested_action": "Inspect the accepted 60 samples, collect a fresh 60-sample exact UI_SMOKE run, collect a 30-sample ordinary release run, and compare unavailable/retrying SSE with two live connected SSE streams.",
+      "commands": [
+        "read runs/20260727-006-execute/outputs/memory-samples.json",
+        "powershell.exe -NoProfile -File work/measure-desktop.ps1 -UiSmoke -WarmupSeconds 10 -SampleCount 60 -IntervalMs 1000",
+        "powershell.exe -NoProfile -File work/measure-desktop.ps1 -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000",
+        "powershell.exe -NoProfile -File work/measure-desktop.ps1 -ExePath work/runtime-connected/xhm-desktop.exe -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000"
+      ],
+      "evidence": [
+        "Accepted 60 samples occupy four plateaus between 34.504 and 34.719 MiB; the final 34 samples are exactly 34.503906 MiB.",
+        "Fresh ordinary release varies only 0.039 MiB across 30 seconds (33.492-33.531 MiB).",
+        "Fresh connected SSE is flat at 33.277344 MiB and is 0.237 MiB lower than disconnected/retrying normal mean."
+      ],
+      "file_refs": [
+        "../20260727-006-execute/outputs/memory-samples.json:3",
+        "work/normal-release-30.json:15",
+        "work/connected-sse-30.json:15",
+        "xhm-desktop/src/service_client/sse.rs:263"
+      ],
+      "status": "refuted",
+      "observation": "No monotonic growth was observed and network connection state changes less than 0.3 MiB while the threshold gap is 23.5 MiB in normal state.",
+      "contradicting_evidence": "The async runtime and reqwest clients exist in both SSE conditions, so this test refutes transport traffic/retry as dominant, not all Tokio/HTTP runtime cost.",
+      "confidence": 0.94
+    },
+    {
+      "id": "H2",
+      "rank": 2,
+      "hypothesis": "Visible Slint/winit-software window state materially increases Private Bytes through retained rendering/UI allocations.",
+      "tested_action": "Compare normal and G4_SMOKE launches, then show Settings and About sequentially inside one normal process and sample each stage.",
+      "commands": [
+        "powershell.exe -NoProfile -File work/measure-desktop.ps1 -Label g4-smoke-30 -G4Smoke -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000",
+        "powershell.exe -NoProfile -File work/profile-runtime-actions.ps1 -ExePath target/release/xhm-desktop.exe -OutputPath work/runtime-actions.json"
+      ],
+      "evidence": [
+        "Separate launches: G4 visible Settings/About mean 39.935 MiB versus normal 33.514 MiB, delta 6.421 MiB.",
+        "Same process: showing Settings adds 4.648 MiB; showing About adds another 1.621 MiB, cumulative 6.269 MiB.",
+        "GDI object count rises from 25 to 27 to 29 as the two windows become visible.",
+        "XHM_DESKTOP_UI_SMOKE expands the main window to a Locked details panel with 36 rows and measures 3.895 MiB above ordinary collapsed state in the fresh launcher."
+      ],
+      "file_refs": [
+        "xhm-desktop/src/lib.rs:50",
+        "xhm-desktop/src/lib.rs:166",
+        "xhm-desktop/src/ui/floating_window.rs:283",
+        "xhm-desktop/ui/floating_window.slint:178",
+        "work/runtime-actions.json:1",
+        "work/g4-smoke-30.json:15"
+      ],
+      "status": "confirmed",
+      "observation": "Window visibility and rendered UI state are measurable multi-MiB contributors. The normal production path still exceeds 10 MiB before Settings/About are shown.",
+      "contradicting_evidence": "Hiding the floating window did not decommit its backing allocations, so visibility deltas cannot be used to assign the entire retained base to a specific window; Slint retains resources after hide.",
+      "confidence": 0.93
+    },
+    {
+      "id": "H3",
+      "rank": 3,
+      "hypothesis": "The dominant normal-state gate breach is stable anonymous private commit from the current UI/runtime allocation architecture, concentrated in a few allocator arenas; exact ownership among renderer, Windows UI, allocator, and Tokio requires symbols/source variants.",
+      "tested_action": "Use VirtualQueryEx before and after sampling, group committed regions by memory type and allocation base, inspect loaded modules, Cargo feature closure, and the startup call chain.",
+      "commands": [
+        "powershell.exe -NoProfile -File work/measure-desktop.ps1 -Label normal-release-30 -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000",
+        "cargo tree -p xhm-desktop -e features --edges normal,build",
+        "sha256sum target/release/xhm-desktop.exe",
+        "wc -c target/release/xhm-desktop.exe"
+      ],
+      "evidence": [
+        "Normal process mean Private Bytes is 33.514 MiB; VirtualQueryEx records 31.609 MiB committed MEM_PRIVATE versus 67.473 MiB MEM_IMAGE and 9.953 MiB MEM_MAPPED.",
+        "The six largest anonymous private allocation bases total 29.672 MiB, 93.87% of committed MEM_PRIVATE; their sizes are 13.691, 7.996, 3.996, 1.996, 0.996, and 0.996 MiB.",
+        "The stripped release executable is 4,529,152 bytes and 51 modules are mapped; image mapping size is not equivalent to Private Bytes.",
+        "Startup unconditionally constructs Shell, TaskbarWindow, SettingsWindow, and AboutWindow; shows main and taskbar; installs native tray; then starts one dedicated SSE thread containing a two-worker Tokio multi-thread runtime.",
+        "Cargo enables Tokio full, including rt-multi-thread/process/signal/fs/net/io-util, while the direct desktop usage is bounded to runtime, sync, time, and macros plus reqwest's transitive networking needs."
+      ],
+      "file_refs": [
+        "Cargo.toml:16",
+        "Cargo.toml:50",
+        "Cargo.toml:56",
+        "xhm-desktop/src/lib.rs:40",
+        "xhm-desktop/src/lib.rs:387",
+        "xhm-desktop/src/lib.rs:397",
+        "xhm-desktop/src/lib.rs:641",
+        "work/normal-release-30.json:479",
+        "work/cargo-tree-features.txt:743"
+      ],
+      "status": "partial",
+      "observation": "Anonymous committed allocation arenas are the measured dominant category and the breach is architectural startup footprint, not a leak. Component-level ownership of those arenas is inferred because the stripped binary and read-only boundary preclude symbolized heap stacks or feature-removal builds.",
+      "contradicting_evidence": "No source-edit build isolated Slint, accessibility, Tokio, tray, or each base window. No exact per-component MiB value is claimed beyond observed runtime differentials.",
+      "confidence": 0.82
+    }
+  ],
+  "three_strike_rule": {
+    "failed_hypotheses": 1,
+    "limit": 3,
+    "architecture_escalation_required": false
+  },
+  "pressure_pass": {
+    "done": true,
+    "confirmed_vs_refuted_cross_check": "Stable samples and live-SSE differential refute leak/transport dominance; window-state deltas independently confirm renderer/UI materiality; VirtualQueryEx confirms anonymous private commit dominance without over-assigning ownership.",
+    "unresolved_contradiction": "Fresh UI_SMOKE is 2.7-3.1 MiB above the historical baseline despite the same binary. Launcher/console and rendered-state sensitivity are recorded; both runs still fail 0/60, so this does not contradict the gate diagnosis."
+  }
+}

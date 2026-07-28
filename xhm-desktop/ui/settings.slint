@@ -1,0 +1,250 @@
+component Field inherits Rectangle {
+    in property <string> label;
+    in-out property <string> value;
+    callback changed(string);
+    width: 252px;
+    height: 42px;
+    background: transparent;
+
+    Text {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        text: root.label;
+        color: #ffffff9f;
+        font-size: 9px;
+        font-weight: 600;
+    }
+    Rectangle {
+        y: 15px;
+        width: parent.width;
+        height: 25px;
+        background: #ffffff0d;
+        border-color: #ffffff24;
+        border-width: 1px;
+        border-radius: 4px;
+        TextInput {
+            x: 7px;
+            y: 4px;
+            width: parent.width - 14px;
+            height: 18px;
+            text: root.value;
+            color: #ffffffe6;
+            font-size: 10px;
+            edited => { root.changed(self.text); }
+        }
+    }
+}
+
+component Switch inherits Rectangle {
+    in property <string> label;
+    in-out property <bool> checked;
+    callback toggled(bool);
+    width: 170px;
+    height: 26px;
+    background: transparent;
+
+    Text {
+        x: 0px;
+        y: 6px;
+        width: 124px;
+        text: root.label;
+        color: #ffffffbf;
+        font-size: 10px;
+        overflow: elide;
+    }
+    Rectangle {
+        x: 136px;
+        y: 4px;
+        width: 28px;
+        height: 16px;
+        background: root.checked ? #22c55e99 : #ffffff26;
+        border-radius: 8px;
+        Rectangle {
+            x: root.checked ? 14px : 2px;
+            y: 2px;
+            width: 12px;
+            height: 12px;
+            background: #fffffff2;
+            border-radius: 6px;
+            animate x { duration: 100ms; }
+        }
+        TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.checked = !root.checked;
+                root.toggled(root.checked);
+            }
+        }
+    }
+}
+
+component ActionButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary: false;
+    callback clicked;
+    width: 90px;
+    height: 30px;
+    background: root.primary ? #0ea5e9cc : button-touch.has-hover ? #ffffff22 : #ffffff12;
+    border-color: root.primary ? #38bdf8 : #ffffff24;
+    border-width: 1px;
+    border-radius: 4px;
+    Text {
+        text: root.text;
+        color: #fffffff2;
+        font-size: 10px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    button-touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component SettingsWindow inherits Window {
+    title: "xhMonitor Settings";
+    width: 580px;
+    height: 668px;
+    background: #101217;
+
+    in-out property <string> status-text: "Loading settings...";
+    in-out property <string> opacity-text: "90";
+    in-out property <string> process-keywords: "[]";
+    in-out property <bool> monitor-cpu: true;
+    in-out property <bool> monitor-memory: true;
+    in-out property <bool> monitor-gpu: true;
+    in-out property <bool> monitor-vram: true;
+    in-out property <bool> monitor-power: true;
+    in-out property <bool> monitor-network: true;
+    in-out property <bool> enable-floating-mode: true;
+    in-out property <bool> enable-edge-dock-mode: true;
+    in-out property <bool> bar-visual: true;
+    in-out property <string> dock-column-gap: "0";
+    in-out property <string> dock-cpu-label: "CPU";
+    in-out property <string> dock-memory-label: "RAM";
+    in-out property <string> dock-gpu-label: "GPU";
+    in-out property <string> dock-vram-label: "VRAM";
+    in-out property <string> dock-power-label: "PWR";
+    in-out property <string> dock-upload-label: "UP";
+    in-out property <string> dock-download-label: "DN";
+
+    callback load-settings();
+    callback save-settings();
+    callback close-window();
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: 54px;
+        background: #151922;
+        Text { x: 18px; y: 13px; text: "SETTINGS"; color: #fffffff2; font-size: 15px; font-weight: 700; }
+        Text { x: 18px; y: 32px; width: 410px; text: root.status-text; color: #ffffff8f; font-size: 9px; overflow: elide; }
+        ActionButton { x: 472px; y: 12px; text: "Close"; clicked => { root.close-window(); } }
+    }
+
+    Rectangle {
+        x: 18px;
+        y: 70px;
+        width: 544px;
+        height: 104px;
+        background: #ffffff08;
+        border-color: #ffffff18;
+        border-width: 1px;
+        border-radius: 5px;
+        Text { x: 12px; y: 10px; text: "DISPLAY"; color: #38bdf8; font-size: 10px; font-weight: 700; }
+        Field {
+            x: 12px;
+            y: 28px;
+            label: "Opacity (20-100)";
+            value: root.opacity-text;
+            changed(value) => { root.opacity-text = value; }
+        }
+        Field {
+            x: 280px;
+            y: 28px;
+            label: "Process keywords (JSON array)";
+            value: root.process-keywords;
+            changed(value) => { root.process-keywords = value; }
+        }
+        Switch {
+            x: 12px;
+            y: 73px;
+            label: "Floating window";
+            checked: root.enable-floating-mode;
+            toggled(value) => { root.enable-floating-mode = value; }
+        }
+        Switch {
+            x: 280px;
+            y: 73px;
+            label: "Edge dock";
+            checked: root.enable-edge-dock-mode;
+            toggled(value) => { root.enable-edge-dock-mode = value; }
+        }
+    }
+
+    Rectangle {
+        x: 18px;
+        y: 186px;
+        width: 544px;
+        height: 93px;
+        background: #ffffff08;
+        border-color: #ffffff18;
+        border-width: 1px;
+        border-radius: 5px;
+        Text { x: 12px; y: 10px; text: "MONITORING"; color: #a78bfa; font-size: 10px; font-weight: 700; }
+        Switch { x: 12px; y: 30px; label: "CPU"; checked: root.monitor-cpu; toggled(value) => { root.monitor-cpu = value; } }
+        Switch { x: 190px; y: 30px; label: "Memory"; checked: root.monitor-memory; toggled(value) => { root.monitor-memory = value; } }
+        Switch { x: 368px; y: 30px; label: "GPU"; checked: root.monitor-gpu; toggled(value) => { root.monitor-gpu = value; } }
+        Switch { x: 12px; y: 60px; label: "VRAM"; checked: root.monitor-vram; toggled(value) => { root.monitor-vram = value; } }
+        Switch { x: 190px; y: 60px; label: "Power"; checked: root.monitor-power; toggled(value) => { root.monitor-power = value; } }
+        Switch { x: 368px; y: 60px; label: "Network"; checked: root.monitor-network; toggled(value) => { root.monitor-network = value; } }
+    }
+
+    Rectangle {
+        x: 18px;
+        y: 291px;
+        width: 544px;
+        height: 219px;
+        background: #ffffff08;
+        border-color: #ffffff18;
+        border-width: 1px;
+        border-radius: 5px;
+        Text { x: 12px; y: 10px; text: "EDGE DOCK"; color: #f59e0b; font-size: 10px; font-weight: 700; }
+        Text { x: 282px; y: 10px; text: root.bar-visual ? "Bar visual" : "Text visual"; color: #ffffffe6; font-size: 10px; font-weight: 700; }
+        Rectangle {
+            x: 406px;
+            y: 7px;
+            width: 124px;
+            height: 24px;
+            background: #ffffff12;
+            border-radius: 4px;
+            Text { x: 0px; y: 4px; width: 60px; text: "Text"; color: !root.bar-visual ? #38bdf8 : #ffffff80; font-size: 9px; horizontal-alignment: center; }
+            Text { x: 62px; y: 4px; width: 60px; text: "Bar"; color: root.bar-visual ? #38bdf8 : #ffffff80; font-size: 9px; horizontal-alignment: center; }
+            TouchArea { mouse-cursor: pointer; clicked => { root.bar-visual = !root.bar-visual; } }
+        }
+        Field { x: 12px; y: 38px; label: "CPU label"; value: root.dock-cpu-label; changed(value) => { root.dock-cpu-label = value; } }
+        Field { x: 280px; y: 38px; label: "Memory label"; value: root.dock-memory-label; changed(value) => { root.dock-memory-label = value; } }
+        Field { x: 12px; y: 84px; label: "GPU label"; value: root.dock-gpu-label; changed(value) => { root.dock-gpu-label = value; } }
+        Field { x: 280px; y: 84px; label: "VRAM label"; value: root.dock-vram-label; changed(value) => { root.dock-vram-label = value; } }
+        Field { x: 12px; y: 130px; label: "Power label"; value: root.dock-power-label; changed(value) => { root.dock-power-label = value; } }
+        Field { x: 280px; y: 130px; label: "Upload label"; value: root.dock-upload-label; changed(value) => { root.dock-upload-label = value; } }
+        Field { x: 12px; y: 176px; label: "Download label"; value: root.dock-download-label; changed(value) => { root.dock-download-label = value; } }
+        Field { x: 280px; y: 176px; label: "Column gap (0-24)"; value: root.dock-column-gap; changed(value) => { root.dock-column-gap = value; } }
+    }
+
+    Rectangle {
+        x: 18px;
+        y: 522px;
+        width: 544px;
+        height: 54px;
+        background: #ffffff08;
+        border-color: #ffffff18;
+        border-width: 1px;
+        border-radius: 5px;
+        Text { x: 12px; y: 10px; text: "Admin mode, startup, LAN, firewall and system controls are read-only. P3 only."; color: #ffffff80; font-size: 9px; }
+        Text { x: 12px; y: 27px; text: "No system configuration is changed by this page."; color: #fbbf24; font-size: 9px; }
+    }
+
+    ActionButton { x: 280px; y: 596px; text: "Reload"; clicked => { root.load-settings(); } }
+    ActionButton { x: 382px; y: 596px; text: "Save"; primary: true; clicked => { root.save-settings(); } }
+}

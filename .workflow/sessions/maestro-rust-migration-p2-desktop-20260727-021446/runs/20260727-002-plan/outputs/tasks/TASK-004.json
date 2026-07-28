@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-004"
+  },
+  "id": "TASK-004",
+  "title": "实现冻结五事件 SSE 与 UI-neutral DesktopState",
+  "description": "精确消费五个 PushEvent，并在 UI 线程外重连后归约为可测试状态与订阅命令。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G1",
+  "execute_step_id": "step-003-execute",
+  "wave_id": "WAVE-004",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "G1-DONE",
+    "SESSION-EC-02",
+    "SESSION-EC-04",
+    "BOUNDARY-FROZEN-SSE",
+    "BOUNDARY-NO-SERVICE-CORE-WRITES",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [
+    "TASK-003"
+  ],
+  "files": [
+    "Cargo.toml",
+    "Cargo.lock",
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/src/service_client/mod.rs",
+    "xhm-desktop/src/service_client/sse.rs",
+    "xhm-desktop/src/desktop_state.rs",
+    "xhm-desktop/src/lib.rs"
+  ],
+  "read_first": [
+    "xhm-core/src/wire.rs:17-67,73-228",
+    "xhm-service/src/realtime/mod.rs:22-32,74-87,579-705",
+    "xhm-service/src/state.rs:14-16",
+    "XhMonitor.Desktop/Services/SignalRService.cs:37-143,187-235",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:15-205,242-385,436-683"
+  ],
+  "action": "GET {api_base}/api/v1/events?mode=full|lite&pinned=...，仅映射冻结五事件到 exact xhm-core payload；独立 Tokio task 管理连接、10×2s 重试、重连与取消，纯 reducer 生成 DesktopState。",
+  "implementation_steps": [
+    "URL mode 只用 SubscriptionMode；pinned 用 normalize_pinned_ids 过滤正数、去重、升序，订阅变化取消旧 stream。",
+    "framer 处理分块、空行、comment ping/15s keepalive、event/data；映射 ReceiveHardwareLimits→HardwareLimitsPayload、ReceiveSystemUsage→SystemUsagePayload、ReceiveProcessMetrics/ReceiveProcessMetricsLite→ProcessSnapshotPayload、ReceiveProcessMetadata→ProcessMetadataPayload。",
+    "未知事件记录并跳过，坏 JSON 不发 state；不得创建第六事件。",
+    "网络、初连 10×2s、backoff、sleep、cancel 位于 Tokio task，经 bounded channel 输出，sse.rs 不引用 Slint 类型。",
+    "DesktopState 保留 PanelState::{Collapsed,Expanded,Locked,Clickthrough}；Expanded/Locked→Full，其他→Lite；归约 limits、usage/disks、PID index/top5、pinned、metadata 和 connection state，每窗口后续独立实例。"
+  ],
+  "convergence_criteria": [
+    "Test：五个事件恰好生成对应 PushEvent/state，unknown/comment 无输出，坏 JSON 无 state update。",
+    "Test：mock URL 覆盖 full/lite 与 [7,3,7,-1]→3,7；paused time 驱动重连，cancel 后请求停止。",
+    "Test：panel、metadata-before-metrics、进程消失、pin、PID restart 得到确定 snapshot。",
+    "Read：网络与 sleep 不在 Slint UI 线程，reducer 无 I/O。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop sse",
+      "cargo test -p xhm-desktop desktop_state"
+    ],
+    "manual_scenarios": [
+      "断开/重启 Service 时持续操作 Slint 壳并记录响应与后台重连。"
+    ],
+    "expected": "冻结五事件、重连、取消和状态契约精确。"
+  },
+  "acceptance_evidence": [
+    "五事件表测试",
+    "mock URL/虚拟时间日志",
+    "state transition snapshot",
+    "UI 响应日志"
+  ],
+  "rollback": {
+    "steps": [
+      "移除 SSE/state 模块与 framing 依赖"
+    ],
+    "preserves": [
+      "配置/REST",
+      "冻结 core/service 契约"
+    ]
+  }
+}

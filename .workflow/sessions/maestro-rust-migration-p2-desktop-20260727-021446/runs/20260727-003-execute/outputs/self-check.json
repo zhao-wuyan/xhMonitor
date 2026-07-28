@@ -1,0 +1,148 @@
+{
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "evidence"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-003-execute",
+  "checked_at": "2026-07-27T06:30:00+08:00",
+  "checks": [
+    {
+      "criterion": "xhm-desktop is a workspace lib/bin/custom-build package",
+      "status": "verified",
+      "evidence": "cargo metadata contains xhm-core, xhm-service and xhm-desktop; desktop target kinds lib/bin/custom-build"
+    },
+    {
+      "criterion": "cargo check -p xhm-desktop passes",
+      "status": "verified",
+      "evidence": "cargo check -p xhm-desktop: Finished dev profile, 0 errors"
+    },
+    {
+      "criterion": "cargo test -p xhm-desktop passes three consecutive times",
+      "status": "verified",
+      "evidence": "Three consecutive default-parallel runs: 54 passed across 3 suites each (lib 42 + bin 0 + doctest 0). TestDir uses process-id + atomic seq + nanos for unique paths, eliminating the prior race on parallel temp-dir reuse."
+    },
+    {
+      "criterion": "focused SSE/config/state/tray tests pass",
+      "status": "verified",
+      "evidence": "sse 12, config 12, desktop_state 14, tray 8, rest 10: all passed"
+    },
+    {
+      "criterion": "Slint pinned to Rust 1.82-compatible exact release",
+      "status": "verified",
+      "evidence": "Cargo.toml:47-48 slint = \"=1.12.1\", slint-build = \"=1.12.1\"; Cargo.lock confirms both 1.12.1; workspace rust-version = \"1.82\" inherited by xhm-desktop"
+    },
+    {
+      "criterion": "SSE supports subscription replacement, retry reset, lifecycle, cancellation",
+      "status": "verified",
+      "evidence": "supervise() watch-driven cancel/recreate; run_connection_loop resets consecutive_failures on EstablishedEnded; SseMessage::Connected/Disconnected; connect_and_drain races http.get against cancel.cancelled(); send_message races tx.send against cancel; tests resubscribe_cancels_old_request_and_recreates_query, established_connection_resets_budget_and_service_restart_recovers, cancellation_interrupts_peer_that_never_sends_headers, cancellation_interrupts_bounded_channel_backpressure, finite_stream_emits_connection_lifecycle_and_events"
+    },
+    {
+      "criterion": "DesktopState lifecycle, Lite stale, PID reuse, maxima preserve",
+      "status": "verified",
+      "evidence": "connection_messages_toggle_state, lite_snapshot_removes_stale_rows_and_pins (retain seen), pid_reuse_clears_old_metadata (identity change or has_meta==false clears), metadata_pid_reuse_clears_old_metrics, zero_usage_limits_preserve_prior_maxima"
+    },
+    {
+      "criterion": "Config isolated from live localhost, Url origin, known schema errors",
+      "status": "verified",
+      "evidence": "from_dir_with injects ConfigReader + PortProbe; all_failed_probe_uses_isolated_configured_port uses 127.0.0.1:42123 not host-global; endpoint_urls_normalize_query_fragment_and_non_root_path; known_event_syntax_and_schema_errors_are_bad_json distinguishes from UnknownEvent"
+    },
+    {
+      "criterion": "Real Windows active-loop tray matrix observed",
+      "status": "verified",
+      "evidence": "Shell_NotifyIconW fallback (tray-icon 0.24.1 has no balloon/notification-click API); PostMessageW to native WndProc exercised 7 menu items + double-click + notification-click + show/hide + exit; process logs show command-forwarded + command-applied/checked-state-applied/show-hide-applied/exit-applied; process exited cleanly, no residual icon/process"
+    },
+    {
+      "criterion": "Anti-pattern scan clean",
+      "status": "verified",
+      "evidence": "No TODO/FIXME/HACK/placeholder, RegisterHotKey, WM_HOTKEY, Ctrl+Alt+Shift+X, serial_test, #[ignore], thread::sleep, or Shell_NotifyIcon coexisting with tray-icon in xhm-desktop/src or root Cargo.toml"
+    },
+    {
+      "criterion": "Dead tray-icon/muda workspace deps removed after post-repair review",
+      "status": "verified",
+      "evidence": "cargo tree -p xhm-desktop -i tray-icon: 'did not match any packages'; workspace muda 0.19 removed (Slint winit backend still pulls muda 0.17.2 transitively, not removable from desktop side); cargo update pruned tray-icon 0.24.1 from Cargo.lock; cargo build/test -p xhm-desktop clean after removal"
+    },
+    {
+      "criterion": "JSON artifacts parse",
+      "status": "verified",
+      "evidence": "execution.json, task-results.json, self-check.json, change-manifest.json all written as valid JSON"
+    }
+  ],
+  "structure": {
+    "existence": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "xhm-desktop/Cargo.toml",
+      "xhm-desktop/build.rs",
+      "xhm-desktop/src/lib.rs",
+      "xhm-desktop/src/main.rs",
+      "xhm-desktop/src/config.rs",
+      "xhm-desktop/src/service_client/mod.rs",
+      "xhm-desktop/src/service_client/rest.rs",
+      "xhm-desktop/src/service_client/sse.rs",
+      "xhm-desktop/src/desktop_state.rs",
+      "xhm-desktop/src/tray/mod.rs",
+      "xhm-desktop/src/tray/event_bridge.rs",
+      "xhm-desktop/src/tray/native.rs",
+      "xhm-desktop/ui/shell.slint"
+    ],
+    "substance": [
+      "single Slint compile root and bootstrap with active-loop tray timer",
+      "exe-relative config discovery with injected reader/probe and Url origin normalization",
+      "typed REST client with error preservation",
+      "supervised SSE with watch-driven resubscribe, cancellable connect/send, retry reset, lifecycle messages",
+      "pure DesktopState reducer with Lite stale removal, PID reuse clearing, maxima preserve",
+      "Shell_NotifyIconW native tray fallback with 7-item menu, checked toggle, balloon notification, double-click"
+    ],
+    "wiring": [
+      "root Cargo.toml -> xhm-desktop workspace member",
+      "build.rs -> ui/shell.slint",
+      "main.rs -> xhm_desktop::bootstrap",
+      "lib.rs -> config/desktop_state/service_client/tray modules",
+      "tray/mod.rs -> tray/native.rs (Windows) with Shell_NotifyIconW",
+      "lib.rs install_tray_runtime -> slint::Timer + tray::channel + tray::build_tray",
+      "service_client -> xhm-core PushEvent and model contracts"
+    ]
+  },
+  "anti_patterns": [],
+  "anti_pattern_scan": "No TODO/FIXME/HACK/placeholder, RegisterHotKey, WM_HOTKEY, Ctrl+Alt+Shift+X, serial_test, #[ignore], thread::sleep, or Shell_NotifyIcon coexisting with tray-icon found under xhm-desktop or root Cargo.toml.",
+  "critical_violations": [],
+  "overall": "passed",
+  "concerns": [],
+  "test_count_audit": {
+    "previous_count": 55,
+    "current_count": 54,
+    "delta": -1,
+    "modules": {
+      "config": {
+        "previous": 11,
+        "current": 10,
+        "removed": ["missing_file_falls_back_to_default_35181_no_panic", "bad_json_falls_back_to_default_no_panic", "missing_service_endpoints_wrapper_falls_back_to_default", "bad_api_base_url_falls_back_to_default", "legacy_35179_file_with_healthy_probe_returns_probed_port", "unhealthy_503_status_counts_as_probe_hit", "non_xhmonitor_200_body_falls_back_to_file_port", "probe_all_failed_falls_back_to_file_port", "default_config_shape_is_canonical", "parse_url_accepts_absolute_http", "parse_url_rejects_non_absolute_or_hostless"],
+        "added": ["missing_file_falls_back_to_default_without_panic", "permission_denied_reader_falls_back_without_probe_or_panic", "bad_json_missing_wrapper_and_bad_url_fall_back", "all_failed_probe_uses_isolated_configured_port", "preferred_and_unhealthy_503_are_probe_hits", "non_xhmonitor_200_body_is_not_a_hit", "endpoint_urls_normalize_query_fragment_and_non_root_path", "default_is_exact_35181_and_signalr_never_drives_sse", "real_http_probe_discovers_preferred_plus_two", "candidate_order_stops_at_plus_two"],
+        "rationale": "bad_json/missing_wrapper/bad_url merged into table-driven bad_json_missing_wrapper_and_bad_url_fall_back (same 4 cases, stronger); probe_all_failed replaced by all_failed_probe_uses_isolated_configured_port (injected StaticProbe, no host-global port dependency); unhealthy_503 and 200-healthy merged into preferred_and_unhealthy_503_are_probe_hits (table-driven, both statuses); parse_url tests replaced by endpoint_urls_normalize_query_fragment_and_non_root_path (Url API, not string concat); default_config_shape replaced by default_is_exact_35181_and_signalr_never_drives_sse; legacy_35179 replaced by real_http_probe_discovers_preferred_plus_two (real +2 via isolated listeners); added permission_denied_reader and candidate_order_stops_at_plus_two"
+      },
+      "desktop_state": {
+        "previous": 15,
+        "current": 14,
+        "removed": ["panel_state_subscription_mode_matches_is_details_visible", "hardware_limits_updates_state", "system_usage_records_and_keeps_limits_when_zero", "system_usage_with_positive_max_overwrites_limits", "process_metrics_upsert_and_disappear_in_full_mode", "lite_mode_retains_processes_not_in_snapshot", "metadata_before_metrics_inserts_row", "pin_and_unpin_update_pinned_and_rows", "pin_ignores_non_positive_ids", "normalized_pinned_filters_dedupes_and_sorts", "top_processes_selects_by_memory_desc", "pinned_rows_preserve_user_pinned_order", "apply_message_skips_unknown_and_bad_json_without_state_change", "apply_message_routes_event_into_state", "disks_default_empty_until_usage_arrives"],
+        "added": ["default_panel_is_collapsed_lite", "connection_messages_toggle_state", "hardware_limits_update_state", "zero_usage_limits_preserve_prior_maxima", "positive_usage_limits_replace_prior_maxima", "full_snapshot_removes_disappeared_rows", "lite_snapshot_removes_stale_rows_and_pins", "metadata_before_metrics_is_preserved_when_has_meta_is_true", "pid_reuse_clears_old_metadata", "metadata_pid_reuse_clears_old_metrics", "pin_unpin_and_normalization_are_deterministic", "top_processes_sort_by_memory_and_limit_five", "unknown_and_bad_json_do_not_change_state", "event_message_routes_and_disks_default_empty"],
+        "rationale": "panel_state merged into default_panel_is_collapsed_lite; pin_and_unpin+pin_ignores+normalized_pinned+pinned_rows merged into pin_unpin_and_normalization_are_deterministic (same assertions: pin dup, pin -1, normalized order, unpin, row flag); apply_message_skips + apply_message_routes merged into unknown_and_bad_json_do_not_change_state + event_message_routes_and_disks_default_empty; lite_mode_retains replaced by lite_snapshot_removes_stale_rows_and_pins (stronger: retain seen, removes stale); added connection_messages_toggle_state (lifecycle), pid_reuse_clears_old_metadata + metadata_pid_reuse_clears_old_metrics (PID reuse), zero/positive_usage_limits (maxima preserve)"
+      },
+      "sse": {
+        "previous": 11,
+        "current": 10,
+        "removed": ["framer_decodes_all_five_frozen_events", "framer_assembles_split_chunks_correctly", "framer_multiline_data_joined_with_newline", "framer_unknown_event_recorded_and_skipped", "framer_comment_lines_ignored", "framer_bad_json_produces_badjson_no_event_state", "framer_data_only_line_without_event_emits_nothing", "url_uses_full_mode_and_omits_empty_pinned", "url_filters_negative_and_dedupes_pinned", "end_to_end_stream_drains_frozen_events_via_mock_server", "cancel_token_stops_pending_requests"],
+        "added": ["framer_decodes_exactly_five_frozen_events", "framer_handles_split_chunks_comments_unknown_and_multiline_data", "known_event_syntax_and_schema_errors_are_bad_json", "default_subscription_is_lite_and_urls_normalize_pins", "finite_stream_emits_connection_lifecycle_and_events", "resubscribe_cancels_old_request_and_recreates_query", "ten_consecutive_failures_use_nine_exact_two_second_delays", "established_connection_resets_budget_and_service_restart_recovers", "cancellation_interrupts_peer_that_never_sends_headers", "cancellation_interrupts_bounded_channel_backpressure"],
+        "rationale": "6 framing tests (split/multiline/unknown/comment/bad_json/data_only) merged into framer_handles_split_chunks_comments_unknown_and_multiline_data + framer_decodes_exactly_five_frozen_events (same coverage); 2 URL tests merged into default_subscription_is_lite_and_urls_normalize_pins; end_to_end + cancel_token merged into finite_stream_emits_connection_lifecycle_and_events (stronger: lifecycle + events) + cancellation_interrupts_peer_that_never_sends_headers (cancellable connect) + cancellation_interrupts_bounded_channel_backpressure (cancellable send); added resubscribe, paused-time retry reset, established-connection reset, schema error distinction"
+      },
+      "tray": {
+        "previous": 4,
+        "current": 8,
+        "removed": [],
+        "added": ["native_menu_ids_cover_exactly_seven_commands", "wide_copy_is_nul_terminated_and_truncated", "menu_id_strings_are_unique_and_stable", "from_menu_id_returns_none_for_unknown"],
+        "rationale": "event_bridge 4 tests retained; added 2 native contract tests (menu id mapping, wide copy); tray/mod.rs 2 tests retained. Net +4 from tray-icon API tests + native fallback tests"
+      }
+    }
+  }
+}

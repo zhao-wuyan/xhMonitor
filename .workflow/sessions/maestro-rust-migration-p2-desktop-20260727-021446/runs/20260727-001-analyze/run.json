@@ -1,0 +1,196 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-001-analyze",
+  "sequence": 1,
+  "parent_run_id": null,
+  "command": {
+    "name": "analyze",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/analyze.md",
+    "content_hash": "c305d4ce9d1a12aecc98ad621c3d53f03f15c14385155f1d7de6e1494eb48c65",
+    "resolved_prompt_hash": "c305d4ce9d1a12aecc98ad621c3d53f03f15c14385155f1d7de6e1494eb48c65",
+    "contract_hash": "522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-001-01",
+    "GATE-001-02",
+    "GATE-001-03",
+    "GATE-001-04",
+    "GATE-001-05",
+    "GATE-001-06",
+    "GATE-001-07",
+    "GATE-001-08",
+    "GATE-001-09",
+    "GATE-001-10"
+  ],
+  "output": {
+    "produces": [
+      "ART-001-001",
+      "ART-001-002",
+      "ART-001-003",
+      "ART-001-001",
+      "ART-001-003",
+      "ART-001-002"
+    ],
+    "primary_artifact_id": null,
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260727-001-analyze",
+    "command": "analyze",
+    "verdict": "ready",
+    "summary": "P2（xhm-desktop）判 large：4 个独立子系统 + 硬串行 + 视觉验收门，go_with_conditions；契约已由 P1 冻结，POC 已锁定核心 Win32，建议 post-analyze-scope 裁决是否拆 roadmap。",
+    "constraints": [],
+    "decisions": [
+      {
+        "id": "D-CLI-1",
+        "status": "accepted",
+        "text": "P2 scope_verdict=large；现有迁移指南已是单阶段 roadmap，scope gate 决定是否继续当前 plan 链。"
+      }
+    ],
+    "concerns": [],
+    "artifact_refs": [
+      "ART-001-001",
+      "ART-001-002",
+      "ART-001-003",
+      "ART-001-001",
+      "ART-001-003",
+      "ART-001-002"
+    ],
+    "next": [
+      {
+        "command": "post-analyze-scope",
+        "reason": "session chain step-001 决策点；scope_verdict=large，需人工裁决 plan vs roadmap",
+        "needs": [
+          "current-analysis"
+        ]
+      },
+      {
+        "command": "plan",
+        "reason": "若 post-analyze-scope 裁决 plan 路径，则按 G1→G2→{G3,G4} 产出执行计划",
+        "needs": [
+          "current-analysis",
+          "session-priors"
+        ]
+      },
+      {
+        "command": "roadmap",
+        "reason": "若 post-analyze-scope 裁决 large 拆分为多 milestone，则改走 roadmap（scope_verdict=large 触发条件）",
+        "needs": [
+          "current-analysis"
+        ]
+      }
+    ],
+    "details": {}
+  },
+  "started_at": "2026-07-27T10:15:41+08:00",
+  "completed_at": "2026-07-27T10:51:56+08:00",
+  "sealed_at": "2026-07-27T10:51:56+08:00",
+  "chain_step_id": "step-000-analyze",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "guidance",
+          "alias": "current-guidance",
+          "required": false
+        },
+        {
+          "kind": "blueprint",
+          "alias": "current-blueprint",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "findings",
+          "primary": false,
+          "path": "outputs/findings.json",
+          "alias": "current-analysis"
+        },
+        {
+          "kind": "risk-matrix",
+          "primary": false,
+          "path": "outputs/risk-matrix.json"
+        },
+        {
+          "kind": "priors",
+          "primary": false,
+          "path": "outputs/priors.json",
+          "alias": "session-priors"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "exploration-done",
+          "discussion-round",
+          "scoring-complete",
+          "intent-covered"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-27T02:15:41.864Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].optional is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/analyze.md",
+    "content_hash": "sha256:c305d4ce9d1a12aecc98ad621c3d53f03f15c14385155f1d7de6e1494eb48c65",
+    "resolved_prompt_hash": "sha256:c305d4ce9d1a12aecc98ad621c3d53f03f15c14385155f1d7de6e1494eb48c65",
+    "prepare_hash": "sha256:c305d4ce9d1a12aecc98ad621c3d53f03f15c14385155f1d7de6e1494eb48c65",
+    "workflow_hash": "sha256:dc07524ce78f62176b52f047d777658e7232941846698f5903ece489040a00c1",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_5f0123758e057504a2686d42",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-27T10:15:41+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 0,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "\"按 docs/rust-migration-guide.md 实现 Rust 迁移 P2（xhm-desktop）\""
+    ],
+    "consumes": [],
+    "context_identity_revision": 2,
+    "reuse_assessments": []
+  }
+}

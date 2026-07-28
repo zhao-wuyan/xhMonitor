@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-006"
+  },
+  "id": "TASK-006",
+  "title": "实现四边任务栏、拖拽吸附与隔离位置持久化",
+  "description": "端口可测试的 physical-pixel placement/drag 算法，并把 Rust 窗口位置存入独立 namespace。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G2",
+  "execute_step_id": "step-004-execute",
+  "wave_id": "WAVE-006",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "GUIDE-P2-WIN-TASKBAR-NEAR",
+    "GUIDE-P2-WIN-TASKBAR-PLACEMENT",
+    "GUIDE-P2-WIN-PERSISTENCE",
+    "GUIDE-P2-WIN-DPI",
+    "P2-C06",
+    "G2-DONE",
+    "SESSION-EC-03",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [
+    "TASK-005"
+  ],
+  "files": [
+    "xhm-desktop/src/win32/mod.rs",
+    "xhm-desktop/src/win32/taskbar.rs",
+    "xhm-desktop/src/win32/geometry.rs",
+    "xhm-desktop/src/win32/drag.rs",
+    "xhm-desktop/src/persistence.rs"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/Services/TaskbarPlacementService.cs:7-196",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs:35-36,461-516,1086-1217,1234-1328,1438-1497",
+    "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:25-48,235-449,542-660"
+  ],
+  "action": "分离 Shell_TrayWnd/TrayNotifyWnd/MSTaskListWClass discovery 与纯 PlacementCalculator，逐式端口 8px/6px、四边、clamp、5/24/80px 拖拽阈值和 Rust 专属 position store。",
+  "implementation_steps": [
+    "FindWindow/FindWindowEx 获取 Shell_TrayWnd、TrayNotifyWnd、MSTaskListWClass RECT；FFI 与纯 geometry 分层。",
+    "横向：y 居中，tray.left-window.width-8 或 reserve 220，min 受 task-list.right+8；纵向：x 居中，tray.top-window.height-6 或 reserve 120，min 受 task-list.bottom+6；最终 virtual-screen clamp。",
+    "边判断：宽>=高且距 virtual top<=2 为 Top，否则 Bottom；竖向距 left<=2 为 Left，否则 Right。",
+    "主窗 drag threshold=5、snap=24；任务栏窗 DockSnapDistance=80、半窗越界、最近边和 cursor anchor ratio；有 taskbar 占位边不触发主窗错误贴边。",
+    "位置仅写 %APPDATA%\\XhMonitor\\xhm-desktop\\window.json；保存 Left/Top/Width/Height 等价字段，坏 JSON/NaN/无效尺寸回退并 clamp，不写 C# %APPDATA%\\XhMonitor.Desktop\\window.json。"
+  ],
+  "convergence_criteria": [
+    "Test：Bottom/Top/Left/Right 命中 8/6 margin、tray/task-list avoidance 与 virtual clamp。",
+    "Test：96/144/192 DPI、3840x2160@200%、负 origin、多屏、缺子窗、超大窗口结果确定。",
+    "Test：5/24/80px 边界内外、半窗越界、anchor 与 taskbar-edge exclusion 全覆盖。",
+    "Test：临时目录 position round-trip/坏文件回退，不访问真实 AppData。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop taskbar",
+      "cargo test -p xhm-desktop drag",
+      "cargo test -p xhm-desktop persistence"
+    ],
+    "manual_scenarios": [
+      "四边任务栏和多显示器分别记录输入 RECT/DPI 与输出位置。"
+    ],
+    "expected": "几何、DPI 和文件系统边界确定，C#/Rust 持久化隔离。"
+  },
+  "acceptance_evidence": [
+    "四边 table cases 坐标",
+    "DPI/anchor 断言",
+    "临时目录持久化日志"
+  ],
+  "rollback": {
+    "steps": [
+      "移除 taskbar/geometry/drag/persistence modules"
+    ],
+    "preserves": [
+      "C# window.json",
+      "TASK-005 primitives"
+    ]
+  }
+}

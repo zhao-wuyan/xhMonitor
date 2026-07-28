@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "kind": "review-findings",
+    "schema": "review-findings/1.0",
+    "role": "primary",
+    "alias": "latest-review"
+  },
+  "scope": "P1 xhm-service Rust migration and P0/P1 bridge/core integration",
+  "level": "standard",
+  "verdict": "PASS",
+  "reviewed_at": "2026-07-26T22:25:40+08:00",
+  "reviewer": "workflow-reviewer + focused OMP reviewers",
+  "dimensions_reviewed": ["correctness", "security", "performance", "architecture", "maintainability", "best-practices"],
+  "files_reviewed": [
+    "Cargo.toml", "xhm-core/src/models.rs", "xhm-core/src/traits.rs", "xhm-core/src/wire.rs", "lhm-bridge/Program.cs", "xhm-service/src/lib.rs", "xhm-service/src/main.rs", "xhm-service/src/state.rs", "xhm-service/src/worker.rs", "xhm-service/src/api/config.rs", "xhm-service/src/api/metrics.rs", "xhm-service/src/api/power.rs", "xhm-service/src/api/widget.rs", "xhm-service/src/db/mod.rs", "xhm-service/src/lhm/mod.rs", "xhm-service/src/power/mod.rs", "xhm-service/src/realtime/mod.rs"
+  ],
+  "severity_distribution": { "critical": 0, "high": 0, "medium": 0, "low": 0, "total": 0 },
+  "critical_files": [],
+  "findings": [],
+  "resolved_findings": [
+    "Power loopback listener, device/profile gate, AMD Ryzen AI Max 395 platform gate, and CLI three-failure circuit breaker",
+    "Service-token admin status, bridge stale-snapshot restart, temperature/GPU/network selection parity, unused LHM memory subtree, and removal of global GC heap hard limit",
+    "Low-rate network throughput precision before JSON serialization"
+  ],
+  "deep_dives": [],
+  "issue_candidates": [],
+  "spec_compliance": [
+    { "criterion": "35181 parallel service", "status": "MET", "evidence": "release listener bound only to 127.0.0.1:35181" },
+    { "criterion": "all REST endpoint contracts", "status": "MET", "evidence": "20 route contracts smoke-tested; required-parameter validation and valid range requests observed" },
+    { "criterion": "SSE and SignalR WS", "status": "MET", "evidence": "negotiate, WS ReceiveSystemUsage, SSE ReceiveSystemUsage; payload keys equal" },
+    { "criterion": "xhm-service tests with mocks", "status": "MET", "evidence": "cargo test --workspace: 158 passed" },
+    { "criterion": "combined steady Private Bytes <30 MiB", "status": "MET", "evidence": "61 one-second samples: all <30 MiB, max 28.79 MiB; WS cadence max 1081 ms" }
+  ],
+  "reviewer_failures": [
+    "Six generic dimension reviewer calls returned external provider 503/429 or invalid JSON; focused Power and LHM reviewers completed after fixes."
+  ],
+  "confidence": "partial-automation, high-evidence",
+  "verification": [
+    "cargo fmt --check", "cargo test --workspace (158 passed)", "cargo clippy --workspace --all-targets -- -D warnings", "dotnet test XhMonitor.Tests/XhMonitor.Tests.csproj --filter FullyQualifiedName~LhmBridgeSelectionTests", "dotnet build lhm-bridge/lhm-bridge.csproj -c Release --no-restore", "release REST/SignalR/SSE/loopback/child-exit smoke"
+  ]
+}

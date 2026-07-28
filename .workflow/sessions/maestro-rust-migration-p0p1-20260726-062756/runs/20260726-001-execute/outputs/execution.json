@@ -1,0 +1,123 @@
+{
+  "_meta": {
+    "kind": "execution",
+    "schema": "execution/1.0",
+    "role": "primary",
+    "alias": "current-execution"
+  },
+  "goal_ref": "G1",
+  "stage": "execute",
+  "scope": "P0 基础层：Cargo workspace + xhm-core crate + 正式 lhm-bridge",
+  "source_plan": "docs/rust-migration-guide.md §4 P0",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": "P0-1",
+      "title": "创建 Cargo workspace 根清单",
+      "status": "done",
+      "summary": "新增根 Cargo.toml，声明 workspace.package / workspace.dependencies / release profile（opt-level=z, lto, panic=abort, strip）；.gitignore 追加 target/。",
+      "files": ["Cargo.toml", ".gitignore"],
+      "evidence": ["cargo test -p xhm-core 解析 workspace 成功"]
+    },
+    {
+      "id": "P0-2",
+      "title": "lhm-bridge 从 poc/ 提升为正式目录",
+      "status": "done",
+      "summary": "git mv poc/lhm-bridge lhm-bridge，清理 bin/obj/.artifacts 构建残留。",
+      "files": ["lhm-bridge/lhm-bridge.csproj", "lhm-bridge/Program.cs"],
+      "evidence": ["dotnet build -c Release 成功：0 警告 0 错误"]
+    },
+    {
+      "id": "P0-3",
+      "title": "lhm-bridge 补管理员权限校验 + 优雅退出 + CLI 参数",
+      "status": "done",
+      "summary": "权限检测改为 WindowsPrincipal.IsInRole(BuiltinAdministrator)（原实现用 Owner.IsWellKnown，语义错误）；新增 stderr 首行 banner JSON（component/is_admin/interval_ms/pid）供父进程探测；新增 --require-admin（非提权退出码 2）与 --interval；优雅退出覆盖 Console.CancelKeyPress + PosixSignalRegistration(SIGTERM/SIGINT/SIGHUP)，收尾统一走 computer.Close() 并返回 0。",
+      "files": ["lhm-bridge/Program.cs"],
+      "evidence": [
+        "dotnet build -c Release：0 警告 0 错误",
+        "PTY 实测发送真实 Ctrl+C → 进程退出码 0",
+        "运行输出为逐行 JSON Lines，含 gpu_temp / gpu_load / net_* / disk_*"
+      ]
+    },
+    {
+      "id": "P0-4",
+      "title": "xhm-core：模型层",
+      "status": "done",
+      "summary": "models.rs 逐字段对齐 C# 线上契约：4 张表实体、AggregationLevel(整数枚举 1|2|3)、MetricValue/MetricAggregation、PowerStatus/PowerScheme、MetricMetadata、WidgetSettings（camelCase 线上 + PascalCase 磁盘双表示）、LhmSnapshot/LhmBridgeBanner。wire.rs 覆盖 5 个 SignalR 事件载荷与 lite 子集选择算法。",
+      "files": ["xhm-core/src/models.rs", "xhm-core/src/wire.rs"],
+      "evidence": ["cargo test -p xhm-core：52 passed"]
+    },
+    {
+      "id": "P0-5",
+      "title": "xhm-core：时间层",
+      "status": "done",
+      "summary": "time.rs 实现 .NET 兼容的三种时间格式（SQLite TEXT / REST UTC-Z / SignalR 本地带偏移），统一遵循 7 位 tick、去尾零、全零省略小数点的规则，保证 TEXT 列上的字典序范围查询与既有库一致。",
+      "files": ["xhm-core/src/time.rs"],
+      "evidence": [
+        "字典序排序不变量测试通过",
+        "对照真实库 XhMonitor.Service/xhmonitor.db 的实际小数位（3~7 位不等）验证解析兼容"
+      ]
+    },
+    {
+      "id": "P0-6",
+      "title": "xhm-core：边界 trait + 内存 mock",
+      "status": "done",
+      "summary": "traits.rs 定义 Clock / LhmReader / RyzenAdjClient / MetricStore 四个边界，各配内存 mock（MockClock 可推进、MockLhmReader 可模拟桥死亡、MockRyzenAdjClient 区分 unsupported 与 supported-but-unavailable）。MetricStore 覆盖 20 个 REST 端点所需的全部读写路径——C# 侧无读仓储（查询内联在 controller），此边界为新设计。",
+      "files": ["xhm-core/src/traits.rs", "xhm-core/src/error.rs", "xhm-core/src/lib.rs"],
+      "evidence": ["cargo test -p xhm-core：52 passed", "cargo clippy -p xhm-core --all-targets -- -D warnings：零警告"]
+    }
+  ],
+  "self_check": {
+    "result": "passed",
+    "commands": [
+      "cargo test -p xhm-core",
+      "cargo clippy -p xhm-core --all-targets -- -D warnings",
+      "dotnet build -c Release (lhm-bridge)"
+    ],
+    "tests_passed": 52,
+    "tests_failed": 0,
+    "lint_warnings": 0,
+    "notes": "测试全部在无管理员权限、无真实硬件环境下运行，符合 CI 约束。"
+  },
+  "decisions": [
+    {
+      "id": "D-P0-1",
+      "topic": "持久化时间基准",
+      "decision": "Rust 侧只接受 DateTime<Utc> 落库，不复刻 C# MetricRepository.MapToEntity:79 的 DateTime.SpecifyKind 假转换；既有 llama 历史行的时区偏移（东八区 +8h）保留为已知数据事实，读取端不做补偿。",
+      "rationale": "C# 侧 Worker.cs:455-461 传本地时间、PerformanceMonitor.cs:32 传 UTC，SpecifyKind 只贴标签不换算，导致同一列混存两种基准。读取端补偿需要猜测每行来源 provider，会把可见的数据缺陷变成不可见的启发式。",
+      "recorded_in": "xhm-core/src/traits.rs MetricStore::save_process_metrics 文档"
+    },
+    {
+      "id": "D-P0-2",
+      "topic": "实时推送传输",
+      "decision": "推送层做成 transport-agnostic：一份 PushEvent 枚举 + 两个适配器（Web 侧 SignalR over WebSocket 文本协议、Desktop 侧 SSE）。Web 前端零改动。",
+      "rationale": "用户确认照迁移指南实现 SignalR WS 文本协议；前端 useMetricsHub.ts 未 skipNegotiation、未强制 transport，必须实现 negotiate 握手。SSE 单独服务 Desktop。",
+      "recorded_in": "xhm-core/src/wire.rs PushEvent"
+    },
+    {
+      "id": "D-P0-3",
+      "topic": "MetricStore 同步而非异步",
+      "decision": "存储 trait 采用同步签名，调用侧用 tokio::task::spawn_blocking 包装。",
+      "rationale": "rusqlite 本身同步；async trait 需要 async-trait 装箱或牺牲 dyn 兼容性，收益为零。"
+    }
+  ],
+  "concerns": [
+    {
+      "id": "C-P0-1",
+      "severity": "medium",
+      "topic": "lhm-bridge 提权路径未验证",
+      "detail": "迁移指南 P0 验收要求「提权运行后输出包含 cpu_temp + cpu_temp_label」。本次运行环境非管理员，实测输出仅含 gpu_temp/gpu_load/net_*/disk_*，cpu_temp 与 cpu_temp_label 键缺失——这符合非提权降级路径的预期（banner 已给出 is_admin:false 警告），但**提权路径本身未验证**。需在开发机以管理员身份运行 lhm-bridge.exe 复核。",
+      "blocking": false
+    },
+    {
+      "id": "C-P0-2",
+      "severity": "low",
+      "topic": "迁移指南行号引用过期",
+      "detail": "docs/rust-migration-guide.md:132-141 的 ConfigController 行号与当前源码不符（指南 :53/:65/:84/:99/:146/:171/:214，实际 :58/:70/:96/:114/:181/:212/:268）；MetricsController 同样（指南 :50/:99/:130，实际 :64/:125/:166）。已按实际源码实现，指南待订正。",
+      "blocking": false
+    }
+  ],
+  "next": [
+    "P1：xhm-service（axum）——SQLite 层、20 个 REST 端点、SignalR negotiate+WS、SSE、LHM bridge 子进程管理、RyzenAdj native+CLI 回退、采样/聚合/清理 worker"
+  ]
+}

@@ -1,0 +1,258 @@
+{
+  "_meta": {
+    "kind": "execution-waves",
+    "schema": "execution-waves/1.0",
+    "role": "attachment",
+    "alias": "execution-waves"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-002-plan",
+  "wave_count": 14,
+  "execution_order": [
+    "WAVE-001",
+    "WAVE-002",
+    "WAVE-003",
+    "WAVE-004",
+    "WAVE-005",
+    "WAVE-006",
+    "WAVE-007",
+    "WAVE-008",
+    "WAVE-009",
+    "WAVE-010",
+    "WAVE-011",
+    "WAVE-012",
+    "WAVE-013",
+    "WAVE-014"
+  ],
+  "waves": [
+    {
+      "id": "WAVE-001",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-001"
+      ],
+      "depends_on": [],
+      "parallelism": 1,
+      "entry_condition": "Plan confirmed",
+      "exit_evidence": "TASK-001 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-002",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-002"
+      ],
+      "depends_on": [
+        "WAVE-001"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-001 complete",
+      "exit_evidence": "TASK-002 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-003",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-003"
+      ],
+      "depends_on": [
+        "WAVE-002"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-002 complete",
+      "exit_evidence": "TASK-003 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-004",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-004"
+      ],
+      "depends_on": [
+        "WAVE-003"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-003 complete",
+      "exit_evidence": "TASK-004 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-005",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-005"
+      ],
+      "depends_on": [
+        "WAVE-004"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-004 complete",
+      "exit_evidence": "TASK-005 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-006",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-006"
+      ],
+      "depends_on": [
+        "WAVE-005"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-005 complete",
+      "exit_evidence": "TASK-006 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-007",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-007"
+      ],
+      "depends_on": [
+        "WAVE-006"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-006 complete",
+      "exit_evidence": "TASK-007 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-008",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-008"
+      ],
+      "depends_on": [
+        "WAVE-002",
+        "WAVE-004",
+        "WAVE-005",
+        "WAVE-006",
+        "WAVE-007"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-002, WAVE-004, WAVE-005, WAVE-006, WAVE-007 complete",
+      "exit_evidence": "TASK-008 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-009",
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-009"
+      ],
+      "depends_on": [
+        "WAVE-008"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-008 complete",
+      "exit_evidence": "TASK-009 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-010",
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-010"
+      ],
+      "depends_on": [
+        "WAVE-009",
+        "WAVE-004",
+        "WAVE-008"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-009, WAVE-004, WAVE-008 complete",
+      "exit_evidence": "TASK-010 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-011",
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-011"
+      ],
+      "depends_on": [
+        "WAVE-010",
+        "WAVE-003",
+        "WAVE-006",
+        "WAVE-007"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-010, WAVE-003, WAVE-006, WAVE-007 complete",
+      "exit_evidence": "TASK-011 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-012",
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-012"
+      ],
+      "depends_on": [
+        "WAVE-011",
+        "WAVE-008",
+        "WAVE-009"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-011, WAVE-008, WAVE-009 complete",
+      "exit_evidence": "TASK-012 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-013",
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-013"
+      ],
+      "depends_on": [
+        "WAVE-012",
+        "WAVE-003",
+        "WAVE-011",
+        "WAVE-002",
+        "WAVE-008"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-012, WAVE-003, WAVE-011, WAVE-002, WAVE-008 complete",
+      "exit_evidence": "TASK-013 convergence_criteria and acceptance_evidence complete"
+    },
+    {
+      "id": "WAVE-014",
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "status": "pending",
+      "task_ids": [
+        "TASK-014"
+      ],
+      "depends_on": [
+        "WAVE-013"
+      ],
+      "parallelism": 1,
+      "entry_condition": "All tasks in WAVE-013 complete",
+      "exit_evidence": "TASK-014 convergence_criteria and acceptance_evidence complete"
+    }
+  ],
+  "same_wave_write_conflicts": 0,
+  "policy": [
+    "一个 task 一个 wave，确保共享 root/manifest 的 ownership 串行。",
+    "G1 wave 全部先于 G2，G2 先于 G3，G3 先于 G4；跨 goal output 通过显式 deps 消费。",
+    "NO-GO spike 会阻断其后继 wave，不允许跳过或更换 locked renderer。"
+  ]
+}

@@ -1,0 +1,374 @@
+{
+  "_meta": {
+    "kind": "findings",
+    "schema": "findings/1.0",
+    "role": "primary",
+    "alias": "current-analysis"
+  },
+  "mode": "macro",
+  "topic": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P2（xhm-desktop）",
+  "anchor_sources": [
+    "docs/rust-migration-guide.md:238-308 (P2 — Desktop 迁移 / 4.6 Win32 / 4.7 UI 对等 / 4.8 Service 发现 / Done 条件)",
+    "docs/rust-migration-guide.md:46-103 (Cargo workspace 结构 — xhm-desktop 尚未列入根 Cargo.toml)",
+    "docs/rust-migration-feasibility.md:296-368 (Slint 软件渲染 3.8 MiB 实测 + Win32 宿主能力验证矩阵)",
+    "Cargo.toml:1-46 (workspace members 仅 xhm-core/xhm-service；windows-sys 0.59)",
+    "poc/slint-desktop/Cargo.toml:1-21 (POC 用 windows 0.58 + slint 1 + parking_lot 0.12)",
+    "poc/slint-desktop/src/win32.rs:33-164 (find_own_hwnd/set_topmost/set_click_through/position_near_taskbar/print_memory)",
+    "poc/slint-desktop/src/main.rs:9-52 (HWND→topmost→定位→click-through 启动序列)",
+    "xhm-core/src/wire.rs:17-228 (5 PushEvent + event_name + to_json + SubscriptionMode + normalize_pinned_ids)",
+    "xhm-service/src/state.rs:14-46 (DEFAULT_SERVICE_PORT=35181 / DEFAULT_SSE_PATH=/api/v1/events)",
+    "xhm-service/src/realtime/mod.rs:579-705 (SSE handler：mode/pinned query、keepalive 15s、comment ping、断连 cleanup)",
+    "xhm-service/src/lib.rs:29-46 (app() 路由组装：config/metrics/power/widget/realtime + CORS)",
+    "XhMonitor.Desktop/App.xaml.cs:18-165 (Mutex 单实例 + BaseDirectory 配置 + 托管服务生命周期)",
+    "XhMonitor.Desktop/Services/ServiceDiscovery.cs:13-220 (service-endpoints.json + 健康 探测 preferredPort..+10)",
+    "XhMonitor.Desktop/service-endpoints.json:1-8 与 service-endpoints.schema.json:1-30 (PascalCase ServiceEndpoints 契约)",
+    "XhMonitor.Desktop/Services/SignalRService.cs:17-236 (5 事件 handler + 自动重连 + SetProcessMetricsSubscription + NormalizePinnedProcessIds)",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:206-684 (PanelState 状态机 + 订阅同步 + pinned/lite 路由 + 进程索引同步)",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs:26-1498 (topmost/click-through/拖拽吸附/长按/点击动画/Kill 倒计时/Toast/WindowPositionStore/RegisterExitHotkey)",
+    "XhMonitor.Desktop/Services/TaskbarPlacementService.cs:7-196 (Shell_TrayWnd + TrayNotifyWnd/MSTaskListWClass + 8/6px + 虚拟屏 clamp)",
+    "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:23-711 (4 边停靠 + DockSnapDistance=80 + 半窗越界 + 拖拽锚点 + ApplyOrganicVisualState)",
+    "XhMonitor.Desktop/ViewModels/TaskbarMetricsViewModel.cs:20-1238 (Text/Bar × H/V 4 样式 + 列重建 + MetricItem + CompactUnitFormatter)",
+    "XhMonitor.Desktop/Services/TrayIconService.cs:13-289 (NotifyIcon + 7 项菜单 + 双击切换 + BalloonTip 更新提示)",
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs:35-539 (4 分区 + AdminMode/Startup/LAN 变更触发重启 + PUT /api/v1/config/settings)",
+    "XhMonitor.Desktop/Converters/MetricValueColorConverter.cs:8-40 与 MemoryPercentageColorConverter.cs:8-45 (<50 绿 #4ade80 / <80 黄 #facc15 / else 红 #f87171)",
+    "XhMonitor.Desktop/Services/GitHubAppUpdateService.cs:15-734 与 Configuration/AppUpdateOptions.cs:4-8 (Gitee API v5 / source release 解析 / Lite installer 命名)"
+  ],
+  "p0_p1_readiness": {
+    "verdict": "P0+P1 已通过 review (PASS)，为 P2 提供了冻结的契约基线",
+    "evidence": [
+      "maestro knowhow session-maestro-rust-migration-p0p1-20260726-062756：review verdict=PASS，158 个 cargo test 通过，combined release Private Bytes 26.2 MiB（<30 门禁），WS cadence ≤1081ms",
+      "Cargo.toml:1-6 workspace 已含 xhm-core + xhm-service（xhm-desktop 待加入）",
+      "xhm-service 已落地 20 条 REST + SSE + SignalR WS（realtime/mod.rs:74-705），5 类 PushEvent 编码与路由就绪",
+      "spec:project:architecture-constraints-003 bridge 内存门禁在 P0/P1 已可观察满足，P2 不得回归"
+    ],
+    "consumed_contracts_for_p2": [
+      "xhm-core::wire::PushEvent（HardwareLimits / SystemUsage / ProcessMetrics / ProcessMetricsLite / ProcessMetadata）",
+      "xhm-service DEFAULT_SSE_PATH = /api/v1/events、DEFAULT_SERVICE_PORT = 35181、SSE keepalive 15s + comment ping",
+      "xhm-service REST：/api/v1/config/settings (GET+PUT)、/api/v1/power/scheme/next、/api/v1/widgetconfig 等 20 端点"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "Feasibility",
+      "score": 4,
+      "confidence": 0.78,
+      "evidence": [
+        "POC 已实测软件渲染 Private Bytes 3.8 MiB（docs/rust-migration-feasibility.md:346-354），远低于 P2 Done 条件 <10 MiB",
+        "poc/slint-desktop/src/win32.rs 已验证 HWND/topmost/click-through/taskbar-near 四项核心 Win32 能力",
+        "P1 已交付 SSE + 5 PushEvent + REST 契约（xhm-service/src/realtime/mod.rs:579-705、wire.rs:17-228），P2 仅需消费侧实现",
+        "未验证：tray-icon/tao 之类 Rust 托盘 crate 在本项目的可用性；Slint 有机矩阵动画与 Storyboard 的视觉对等"
+      ]
+    },
+    {
+      "name": "Impact",
+      "score": 5,
+      "confidence": 0.95,
+      "evidence": [
+        "docs/rust-migration-guide.md:14-18：Desktop Private Bytes 149–165 MiB → 4–8 MiB（软件渲染），两进程合计 238–268 → 30–34 MiB",
+        "移除 WPF/WinForms/Avalon/DirectWrite 栈，为 P3 删除 C# Desktop 扫清最后阻断项",
+        "补齐 issue-DSC-20260119-150946-006：service-endpoints.json 动态发现取代硬编码 localhost:35179"
+      ]
+    },
+    {
+      "name": "Risk",
+      "score": 3,
+      "confidence": 0.65,
+      "evidence": [
+        "视觉验收门：有机吸附矩阵、长按 2s ScaleTransform→0.90、Kill 倒计时圆弧（FloatingWindow.xaml.cs:662-933）需在 Slint 软件渲染下人眼对齐",
+        "双窗口 + 多显示器 + DPI 坐标变换（TaskbarMetricsWindow.xaml.cs:619-650 的 TransformDevicePointToLogical）在 Rust 侧需重建并保持像素一致",
+        "Windows Defender / 签名对 Shell_NotifyIcon 与子进程（未来 lhm-bridge）的影响在 P0/P1 已观察，P2 托盘路径仍需冒烟"
+      ]
+    },
+    {
+      "name": "Complexity",
+      "score": 2,
+      "confidence": 0.7,
+      "evidence": [
+        "FloatingWindow.xaml.cs 1498 行 + TaskbarMetricsWindow.xaml.cs 711 行 + Settings/About/TrayIconService/ServiceDiscovery 等共约 4k+ 行 C# 需向 Slint DSL + Rust 状态层端口",
+        "4 个 Goal（G1 基础/SSE/配置、G2 Win32 壳、G3 主悬浮窗核心 UI、G4 任务栏窗+设置+关于+性能验收）存在 G1→{G2,G3,G4} 硬串行",
+        "UI 对等清单核心 12 项 + 扩展 3 项（docs/rust-migration-guide.md:262-278），逐项需可演示"
+      ]
+    },
+    {
+      "name": "Dependencies",
+      "score": 4,
+      "confidence": 0.9,
+      "evidence": [
+        "上游 P0/P1 已 sealed（review PASS）；xhm-core 的 PushEvent/wire 与 xhm-service 的 /api/v1/events 路径不可变",
+        "无外部网络服务依赖；lhm-bridge 不在 P2 范围；RyzenAdj 仅通过 REST 间接调用",
+        "依赖锁定的第三方：slint 1.x、windows/windows-sys、reqwest/eventsource（SSE 客户端）、tray-icon 候选、serde/anyhow/tokio（已在 workspace.dependencies）"
+      ]
+    },
+    {
+      "name": "Alternatives",
+      "score": 0,
+      "confidence": 0.85,
+      "note": "N/A（已在可行性研究阶段闭环）",
+      "evidence": [
+        "Tauri+WebView2 被门控否决（进程树 >100 MiB，docs/rust-migration-feasibility.md:152-158）",
+        "原生 Win32/C++ UI 被否决（团队无 C++ UI 背景，:188-190）",
+        "Flutter 被否决（UI 重写代价极高，:166-169）",
+        "Slint + winit-software 为已决策路径，P2 不得翻案"
+      ]
+    }
+  ],
+  "overall_confidence": 0.78,
+  "findings": [
+    {
+      "id": "F-01",
+      "title": "xhm-desktop crate 缺失，必须先加入 workspace 才能开始任何 Rust 编译",
+      "severity": "blocker-for-execution",
+      "evidence_refs": [
+        "Cargo.toml:1-6 (members 仅 xhm-core/xhm-service)",
+        "docs/rust-migration-guide.md:69-93 (规划中的 xhm-desktop/ 目录与 workspace members)"
+      ],
+      "impact": "G1 首个任务；未加入则 cargo build/test -p xhm-desktop 无意义。需同步决定 windows 0.58（POC）vs windows-sys 0.59（workspace）的 FFI 绑定路径。"
+    },
+    {
+      "id": "F-02",
+      "title": "POC 已锁定核心 Win32 行为，可直接提升而非重写",
+      "severity": "de-risk",
+      "evidence_refs": [
+        "poc/slint-desktop/src/win32.rs:33-164 (find_own_hwnd EnumWindows+PID、HWND_TOPMOST、WS_EX_TRANSPARENT 动态切换、FindWindowW Shell_TrayWnd+GetWindowRect+SetWindowPos)",
+        "docs/rust-migration-feasibility.md:358-368 (Win32 宿主能力验证矩阵，仅点击穿透与热键的手动交互待验证)"
+      ],
+      "impact": "G2 能以 POC win32.rs 为起点扩展到 TaskbarPlacementService 四边定位 + DPI + 单实例 Mutex。点击穿透默认关闭的交互行为需在 Windows 冒烟阶段补证据。"
+    },
+    {
+      "id": "F-03",
+      "title": "SSE 客户端契约已由 P1 冻结，Desktop 侧不得自创事件名或路径",
+      "severity": "contract",
+      "evidence_refs": [
+        "xhm-core/src/wire.rs:17-23 (5 个 RECEIVE_* 事件名常量)",
+        "xhm-service/src/realtime/mod.rs:579-601 (SSE handler：mode=full|lite + pinned 逗号分隔 + KeepAlive 15s)",
+        "xhm-service/src/state.rs:14-16 (DEFAULT_SERVICE_PORT=35181、DEFAULT_SSE_PATH=/api/v1/events)",
+        "XhMonitor.Desktop/Services/SignalRService.cs:51-119 (C# 现有 5 个 On<JsonElement> 注册逐字对齐事件名)"
+      ],
+      "impact": "Rust SSE 客户端必须 GET {service_url}/api/v1/events?mode=&pinned=，按 event: 字段分发到 5 个 handler；断线重连不得阻塞 Slint UI 线程。"
+    },
+    {
+      "id": "F-04",
+      "title": "service-endpoints.json 发现契约：exe 目录 + 默认回退 + PascalCase 键",
+      "severity": "contract",
+      "evidence_refs": [
+        "XhMonitor.Desktop/service-endpoints.json:1-8 (ServiceEndpoints.ApiBaseUrl/SignalRUrl)",
+        "XhMonitor.Desktop/Services/ServiceDiscovery.cs:25-81 (BaseDirectory 读取 + DefaultApiBaseUrl 回退 + 健康 探测 preferredPort..+10)",
+        "docs/rust-migration-guide.md:284-300 (Rust ServiceEndpoints::load 示例：current_exe().parent() + unwrap_or_default)"
+      ],
+      "impact": "G1 的 config.rs 必须在 current_exe().parent() 读取 service-endpoints.json，缺失或解析失败回退默认值不得 panic；键名沿用 PascalCase 以便与现有 C# Desktop 共存发布。"
+    },
+    {
+      "id": "F-05",
+      "title": "主悬浮窗 UI 对等清单为视觉验收主战场，核心 12 项不可拆分",
+      "severity": "acceptance-surface",
+      "evidence_refs": [
+        "docs/rust-migration-guide.md:262-278 (P2-核心/扩展 14 行清单)",
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs:434-553 (拖拽阈值 5px + 边缘吸附 24px + 长按 2s + 点击反馈 50ms/150ms)",
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs:810-933 (Kill 二次确认 + 倒计时圆弧 周长 43.98)",
+        "XhMonitor.Desktop/Converters/MetricValueColorConverter.cs:26-34 (阈值色 <50/<80 边界)"
+      ],
+      "impact": "G3 必须在 Slint 软件渲染下逐项人眼验证；有机吸附矩阵（docs/【设计稿】有机吸附矩阵-Organic-Dock.html）是已知最高风险，需早期原型让用户确认，不达标考虑 Skia canvas 回退。"
+    },
+    {
+      "id": "F-06",
+      "title": "任务栏指标窗的 4 样式 × 4 边停靠 + 拖拽锚点是独立复杂子系统",
+      "severity": "subsystem",
+      "evidence_refs": [
+        "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:40-441 (4 种 dock side + DockSnapDistance=80 + 半窗越界 + ApplyDockSide/ApplyOrganicVisualState)",
+        "XhMonitor.Desktop/ViewModels/TaskbarMetricsViewModel.cs:297-670 (RebuildColumns + MetricItem + Bar/Text × H/V)",
+        "XhMonitor.Desktop/Services/TaskbarPlacementService.cs:7-107 (Shell_TrayWnd + TrayNotifyWnd/MSTaskListWClass + 虚拟屏 clamp)"
+      ],
+      "impact": "G4 任务栏窗需要独立的第二个 Slint 窗口 + 独立 SSE 连接 + 4 边停靠几何；与 G3 并行可行但需共享 win32.rs 与 SSE 客户端。"
+    },
+    {
+      "id": "F-07",
+      "title": "设置/关于/更新检查涉及外部 Gitee API 与系统注册表/防火墙，是 P2 扩展项的复杂边界",
+      "severity": "boundary",
+      "evidence_refs": [
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs:103-282 (AdminMode/Startup/LAN 变更触发应用/Service 重启)",
+        "XhMonitor.Desktop/Services/GitHubAppUpdateService.cs:15-734 (Gitee API v5 + source release tag 解析 + Lite installer 搜索)",
+        "XhMonitor.Desktop/Configuration/AppUpdateOptions.cs:4-8 (ReleaseApiBaseUrl 默认 gitee.com/api/v5/repos)"
+      ],
+      "impact": "G4 设置/关于可按 G4 子任务延后；更新检查 + 安装器启动可考虑 Deferred 至 P3 发布包阶段，P2 内只做“检查 + 提示”最小可用。"
+    },
+    {
+      "id": "F-08",
+      "title": "全局热键 Ctrl+Alt+Shift+X 明确不迁移——必须从 POC 删除并禁止在 Rust 侧复活",
+      "severity": "out-of-scope-guard",
+      "evidence_refs": [
+        "session.json boundary_contract.out_of_scope[3]：不迁移全局热键 Ctrl+Alt+Shift+X",
+        "docs/rust-migration-guide.md:249,273 (POC 已移除 / 不迁移)",
+        "poc/slint-desktop/src/win32.rs:7 (注释 5.（热键已移除))"
+      ],
+      "impact": "C# FloatingWindow.xaml.cs:1384-1428 的 RegisterExitHotkey + WM_HOTKEY WndProc 不进入 Rust 端口；点击穿透的退出改由托盘菜单承担。"
+    }
+  ],
+  "technical_solutions": [
+    {
+      "round": 1,
+      "solution": "新增 xhm-desktop crate（bin）加入根 Cargo.toml members；模块按 main.rs/win32.rs/service_client.rs/config.rs/ui/ 切分，对齐 docs/rust-migration-guide.md:69-77 规划",
+      "problem": "Rust 端无 Desktop 落点；workspace 未识别 xhm-desktop",
+      "rationale": "与 xhm-core/xhm-service 一致的 path 成员 + workspace.dependencies 复用；POC win32.rs 可直接提升",
+      "alternatives": "独立仓库（否决：破坏统一 cargo test --workspace 与 DoD）",
+      "status": "proposed",
+      "evidence_refs": ["Cargo.toml:1-6", "docs/rust-migration-guide.md:46-103", "poc/slint-desktop/src/win32.rs:33-164"],
+      "next_action": "在 plan 阶段产出 crate 骨架与 Cargo.toml diff"
+    },
+    {
+      "round": 1,
+      "solution": "SSE 客户端用 reqwest + tokio + 手写 eventsource 解析（或 eventsource-stream crate），事件按 PushEvent::event_name() 分发；连接/重连跑在独立 tokio 任务，通过 slint::Timer 或 channel 把状态推回 UI 线程",
+      "problem": "SignalR 在 Desktop 侧被 SSE 替代；断线重连不得阻塞 UI",
+      "rationale": "复用 xhm-core::wire 的 5 个 payload 结构体与事件名；C# SignalRService 的 10×2s 重试 + SetProcessMetricsSubscription 语义直接端口",
+      "alternatives": "引入 SignalR Rust 客户端 crate（否决：Web 前端仍用 SignalR JS，Desktop 已决策走 SSE，双协议无收益）",
+      "status": "proposed",
+      "evidence_refs": ["xhm-service/src/realtime/mod.rs:579-705", "xhm-core/src/wire.rs:192-228", "XhMonitor.Desktop/Services/SignalRService.cs:37-236"],
+      "next_action": "G1 内对 SSE 客户端写 mock HTTP server 的确定性单测（wire 表驱动）"
+    },
+    {
+      "round": 1,
+      "solution": "Win32 层以 POC win32.rs 为起点扩展到 TaskbarPlacementService 等价（FindWindowEx 递归 TrayNotifyWnd/MSTaskListWClass）+ Mutex 单实例 + GetDpiForWindow/MonitorFromWindow DPI 感知；所有调用通过 trait 注入以便 cfg(test) stub",
+      "problem": "4 边任务栏定位、多显示器 DPI、单实例需在 Rust 重建且可测",
+      "rationale": "C# TaskbarPlacementService 的 HorizontalMargin=8/VerticalMargin=6 + 虚拟屏 clamp 为可直接端口的纯几何算法；POC 已证 SetWindowPos/WPS_EX_TRANSPARENT 路径成立",
+      "alternatives": "SHAppBarMessage（否决：C# 源码已确认不用 AppBar）",
+      "status": "proposed",
+      "evidence_refs": ["XhMonitor.Desktop/Services/TaskbarPlacementService.cs:7-196", "poc/slint-desktop/src/win32.rs:107-149", "XhMonitor.Desktop/App.xaml.cs:18-50"],
+      "next_action": "G2 对 PlacementCalculator（纯函数）写表驱动单测，覆盖 4 边 + tray/task-list 避让"
+    },
+    {
+      "round": 1,
+      "solution": "托盘用 tray-icon crate（或 tao+winit 路径）承载 7 项菜单 + 双击切换 + BalloonTip；icon 从 exe 同目录 Assets/icon.ico 读取",
+      "problem": "Shell_NotifyIcon 在 Rust 侧需第三方封装；WinForms NotifyIcon 不可用",
+      "rationale": "C# TrayIconService 的菜单语义（显示/隐藏、Web、点击穿透、Admin、设置、关于、退出）是行为契约，crate 选择是实现细节",
+      "alternatives": "手写 Shell_NotifyIcon FFI（否决：维护成本高，除非 tray-icon 出现阻断性 bug）",
+      "status": "proposed",
+      "evidence_refs": ["XhMonitor.Desktop/Services/TrayIconService.cs:13-289", "XhMonitor.Desktop/App.xaml.cs:69-83"],
+      "next_action": "plan 阶段锁定 tray-icon crate 版本并验证 Slint 事件循环共存"
+    }
+  ],
+  "decisions": [
+    {
+      "title": "沿用 P1 冻结契约（PushEvent 5 类、SSE /api/v1/events、DEFAULT_SERVICE_PORT=35181）",
+      "class": "locked",
+      "context": "P0/P1 review PASS，spec:project:architecture-constraints-003 bridge 内存门禁已满足",
+      "options": ["沿用", "扩展事件协议"],
+      "chosen": "沿用",
+      "reason": "任何协议扩展都违反 boundary_contract.constraints[4] 与不回归 P0/P1 约束",
+      "evidence_source": "xhm-core/src/wire.rs:17-228、xhm-service/src/state.rs:14-16、xhm-service/src/realtime/mod.rs:579-705"
+    },
+    {
+      "title": "默认使用 Slint winit-software 软件渲染后端",
+      "class": "locked",
+      "context": "POC 实测 GPU 后端 208.2 MiB 劣于 WPF 基线，软件后端 3.8 MiB 满足 <10 MiB 门禁",
+      "options": ["winit-software", "wgpu-skia", "femtovg"],
+      "chosen": "winit-software",
+      "reason": "session.json boundary_contract.constraints[1] 与 docs/rust-migration-guide.md:404,431 启动脚本均已锁定",
+      "evidence_source": "docs/rust-migration-feasibility.md:346-354、session.json:27"
+    },
+    {
+      "title": "全局热键 Ctrl+Alt+Shift+X 不迁移",
+      "class": "locked",
+      "context": "用户决策；POC 已移除；session.json boundary_contract.out_of_scope 显式列出",
+      "options": ["迁移 RegisterHotKey", "托盘菜单替代"],
+      "chosen": "托盘菜单替代（点击穿透切换由托盘右键菜单承担）",
+      "reason": "out_of_scope 不可越界；C# FloatingWindow.xaml.cs:1384-1428 的 RegisterExitHotkey 不进入 Rust",
+      "evidence_source": "session.json:22、docs/rust-migration-guide.md:249,273、poc/slint-desktop/src/win32.rs:7"
+    },
+    {
+      "title": "不删除/切换 C# Desktop 与 Service，不执行 P3 端口切换与安装包迁移",
+      "class": "locked",
+      "context": "P2 是并行验证阶段，P3 才允许 cutover",
+      "options": ["P2 内 cutover", "保持并行"],
+      "chosen": "保持并行，xhm-desktop.exe 与 XhMonitor.Desktop.exe 共存",
+      "reason": "session.json boundary_contract.out_of_scope[1,2] 禁止",
+      "evidence_source": "session.json:19-23"
+    },
+    {
+      "title": "xhm-desktop 的 SSE 客户端实现库（reqwest + eventsource-stream vs 自写）",
+      "class": "free",
+      "context": "C# 侧 SignalR 客户端不再可用；Rust SSE 客户端实现路径开放",
+      "options": ["reqwest + eventsource-stream crate", "reqwest + 手写 text/event-stream 分帧", " crate"],
+      "chosen": "实现者优先评估 eventsource-stream；若出现维护/兼容问题回退手写（分帧语义简单）",
+      "reason": "分帧协议简单、测试可控；crate 选择不应阻塞契约",
+      "evidence_source": "xhm-service/src/realtime/mod.rs:639-705（服务端 Sse 编码参考）"
+    },
+    {
+      "title": "Win32 FFI 绑定：windows 0.58（POC）vs windows-sys 0.59（workspace）",
+      "class": "free",
+      "context": "POC 用 `windows`（高级包装），workspace 现有 `windows-sys`（raw FFI）",
+      "options": ["统一升级到 windows 0.59", "xhm-desktop 独立用 windows 0.58", "xhm-desktop 用 windows-sys 0.59 raw"],
+      "chosen": "实现者优先 `windows`（高级包装，开发效率高）；与 workspace windows-sys 共存可行（不同 crate）",
+      "reason": "POC 已验证 `windows` API 路径；raw FFI 会显著增加 UI 迭代成本",
+      "evidence_source": "poc/slint-desktop/Cargo.toml:10-17、Cargo.toml:30-35"
+    },
+    {
+      "title": "托盘实现 crate（tray-icon vs tao vs 手写 Shell_NotifyIcon）",
+      "class": "free",
+      "context": "WinForms NotifyIcon 在 Rust 不可用",
+      "options": ["tray-icon crate", "tao + 自建托盘", "手写 Shell_NotifyIcon FFI"],
+      "chosen": "优先 tray-icon；早期 spike 验证与 Slint winit 事件循环共存",
+      "reason": "C# TrayIconService 菜单语义是契约，FFI 层是细节；tray-icon 跨平台与维护性最佳",
+      "evidence_source": "XhMonitor.Desktop/Services/TrayIconService.cs:42-78"
+    },
+    {
+      "title": "更新检查/安装器启动的完整端口范围",
+      "class": "deferred",
+      "context": "GitHubAppUpdateService 700+ 行涉及 Gitee API、source release 解析、安装器下载/启动；P2 DoD 仅要求“关于窗口 + 更新检查”可用",
+      "options": ["P2 全量端口", "P2 仅检查+提示，安装器启动延后"],
+      "chosen": "P2 仅实现检查 + BalloonTip 提示；下载/启动安装器延后到 P3 发布包阶段",
+      "reason": "安装器启动与 P3 发布脚本强耦合；P2 内端口收益低、风险高",
+      "evidence_source": "XhMonitor.Desktop/Services/GitHubAppUpdateService.cs:180-358、session.json:16（P2-扩展项）"
+    },
+    {
+      "title": "设置窗口的 AdminMode/Startup/LAN/防火墙 4 个系统级开关",
+      "class": "deferred",
+      "context": "涉及注册表、计划任务运行级别、Windows 防火墙 netsh；P2 是并行验证，系统级写入应审慎",
+      "options": ["P2 全量实现 + 重启对话框", "P2 仅实现监控/外观/标签等非系统级 setting，系统级只读展示"],
+      "chosen": "P2 内仅实现非系统级 setting 的读写（监控开关、标签、列间距、视觉样式、透明度）；AdminMode/Startup/LAN/防火墙标记 Deferred 并在 UI 灰显或提示“P3 启用”",
+      "reason": "系统级开关在并行运行期可能影响现有 C# Desktop/Service，违反不回归约束",
+      "evidence_source": "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs:128-282、session.json:31"
+    }
+  ],
+  "scope_verdict": "large",
+  "scope_rationale": "满足 workflow/analyze.md:48-51 的 large 双重判据：(1) 4 个独立子系统——G1 基础设施/SSE/配置、G2 Win32 原生壳、G3 主悬浮窗核心 UI、G4 任务栏窗+设置+关于+性能验收，每个有独立 done_when/boundary/evidence（session.json:349-393）；(2) 硬串行依赖屏障——workspace 接入 → SSE/状态层 → Win32 壳 → UI 视觉对等，且 Slint 有机矩阵动画 + tray-icon 集成存在未经 plan 可消除的未知。UI 对等清单（12 核心 + 3 扩展）每项带视觉验收门，复杂度显著高于 single/few-file 的 small 判据。",
+  "recommendation": "go_with_conditions",
+  "recommendation_conditions": [
+    "plan 前置 spike：tray-icon crate 与 Slint winit 事件循环共存验证（1 个里程碑内 go/no-go）",
+    "G3 早期原型：有机吸附矩阵 Slint 动画与 C# Storyboard 视觉对等，让用户确认；不达标才考虑 Skia renderer 回退（docs/rust-migration-guide.md:384）",
+    "SSE 客户端断线重连必须跑在独立 tokio 任务，禁止阻塞 Slint UI 线程（session.json execution_criteria[1]）",
+    "所有 Win32/HTTP/SSE/文件系统/时钟边界必须 trait 注入或 cfg(test) 隔离，满足无管理员/无硬件 CI 全绿（docs/rust-migration-guide.md:332-363）"
+  ],
+  "intent_coverage": [
+    {"item": "新增 xhm-desktop crate 并加入 Cargo workspace", "status": "addressed", "where": "F-01, decisions[4], technical_solutions[0]", "notes": "G1 首任务；windows/windows-sys 选择留 free"},
+    {"item": "基于 Slint 实现主悬浮窗、任务栏指标窗、设置、关于与告警 Toast", "status": "addressed", "where": "F-05, F-06, F-07, technical_solutions", "notes": "主窗 12 核心 + 任务栏 4 样式 + 设置/关于为 G3/G4"},
+    {"item": "实现 SSE/REST Service 客户端与 service-endpoints.json 可执行目录发现", "status": "addressed", "where": "F-03, F-04, decisions[0,4]", "notes": "契约已 P1 冻结；config.rs 按 current_exe().parent()"},
+    {"item": "实现 HWND、topmost、点击穿透、拖拽吸附、任务栏四边定位、多显示器 DPI、托盘、窗口位置持久化和单实例", "status": "addressed", "where": "F-02, F-06, technical_solutions[2,3]", "notes": "POC win32.rs 提升 + TaskbarPlacementService 端口 + Mutex"},
+    {"item": "迁移 P2 UI 功能对等清单的核心项与扩展项", "status": "addressed", "where": "F-05, F-07, decisions[7,8]", "notes": "核心全量；扩展项中更新下载/系统级设置 Deferred"},
+    {"item": "补充 xhm-desktop 的边界隔离测试、工作区验证和 Windows 手动验证证据", "status": "addressed", "where": "decisions[] conditions, technical_solutions", "notes": "trait/cfg(test) 隔离 + cargo test/clippy 全绿 + Windows 冒烟"},
+    {"item": "不修改 xhmonitor-web 前端", "status": "preserved", "where": "decisions[3], scope_rationale", "notes": "out_of_scope 守护"},
+    {"item": "不删除或切换现有 C# Desktop/Service 项目", "status": "preserved", "where": "decisions[3]", "notes": "并行共存"},
+    {"item": "不执行 P3 端口切换、发布脚本和安装包迁移", "status": "preserved", "where": "decisions[7]", "notes": "安装器启动 Deferred"},
+    {"item": "不迁移全局热键 Ctrl+Alt+Shift+X", "status": "preserved", "where": "decisions[2], F-08", "notes": "硬守护，POC 已移除"}
+  ],
+  "pressure_pass": {
+    "target_finding": "F-05 / scope_verdict=large",
+    "gradient": [
+      {"step": "evidence-demand", "challenge": "主悬浮窗 UI 对等是否真的构成 large 的独立子系统？", "response": "FloatingWindow.xaml.cs 1498 行承载 12 项核心交互，每项有独立动画/状态；TaskbarMetricsWindow 711 行承载独立 4 样式几何；两者共享 SSE 但 UI 状态机独立 → 是独立子系统而非同一文件"},
+      {"step": "assumption-probe", "challenge": "假设 Slint 软件渲染能在 <10 MiB 内还原所有动画——POC 只验证了脉冲矩形", "response": "承认 gap：记录为 residual_risk[R-01]，要求 G3 早期原型 + 4K 手动验收；若 CPU/视觉不达标，docs/rust-migration-guide.md:384 预案为 Skia renderer 回退（但会逼近内存门禁，需重新评估）"},
+      {"step": "boundary-tradeoff", "challenge": "scope=large 将触发 post-analyze-scope 决策点可能改道 roadmap，是否过度？", "response": "session.json 已定义 G1-G4 四 goal + 硬串行（workspace→SSE→UI），workflow 定义 large=3+ 子系统，如实判定 large 是诚实交付；是否拆 roadmap 由 post-analyze-scope 人工裁决，analyze 不替其决定"},
+      {"step": "root-cause", "challenge": "为什么 P1 看起来顺滑而 P2 判 large？", "response": "P1 是协议/数据层端口（C#→Rust 一对一，POC 已全链路验证）；P2 是视觉/交互/系统壳端口，含人眼验收与多 crate 集成未知，本质复杂度更高"}
+    ],
+    "outcome": "scope_verdict=large 与 recommendation=go_with_conditions 经压力测试成立"
+  },
+  "residual_risks": [
+    {"id": "R-01", "risk": "Slint 软件渲染下有机矩阵动画 + 长按/点击/Kill 倒计时视觉与 WPF 不对齐", "mitigation": "G3 早期原型 + 用户确认；不达标评估 Skia renderer（注意内存门禁）", "status": "open"},
+    {"id": "R-02", "risk": "tray-icon crate 与 Slint winit 事件循环共存出现 panic/事件丢失", "mitigation": "plan 前置 spike；必要时回退手写 Shell_NotifyIcon FFI", "status": "open"},
+    {"id": "R-03", "risk": "多显示器 + DPI 坐标变换在 Rust 侧与 C# TransformDevicePointToLogical 像素不一致", "mitigation": "端口纯函数 + 表驱动单测；Windows 冒烟在 4K 显示器验证任务栏四边定位", "status": "open"},
+    {"id": "R-04", "risk": "Deferred 的系统级设置（AdminMode/Startup/LAN/防火墙）在 P2 UI 上误导用户", "mitigation": "UI 灰显或显式“P3 启用”提示；不在 P2 写入系统状态", "status": "accepted"}
+  ],
+  "session_stats": {
+    "discussion_rounds": 0,
+    "auto_mode": false,
+    "open_decisions_after": ["post-analyze-scope", "post-execute", "post-business-test", "post-review", "post-test", "post-frontend-verify", "post-goal-audit", "post-session"],
+    "evidence_anchors_count": 24
+  }
+}

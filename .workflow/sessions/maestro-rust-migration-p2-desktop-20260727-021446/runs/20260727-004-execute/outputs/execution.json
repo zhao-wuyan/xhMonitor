@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "kind": "execution",
+    "schema": "execution/1.0",
+    "role": "primary",
+    "alias": "current-execution"
+  },
+  "schema_version": "execution/1.0",
+  "run_id": "20260727-004-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "command": "execute",
+  "goal_ref": "G2",
+  "status": "completed",
+  "task_ids": ["TASK-005", "TASK-006", "TASK-007", "TASK-008"],
+  "method": "inline",
+  "executor": "G2Stabilize",
+  "upstream_plan": {
+    "artifact_id": "ART-002-004",
+    "path": "sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-002-plan/outputs/plan.json"
+  },
+  "summary": "G2 stabilization repaired the non-compiling lib.rs delimiters and runtime ownership, mapped unexpected Process32NextW failures to Other, and removed the incomplete production drag/snap stub. Pure drag/snap geometry remains covered; production drag/snap wiring is deferred to G3.",
+  "evidence": {
+    "cargo_build_and_test": "3 consecutive rounds: cargo build passed; cargo test passed with 100 tests and 0 failures",
+    "cargo_clippy": "cargo clippy -p xhm-desktop --all-targets -- -D warnings: 0 errors, 0 warnings",
+    "windows_smoke": "pid=38076: HWNDs resolved after 2 retries, floating=52890544, taskbar=31196916, DPI=96/96, Bottom placement origin=(1086,1040); Orca observed each real window; both closed cleanly, process exit=0",
+    "lifecycle_cleanup": "controller and guard are Rc<RefCell<...>> values owned by TrayRuntime; save timer is owned in RuntimeResources; ShellController shutdown cancels SSE and joins its runtime thread; smoke logged 'dual SSE runtime stopped'",
+    "process32_next": "FALSE reads GetLastError immediately; ERROR_NO_MORE_FILES ends enumeration, every other code returns KillOutcome::Other",
+    "drag_snap": "broken window-local/logical coordinate callback and no-op snap application removed; drag/snap production wiring deferred to G3; pure geometry tests remain green",
+    "run_check": "maestro run check 20260727-004-execute: no failed or blocking gates"
+  },
+  "artifacts": {
+    "execution": "outputs/execution.json",
+    "task_results": "outputs/task-results.json",
+    "self_check": "outputs/self-check.json",
+    "change_manifest": "outputs/change-manifest.json",
+    "report": "outputs/report.md"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-001"
+  },
+  "id": "TASK-001",
+  "title": "建立 xhm-desktop workspace crate 与软件渲染启动壳",
+  "description": "创建可测试的 Rust Desktop crate、唯一 Slint 编译根和最小启动路径，为后续 G1-G4 提供稳定装配点。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G1",
+  "execute_step_id": "step-003-execute",
+  "wave_id": "WAVE-001",
+  "estimated_minutes": 45,
+  "requirement_refs": [
+    "G1-DONE",
+    "GUIDE-P2-DONE-SOFTWARE-UI",
+    "BOUNDARY-SOFTWARE-RENDERER",
+    "BOUNDARY-NO-CSHARP-CUTOVER",
+    "BOUNDARY-NO-P3",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [],
+  "files": [
+    "Cargo.toml",
+    "Cargo.lock",
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/build.rs",
+    "xhm-desktop/src/lib.rs",
+    "xhm-desktop/src/main.rs",
+    "xhm-desktop/ui/shell.slint"
+  ],
+  "read_first": [
+    "Cargo.toml:1-46",
+    "poc/slint-desktop/Cargo.toml:1-21",
+    "poc/slint-desktop/build.rs:1-3",
+    "poc/slint-desktop/src/main.rs:1-52",
+    "poc/slint-desktop/ui/app.slint:7-56",
+    "docs/rust-migration-guide.md:238-260,303-307"
+  ],
+  "action": "把 xhm-desktop 加入现有 workspace，按 POC 建立 bin/lib/build/ui 最小壳，并在构造任何 Slint component 前把未显式设置的 SLINT_BACKEND 固定为 winit-software。",
+  "implementation_steps": [
+    "在根 Cargo.toml members 中加入 xhm-desktop；package 继承 workspace version、edition、rust-version、license，保留 xhm-core/xhm-service 原配置。",
+    "创建 xhm-desktop/Cargo.toml，声明 lib 与 Windows GUI bin；集中采用已证的 Slint 1.x、slint-build、tokio、reqwest 0.12、serde/serde_json、futures、tracing、anyhow、thiserror 与 windows 0.58 路径，后续任务只顺序补充确需依赖。",
+    "build.rs 只编译 ui/shell.slint；shell.slint 定义透明、无边框、唯一 title 的最小主宿主，不提前实现 G2-G4 视觉或原生行为。",
+    "lib.rs 成为模块和生成 Slint component 的唯一装配根；main.rs 只调用 bootstrap，不承载客户端、Win32 或 UI 状态逻辑。",
+    "仅当 SLINT_BACKEND 未设置时写入 winit-software，显式环境值仅用于诊断，不把替代 renderer 作为自动 fallback。"
+  ],
+  "convergence_criteria": [
+    "CLI：cargo metadata --no-deps --format-version 1 显示 package 名 xhm-desktop 且 workspace 原成员仍存在。",
+    "CLI：cargo check -p xhm-desktop 可编译 bin、lib、build script 和唯一 Slint 根。",
+    "[UI-observable] 手工：不设置 SLINT_BACKEND 启动时日志明确 winit-software，最小非空窗口可显示并正常退出。",
+    "Read：main.rs 仅保留 bootstrap 调用，G2-G4 逻辑未堆进入口。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo metadata --no-deps --format-version 1",
+      "cargo check -p xhm-desktop",
+      "$env:SLINT_BACKEND='winit-software'; cargo run -p xhm-desktop"
+    ],
+    "manual_scenarios": [
+      "无 SLINT_BACKEND 与显式 winit-software 各启动一次，记录后端、窗口出现和退出。"
+    ],
+    "expected": "workspace 可识别 xhm-desktop，软件渲染最小壳可运行。"
+  },
+  "acceptance_evidence": [
+    "cargo metadata member/package 摘要",
+    "cargo check 成功输出",
+    "软件渲染窗口启动/退出日志与截图"
+  ],
+  "rollback": {
+    "steps": [
+      "从 workspace members 移除 xhm-desktop",
+      "删除本任务创建的 crate 文件并恢复 Cargo.lock"
+    ],
+    "preserves": [
+      "xhm-core",
+      "xhm-service",
+      "XhMonitor.Desktop"
+    ]
+  }
+}

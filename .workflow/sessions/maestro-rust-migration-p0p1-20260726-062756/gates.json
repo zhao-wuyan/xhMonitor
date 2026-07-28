@@ -1,0 +1,570 @@
+{
+  "schema_version": "gates/1.0",
+  "revision": 14,
+  "gates": {
+    "GATE-001-01": {
+      "key": "consume-current-plan",
+      "title": "Resolve required plan input",
+      "scope": "entry",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "plan",
+        "alias": "current-plan"
+      },
+      "evidence_refs": [
+        "EVD-001-004"
+      ],
+      "waiver": null
+    },
+    "GATE-001-02": {
+      "key": "consume-latest-review",
+      "title": "Resolve required review-findings input",
+      "scope": "entry",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "review-findings",
+        "alias": "latest-review"
+      },
+      "evidence_refs": [
+        "EVD-001-005"
+      ],
+      "waiver": null
+    },
+    "GATE-001-03": {
+      "key": "consume-latest-fix-directions",
+      "title": "Resolve required fix-directions input",
+      "scope": "entry",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "fix-directions",
+        "alias": "latest-fix-directions"
+      },
+      "evidence_refs": [
+        "EVD-001-006"
+      ],
+      "waiver": null
+    },
+    "GATE-001-04": {
+      "key": "consume-latest-debug",
+      "title": "Resolve required diagnosis input",
+      "scope": "entry",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "diagnosis",
+        "alias": "latest-debug"
+      },
+      "evidence_refs": [
+        "EVD-001-007"
+      ],
+      "waiver": null
+    },
+    "GATE-001-05": {
+      "key": "consume-session-priors",
+      "title": "Resolve required priors input",
+      "scope": "entry",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "priors",
+        "alias": "session-priors"
+      },
+      "evidence_refs": [
+        "EVD-001-008"
+      ],
+      "waiver": null
+    },
+    "GATE-001-06": {
+      "key": "produce-execution",
+      "title": "Produce execution",
+      "scope": "exit",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "execution",
+        "alias": "current-execution"
+      },
+      "evidence_refs": [
+        "EVD-001-009"
+      ],
+      "waiver": null
+    },
+    "GATE-001-07": {
+      "key": "produce-task-results",
+      "title": "Produce task-results",
+      "scope": "exit",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "task-results"
+      },
+      "evidence_refs": [
+        "EVD-001-010"
+      ],
+      "waiver": null
+    },
+    "GATE-001-08": {
+      "key": "produce-self-check",
+      "title": "Produce self-check",
+      "scope": "exit",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "self-check"
+      },
+      "evidence_refs": [
+        "EVD-001-011"
+      ],
+      "waiver": null
+    },
+    "GATE-001-09": {
+      "key": "produce-change-manifest",
+      "title": "Produce change-manifest",
+      "scope": "exit",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "change-manifest"
+      },
+      "evidence_refs": [
+        "EVD-001-012"
+      ],
+      "waiver": null
+    },
+    "GATE-001-10": {
+      "key": "execution-complete",
+      "title": "execution-complete",
+      "scope": "exit",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "manual",
+        "prompt": "execution-complete"
+      },
+      "evidence_refs": [
+        "EVD-001-013"
+      ],
+      "waiver": null
+    },
+    "GATE-001-11": {
+      "key": "self-check-passed",
+      "title": "self-check-passed",
+      "scope": "exit",
+      "run_id": "20260726-001-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "manual",
+        "prompt": "self-check-passed"
+      },
+      "evidence_refs": [
+        "EVD-001-014"
+      ],
+      "waiver": null
+    },
+    "GATE-002-01": {
+      "key": "consume-current-plan",
+      "title": "Resolve required plan input",
+      "scope": "entry",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "plan",
+        "alias": "current-plan"
+      },
+      "evidence_refs": [
+        "EVD-002-004"
+      ],
+      "waiver": null
+    },
+    "GATE-002-02": {
+      "key": "consume-latest-review",
+      "title": "Resolve required review-findings input",
+      "scope": "entry",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "review-findings",
+        "alias": "latest-review"
+      },
+      "evidence_refs": [
+        "EVD-002-005"
+      ],
+      "waiver": null
+    },
+    "GATE-002-03": {
+      "key": "consume-latest-fix-directions",
+      "title": "Resolve required fix-directions input",
+      "scope": "entry",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "fix-directions",
+        "alias": "latest-fix-directions"
+      },
+      "evidence_refs": [
+        "EVD-002-006"
+      ],
+      "waiver": null
+    },
+    "GATE-002-04": {
+      "key": "consume-latest-debug",
+      "title": "Resolve required diagnosis input",
+      "scope": "entry",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "diagnosis",
+        "alias": "latest-debug"
+      },
+      "evidence_refs": [
+        "EVD-002-007"
+      ],
+      "waiver": null
+    },
+    "GATE-002-05": {
+      "key": "consume-session-priors",
+      "title": "Resolve required priors input",
+      "scope": "entry",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "priors",
+        "alias": "session-priors"
+      },
+      "evidence_refs": [
+        "EVD-002-008"
+      ],
+      "waiver": null
+    },
+    "GATE-002-06": {
+      "key": "produce-execution",
+      "title": "Produce execution",
+      "scope": "exit",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "execution",
+        "alias": "current-execution"
+      },
+      "evidence_refs": [
+        "EVD-002-009"
+      ],
+      "waiver": null
+    },
+    "GATE-002-07": {
+      "key": "produce-task-results",
+      "title": "Produce task-results",
+      "scope": "exit",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "task-results"
+      },
+      "evidence_refs": [
+        "EVD-002-010"
+      ],
+      "waiver": null
+    },
+    "GATE-002-08": {
+      "key": "produce-self-check",
+      "title": "Produce self-check",
+      "scope": "exit",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "self-check"
+      },
+      "evidence_refs": [
+        "EVD-002-011"
+      ],
+      "waiver": null
+    },
+    "GATE-002-09": {
+      "key": "produce-change-manifest",
+      "title": "Produce change-manifest",
+      "scope": "exit",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "change-manifest"
+      },
+      "evidence_refs": [
+        "EVD-002-012"
+      ],
+      "waiver": null
+    },
+    "GATE-002-10": {
+      "key": "execution-complete",
+      "title": "execution-complete",
+      "scope": "exit",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "manual",
+        "prompt": "execution-complete"
+      },
+      "evidence_refs": [
+        "EVD-002-013"
+      ],
+      "waiver": null
+    },
+    "GATE-002-11": {
+      "key": "self-check-passed",
+      "title": "self-check-passed",
+      "scope": "exit",
+      "run_id": "20260726-002-execute",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "manual",
+        "prompt": "self-check-passed"
+      },
+      "evidence_refs": [
+        "EVD-002-014"
+      ],
+      "waiver": null
+    },
+    "GATE-003-01": {
+      "key": "consume-current-execution",
+      "title": "Resolve required execution input",
+      "scope": "entry",
+      "run_id": "20260726-003-review",
+      "required": true,
+      "blocking": true,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "execution",
+        "alias": "current-execution"
+      },
+      "evidence_refs": [
+        "EVD-003-001"
+      ],
+      "waiver": null
+    },
+    "GATE-003-02": {
+      "key": "consume-latest-verification",
+      "title": "Resolve required verification input",
+      "scope": "entry",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "verification",
+        "alias": "latest-verification"
+      },
+      "evidence_refs": [
+        "EVD-003-002"
+      ],
+      "waiver": null
+    },
+    "GATE-003-03": {
+      "key": "consume-prior-review",
+      "title": "Resolve required review-findings input",
+      "scope": "entry",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "artifact",
+        "kind": "review-findings",
+        "alias": "prior-review"
+      },
+      "evidence_refs": [
+        "EVD-003-003"
+      ],
+      "waiver": null
+    },
+    "GATE-003-04": {
+      "key": "produce-review-findings",
+      "title": "Produce review-findings",
+      "scope": "exit",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "review-findings",
+        "alias": "latest-review"
+      },
+      "evidence_refs": [
+        "EVD-003-004"
+      ],
+      "waiver": null
+    },
+    "GATE-003-05": {
+      "key": "produce-spec-conflicts",
+      "title": "Produce spec-conflicts",
+      "scope": "exit",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "spec-conflicts"
+      },
+      "evidence_refs": [
+        "EVD-003-005"
+      ],
+      "waiver": null
+    },
+    "GATE-003-06": {
+      "key": "produce-issue-candidates",
+      "title": "Produce issue-candidates",
+      "scope": "exit",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "passed",
+      "check": {
+        "type": "artifact",
+        "kind": "issue-candidates"
+      },
+      "evidence_refs": [
+        "EVD-003-006"
+      ],
+      "waiver": null
+    },
+    "GATE-003-07": {
+      "key": "dimension-coverage",
+      "title": "dimension-coverage",
+      "scope": "exit",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "manual",
+        "prompt": "dimension-coverage"
+      },
+      "evidence_refs": [
+        "EVD-003-007"
+      ],
+      "waiver": null
+    },
+    "GATE-003-08": {
+      "key": "severity-triaged",
+      "title": "severity-triaged",
+      "scope": "exit",
+      "run_id": "20260726-003-review",
+      "required": false,
+      "blocking": false,
+      "applicable_modes": [],
+      "status": "skipped",
+      "check": {
+        "type": "manual",
+        "prompt": "severity-triaged"
+      },
+      "evidence_refs": [
+        "EVD-003-008"
+      ],
+      "waiver": null
+    }
+  },
+  "summary": {
+    "total": 30,
+    "passed": 11,
+    "blocked": 0,
+    "failed": 0,
+    "active_gate_ids": [],
+    "blocking_run_id": null
+  }
+}

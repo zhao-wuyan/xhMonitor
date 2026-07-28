@@ -1,0 +1,1140 @@
+{
+  "schema_version": "artifacts/1.0",
+  "revision": 15,
+  "artifacts": {
+    "ART-001-001": {
+      "kind": "findings",
+      "role": "evidence",
+      "producer_run_id": "20260727-001-analyze",
+      "relative_path": "runs/20260727-001-analyze/outputs/findings.json",
+      "media_type": "application/json",
+      "schema_version": "findings/1.0",
+      "content_hash": "cda9ec8ca64739f5cc6fb670dd9ba52ca6000884245d5ded6de63502b222975d",
+      "size": 29505,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-001-002": {
+      "kind": "priors",
+      "role": "evidence",
+      "producer_run_id": "20260727-001-analyze",
+      "relative_path": "runs/20260727-001-analyze/outputs/priors.json",
+      "media_type": "application/json",
+      "schema_version": "priors/1.0",
+      "content_hash": "8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+      "size": 7109,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-001-003": {
+      "kind": "risk-matrix",
+      "role": "evidence",
+      "producer_run_id": "20260727-001-analyze",
+      "relative_path": "runs/20260727-001-analyze/outputs/risk-matrix.json",
+      "media_type": "application/json",
+      "schema_version": "risk-matrix/1.0",
+      "content_hash": "35331c707ee19aff7da66a12ff2972f96b0e47fd4e5cffb6d40a6e7a9cbc2035",
+      "size": 10568,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-002-001": {
+      "kind": "collision-report",
+      "role": "evidence",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/collision-report.json",
+      "media_type": "application/json",
+      "schema_version": "collision-report/1.0",
+      "content_hash": "d6633188ac09ab24ec0294b2b89ca1d83249e659e7660b9c49d0138ca1dcbe8f",
+      "size": 6922,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-002": {
+      "kind": "dependency-graph",
+      "role": "evidence",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/dependency-graph.json",
+      "media_type": "application/json",
+      "schema_version": "dependency-graph/1.0",
+      "content_hash": "7fd5223c5b94930ea32ca8fc35f2b80ec148d17f0766cdfa07b0a4b2adbfc496",
+      "size": 5788,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-003": {
+      "kind": "plan-check",
+      "role": "evidence",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/plan-check.json",
+      "media_type": "application/json",
+      "schema_version": "plan-check/1.0",
+      "content_hash": "603d50409ada8cb0bf2ad7cbf3fdb8ba4ba80e3ffc922f32eec74f4a43d6fade",
+      "size": 11413,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-004": {
+      "kind": "plan",
+      "role": "evidence",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/plan.json",
+      "media_type": "application/json",
+      "schema_version": "plan/1.0",
+      "content_hash": "9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+      "size": 31838,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-005": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-001.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "13b261c01a6981dbf7989927f2b45527bb31351a5b3cec1a975de3d417b75edc",
+      "size": 3654,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-006": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-002.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "8ba03089669bb098a59a32d0f3b75e70a9da6a2f436d4c7006d2187b946aaa02",
+      "size": 3598,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-007": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-003.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "7ee0ffd6fb3a182953b5e038ee6e80971cf7fb3d6aa71ad42e08c950dff12c79",
+      "size": 3545,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-008": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-004.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "3d051573eb1f3ed9985e6a682aa58d6c89b7d300021296ed1929301b0d7406d3",
+      "size": 3535,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-009": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-005.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "39ea47de30438ee1938ab2aeee1282db6468b031124bcdb5625e00c317856649",
+      "size": 3509,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-010": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-006.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "26cd3b9365521c0d2cd4085b19d75229ff6d440bc0848e05f1c9c41922a075d5",
+      "size": 3457,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-011": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-007.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "91b76d89243c5cf2f7b0eb8c262d168e2c18c4ce75faf7dfe202b4f55408b778",
+      "size": 2452,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-012": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-008.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "ddb764b97e47b0e9f33e3baf2d8dac1f10102aae829dae6426b57348a4070240",
+      "size": 3956,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-013": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-009.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "2cf04990903011b3fd7e7a496fc154e930a2e6a8fa85d13c1520e2391564f620",
+      "size": 3405,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-014": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-010.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "581f5385535c5c204e834a71f9f2ef775b758eb691a806747911ad935dcfbba5",
+      "size": 3428,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-015": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-011.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "c2db219a1f312cf32f68e67a24a60f29874860feb4c8a2cf79dad4cdb07e2789",
+      "size": 3538,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-016": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-012.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "60c3c500d13704c6738af69d637a673b97d4bdca251fce5bb332e509f47301ef",
+      "size": 3721,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-017": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-013.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "fe162944531e322960e06c536f54bc225a99fe039fa107b75306e3e6b2d2e4f9",
+      "size": 4955,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-018": {
+      "kind": "plan-task",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/tasks/TASK-014.json",
+      "media_type": "application/json",
+      "schema_version": "plan-task/1.0",
+      "content_hash": "40f1cdfb8820406f42595e4d7fadea7a1707df3552a3b3916682854ac4f1f4e1",
+      "size": 6004,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-002-019": {
+      "kind": "execution-waves",
+      "role": "attachment",
+      "producer_run_id": "20260727-002-plan",
+      "relative_path": "runs/20260727-002-plan/outputs/waves.json",
+      "media_type": "application/json",
+      "schema_version": "execution-waves/1.0",
+      "content_hash": "99f61db8aa1a550176fa08acfff7dbac8b90cb4505d5523bf420d4b2ef890179",
+      "size": 6903,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-001",
+        "ART-001-002"
+      ],
+      "replaces": null
+    },
+    "ART-003-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260727-003-execute",
+      "relative_path": "runs/20260727-003-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "fc79514ac878bda458259876c11b479e02d9867467c1835d98c7e6044c10eeb2",
+      "size": 3711,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-003-002": {
+      "kind": "execution",
+      "role": "evidence",
+      "producer_run_id": "20260727-003-execute",
+      "relative_path": "runs/20260727-003-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "a0daf74431a6070df134e825cfcf18b6f0b4811beb5f00bb3dcbe3878403bfb1",
+      "size": 3550,
+      "status": "superseded",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-003-003": {
+      "kind": "self-check",
+      "role": "evidence",
+      "producer_run_id": "20260727-003-execute",
+      "relative_path": "runs/20260727-003-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "f515d96ef2113e4e7395163d6e2ce2f9e97d2f9e0b468c0b3ba67902a32471af",
+      "size": 12902,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-003-004": {
+      "kind": "summaries-collection",
+      "role": "attachment",
+      "producer_run_id": "20260727-003-execute",
+      "relative_path": "runs/20260727-003-execute/outputs/summaries",
+      "media_type": "application/vnd.maestro.directory",
+      "schema_version": "summaries-collection/1.0",
+      "content_hash": "59066a6b34cea427827ff4d47d0dd4de3a63b758dfee744295fad99122adc89d",
+      "size": 3338,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-003-005": {
+      "kind": "task-results",
+      "role": "evidence",
+      "producer_run_id": "20260727-003-execute",
+      "relative_path": "runs/20260727-003-execute/outputs/task-results.json",
+      "media_type": "application/json",
+      "schema_version": "task-results/1.0",
+      "content_hash": "3fd3ab330c85c302c956de63ba44795803741ea638e1e3b477e8ba36b29b1182",
+      "size": 9503,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-004-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260727-004-execute",
+      "relative_path": "runs/20260727-004-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "dedccb19344454f6226c711084f2ef39d728999495468c31474f1799804fcf04",
+      "size": 1620,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-004-002": {
+      "kind": "execution",
+      "role": "evidence",
+      "producer_run_id": "20260727-004-execute",
+      "relative_path": "runs/20260727-004-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "02d20e883f5c75c930b32030e72b3a211ab33cbf71ae82248dcac5043fc1c722",
+      "size": 2300,
+      "status": "superseded",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": "ART-003-002"
+    },
+    "ART-004-003": {
+      "kind": "report",
+      "role": "attachment",
+      "producer_run_id": "20260727-004-execute",
+      "relative_path": "runs/20260727-004-execute/outputs/report.md",
+      "media_type": "text/markdown",
+      "schema_version": "report/1.0",
+      "content_hash": "982c44a53ee30f55102904b1eebf6f6e8a71b76cace97b2b353bc51240616e04",
+      "size": 2937,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-004-004": {
+      "kind": "self-check",
+      "role": "evidence",
+      "producer_run_id": "20260727-004-execute",
+      "relative_path": "runs/20260727-004-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "178014352e222f0dea705a868450120da51be492aedac46cd5dca5b3c6978325",
+      "size": 4518,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-004-005": {
+      "kind": "task-results",
+      "role": "evidence",
+      "producer_run_id": "20260727-004-execute",
+      "relative_path": "runs/20260727-004-execute/outputs/task-results.json",
+      "media_type": "application/json",
+      "schema_version": "task-results/1.0",
+      "content_hash": "e887a1e9291347043867c5ec7534cdb9ff9ddf222f842686b0657dff2e4ad789",
+      "size": 4140,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-005-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260727-005-execute",
+      "relative_path": "runs/20260727-005-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "2233d588f1703c776acab80ff3c7dd0ba7764730a56f1e35c1d8079fed0fd264",
+      "size": 2401,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-005-002": {
+      "kind": "execution",
+      "role": "evidence",
+      "producer_run_id": "20260727-005-execute",
+      "relative_path": "runs/20260727-005-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "22acc878ee97ac897d44d22227014ec7ff8f78586e54bda6657ec2cbf1b49529",
+      "size": 2968,
+      "status": "superseded",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": "ART-004-002"
+    },
+    "ART-005-003": {
+      "kind": "report",
+      "role": "attachment",
+      "producer_run_id": "20260727-005-execute",
+      "relative_path": "runs/20260727-005-execute/outputs/report.md",
+      "media_type": "text/markdown",
+      "schema_version": "report/1.0",
+      "content_hash": "26566d2d990adcdd5a7d3913abe6feb41e16770506cf3a45d10fe477b8d36d31",
+      "size": 3680,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-005-004": {
+      "kind": "self-check",
+      "role": "evidence",
+      "producer_run_id": "20260727-005-execute",
+      "relative_path": "runs/20260727-005-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "355543c658e912603b37f09adfacf93a736224a44eb3871355bf81a670b0673c",
+      "size": 4488,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-005-005": {
+      "kind": "task-results",
+      "role": "evidence",
+      "producer_run_id": "20260727-005-execute",
+      "relative_path": "runs/20260727-005-execute/outputs/task-results.json",
+      "media_type": "application/json",
+      "schema_version": "task-results/1.0",
+      "content_hash": "5eedb31bd6f68b379620efd14db851a43bc642b0e26bc0233c9f0a6d8b68fb20",
+      "size": 5005,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-006-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260727-006-execute",
+      "relative_path": "runs/20260727-006-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "3e198408372670e695335a752c76fe100edd8bb3e1ee4fa7b19232814c20a6e2",
+      "size": 2356,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-006-002": {
+      "kind": "execution",
+      "role": "evidence",
+      "producer_run_id": "20260727-006-execute",
+      "relative_path": "runs/20260727-006-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "4aae4ef58d8ecc6118f039cf5c0c7b7445cc1b7329dadb00510004f999a028e3",
+      "size": 2821,
+      "status": "superseded",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": "ART-005-002"
+    },
+    "ART-006-003": {
+      "kind": "memory-samples",
+      "role": "evidence",
+      "producer_run_id": "20260727-006-execute",
+      "relative_path": "runs/20260727-006-execute/outputs/memory-samples.json",
+      "media_type": "application/json",
+      "schema_version": "memory-samples/1.0",
+      "content_hash": "1700fa1e1bb818aabfc18e81bf41b73f09a7147d4752e39e17673599fe005032",
+      "size": 14382,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-006-004": {
+      "kind": "report",
+      "role": "attachment",
+      "producer_run_id": "20260727-006-execute",
+      "relative_path": "runs/20260727-006-execute/outputs/report.md",
+      "media_type": "text/markdown",
+      "schema_version": "report/1.0",
+      "content_hash": "9516c52189a356ac6e2657c1d45d39c549cfb5057a7391a89f88e6a48aa7d9a9",
+      "size": 3035,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-006-005": {
+      "kind": "self-check",
+      "role": "evidence",
+      "producer_run_id": "20260727-006-execute",
+      "relative_path": "runs/20260727-006-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "85ef28a362318abd7d21ac7ad74b3a4f8db148cb3944bcde9ef8269b359c9a87",
+      "size": 2734,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-006-006": {
+      "kind": "task-results",
+      "role": "evidence",
+      "producer_run_id": "20260727-006-execute",
+      "relative_path": "runs/20260727-006-execute/outputs/task-results.json",
+      "media_type": "application/json",
+      "schema_version": "task-results/1.0",
+      "content_hash": "61b2628b286f6d90567b05442f0156ad428b58650b958f4bd8943ad614078944",
+      "size": 4479,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004"
+      ],
+      "replaces": null
+    },
+    "ART-009-001": {
+      "kind": "diagnosis",
+      "role": "attachment",
+      "producer_run_id": "20260727-009-debug",
+      "relative_path": "runs/20260727-009-debug/outputs/diagnosis.json",
+      "media_type": "application/json",
+      "schema_version": "diagnosis/1.0",
+      "content_hash": "c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+      "size": 9321,
+      "status": "sealed",
+      "derived_from": [
+        "ART-006-002"
+      ],
+      "replaces": null
+    },
+    "ART-009-002": {
+      "kind": "evidence",
+      "role": "attachment",
+      "producer_run_id": "20260727-009-debug",
+      "relative_path": "runs/20260727-009-debug/outputs/evidence.ndjson",
+      "media_type": "application/octet-stream",
+      "schema_version": "evidence/1.0",
+      "content_hash": "dfad6bdeac300dda3beb02303141bc44f4801ca08e7a8732bfb9359156d4b589",
+      "size": 5345,
+      "status": "sealed",
+      "derived_from": [
+        "ART-006-002"
+      ],
+      "replaces": null
+    },
+    "ART-009-003": {
+      "kind": "fix-directions",
+      "role": "attachment",
+      "producer_run_id": "20260727-009-debug",
+      "relative_path": "runs/20260727-009-debug/outputs/fix-directions.json",
+      "media_type": "application/json",
+      "schema_version": "fix-directions/1.0",
+      "content_hash": "eec40afa469bd1ca3a5f983c96e45c662a52bc8e3b419582b19a9cd52bcfebbe",
+      "size": 7189,
+      "status": "sealed",
+      "derived_from": [
+        "ART-006-002"
+      ],
+      "replaces": null
+    },
+    "ART-009-004": {
+      "kind": "hypotheses",
+      "role": "attachment",
+      "producer_run_id": "20260727-009-debug",
+      "relative_path": "runs/20260727-009-debug/outputs/hypotheses.json",
+      "media_type": "application/json",
+      "schema_version": "hypotheses/1.0",
+      "content_hash": "166d1a62f679e2a9207d798c337c459e9c19acba228c2e6b5c199e1b342fb2d8",
+      "size": 7659,
+      "status": "sealed",
+      "derived_from": [
+        "ART-006-002"
+      ],
+      "replaces": null
+    },
+    "ART-009-005": {
+      "kind": "reproduction",
+      "role": "attachment",
+      "producer_run_id": "20260727-009-debug",
+      "relative_path": "runs/20260727-009-debug/outputs/reproduction.json",
+      "media_type": "application/json",
+      "schema_version": "reproduction/1.0",
+      "content_hash": "bb64910877e7086a71497fb0e648959ca64ba6d31a5781f012af82a70bfad028",
+      "size": 6976,
+      "status": "sealed",
+      "derived_from": [
+        "ART-006-002"
+      ],
+      "replaces": null
+    },
+    "ART-009-006": {
+      "kind": "understanding",
+      "role": "attachment",
+      "producer_run_id": "20260727-009-debug",
+      "relative_path": "runs/20260727-009-debug/outputs/understanding.md",
+      "media_type": "text/markdown",
+      "schema_version": "understanding/1.0",
+      "content_hash": "0b84e40a5e862d34c46473cab49fa9128718764b90bb4d1b7b637c47b4e5cdb1",
+      "size": 4397,
+      "status": "sealed",
+      "derived_from": [
+        "ART-006-002"
+      ],
+      "replaces": null
+    },
+    "ART-010-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260727-010-execute",
+      "relative_path": "runs/20260727-010-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "b6b0219cd1557b699c55516eb7c10d7fcb30f735222ab0e87f9413e98c138d5a",
+      "size": 1978,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-010-002": {
+      "kind": "execution",
+      "role": "primary",
+      "producer_run_id": "20260727-010-execute",
+      "relative_path": "runs/20260727-010-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+      "size": 2805,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004",
+        "ART-009-001"
+      ],
+      "replaces": "ART-006-002"
+    },
+    "ART-010-003": {
+      "kind": "memory-samples",
+      "role": "attachment",
+      "producer_run_id": "20260727-010-execute",
+      "relative_path": "runs/20260727-010-execute/outputs/memory-samples-post-repair.json",
+      "media_type": "application/json",
+      "schema_version": "memory-samples/1.0",
+      "content_hash": "f7544dfc23feb44bf3db9fb00e68682aa988070dda6796b6941d370b239b9ffa",
+      "size": 10527,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-010-004": {
+      "kind": "report",
+      "role": "attachment",
+      "producer_run_id": "20260727-010-execute",
+      "relative_path": "runs/20260727-010-execute/outputs/report.md",
+      "media_type": "text/markdown",
+      "schema_version": "report/1.0",
+      "content_hash": "c73532a81d051e4bf45f5dc27c3bc04dcd9a973c901f989bc26c31271bb12803",
+      "size": 3739,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-010-005": {
+      "kind": "self-check",
+      "role": "attachment",
+      "producer_run_id": "20260727-010-execute",
+      "relative_path": "runs/20260727-010-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "45bda368d6b4b5f653657c61317256d711078d8b3da0f86157568bf4e0d7dfd5",
+      "size": 3395,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-010-006": {
+      "kind": "task-results",
+      "role": "attachment",
+      "producer_run_id": "20260727-010-execute",
+      "relative_path": "runs/20260727-010-execute/outputs/task-results.json",
+      "media_type": "application/json",
+      "schema_version": "task-results/1.0",
+      "content_hash": "fd95946f41563a1d1e126f72043d87ab378e01d42e6f307e94c07741ae56f9bb",
+      "size": 2110,
+      "status": "sealed",
+      "derived_from": [
+        "ART-001-002",
+        "ART-002-004",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-012-001": {
+      "kind": "antipattern-report",
+      "role": "attachment",
+      "producer_run_id": "20260728-012-review",
+      "relative_path": "runs/20260728-012-review/outputs/antipattern-report.json",
+      "media_type": "application/json",
+      "schema_version": "antipattern-report/1.0",
+      "content_hash": "6a672d1a14d8ae73cbb3a06523abb586b78d178cf4c066d406aec43d8a2a47a2",
+      "size": 985,
+      "status": "sealed",
+      "derived_from": [
+        "ART-010-002"
+      ],
+      "replaces": null
+    },
+    "ART-012-002": {
+      "kind": "issue-candidates",
+      "role": "attachment",
+      "producer_run_id": "20260728-012-review",
+      "relative_path": "runs/20260728-012-review/outputs/issue-candidates.json",
+      "media_type": "application/json",
+      "schema_version": "issue-candidates/1.0",
+      "content_hash": "b26a7154a04344cfbb1027485137819fbf02a66ca8ba4415e70a791b0046f06d",
+      "size": 1372,
+      "status": "sealed",
+      "derived_from": [
+        "ART-010-002"
+      ],
+      "replaces": null
+    },
+    "ART-012-003": {
+      "kind": "review-findings",
+      "role": "attachment",
+      "producer_run_id": "20260728-012-review",
+      "relative_path": "runs/20260728-012-review/outputs/review-findings.json",
+      "media_type": "application/json",
+      "schema_version": "review-findings/1.0",
+      "content_hash": "2e2ce53a3c9652c28313b69903d09f6fb2f45bcb59125618d8bd559e1a7c3e6c",
+      "size": 14631,
+      "status": "sealed",
+      "derived_from": [
+        "ART-010-002"
+      ],
+      "replaces": null
+    },
+    "ART-012-004": {
+      "kind": "review-summary",
+      "role": "attachment",
+      "producer_run_id": "20260728-012-review",
+      "relative_path": "runs/20260728-012-review/outputs/review-summary.json",
+      "media_type": "application/json",
+      "schema_version": "review-summary/1.0",
+      "content_hash": "952ecc2bf588bd9ea272298e3d6f9a67ad4cbe4e2d72ac8c49d417c8b60287ed",
+      "size": 2254,
+      "status": "sealed",
+      "derived_from": [
+        "ART-010-002"
+      ],
+      "replaces": null
+    },
+    "ART-012-005": {
+      "kind": "spec-conflicts",
+      "role": "attachment",
+      "producer_run_id": "20260728-012-review",
+      "relative_path": "runs/20260728-012-review/outputs/spec-conflicts.json",
+      "media_type": "application/json",
+      "schema_version": "spec-conflicts/1.0",
+      "content_hash": "0acb7130c6f74efb2abcc6c154eb3ba6bc6f91329b26c12b606c0b76f7d2ff85",
+      "size": 1178,
+      "status": "sealed",
+      "derived_from": [
+        "ART-010-002"
+      ],
+      "replaces": null
+    },
+    "ART-014-001": {
+      "kind": "acceptance",
+      "role": "attachment",
+      "producer_run_id": "20260728-014-test",
+      "relative_path": "runs/20260728-014-test/outputs/acceptance.json",
+      "media_type": "application/json",
+      "schema_version": "acceptance/1.0",
+      "content_hash": "5afa4f7f81278b054882fe54346e42449385e6840c585cb5382ca80b188731d5",
+      "size": 723,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-014-002": {
+      "kind": "coverage",
+      "role": "attachment",
+      "producer_run_id": "20260728-014-test",
+      "relative_path": "runs/20260728-014-test/outputs/coverage.json",
+      "media_type": "application/json",
+      "schema_version": "coverage/1.0",
+      "content_hash": "67fbbda31c732f569e144a6768c2efb90aa0b9e8022a8f25fb1b2ce418b9efa3",
+      "size": 402,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-014-003": {
+      "kind": "report",
+      "role": "attachment",
+      "producer_run_id": "20260728-014-test",
+      "relative_path": "runs/20260728-014-test/outputs/report.md",
+      "media_type": "text/markdown",
+      "schema_version": "report/1.0",
+      "content_hash": "ba0750d1854d3489790529da37a32ff926e73cb7e3f4100bc0e71e5d8444b296",
+      "size": 1492,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-014-004": {
+      "kind": "test-plan",
+      "role": "attachment",
+      "producer_run_id": "20260728-014-test",
+      "relative_path": "runs/20260728-014-test/outputs/test-plan.json",
+      "media_type": "application/json",
+      "schema_version": "test-plan/1.0",
+      "content_hash": "42b00c32e572aca4660e08a17b74a0508faca825492aa17da8eeba768266b66f",
+      "size": 1199,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-014-005": {
+      "kind": "test-results",
+      "role": "attachment",
+      "producer_run_id": "20260728-014-test",
+      "relative_path": "runs/20260728-014-test/outputs/test-results.json",
+      "media_type": "application/json",
+      "schema_version": "test-results/1.0",
+      "content_hash": "705da420d311c176ba4c3f69483f53733afb12c68991fbc4b119e38c98645b9b",
+      "size": 1560,
+      "status": "superseded",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-014-006": {
+      "kind": "uat-log",
+      "role": "attachment",
+      "producer_run_id": "20260728-014-test",
+      "relative_path": "runs/20260728-014-test/outputs/uat.md",
+      "media_type": "text/markdown",
+      "schema_version": "uat-log/1.0",
+      "content_hash": "5cfcb9df33aeee6dd7dc204f9d206fa50d89055e6f8c190cf7f40dcd4994085b",
+      "size": 1298,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-015-001": {
+      "kind": "e2e-results",
+      "role": "primary",
+      "producer_run_id": "20260728-015-test",
+      "relative_path": "runs/20260728-015-test/outputs/e2e-results.json",
+      "media_type": "application/json",
+      "schema_version": "e2e-results/1.0",
+      "content_hash": "ba9168b3a51d420ab7f4b448f6659b2f5cd8ac70155803d6d537bda7b3dd0456",
+      "size": 1911,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": "ART-014-005"
+    },
+    "ART-015-002": {
+      "kind": "frontend-screenshot",
+      "role": "attachment",
+      "producer_run_id": "20260728-015-test",
+      "relative_path": "runs/20260728-015-test/outputs/frontend-screenshot.png",
+      "media_type": "application/octet-stream",
+      "schema_version": "frontend-screenshot/1.0",
+      "content_hash": "c67929e013361c49b4758f6a15737e30a5262c5e1ae5a7b16af2de33c31537d3",
+      "size": 104031,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    },
+    "ART-015-003": {
+      "kind": "report",
+      "role": "attachment",
+      "producer_run_id": "20260728-015-test",
+      "relative_path": "runs/20260728-015-test/outputs/report.md",
+      "media_type": "text/markdown",
+      "schema_version": "report/1.0",
+      "content_hash": "31579a1a1bea8924bb98d2b4dbb2ba0b4db08dbb2a9cf9c737fe005435a8f4a2",
+      "size": 1310,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-004",
+        "ART-010-002",
+        "ART-012-003",
+        "ART-009-001"
+      ],
+      "replaces": null
+    }
+  },
+  "aliases": {
+    "current-analysis": "ART-001-001",
+    "session-priors": "ART-001-002",
+    "collision-report": "ART-002-001",
+    "dependency-graph": "ART-002-002",
+    "current-plan": "ART-002-004",
+    "TASK-001": "ART-002-005",
+    "TASK-002": "ART-002-006",
+    "TASK-003": "ART-002-007",
+    "TASK-004": "ART-002-008",
+    "TASK-005": "ART-002-009",
+    "TASK-006": "ART-002-010",
+    "TASK-007": "ART-002-011",
+    "TASK-008": "ART-002-012",
+    "TASK-009": "ART-002-013",
+    "TASK-010": "ART-002-014",
+    "TASK-011": "ART-002-015",
+    "TASK-012": "ART-002-016",
+    "TASK-013": "ART-002-017",
+    "TASK-014": "ART-002-018",
+    "execution-waves": "ART-002-019",
+    "current-execution": "ART-010-002",
+    "latest-debug": "ART-009-001",
+    "latest-review": "ART-012-003",
+    "latest-test": "ART-015-001"
+  }
+}

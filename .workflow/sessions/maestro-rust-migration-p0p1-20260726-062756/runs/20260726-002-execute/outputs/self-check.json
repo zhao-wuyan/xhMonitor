@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "evidence"
+  },
+  "result": "passed",
+  "ran_at_stage": "execute",
+  "checks": [
+    {
+      "id": "format-rust",
+      "kind": "format",
+      "command": "cargo fmt --check",
+      "status": "passed",
+      "detail": "workspace Rust sources are rustfmt-clean"
+    },
+    {
+      "id": "test-workspace",
+      "kind": "test",
+      "command": "cargo test --workspace",
+      "status": "passed",
+      "detail": "148 passed; 0 failed",
+      "counts": { "passed": 148, "failed": 0, "ignored": 0 }
+    },
+    {
+      "id": "lint-workspace",
+      "kind": "lint",
+      "command": "cargo clippy --workspace --all-targets -- -D warnings",
+      "status": "passed",
+      "detail": "zero warnings"
+    },
+    {
+      "id": "build-release",
+      "kind": "build",
+      "command": "cargo build -p xhm-service --release",
+      "status": "passed",
+      "detail": "release service binary built successfully"
+    },
+    {
+      "id": "build-bridge",
+      "kind": "build",
+      "command": "dotnet build lhm-bridge/lhm-bridge.csproj -c Release --no-restore",
+      "status": "passed",
+      "detail": "0 warnings; 0 errors"
+    },
+    {
+      "id": "smoke-rest",
+      "kind": "smoke",
+      "command": "20 endpoint fetch smoke on http://127.0.0.1:35181",
+      "status": "passed",
+      "detail": "20/20 expected statuses observed"
+    },
+    {
+      "id": "smoke-realtime",
+      "kind": "smoke",
+      "command": "SignalR WS + SSE clients against release service",
+      "status": "passed",
+      "detail": "both adapters received ReceiveSystemUsage with matching payload keys"
+    },
+    {
+      "id": "memory-private-bytes",
+      "kind": "performance",
+      "command": "Get-Process PrivateMemorySize64 every 5 seconds for two consecutive 60-second windows",
+      "status": "passed",
+      "detail": "all 26 samples below 30 MiB; maxima 27.57 MiB and 28.43 MiB"
+    },
+    {
+      "id": "bridge-child-exit",
+      "kind": "smoke",
+      "command": "stop release service and assert bridge PID 59296 absent",
+      "status": "passed",
+      "detail": "lhm-bridge child 59296 exited"
+    }
+  ],
+  "tech_stack_scan": {
+    "status": "passed",
+    "allowed_languages": ["rust", "csharp"],
+    "violations": []
+  },
+  "gaps": []
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "test-results/1.0",
+  "target": "xhm-desktop",
+  "completed_at": "2026-07-28T10:15:04+08:00",
+  "command": "cargo test -p xhm-desktop",
+  "results": [
+    {
+      "id": "T-001",
+      "name": "xhm-desktop Cargo test suite",
+      "status": "pass",
+      "details": "128 passed; 0 failed; 0 ignored; 3 test binaries completed successfully"
+    },
+    {
+      "id": "T-002",
+      "name": "Review finding regression coverage",
+      "status": "pass",
+      "details": "Covered tests completed within the passing 128-test suite"
+    },
+    {
+      "id": "T-003",
+      "name": "Diagnosed desktop regression coverage",
+      "status": "pass",
+      "details": "Covered tests completed within the passing 128-test suite"
+    }
+  ],
+  "evidence_source": "current-execution+latest-review+latest-debug+direct-test-execution",
+  "summary": {
+    "total": 128,
+    "passed": 128,
+    "failed": 0,
+    "issues": 0,
+    "skipped": 0,
+    "test_binaries": 3,
+    "needs_retry": false
+  },
+  "gate_records": [
+    {
+      "gate": "coverage-met",
+      "verdict": "pass",
+      "checked_at": "2026-07-28T10:15:04+08:00",
+      "evidence": {
+        "total": 3,
+        "sources_mapped": 3,
+        "coverage_pct": 100.0
+      },
+      "artifact": "outputs/test-results.json"
+    },
+    {
+      "gate": "pass-rate-met",
+      "verdict": "pass",
+      "checked_at": "2026-07-28T10:15:04+08:00",
+      "evidence": {
+        "passed": 128,
+        "issues": 0,
+        "needs_retry": false
+      },
+      "artifact": "outputs/test-results.json"
+    }
+  ]
+}

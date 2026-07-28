@@ -1,0 +1,168 @@
+// Reusable organic dock chrome for the winit-software renderer.
+// Constants mirror docs/【设计稿】有机吸附矩阵-Organic-Dock.html:33-181.
+export component OrganicShell inherits Rectangle {
+    in property <string> state: "floating";
+    in property <float> content-scale: 1.0;
+    in property <color> floating-background: #0a0a0a99;
+    out property <length> horizontal-gap: 12px;
+    out property <length> vertical-gap: 8px;
+    out property <length> snap-margin: 80px;
+
+    background: state == "dragging" ? #ffffff2e :
+                state == "floating" ? floating-background : #0a0c10d9;
+    border-width: state == "floating" || state == "dragging" ? 1px : 0px;
+    border-color: state == "dragging" ? #ffffff4d : #ffffff1a;
+
+    border-top-left-radius: state == "dock-top" || state == "dock-left" ? 0px :
+                            state == "floating" || state == "dragging" ? 6px : 8px;
+    border-top-right-radius: state == "dock-top" || state == "dock-right" ? 0px :
+                             state == "floating" || state == "dragging" ? 6px : 8px;
+    border-bottom-left-radius: state == "dock-bottom" || state == "dock-left" ? 0px :
+                               state == "floating" || state == "dragging" ? 6px : 8px;
+    border-bottom-right-radius: state == "dock-bottom" || state == "dock-right" ? 0px :
+                                state == "floating" || state == "dragging" ? 6px : 8px;
+
+    drop-shadow-color: state == "dock-top" || state == "dock-bottom" ? #56b4e966 :
+                       state == "dock-left" || state == "dock-right" ? #e69f0066 : #00000080;
+    drop-shadow-blur: state == "floating" || state == "dragging" ? 32px : 20px;
+    drop-shadow-offset-x: state == "dock-left" ? 4px : state == "dock-right" ? -4px : 0px;
+    drop-shadow-offset-y: state == "dock-top" ? 4px : state == "dock-bottom" ? -4px : 8px;
+
+    animate background { duration: 300ms; easing: cubic-bezier(0.19, 1, 0.22, 1); }
+    animate border-color { duration: 300ms; easing: cubic-bezier(0.19, 1, 0.22, 1); }
+    animate border-top-left-radius { duration: 300ms; easing: cubic-bezier(0.19, 1, 0.22, 1); }
+    animate border-top-right-radius { duration: 300ms; easing: cubic-bezier(0.19, 1, 0.22, 1); }
+    animate border-bottom-left-radius { duration: 300ms; easing: cubic-bezier(0.19, 1, 0.22, 1); }
+    animate border-bottom-right-radius { duration: 300ms; easing: cubic-bezier(0.19, 1, 0.22, 1); }
+
+    if state == "dock-top" : Rectangle {
+        height: 2px;
+        background: #22d3ee;
+    }
+    if state == "dock-bottom" : Rectangle {
+        y: parent.height - 2px;
+        height: 2px;
+        background: #22d3ee;
+    }
+    if state == "dock-left" : Rectangle {
+        width: 2px;
+        background: #e69f00;
+    }
+    if state == "dock-right" : Rectangle {
+        x: parent.width - 2px;
+        width: 2px;
+        background: #e69f00;
+    }
+}
+
+component SpikeCard inherits Rectangle {
+    in property <string> state;
+    width: 206px;
+    height: 112px;
+    background: transparent;
+
+    OrganicShell {
+        x: 12px;
+        y: 12px;
+        width: 182px;
+        height: 64px;
+        state: root.state;
+    }
+    Text {
+        x: 12px;
+        y: 88px;
+        width: 182px;
+        text: root.state;
+        color: #ffffffb3;
+        font-size: 12px;
+        horizontal-alignment: center;
+    }
+}
+
+export component OrganicAnimationSpike inherits Window {
+    title: "xhm-desktop-organic-spike";
+    background: #14171c;
+    width: 700px;
+    height: 500px;
+
+    property <int> elapsed-ms: 0;
+    property <float> long-press-scale: elapsed-ms < 2000 ? 1.0 - elapsed-ms / 20000 :
+                                         elapsed-ms < 2200 ? 0.90 + (elapsed-ms - 2000) / 2000 : 1.0;
+    property <float> click-scale: elapsed-ms < 2250 ? 1.0 :
+                                  elapsed-ms < 2300 ? 1.0 - (elapsed-ms - 2250) * 0.08 / 50 :
+                                  elapsed-ms < 2400 ? 0.92 + (elapsed-ms - 2300) * 0.08 / 100 : 1.0;
+    property <float> kill-progress: elapsed-ms < 2500 ? 0.0 :
+                                    elapsed-ms < 3500 ? (elapsed-ms - 2500) / 1000 : 0.0;
+
+    Timer {
+        interval: 16ms;
+        triggered => {
+            root.elapsed-ms = mod(root.elapsed-ms + 16, 4000);
+        }
+    }
+
+    Text {
+        x: 28px;
+        y: 20px;
+        text: "ORGANIC SHELL / SOFTWARE RENDERER";
+        color: #fffffff2;
+        font-size: 18px;
+        font-weight: 700;
+    }
+    Text {
+        x: 28px;
+        y: 48px;
+        text: "floating radius 6 / dock radius 8 / cyan + amber contact edges";
+        color: #ffffff8c;
+        font-size: 11px;
+    }
+
+    GridLayout {
+        x: 28px;
+        y: 78px;
+        width: 644px;
+        height: 248px;
+        spacing: 8px;
+        Row { SpikeCard { state: "floating"; } SpikeCard { state: "dragging"; } SpikeCard { state: "dock-top"; } }
+        Row { SpikeCard { state: "dock-bottom"; } SpikeCard { state: "dock-left"; } SpikeCard { state: "dock-right"; } }
+    }
+
+    Rectangle {
+        x: 28px;
+        y: 350px;
+        width: 644px;
+        height: 118px;
+        background: #0a0c10d9;
+        border-radius: 8px;
+        border-color: #ffffff1a;
+        border-width: 1px;
+
+        Text { x: 16px; y: 14px; text: "2s long press / 200ms cancel"; color: #ffffffaa; font-size: 11px; }
+        Rectangle {
+            x: 250px + (1.0 - root.long-press-scale) * 90px;
+            y: 12px + (1.0 - root.long-press-scale) * 12px;
+            width: 120px * root.long-press-scale;
+            height: 26px * root.long-press-scale;
+            background: #22d3ee33;
+            border-color: #22d3ee;
+            border-width: 1px;
+            border-radius: 4px;
+        }
+
+        Text { x: 16px; y: 50px; text: "click 0.92 @ 50ms / 1.0 @ 150ms"; color: #ffffffaa; font-size: 11px; }
+        Rectangle {
+            x: 250px + (1.0 - root.click-scale) * 90px;
+            y: 48px + (1.0 - root.click-scale) * 12px;
+            width: 120px * root.click-scale;
+            height: 26px * root.click-scale;
+            background: #facc1533;
+            border-color: #facc15;
+            border-width: 1px;
+            border-radius: 4px;
+        }
+
+        Text { x: 16px; y: 86px; text: "Kill confirm 1s / circumference 43.98"; color: #ffffffaa; font-size: 11px; }
+        Rectangle { x: 250px; y: 84px; width: 120px; height: 3px; background: #ffffff1a; border-radius: 1.5px; }
+        Rectangle { x: 250px; y: 84px; width: 120px * root.kill-progress; height: 3px; background: #f87171; border-radius: 1.5px; }
+    }
+}

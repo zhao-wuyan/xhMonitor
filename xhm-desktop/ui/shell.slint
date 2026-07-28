@@ -1,0 +1,76 @@
+// Single Slint compilation root. The main floating window is G3-owned; the
+// taskbar, settings, and about windows are independent G4 components.
+import { OrganicShell } from "components/organic_shell.slint";
+import { TaskbarMetricStrip, TaskbarMetricData } from "taskbar_metrics.slint";
+
+export { Shell, MetricData, ProcessData, DiskData } from "floating_window.slint";
+export { SettingsWindow } from "settings.slint";
+export { AboutWindow } from "about.slint";
+export { OrganicAnimationSpike } from "components/organic_shell.slint";
+
+// G4 taskbar metrics window. Native geometry owns physical placement; this
+// component only renders the current presentation and forwards pointer intent.
+export component TaskbarWindow inherits Window {
+    title: "xhm-desktop-taskbar";
+    background: transparent;
+    no-frame: true;
+    always-on-top: true;
+    width: root.vertical ? 40px : root.bar-visual ? 438px : 410px;
+    height: root.vertical ? max(72px, root.metrics.length * (root.bar-visual ? 46px : 40px) + 12px) : 38px;
+
+    in-out property <string> status-text: "taskbar";
+    in-out property <bool> connected: false;
+    in-out property <bool> vertical: false;
+    in-out property <bool> bar-visual: true;
+    in-out property <bool> docked: true;
+    in-out property <bool> dragging: false;
+    in-out property <string> edge-state: "dock-bottom";
+    in-out property <int> gap: 4;
+    in-out property <string> layout-token: "";
+    in-out property <[TaskbarMetricData]> metrics;
+
+    callback pointer-down(float, float);
+    callback pointer-move(float, float);
+    callback pointer-up();
+    callback pointer-cancel();
+
+    OrganicShell {
+        width: parent.width;
+        height: parent.height;
+        state: root.dragging ? "dragging" : root.docked ? root.edge-state : "floating";
+        floating-background: #0c0c0ee8;
+    }
+
+    TaskbarMetricStrip {
+        width: parent.width;
+        height: parent.height;
+        metrics: root.metrics;
+        vertical: root.vertical;
+        bar-visual: root.bar-visual;
+        gap: root.gap * 1px;
+    }
+
+    if !root.connected : Rectangle {
+        x: parent.width - 7px;
+        y: 4px;
+        width: 4px;
+        height: 4px;
+        background: #f87171;
+        border-radius: 2px;
+    }
+
+    taskbar-touch := TouchArea {
+        mouse-cursor: move;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down {
+                root.pointer-down(self.mouse-x / 1px, self.mouse-y / 1px);
+            } else if event.kind == PointerEventKind.move && self.pressed {
+                root.pointer-move(self.mouse-x / 1px, self.mouse-y / 1px);
+            } else if event.kind == PointerEventKind.up {
+                root.pointer-up();
+            } else if event.kind == PointerEventKind.cancel {
+                root.pointer-cancel();
+            }
+        }
+    }
+}

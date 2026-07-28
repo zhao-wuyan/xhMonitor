@@ -1,0 +1,299 @@
+{
+  "_meta": {
+    "kind": "dependency-graph",
+    "schema": "dependency-graph/1.0",
+    "role": "attachment",
+    "alias": "dependency-graph"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-002-plan",
+  "nodes": [
+    {
+      "id": "TASK-001",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "wave_id": "WAVE-001",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-002",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "wave_id": "WAVE-002",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-003",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "wave_id": "WAVE-003",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-004",
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "wave_id": "WAVE-004",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-005",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "wave_id": "WAVE-005",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-006",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "wave_id": "WAVE-006",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-007",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "wave_id": "WAVE-007",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-008",
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "wave_id": "WAVE-008",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-009",
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "wave_id": "WAVE-009",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-010",
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "wave_id": "WAVE-010",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-011",
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "wave_id": "WAVE-011",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-012",
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "wave_id": "WAVE-012",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-013",
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "wave_id": "WAVE-013",
+      "status": "pending"
+    },
+    {
+      "id": "TASK-014",
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "wave_id": "WAVE-014",
+      "status": "pending"
+    }
+  ],
+  "edges": [
+    {
+      "from": "TASK-001",
+      "to": "TASK-002",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-002",
+      "to": "TASK-003",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-003",
+      "to": "TASK-004",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-004",
+      "to": "TASK-005",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-005",
+      "to": "TASK-006",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-006",
+      "to": "TASK-007",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-002",
+      "to": "TASK-008",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-004",
+      "to": "TASK-008",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-005",
+      "to": "TASK-008",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-006",
+      "to": "TASK-008",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-007",
+      "to": "TASK-008",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-008",
+      "to": "TASK-009",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-009",
+      "to": "TASK-010",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-004",
+      "to": "TASK-010",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-008",
+      "to": "TASK-010",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-010",
+      "to": "TASK-011",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-003",
+      "to": "TASK-011",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-006",
+      "to": "TASK-011",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-007",
+      "to": "TASK-011",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-011",
+      "to": "TASK-012",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-008",
+      "to": "TASK-012",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-009",
+      "to": "TASK-012",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-012",
+      "to": "TASK-013",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-003",
+      "to": "TASK-013",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-011",
+      "to": "TASK-013",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-002",
+      "to": "TASK-013",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-008",
+      "to": "TASK-013",
+      "type": "requires"
+    },
+    {
+      "from": "TASK-013",
+      "to": "TASK-014",
+      "type": "requires"
+    }
+  ],
+  "topological_order": [
+    "TASK-001",
+    "TASK-002",
+    "TASK-003",
+    "TASK-004",
+    "TASK-005",
+    "TASK-006",
+    "TASK-007",
+    "TASK-008",
+    "TASK-009",
+    "TASK-010",
+    "TASK-011",
+    "TASK-012",
+    "TASK-013",
+    "TASK-014"
+  ],
+  "acyclic": true,
+  "goal_barriers": [
+    {
+      "from": "G1",
+      "to": "G2",
+      "via": [
+        "TASK-004",
+        "TASK-005"
+      ]
+    },
+    {
+      "from": "G2",
+      "to": "G3",
+      "via": [
+        "TASK-008",
+        "TASK-009"
+      ]
+    },
+    {
+      "from": "G3",
+      "to": "G4",
+      "via": [
+        "TASK-011",
+        "TASK-012"
+      ]
+    }
+  ],
+  "notes": [
+    "每条 edge 从 deps task 指向 consumer task。",
+    "topological_order 与 plan.task_ids、wave execution_order 一致。"
+  ]
+}

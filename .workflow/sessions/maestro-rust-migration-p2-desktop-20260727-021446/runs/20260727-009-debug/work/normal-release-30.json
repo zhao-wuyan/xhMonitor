@@ -1,0 +1,2270 @@
+﻿{
+    "schema_version":  "desktop-memory-profile/1.0",
+    "label":  "normal-release-30",
+    "executable":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\target\\release\\xhm-desktop.exe",
+    "process_id":  43512,
+    "started_at":  "2026-07-27T23:12:57.5198783+08:00",
+    "conditions":  {
+                       "release":  true,
+                       "slint_backend":  "winit-software",
+                       "ui_smoke":  false,
+                       "g4_smoke":  false,
+                       "warmup_seconds":  10,
+                       "sample_interval_ms":  1000
+                   },
+    "summary":  {
+                    "count":  30,
+                    "private_min_bytes":  35119104,
+                    "private_max_bytes":  35160064,
+                    "private_mean_bytes":  35141905,
+                    "private_median_bytes":  35139584,
+                    "private_min_mib":  33.492188,
+                    "private_max_mib":  33.53125,
+                    "private_mean_mib":  33.513932,
+                    "private_median_mib":  33.511719,
+                    "working_set_min_mib":  51.386719,
+                    "working_set_max_mib":  51.441406,
+                    "below_10_count":  0
+                },
+    "windows_before":  [
+                           {
+                               "hwnd":  6229680,
+                               "hwnd_hex":  "0x5F0EB0",
+                               "title":  "xhm-desktop",
+                               "class":  "Window Class",
+                               "visible":  true
+                           },
+                           {
+                               "hwnd":  41026888,
+                               "hwnd_hex":  "0x2720548",
+                               "title":  "xhm-desktop-taskbar",
+                               "class":  "Window Class",
+                               "visible":  true
+                           },
+                           {
+                               "hwnd":  27921410,
+                               "hwnd_hex":  "0x1AA0C02",
+                               "title":  "xhMonitor Settings",
+                               "class":  "Window Class",
+                               "visible":  false
+                           },
+                           {
+                               "hwnd":  29231998,
+                               "hwnd_hex":  "0x1BE0B7E",
+                               "title":  "About XhMonitor",
+                               "class":  "Window Class",
+                               "visible":  false
+                           },
+                           {
+                               "hwnd":  63376004,
+                               "hwnd_hex":  "0x3C70A84",
+                               "title":  "",
+                               "class":  "xhmonitor_shell_notify_43512",
+                               "visible":  false
+                           },
+                           {
+                               "hwnd":  26937716,
+                               "hwnd_hex":  "0x19B0974",
+                               "title":  "",
+                               "class":  "Winit Thread Event Target",
+                               "visible":  true
+                           },
+                           {
+                               "hwnd":  23726772,
+                               "hwnd_hex":  "0x16A0AB4",
+                               "title":  "",
+                               "class":  "PseudoConsoleWindow",
+                               "visible":  true
+                           },
+                           {
+                               "hwnd":  48170328,
+                               "hwnd_hex":  "0x2DF0558",
+                               "title":  "MSCTFIME UI",
+                               "class":  "MSCTFIME UI",
+                               "visible":  false
+                           },
+                           {
+                               "hwnd":  13239326,
+                               "hwnd_hex":  "0xCA041E",
+                               "title":  "Default IME",
+                               "class":  "IME",
+                               "visible":  false
+                           }
+                       ],
+    "windows_after":  [
+                          {
+                              "hwnd":  6229680,
+                              "hwnd_hex":  "0x5F0EB0",
+                              "title":  "xhm-desktop",
+                              "class":  "Window Class",
+                              "visible":  true
+                          },
+                          {
+                              "hwnd":  41026888,
+                              "hwnd_hex":  "0x2720548",
+                              "title":  "xhm-desktop-taskbar",
+                              "class":  "Window Class",
+                              "visible":  true
+                          },
+                          {
+                              "hwnd":  27921410,
+                              "hwnd_hex":  "0x1AA0C02",
+                              "title":  "xhMonitor Settings",
+                              "class":  "Window Class",
+                              "visible":  false
+                          },
+                          {
+                              "hwnd":  29231998,
+                              "hwnd_hex":  "0x1BE0B7E",
+                              "title":  "About XhMonitor",
+                              "class":  "Window Class",
+                              "visible":  false
+                          },
+                          {
+                              "hwnd":  63376004,
+                              "hwnd_hex":  "0x3C70A84",
+                              "title":  "",
+                              "class":  "xhmonitor_shell_notify_43512",
+                              "visible":  false
+                          },
+                          {
+                              "hwnd":  26937716,
+                              "hwnd_hex":  "0x19B0974",
+                              "title":  "",
+                              "class":  "Winit Thread Event Target",
+                              "visible":  true
+                          },
+                          {
+                              "hwnd":  23726772,
+                              "hwnd_hex":  "0x16A0AB4",
+                              "title":  "",
+                              "class":  "PseudoConsoleWindow",
+                              "visible":  true
+                          },
+                          {
+                              "hwnd":  48170328,
+                              "hwnd_hex":  "0x2DF0558",
+                              "title":  "MSCTFIME UI",
+                              "class":  "MSCTFIME UI",
+                              "visible":  false
+                          },
+                          {
+                              "hwnd":  13239326,
+                              "hwnd_hex":  "0xCA041E",
+                              "title":  "Default IME",
+                              "class":  "IME",
+                              "visible":  false
+                          }
+                      ],
+    "child_processes_excluded":  [
+                                     {
+                                         "process_id":  64524,
+                                         "name":  "conhost.exe",
+                                         "command_line":  "\\??\\C:\\Windows\\system32\\conhost.exe 0x4"
+                                     }
+                                 ],
+    "modules":  [
+                    {
+                        "module_name":  "xhm-desktop.exe",
+                        "file_name":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\target\\release\\xhm-desktop.exe",
+                        "base_address":  "0x7FF762B50000",
+                        "module_memory_size":  4542464
+                    },
+                    {
+                        "module_name":  "ntdll.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\ntdll.dll",
+                        "base_address":  "0x7FF8886E0000",
+                        "module_memory_size":  2514944
+                    },
+                    {
+                        "module_name":  "KERNEL32.DLL",
+                        "file_name":  "C:\\Windows\\System32\\KERNEL32.DLL",
+                        "base_address":  "0x7FF887B50000",
+                        "module_memory_size":  823296
+                    },
+                    {
+                        "module_name":  "KERNELBASE.dll",
+                        "file_name":  "C:\\Windows\\System32\\KERNELBASE.dll",
+                        "base_address":  "0x7FF885CA0000",
+                        "module_memory_size":  4186112
+                    },
+                    {
+                        "module_name":  "user32.dll",
+                        "file_name":  "C:\\Windows\\System32\\user32.dll",
+                        "base_address":  "0x7FF887260000",
+                        "module_memory_size":  1863680
+                    },
+                    {
+                        "module_name":  "win32u.dll",
+                        "file_name":  "C:\\Windows\\System32\\win32u.dll",
+                        "base_address":  "0x7FF885B10000",
+                        "module_memory_size":  159744
+                    },
+                    {
+                        "module_name":  "GDI32.dll",
+                        "file_name":  "C:\\Windows\\System32\\GDI32.dll",
+                        "base_address":  "0x7FF8882D0000",
+                        "module_memory_size":  176128
+                    },
+                    {
+                        "module_name":  "gdi32full.dll",
+                        "file_name":  "C:\\Windows\\System32\\gdi32full.dll",
+                        "base_address":  "0x7FF8860B0000",
+                        "module_memory_size":  1220608
+                    },
+                    {
+                        "module_name":  "msvcp_win.dll",
+                        "file_name":  "C:\\Windows\\System32\\msvcp_win.dll",
+                        "base_address":  "0x7FF886360000",
+                        "module_memory_size":  667648
+                    },
+                    {
+                        "module_name":  "ucrtbase.dll",
+                        "file_name":  "C:\\Windows\\System32\\ucrtbase.dll",
+                        "base_address":  "0x7FF885B40000",
+                        "module_memory_size":  1359872
+                    },
+                    {
+                        "module_name":  "advapi32.dll",
+                        "file_name":  "C:\\Windows\\System32\\advapi32.dll",
+                        "base_address":  "0x7FF888210000",
+                        "module_memory_size":  749568
+                    },
+                    {
+                        "module_name":  "msvcrt.dll",
+                        "file_name":  "C:\\Windows\\System32\\msvcrt.dll",
+                        "base_address":  "0x7FF886750000",
+                        "module_memory_size":  692224
+                    },
+                    {
+                        "module_name":  "sechost.dll",
+                        "file_name":  "C:\\Windows\\System32\\sechost.dll",
+                        "base_address":  "0x7FF888310000",
+                        "module_memory_size":  696320
+                    },
+                    {
+                        "module_name":  "RPCRT4.dll",
+                        "file_name":  "C:\\Windows\\System32\\RPCRT4.dll",
+                        "base_address":  "0x7FF8865C0000",
+                        "module_memory_size":  1146880
+                    },
+                    {
+                        "module_name":  "ws2_32.dll",
+                        "file_name":  "C:\\Windows\\System32\\ws2_32.dll",
+                        "base_address":  "0x7FF8871D0000",
+                        "module_memory_size":  524288
+                    },
+                    {
+                        "module_name":  "oleaut32.dll",
+                        "file_name":  "C:\\Windows\\System32\\oleaut32.dll",
+                        "base_address":  "0x7FF887530000",
+                        "module_memory_size":  888832
+                    },
+                    {
+                        "module_name":  "combase.dll",
+                        "file_name":  "C:\\Windows\\System32\\combase.dll",
+                        "base_address":  "0x7FF887610000",
+                        "module_memory_size":  3682304
+                    },
+                    {
+                        "module_name":  "comctl32.dll",
+                        "file_name":  "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_5.82.26100.8328_none_87eede957a2ccddd\\comctl32.dll",
+                        "base_address":  "0x7FF864A10000",
+                        "module_memory_size":  741376
+                    },
+                    {
+                        "module_name":  "shell32.dll",
+                        "file_name":  "C:\\Windows\\System32\\shell32.dll",
+                        "base_address":  "0x7FF886940000",
+                        "module_memory_size":  7938048
+                    },
+                    {
+                        "module_name":  "ole32.dll",
+                        "file_name":  "C:\\Windows\\System32\\ole32.dll",
+                        "base_address":  "0x7FF8879B0000",
+                        "module_memory_size":  1675264
+                    },
+                    {
+                        "module_name":  "bcryptprimitives.dll",
+                        "file_name":  "C:\\Windows\\System32\\bcryptprimitives.dll",
+                        "base_address":  "0x7FF885900000",
+                        "module_memory_size":  704512
+                    },
+                    {
+                        "module_name":  "imm32.dll",
+                        "file_name":  "C:\\Windows\\System32\\imm32.dll",
+                        "base_address":  "0x7FF886900000",
+                        "module_memory_size":  204800
+                    },
+                    {
+                        "module_name":  "uiautomationcore.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\uiautomationcore.dll",
+                        "base_address":  "0x7FF86BC20000",
+                        "module_memory_size":  4321280
+                    },
+                    {
+                        "module_name":  "shcore.dll",
+                        "file_name":  "C:\\Windows\\System32\\shcore.dll",
+                        "base_address":  "0x7FF886800000",
+                        "module_memory_size":  1011712
+                    },
+                    {
+                        "module_name":  "uxtheme.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\uxtheme.dll",
+                        "base_address":  "0x7FF881A00000",
+                        "module_memory_size":  692224
+                    },
+                    {
+                        "module_name":  "dwmapi.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\dwmapi.dll",
+                        "base_address":  "0x7FF881BC0000",
+                        "module_memory_size":  192512
+                    },
+                    {
+                        "module_name":  "VCRUNTIME140.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\VCRUNTIME140.dll",
+                        "base_address":  "0x7FF86E1F0000",
+                        "module_memory_size":  180224
+                    },
+                    {
+                        "module_name":  "MSCTF.dll",
+                        "file_name":  "C:\\Windows\\System32\\MSCTF.dll",
+                        "base_address":  "0x7FF886450000",
+                        "module_memory_size":  1429504
+                    },
+                    {
+                        "module_name":  "mswsock.dll",
+                        "file_name":  "C:\\Windows\\system32\\mswsock.dll",
+                        "base_address":  "0x7FF884B30000",
+                        "module_memory_size":  442368
+                    },
+                    {
+                        "module_name":  "windows.storage.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\windows.storage.dll",
+                        "base_address":  "0x7FF883360000",
+                        "module_memory_size":  8986624
+                    },
+                    {
+                        "module_name":  "DNSAPI.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\DNSAPI.dll",
+                        "base_address":  "0x7FF884040000",
+                        "module_memory_size":  1400832
+                    },
+                    {
+                        "module_name":  "DSPARSE.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\DSPARSE.dll",
+                        "base_address":  "0x7FF884930000",
+                        "module_memory_size":  53248
+                    },
+                    {
+                        "module_name":  "IPHLPAPI.DLL",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\IPHLPAPI.DLL",
+                        "base_address":  "0x7FF883FA0000",
+                        "module_memory_size":  208896
+                    },
+                    {
+                        "module_name":  "NSI.dll",
+                        "file_name":  "C:\\Windows\\System32\\NSI.dll",
+                        "base_address":  "0x7FF8879A0000",
+                        "module_memory_size":  40960
+                    },
+                    {
+                        "module_name":  "shlwapi.dll",
+                        "file_name":  "C:\\Windows\\System32\\shlwapi.dll",
+                        "base_address":  "0x7FF8883C0000",
+                        "module_memory_size":  421888
+                    },
+                    {
+                        "module_name":  "rasadhlp.dll",
+                        "file_name":  "C:\\Windows\\System32\\rasadhlp.dll",
+                        "base_address":  "0x7FF87E430000",
+                        "module_memory_size":  45056
+                    },
+                    {
+                        "module_name":  "fwpuclnt.dll",
+                        "file_name":  "C:\\Windows\\System32\\fwpuclnt.dll",
+                        "base_address":  "0x7FF87F7F0000",
+                        "module_memory_size":  548864
+                    },
+                    {
+                        "module_name":  "kernel.appcore.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\kernel.appcore.dll",
+                        "base_address":  "0x7FF8845A0000",
+                        "module_memory_size":  110592
+                    },
+                    {
+                        "module_name":  "clbcatq.dll",
+                        "file_name":  "C:\\Windows\\System32\\clbcatq.dll",
+                        "base_address":  "0x7FF887110000",
+                        "module_memory_size":  712704
+                    },
+                    {
+                        "module_name":  "dataexchange.dll",
+                        "file_name":  "C:\\Windows\\system32\\dataexchange.dll",
+                        "base_address":  "0x7FF8503B0000",
+                        "module_memory_size":  380928
+                    },
+                    {
+                        "module_name":  "twinapi.appcore.dll",
+                        "file_name":  "C:\\Windows\\system32\\twinapi.appcore.dll",
+                        "base_address":  "0x7FF879F30000",
+                        "module_memory_size":  2420736
+                    },
+                    {
+                        "module_name":  "explorerframe.dll",
+                        "file_name":  "C:\\Windows\\system32\\explorerframe.dll",
+                        "base_address":  "0x7FF83FF20000",
+                        "module_memory_size":  3149824
+                    },
+                    {
+                        "module_name":  "powrprof.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\powrprof.dll",
+                        "base_address":  "0x7FF885780000",
+                        "module_memory_size":  385024
+                    },
+                    {
+                        "module_name":  "UMPDC.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\UMPDC.dll",
+                        "base_address":  "0x7FF885760000",
+                        "module_memory_size":  81920
+                    },
+                    {
+                        "module_name":  "msiltcfg.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\msiltcfg.dll",
+                        "base_address":  "0x7FF87AD00000",
+                        "module_memory_size":  45056
+                    },
+                    {
+                        "module_name":  "VERSION.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\VERSION.dll",
+                        "base_address":  "0x7FF87BD00000",
+                        "module_memory_size":  45056
+                    },
+                    {
+                        "module_name":  "msi.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\msi.dll",
+                        "base_address":  "0x7FF86F2F0000",
+                        "module_memory_size":  3448832
+                    },
+                    {
+                        "module_name":  "bcrypt.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\bcrypt.dll",
+                        "base_address":  "0x7FF8857F0000",
+                        "module_memory_size":  172032
+                    },
+                    {
+                        "module_name":  "sxs.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\sxs.dll",
+                        "base_address":  "0x7FF885670000",
+                        "module_memory_size":  659456
+                    },
+                    {
+                        "module_name":  "textinputframework.dll",
+                        "file_name":  "C:\\Windows\\SYSTEM32\\textinputframework.dll",
+                        "base_address":  "0x7FF87D290000",
+                        "module_memory_size":  1339392
+                    },
+                    {
+                        "module_name":  "Oleacc.dll",
+                        "file_name":  "C:\\Windows\\system32\\Oleacc.dll",
+                        "base_address":  "0x7FF86C0C0000",
+                        "module_memory_size":  471040
+                    }
+                ],
+    "memory_map_before":  {
+                              "captured_at":  "2026-07-27T23:13:08.6540690+08:00",
+                              "committed_by_type":  [
+                                                        {
+                                                            "type":  "MEM_IMAGE",
+                                                            "committed_bytes":  70750208,
+                                                            "region_count":  326
+                                                        },
+                                                        {
+                                                            "type":  "MEM_PRIVATE",
+                                                            "committed_bytes":  33144832,
+                                                            "region_count":  64
+                                                        },
+                                                        {
+                                                            "type":  "MEM_MAPPED",
+                                                            "committed_bytes":  10436608,
+                                                            "region_count":  31
+                                                        }
+                                                    ],
+                              "largest_allocation_bases":  [
+                                                               {
+                                                                   "allocation_base":  2437029756928,
+                                                                   "allocation_base_hex":  "0x2376A4B0000",
+                                                                   "committed_bytes":  14356480,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705329971200,
+                                                                   "allocation_base_hex":  "0x7FF883360000",
+                                                                   "committed_bytes":  8990720,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\windows.storage.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437021368320,
+                                                                   "allocation_base_hex":  "0x23769CB0000",
+                                                                   "committed_bytes":  8384512,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705386463232,
+                                                                   "allocation_base_hex":  "0x7FF886940000",
+                                                                   "committed_bytes":  7942144,
+                                                                   "region_count":  8,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\shell32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140700489678848,
+                                                                   "allocation_base_hex":  "0x7FF762B50000",
+                                                                   "committed_bytes":  4542464,
+                                                                   "region_count":  5,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\ProjectDev\\project\\xinghe\\xhMonitor\\target\\release\\xhm-desktop.exe"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140704936493056,
+                                                                   "allocation_base_hex":  "0x7FF86BC20000",
+                                                                   "committed_bytes":  4325376,
+                                                                   "region_count":  10,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\UIAutomationCore.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705373224960,
+                                                                   "allocation_base_hex":  "0x7FF885CA0000",
+                                                                   "committed_bytes":  4190208,
+                                                                   "region_count":  9,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\KernelBase.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437017174016,
+                                                                   "allocation_base_hex":  "0x237698B0000",
+                                                                   "committed_bytes":  4190208,
+                                                                   "region_count":  3,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x1",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705399898112,
+                                                                   "allocation_base_hex":  "0x7FF887610000",
+                                                                   "committed_bytes":  3686400,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\combase.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140704993968128,
+                                                                   "allocation_base_hex":  "0x7FF86F2F0000",
+                                                                   "committed_bytes":  3452928,
+                                                                   "region_count":  7,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\msi.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437008523264,
+                                                                   "allocation_base_hex":  "0x23769070000",
+                                                                   "committed_bytes":  3387392,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_MAPPED"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\Globalization\\Sorting\\SortDefault.nls"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140704201441280,
+                                                                   "allocation_base_hex":  "0x7FF83FF20000",
+                                                                   "committed_bytes":  3153920,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\ExplorerFrame.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705417527296,
+                                                                   "allocation_base_hex":  "0x7FF8886E0000",
+                                                                   "committed_bytes":  2519040,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705174585344,
+                                                                   "allocation_base_hex":  "0x7FF879F30000",
+                                                                   "committed_bytes":  2424832,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\twinapi.appcore.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437015076864,
+                                                                   "allocation_base_hex":  "0x237696B0000",
+                                                                   "committed_bytes":  2093056,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705396031488,
+                                                                   "allocation_base_hex":  "0x7FF887260000",
+                                                                   "committed_bytes":  1867776,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\user32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705403699200,
+                                                                   "allocation_base_hex":  "0x7FF8879B0000",
+                                                                   "committed_bytes":  1679360,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\ole32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2436972085248,
+                                                                   "allocation_base_hex":  "0x23766DB0000",
+                                                                   "committed_bytes":  1576960,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_MAPPED"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705381285888,
+                                                                   "allocation_base_hex":  "0x7FF886450000",
+                                                                   "committed_bytes":  1433600,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\msctf.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705343471616,
+                                                                   "allocation_base_hex":  "0x7FF884040000",
+                                                                   "committed_bytes":  1404928,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\dnsapi.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705371783168,
+                                                                   "allocation_base_hex":  "0x7FF885B40000",
+                                                                   "committed_bytes":  1363968,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\ucrtbase.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2436996464640,
+                                                                   "allocation_base_hex":  "0x237684F0000",
+                                                                   "committed_bytes":  1355776,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_MAPPED"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705228455936,
+                                                                   "allocation_base_hex":  "0x7FF87D290000",
+                                                                   "committed_bytes":  1343488,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\TextInputFramework.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2436973723648,
+                                                                   "allocation_base_hex":  "0x23766F40000",
+                                                                   "committed_bytes":  1306624,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_MAPPED"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705377484800,
+                                                                   "allocation_base_hex":  "0x7FF8860B0000",
+                                                                   "committed_bytes":  1224704,
+                                                                   "region_count":  8,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\gdi32full.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705382793216,
+                                                                   "allocation_base_hex":  "0x7FF8865C0000",
+                                                                   "committed_bytes":  1150976,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\rpcrt4.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2436966973440,
+                                                                   "allocation_base_hex":  "0x237668D0000",
+                                                                   "committed_bytes":  1044480,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437012979712,
+                                                                   "allocation_base_hex":  "0x237694B0000",
+                                                                   "committed_bytes":  1044480,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705385152512,
+                                                                   "allocation_base_hex":  "0x7FF886800000",
+                                                                   "committed_bytes":  1015808,
+                                                                   "region_count":  9,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\SHCore.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705398980608,
+                                                                   "allocation_base_hex":  "0x7FF887530000",
+                                                                   "committed_bytes":  892928,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\oleaut32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2436968022016,
+                                                                   "allocation_base_hex":  "0x237669D0000",
+                                                                   "committed_bytes":  864256,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_MAPPED"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\locale.nls"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705405403136,
+                                                                   "allocation_base_hex":  "0x7FF887B50000",
+                                                                   "committed_bytes":  827392,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\kernel32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705412481024,
+                                                                   "allocation_base_hex":  "0x7FF888210000",
+                                                                   "committed_bytes":  753664,
+                                                                   "region_count":  8,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\advapi32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140704816889856,
+                                                                   "allocation_base_hex":  "0x7FF864A10000",
+                                                                   "committed_bytes":  745472,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_5.82.26100.8328_none_87eede957a2ccddd\\comctl32.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437014093824,
+                                                                   "allocation_base_hex":  "0x237695C0000",
+                                                                   "committed_bytes":  733184,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_PRIVATE"
+                                                                             ],
+                                                                   "mapped_file":  [
+
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  2437007802368,
+                                                                   "allocation_base_hex":  "0x23768FC0000",
+                                                                   "committed_bytes":  720896,
+                                                                   "region_count":  1,
+                                                                   "types":  [
+                                                                                 "MEM_MAPPED"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Program Files\\WindowsApps\\Microsoft.LanguageExperiencePackzh-CN_26100.163.263.0_neutral__8wekyb3d8bbwe\\Windows\\System32\\zh-CN\\3f121a94fc3fa56f0eeb0850d85332d8\\KernelBase.dll.mui"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705394655232,
+                                                                   "allocation_base_hex":  "0x7FF887110000",
+                                                                   "committed_bytes":  716800,
+                                                                   "region_count":  8,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\clbcatq.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4",
+                                                                                       "0x8"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705369423872,
+                                                                   "allocation_base_hex":  "0x7FF885900000",
+                                                                   "committed_bytes":  708608,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\bcryptprimitives.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705413529600,
+                                                                   "allocation_base_hex":  "0x7FF888310000",
+                                                                   "committed_bytes":  700416,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\sechost.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               },
+                                                               {
+                                                                   "allocation_base":  140705384431616,
+                                                                   "allocation_base_hex":  "0x7FF886750000",
+                                                                   "committed_bytes":  696320,
+                                                                   "region_count":  6,
+                                                                   "types":  [
+                                                                                 "MEM_IMAGE"
+                                                                             ],
+                                                                   "mapped_file":  [
+                                                                                       "\\Device\\HarddiskVolume3\\Windows\\System32\\msvcrt.dll"
+                                                                                   ],
+                                                                   "protections":  [
+                                                                                       "0x2",
+                                                                                       "0x20",
+                                                                                       "0x4"
+                                                                                   ]
+                                                               }
+                                                           ],
+                              "committed_region_count":  421
+                          },
+    "memory_map_after":  {
+                             "captured_at":  "2026-07-27T23:13:38.4245374+08:00",
+                             "committed_by_type":  [
+                                                       {
+                                                           "type":  "MEM_IMAGE",
+                                                           "committed_bytes":  70750208,
+                                                           "region_count":  326
+                                                       },
+                                                       {
+                                                           "type":  "MEM_PRIVATE",
+                                                           "committed_bytes":  33185792,
+                                                           "region_count":  64
+                                                       },
+                                                       {
+                                                           "type":  "MEM_MAPPED",
+                                                           "committed_bytes":  10436608,
+                                                           "region_count":  31
+                                                       }
+                                                   ],
+                             "largest_allocation_bases":  [
+                                                              {
+                                                                  "allocation_base":  2437029756928,
+                                                                  "allocation_base_hex":  "0x2376A4B0000",
+                                                                  "committed_bytes":  14356480,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705329971200,
+                                                                  "allocation_base_hex":  "0x7FF883360000",
+                                                                  "committed_bytes":  8990720,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\windows.storage.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437021368320,
+                                                                  "allocation_base_hex":  "0x23769CB0000",
+                                                                  "committed_bytes":  8384512,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705386463232,
+                                                                  "allocation_base_hex":  "0x7FF886940000",
+                                                                  "committed_bytes":  7942144,
+                                                                  "region_count":  8,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\shell32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140700489678848,
+                                                                  "allocation_base_hex":  "0x7FF762B50000",
+                                                                  "committed_bytes":  4542464,
+                                                                  "region_count":  5,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\ProjectDev\\project\\xinghe\\xhMonitor\\target\\release\\xhm-desktop.exe"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140704936493056,
+                                                                  "allocation_base_hex":  "0x7FF86BC20000",
+                                                                  "committed_bytes":  4325376,
+                                                                  "region_count":  10,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\UIAutomationCore.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705373224960,
+                                                                  "allocation_base_hex":  "0x7FF885CA0000",
+                                                                  "committed_bytes":  4190208,
+                                                                  "region_count":  9,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\KernelBase.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437017174016,
+                                                                  "allocation_base_hex":  "0x237698B0000",
+                                                                  "committed_bytes":  4190208,
+                                                                  "region_count":  3,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x1",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705399898112,
+                                                                  "allocation_base_hex":  "0x7FF887610000",
+                                                                  "committed_bytes":  3686400,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\combase.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140704993968128,
+                                                                  "allocation_base_hex":  "0x7FF86F2F0000",
+                                                                  "committed_bytes":  3452928,
+                                                                  "region_count":  7,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\msi.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437008523264,
+                                                                  "allocation_base_hex":  "0x23769070000",
+                                                                  "committed_bytes":  3387392,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_MAPPED"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\Globalization\\Sorting\\SortDefault.nls"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140704201441280,
+                                                                  "allocation_base_hex":  "0x7FF83FF20000",
+                                                                  "committed_bytes":  3153920,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\ExplorerFrame.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705417527296,
+                                                                  "allocation_base_hex":  "0x7FF8886E0000",
+                                                                  "committed_bytes":  2519040,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705174585344,
+                                                                  "allocation_base_hex":  "0x7FF879F30000",
+                                                                  "committed_bytes":  2424832,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\twinapi.appcore.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437015076864,
+                                                                  "allocation_base_hex":  "0x237696B0000",
+                                                                  "committed_bytes":  2093056,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705396031488,
+                                                                  "allocation_base_hex":  "0x7FF887260000",
+                                                                  "committed_bytes":  1867776,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\user32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705403699200,
+                                                                  "allocation_base_hex":  "0x7FF8879B0000",
+                                                                  "committed_bytes":  1679360,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\ole32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2436972085248,
+                                                                  "allocation_base_hex":  "0x23766DB0000",
+                                                                  "committed_bytes":  1576960,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_MAPPED"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705381285888,
+                                                                  "allocation_base_hex":  "0x7FF886450000",
+                                                                  "committed_bytes":  1433600,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\msctf.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705343471616,
+                                                                  "allocation_base_hex":  "0x7FF884040000",
+                                                                  "committed_bytes":  1404928,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\dnsapi.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705371783168,
+                                                                  "allocation_base_hex":  "0x7FF885B40000",
+                                                                  "committed_bytes":  1363968,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\ucrtbase.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2436996464640,
+                                                                  "allocation_base_hex":  "0x237684F0000",
+                                                                  "committed_bytes":  1355776,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_MAPPED"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705228455936,
+                                                                  "allocation_base_hex":  "0x7FF87D290000",
+                                                                  "committed_bytes":  1343488,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\TextInputFramework.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2436973723648,
+                                                                  "allocation_base_hex":  "0x23766F40000",
+                                                                  "committed_bytes":  1306624,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_MAPPED"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705377484800,
+                                                                  "allocation_base_hex":  "0x7FF8860B0000",
+                                                                  "committed_bytes":  1224704,
+                                                                  "region_count":  8,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\gdi32full.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705382793216,
+                                                                  "allocation_base_hex":  "0x7FF8865C0000",
+                                                                  "committed_bytes":  1150976,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\rpcrt4.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2436966973440,
+                                                                  "allocation_base_hex":  "0x237668D0000",
+                                                                  "committed_bytes":  1044480,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437012979712,
+                                                                  "allocation_base_hex":  "0x237694B0000",
+                                                                  "committed_bytes":  1044480,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705385152512,
+                                                                  "allocation_base_hex":  "0x7FF886800000",
+                                                                  "committed_bytes":  1015808,
+                                                                  "region_count":  9,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\SHCore.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705398980608,
+                                                                  "allocation_base_hex":  "0x7FF887530000",
+                                                                  "committed_bytes":  892928,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\oleaut32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2436968022016,
+                                                                  "allocation_base_hex":  "0x237669D0000",
+                                                                  "committed_bytes":  864256,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_MAPPED"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\locale.nls"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705405403136,
+                                                                  "allocation_base_hex":  "0x7FF887B50000",
+                                                                  "committed_bytes":  827392,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\kernel32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705412481024,
+                                                                  "allocation_base_hex":  "0x7FF888210000",
+                                                                  "committed_bytes":  753664,
+                                                                  "region_count":  8,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\advapi32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140704816889856,
+                                                                  "allocation_base_hex":  "0x7FF864A10000",
+                                                                  "committed_bytes":  745472,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_5.82.26100.8328_none_87eede957a2ccddd\\comctl32.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437014093824,
+                                                                  "allocation_base_hex":  "0x237695C0000",
+                                                                  "committed_bytes":  733184,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_PRIVATE"
+                                                                            ],
+                                                                  "mapped_file":  [
+
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  2437007802368,
+                                                                  "allocation_base_hex":  "0x23768FC0000",
+                                                                  "committed_bytes":  720896,
+                                                                  "region_count":  1,
+                                                                  "types":  [
+                                                                                "MEM_MAPPED"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Program Files\\WindowsApps\\Microsoft.LanguageExperiencePackzh-CN_26100.163.263.0_neutral__8wekyb3d8bbwe\\Windows\\System32\\zh-CN\\3f121a94fc3fa56f0eeb0850d85332d8\\KernelBase.dll.mui"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705394655232,
+                                                                  "allocation_base_hex":  "0x7FF887110000",
+                                                                  "committed_bytes":  716800,
+                                                                  "region_count":  8,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\clbcatq.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4",
+                                                                                      "0x8"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705369423872,
+                                                                  "allocation_base_hex":  "0x7FF885900000",
+                                                                  "committed_bytes":  708608,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\bcryptprimitives.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705413529600,
+                                                                  "allocation_base_hex":  "0x7FF888310000",
+                                                                  "committed_bytes":  700416,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\sechost.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              },
+                                                              {
+                                                                  "allocation_base":  140705384431616,
+                                                                  "allocation_base_hex":  "0x7FF886750000",
+                                                                  "committed_bytes":  696320,
+                                                                  "region_count":  6,
+                                                                  "types":  [
+                                                                                "MEM_IMAGE"
+                                                                            ],
+                                                                  "mapped_file":  [
+                                                                                      "\\Device\\HarddiskVolume3\\Windows\\System32\\msvcrt.dll"
+                                                                                  ],
+                                                                  "protections":  [
+                                                                                      "0x2",
+                                                                                      "0x20",
+                                                                                      "0x4"
+                                                                                  ]
+                                                              }
+                                                          ],
+                             "committed_region_count":  421
+                         },
+    "samples":  [
+                    {
+                        "sample":  1,
+                        "timestamp":  "2026-07-27T23:13:08.6644541+08:00",
+                        "private_bytes":  35119104,
+                        "private_mib":  33.492188,
+                        "working_set_bytes":  53882880,
+                        "working_set_mib":  51.386719,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35119104,
+                        "thread_count":  17,
+                        "handle_count":  317,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  2,
+                        "timestamp":  "2026-07-27T23:13:09.7053408+08:00",
+                        "private_bytes":  35119104,
+                        "private_mib":  33.492188,
+                        "working_set_bytes":  53882880,
+                        "working_set_mib":  51.386719,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35119104,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  3,
+                        "timestamp":  "2026-07-27T23:13:10.7260449+08:00",
+                        "private_bytes":  35119104,
+                        "private_mib":  33.492188,
+                        "working_set_bytes":  53882880,
+                        "working_set_mib":  51.386719,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35119104,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  4,
+                        "timestamp":  "2026-07-27T23:13:11.7580439+08:00",
+                        "private_bytes":  35135488,
+                        "private_mib":  33.507812,
+                        "working_set_bytes":  53899264,
+                        "working_set_mib":  51.402344,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35135488,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  5,
+                        "timestamp":  "2026-07-27T23:13:12.7796728+08:00",
+                        "private_bytes":  35135488,
+                        "private_mib":  33.507812,
+                        "working_set_bytes":  53899264,
+                        "working_set_mib":  51.402344,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35135488,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  6,
+                        "timestamp":  "2026-07-27T23:13:13.8034848+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  7,
+                        "timestamp":  "2026-07-27T23:13:14.8311706+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  8,
+                        "timestamp":  "2026-07-27T23:13:15.8618734+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  9,
+                        "timestamp":  "2026-07-27T23:13:16.8871738+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  10,
+                        "timestamp":  "2026-07-27T23:13:17.9161336+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  11,
+                        "timestamp":  "2026-07-27T23:13:18.9423818+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  12,
+                        "timestamp":  "2026-07-27T23:13:19.9613542+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  13,
+                        "timestamp":  "2026-07-27T23:13:20.9773700+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  14,
+                        "timestamp":  "2026-07-27T23:13:21.9996036+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  15,
+                        "timestamp":  "2026-07-27T23:13:23.0237149+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  16,
+                        "timestamp":  "2026-07-27T23:13:24.0441823+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  317,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  17,
+                        "timestamp":  "2026-07-27T23:13:25.0723547+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  319,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  18,
+                        "timestamp":  "2026-07-27T23:13:26.0926170+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  317,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  19,
+                        "timestamp":  "2026-07-27T23:13:27.1125269+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53911552,
+                        "working_set_mib":  51.414062,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  314,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  20,
+                        "timestamp":  "2026-07-27T23:13:28.1368486+08:00",
+                        "private_bytes":  35139584,
+                        "private_mib":  33.511719,
+                        "working_set_bytes":  53919744,
+                        "working_set_mib":  51.421875,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35139584,
+                        "thread_count":  17,
+                        "handle_count":  315,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  21,
+                        "timestamp":  "2026-07-27T23:13:29.1537818+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  320,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  22,
+                        "timestamp":  "2026-07-27T23:13:30.1805004+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  320,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  23,
+                        "timestamp":  "2026-07-27T23:13:31.2022336+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  315,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  24,
+                        "timestamp":  "2026-07-27T23:13:32.2264112+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  315,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  25,
+                        "timestamp":  "2026-07-27T23:13:33.2487487+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  320,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  26,
+                        "timestamp":  "2026-07-27T23:13:34.2716047+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  320,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  27,
+                        "timestamp":  "2026-07-27T23:13:35.2919264+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  315,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  28,
+                        "timestamp":  "2026-07-27T23:13:36.3094168+08:00",
+                        "private_bytes":  35151872,
+                        "private_mib":  33.523438,
+                        "working_set_bytes":  53932032,
+                        "working_set_mib":  51.433594,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35151872,
+                        "thread_count":  17,
+                        "handle_count":  315,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  29,
+                        "timestamp":  "2026-07-27T23:13:37.3264137+08:00",
+                        "private_bytes":  35160064,
+                        "private_mib":  33.53125,
+                        "working_set_bytes":  53940224,
+                        "working_set_mib":  51.441406,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35160064,
+                        "thread_count":  17,
+                        "handle_count":  318,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    },
+                    {
+                        "sample":  30,
+                        "timestamp":  "2026-07-27T23:13:38.3425761+08:00",
+                        "private_bytes":  35160064,
+                        "private_mib":  33.53125,
+                        "working_set_bytes":  53940224,
+                        "working_set_mib":  51.441406,
+                        "virtual_bytes":  4507410432,
+                        "paged_bytes":  35160064,
+                        "thread_count":  17,
+                        "handle_count":  320,
+                        "gdi_objects":  25,
+                        "user_objects":  30
+                    }
+                ],
+    "stdout_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\sessions\\maestro-rust-migration-p2-desktop-20260727-021446\\runs\\20260727-009-debug\\work\\normal-release-30.stdout.log",
+    "stderr_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\sessions\\maestro-rust-migration-p2-desktop-20260727-021446\\runs\\20260727-009-debug\\work\\normal-release-30.stderr.log"
+}

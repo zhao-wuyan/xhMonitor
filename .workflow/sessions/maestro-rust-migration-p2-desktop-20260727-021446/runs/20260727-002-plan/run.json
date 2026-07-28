@@ -1,0 +1,380 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-002-plan",
+  "sequence": 2,
+  "parent_run_id": null,
+  "command": {
+    "name": "plan",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/plan.md",
+    "content_hash": "95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "resolved_prompt_hash": "95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "contract_hash": "20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-002-01",
+    "GATE-002-02",
+    "GATE-002-03",
+    "GATE-002-04",
+    "GATE-002-05",
+    "GATE-002-06",
+    "GATE-002-07",
+    "GATE-002-08",
+    "GATE-002-09",
+    "GATE-002-10",
+    "GATE-002-11",
+    "GATE-002-12",
+    "GATE-002-13",
+    "GATE-002-14",
+    "GATE-002-15",
+    "GATE-002-16"
+  ],
+  "output": {
+    "produces": [
+      "ART-002-001",
+      "ART-002-002",
+      "ART-002-003",
+      "ART-002-004",
+      "ART-002-005",
+      "ART-002-006",
+      "ART-002-007",
+      "ART-002-008",
+      "ART-002-009",
+      "ART-002-010",
+      "ART-002-011",
+      "ART-002-012",
+      "ART-002-013",
+      "ART-002-014",
+      "ART-002-015",
+      "ART-002-016",
+      "ART-002-017",
+      "ART-002-018",
+      "ART-002-019",
+      "ART-002-004",
+      "ART-002-003",
+      "ART-002-002",
+      "ART-002-001"
+    ],
+    "primary_artifact_id": null,
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260727-002-plan",
+    "command": "plan",
+    "verdict": "ready",
+    "summary": "14 个连续 task（G1=4 / G2=4 / G3=3 / G4=3，≤16 守卫）覆盖 P2 全部 54 条需求：xhm-desktop crate/workspace、 service-endpoints.json 发现、5 类 PushEvent SSE 客户端、Win32 原生壳（单实例/HWND/topmost/click-through/DPI/四边/拖拽/双窗/托盘/持久化）、 主悬浮窗核心 UI、任务栏 4 布局、设置/关于/更新检查/Toast、边界测试与真实 Windows/4K/内存验收； tray+Slint 与有机动画早期 go/no-go 门、winit-software 锁定、不迁移全局热键、不切 P3/不下载安装器。",
+    "constraints": [
+      {
+        "id": "C-P2-1",
+        "text": "沿用 P1 冻结契约：5 类 PushEvent、SSE /api/v1/events、默认 Service 端口 35181；禁止协议扩展或回归。",
+        "status": "locked"
+      },
+      {
+        "id": "C-P2-2",
+        "text": "Slint 后端固定 winit-software；spike NO-GO 只能阻塞下游并提交独立决策，不得自行切 Skia/wgpu/femtovg。",
+        "status": "locked"
+      },
+      {
+        "id": "C-P2-3",
+        "text": "tray 首选 tray-icon 0.24.1（官方 API：TrayIconBuilder、MenuEvent/TrayIconEvent::set_event_handler、EventLoopProxy 转发）；只有完整 NO-GO 记录后才回退 Shell_NotifyIcon，且不得并存。",
+        "status": "locked"
+      },
+      {
+        "id": "C-P2-4",
+        "text": "不迁移 RegisterHotKey/WM_HOTKEY/Ctrl+Alt+Shift+X；点击穿透仅由托盘菜单退出。",
+        "status": "locked"
+      },
+      {
+        "id": "C-P2-5",
+        "text": "P2 与现有 C# Desktop/Service 并行；不做 P3 cutover、端口切换、发布脚本或 installer 下载/启动。",
+        "status": "locked"
+      },
+      {
+        "id": "C-P2-6",
+        "text": "不修改 xhmonitor-web、XhMonitor.Desktop、xhm-service、xhm-core（仅 workspace 根依赖消费）。",
+        "status": "locked"
+      },
+      {
+        "id": "C-P2-7",
+        "text": "AdminMode/Startup/LAN/Firewall/System 只读禁用并显示“P3 启用”；只写既有 Appearance/DataCollection/非系统 Monitoring keys。",
+        "status": "deferred"
+      }
+    ],
+    "decisions": [
+      {
+        "id": "D-P2-1",
+        "text": "统一 8+6 planner 提案为 14 个连续 TASK（G1->G2->G3->G4 硬串行）。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-P2-2",
+        "text": "TASK-002 在 G1 名下持有 tray+Slint 共存 go/no-go spike，作为 TASK-008 托盘实现的前置依赖。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-P2-3",
+        "text": "TASK-009 在 G3 名下持有有机动画 go/no-go spike，作为 TASK-010/011/012 的前置依赖，并产出可复用 G3-owned 有机壳组件。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-P2-4",
+        "text": "每个 task 单一 goal_ref/execute_step_id；不可避免共享文件（root Cargo.toml/Cargo.lock、crate Cargo.toml/build.rs/lib.rs/main.rs、ui/shell.slint compile root）按依赖顺序串行解决，无并行写冲突。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-CLI-1",
+        "status": "accepted",
+        "text": "执行器绑定：G1→step-003、G2→step-004、G3→step-005、G4→step-006；TASK-002 tray+Slint spike 与 TASK-009 有机动画 spike 为 go/no-go 里程碑。"
+      }
+    ],
+    "concerns": [
+      "verify schema 使用更丰富的对象 {commands[], manual_scenarios[], expected}，语义完整但比 prepare 骨架 verify:[] 更宽；记录为非阻塞。",
+      "14 task 估算合计 765 分钟，多个 task 触 60 分钟上限；执行中如发现 slippage 需复核。",
+      "coverage_map 将 TASK-014 作为冒烟/质量参与的 evidence task，未在每个 task.requirement_refs 中重复全部需求 id；结构覆盖仍为 54/54 covered with evidence。",
+      "verify 对象比骨架更丰富，需在 execute 阶段按 commands/manual_scenarios/expected 校验。",
+      "总估算 765 min 偏乐观，多个 60min 任务需按实际进度调整。",
+      "coverage_map 以 evidence 参与覆盖，未在每个 task.requirement_refs 重复 requirement id。"
+    ],
+    "artifact_refs": [
+      "ART-002-001",
+      "ART-002-002",
+      "ART-002-003",
+      "ART-002-004",
+      "ART-002-005",
+      "ART-002-006",
+      "ART-002-007",
+      "ART-002-008",
+      "ART-002-009",
+      "ART-002-010",
+      "ART-002-011",
+      "ART-002-012",
+      "ART-002-013",
+      "ART-002-014",
+      "ART-002-015",
+      "ART-002-016",
+      "ART-002-017",
+      "ART-002-018",
+      "ART-002-019",
+      "ART-002-004",
+      "ART-002-003",
+      "ART-002-002",
+      "ART-002-001"
+    ],
+    "next": [
+      {
+        "command": "execute",
+        "reason": "plan ready",
+        "needs": [
+          "current-plan"
+        ]
+      }
+    ],
+    "details": {}
+  },
+  "started_at": "2026-07-27T10:55:29+08:00",
+  "completed_at": "2026-07-27T11:56:46+08:00",
+  "sealed_at": "2026-07-27T11:56:46+08:00",
+  "chain_step_id": "step-002-plan",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "findings",
+          "alias": "current-analysis",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        },
+        {
+          "kind": "blueprint",
+          "alias": "current-blueprint",
+          "required": false
+        },
+        {
+          "kind": "roadmap",
+          "alias": "current-roadmap",
+          "required": false
+        },
+        {
+          "kind": "plan",
+          "alias": "current-plan",
+          "required": false
+        },
+        {
+          "kind": "priors",
+          "alias": "session-priors",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "plan",
+          "primary": false,
+          "path": "outputs/plan.json",
+          "alias": "current-plan"
+        },
+        {
+          "kind": "plan-task",
+          "primary": false,
+          "path": "outputs/tasks/TASK-{NNN}.json"
+        },
+        {
+          "kind": "execution-waves",
+          "primary": false,
+          "path": "outputs/waves.json"
+        },
+        {
+          "kind": "dependency-graph",
+          "primary": false,
+          "path": "outputs/dependency-graph.json"
+        },
+        {
+          "kind": "collision-report",
+          "primary": false,
+          "path": "outputs/collision-report.json"
+        },
+        {
+          "kind": "plan-check",
+          "primary": false,
+          "path": "outputs/plan-check.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "context-collected",
+          "plan-generated",
+          "plan-checked",
+          "plan-confirmed"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-27T02:55:29.342Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[4].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[5].optional is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[5].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/plan.md",
+    "content_hash": "sha256:95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "resolved_prompt_hash": "sha256:95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "prepare_hash": "sha256:95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "workflow_hash": "sha256:97be0ee509700720c1fe4a6c17d829b4b86db6625fc07b51a39a9638b0c3c689",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_2902a003f9d7e2508abc9354",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-27T10:55:29+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 3,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "--session {session}"
+    ],
+    "consumes": [
+      "ART-001-001",
+      "ART-001-002"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REUSE",
+        "reason_codes": [
+          "REUSE_ELIGIBLE"
+        ],
+        "consumer": {
+          "kind": "findings",
+          "alias": "current-analysis",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-001-analyze",
+          "producer_run_hash": "sha256:0e6376c8a98e34c7743036d86f7f7d8c6d1c8496e6356adb476b6f740c75b2e1",
+          "producer_status": "sealed",
+          "artifact_id": "ART-001-001",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:cda9ec8ca64739f5cc6fb670dd9ba52ca6000884245d5ded6de63502b222975d",
+          "observed_artifact_hash": "sha256:cda9ec8ca64739f5cc6fb670dd9ba52ca6000884245d5ded6de63502b222975d",
+          "artifact_schema": "findings/1.0",
+          "artifact_registry_revision": 1,
+          "producer_contract_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+        },
+        "assessment_hash": "sha256:7eed3a218c66c39135624c300e29e519cacccce08cee12da5c265edd5354b2fb"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REUSE",
+        "reason_codes": [
+          "REUSE_ELIGIBLE"
+        ],
+        "consumer": {
+          "kind": "priors",
+          "alias": "session-priors",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-001-analyze",
+          "producer_run_hash": "sha256:0e6376c8a98e34c7743036d86f7f7d8c6d1c8496e6356adb476b6f740c75b2e1",
+          "producer_status": "sealed",
+          "artifact_id": "ART-001-002",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "observed_artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "artifact_schema": "priors/1.0",
+          "artifact_registry_revision": 1,
+          "producer_contract_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+        },
+        "assessment_hash": "sha256:7303376a5effcd789f971e4af8f3c6f9135a49476e976c44925614b6b68c837a"
+      }
+    ]
+  }
+}

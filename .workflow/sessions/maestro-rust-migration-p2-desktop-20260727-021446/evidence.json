@@ -1,0 +1,4403 @@
+{
+  "schema_version": "evidence/1.0",
+  "revision": 15,
+  "records": {
+    "EVD-001-001": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "consume-current-guidance",
+      "claim": "Resolve required guidance input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-01 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-002": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "consume-current-blueprint",
+      "claim": "Resolve required blueprint input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-003": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-004": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "produce-findings",
+      "claim": "Produce findings",
+      "outcome": "passed",
+      "rationale": "Gate GATE-001-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-005": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "produce-risk-matrix",
+      "claim": "Produce risk-matrix",
+      "outcome": "passed",
+      "rationale": "Gate GATE-001-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-006": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "produce-priors",
+      "claim": "Produce priors",
+      "outcome": "passed",
+      "rationale": "Gate GATE-001-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-007": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "exploration-done",
+      "claim": "exploration-done",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-008": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "discussion-round",
+      "claim": "discussion-round",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-009": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "scoring-complete",
+      "claim": "scoring-complete",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-09 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-001-010": {
+      "run_id": "20260727-001-analyze",
+      "command": "analyze",
+      "kind": "gate",
+      "point": "intent-covered",
+      "claim": "intent-covered",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-001-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-001-001",
+        "ART-001-002",
+        "ART-001-003",
+        "ART-001-001",
+        "ART-001-003",
+        "ART-001-002"
+      ],
+      "gate_refs": [
+        "GATE-001-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-001": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "decision",
+      "point": "D-P2-1",
+      "claim": "统一 8+6 planner 提案为 14 个连续 TASK（G1->G2->G3->G4 硬串行）。",
+      "outcome": "accepted",
+      "rationale": "统一 8+6 planner 提案为 14 个连续 TASK（G1->G2->G3->G4 硬串行）。",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-002-002": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "decision",
+      "point": "D-P2-2",
+      "claim": "TASK-002 在 G1 名下持有 tray+Slint 共存 go/no-go spike，作为 TASK-008 托盘实现的前置依赖。",
+      "outcome": "accepted",
+      "rationale": "TASK-002 在 G1 名下持有 tray+Slint 共存 go/no-go spike，作为 TASK-008 托盘实现的前置依赖。",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-002-003": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "decision",
+      "point": "D-P2-3",
+      "claim": "TASK-009 在 G3 名下持有有机动画 go/no-go spike，作为 TASK-010/011/012 的前置依赖，并产出可复用 G3-owned 有机壳组件。",
+      "outcome": "accepted",
+      "rationale": "TASK-009 在 G3 名下持有有机动画 go/no-go spike，作为 TASK-010/011/012 的前置依赖，并产出可复用 G3-owned 有机壳组件。",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-002-004": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "decision",
+      "point": "D-P2-4",
+      "claim": "每个 task 单一 goal_ref/execute_step_id；不可避免共享文件（root Cargo.toml/Cargo.lock、crate Cargo.toml/build.rs/lib.rs/main.rs、ui/shell.slint compile root）按依赖顺序串行解决，无并行写冲突。",
+      "outcome": "accepted",
+      "rationale": "每个 task 单一 goal_ref/execute_step_id；不可避免共享文件（root Cargo.toml/Cargo.lock、crate Cargo.toml/build.rs/lib.rs/main.rs、ui/shell.slint compile root）按依赖顺序串行解决，无并行写冲突。",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-002-005": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-analysis",
+      "claim": "Resolve required findings input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-006": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-007": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-blueprint",
+      "claim": "Resolve required blueprint input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-008": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-roadmap",
+      "claim": "Resolve required roadmap input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-009": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-05 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-010": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-011": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-plan",
+      "claim": "Produce plan",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-012": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-plan-task",
+      "claim": "Produce plan-task",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-013": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-execution-waves",
+      "claim": "Produce execution-waves",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-014": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-dependency-graph",
+      "claim": "Produce dependency-graph",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-10 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-015": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-collision-report",
+      "claim": "Produce collision-report",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-11 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-016": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-plan-check",
+      "claim": "Produce plan-check",
+      "outcome": "passed",
+      "rationale": "Gate GATE-002-12 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-12"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-017": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "context-collected",
+      "claim": "context-collected",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-13 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-13"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-018": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "plan-generated",
+      "claim": "plan-generated",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-14 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-14"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-019": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "plan-checked",
+      "claim": "plan-checked",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-15 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-15"
+      ],
+      "source_refs": []
+    },
+    "EVD-002-020": {
+      "run_id": "20260727-002-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "plan-confirmed",
+      "claim": "plan-confirmed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-002-16 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-002-001",
+        "ART-002-002",
+        "ART-002-003",
+        "ART-002-004",
+        "ART-002-005",
+        "ART-002-006",
+        "ART-002-007",
+        "ART-002-008",
+        "ART-002-009",
+        "ART-002-010",
+        "ART-002-011",
+        "ART-002-012",
+        "ART-002-013",
+        "ART-002-014",
+        "ART-002-015",
+        "ART-002-016",
+        "ART-002-017",
+        "ART-002-018",
+        "ART-002-019",
+        "ART-002-004",
+        "ART-002-003",
+        "ART-002-002",
+        "ART-002-001"
+      ],
+      "gate_refs": [
+        "GATE-002-16"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-001": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G1-1",
+      "claim": "Keep main.rs bootstrap-only and default the unset Slint backend to winit-software.",
+      "outcome": "accepted",
+      "rationale": "Keep main.rs bootstrap-only and default the unset Slint backend to winit-software.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-003-002": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G1-2",
+      "claim": "Derive realtime only from ApiBaseUrl plus /api/v1/events; consume exactly five xhm-core PushEvent variants.",
+      "outcome": "accepted",
+      "rationale": "Derive realtime only from ApiBaseUrl plus /api/v1/events; consume exactly five xhm-core PushEvent variants.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-003-003": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G1-3",
+      "claim": "Pin slint and slint-build to exact =1.12.1 for Rust 1.82 MSRV compatibility.",
+      "outcome": "accepted",
+      "rationale": "Pin slint and slint-build to exact =1.12.1 for Rust 1.82 MSRV compatibility.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-003-004": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G1-4",
+      "claim": "Use Shell_NotifyIconW as the sole active tray path; tray-icon 0.24.1 evaluated first but rejected (no balloon/notification-click API).",
+      "outcome": "accepted",
+      "rationale": "Use Shell_NotifyIconW as the sole active tray path; tray-icon 0.24.1 evaluated first but rejected (no balloon/notification-click API).",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-003-005": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G1-5",
+      "claim": "SSE supervisor owns subscription via watch channel; mode/pin changes cancel and recreate the request; retry budget resets after established connection.",
+      "outcome": "accepted",
+      "rationale": "SSE supervisor owns subscription via watch channel; mode/pin changes cancel and recreate the request; retry budget resets after established connection.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-003-006": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G1-6",
+      "claim": "G1 show/hide tray command toggles Slint connected property as observable status without hiding the winit window (which would exit the event loop); G2/G3 will own real Win32 visibility.",
+      "outcome": "accepted",
+      "rationale": "G1 show/hide tray command toggles Slint connected property as observable status without hiding the winit window (which would exit the event loop); G2/G3 will own real Win32 visibility.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-003-007": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-003-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-008": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-003-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-009": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-fix-directions",
+      "claim": "Resolve required fix-directions input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-003-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-010": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-003-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-011": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-003-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-012": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-execution",
+      "claim": "Produce execution",
+      "outcome": "passed",
+      "rationale": "Gate GATE-003-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-013": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-task-results",
+      "claim": "Produce task-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-003-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-014": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-self-check",
+      "claim": "Produce self-check",
+      "outcome": "passed",
+      "rationale": "Gate GATE-003-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-015": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-change-manifest",
+      "claim": "Produce change-manifest",
+      "outcome": "passed",
+      "rationale": "Gate GATE-003-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-016": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "execution-complete",
+      "claim": "execution-complete",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-003-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-003-017": {
+      "run_id": "20260727-003-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "self-check-passed",
+      "claim": "self-check-passed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-003-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-003-001",
+        "ART-003-002",
+        "ART-003-003",
+        "ART-003-004",
+        "ART-003-005",
+        "ART-003-002",
+        "ART-003-005",
+        "ART-003-003",
+        "ART-003-001"
+      ],
+      "gate_refs": [
+        "GATE-003-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-001": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G2-11",
+      "claim": "Remove incomplete drag/snap callbacks and defer correct production wiring to G3.",
+      "outcome": "accepted",
+      "rationale": "Remove incomplete drag/snap callbacks and defer correct production wiring to G3.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-004-002": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "decision",
+      "point": "D-G2-12",
+      "claim": "Own controller, guard, timers, and SSE thread resources through TrayRuntime.",
+      "outcome": "accepted",
+      "rationale": "Own controller, guard, timers, and SSE thread resources through TrayRuntime.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-004-003": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-004-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-004": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-004-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-005": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-fix-directions",
+      "claim": "Resolve required fix-directions input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-004-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-006": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-004-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-007": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-004-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-008": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-execution",
+      "claim": "Produce execution",
+      "outcome": "passed",
+      "rationale": "Gate GATE-004-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-009": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-task-results",
+      "claim": "Produce task-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-004-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-010": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-self-check",
+      "claim": "Produce self-check",
+      "outcome": "passed",
+      "rationale": "Gate GATE-004-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-011": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-change-manifest",
+      "claim": "Produce change-manifest",
+      "outcome": "passed",
+      "rationale": "Gate GATE-004-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-012": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "execution-complete",
+      "claim": "execution-complete",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-004-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-004-013": {
+      "run_id": "20260727-004-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "self-check-passed",
+      "claim": "self-check-passed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-004-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-004-001",
+        "ART-004-002",
+        "ART-004-003",
+        "ART-004-004",
+        "ART-004-005",
+        "ART-004-002",
+        "ART-004-005",
+        "ART-004-004",
+        "ART-004-001"
+      ],
+      "gate_refs": [
+        "GATE-004-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-001": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-005-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-002": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-005-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-003": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-fix-directions",
+      "claim": "Resolve required fix-directions input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-005-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-004": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-005-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-005": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-005-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-006": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-execution",
+      "claim": "Produce execution",
+      "outcome": "passed",
+      "rationale": "Gate GATE-005-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-007": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-task-results",
+      "claim": "Produce task-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-005-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-008": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-self-check",
+      "claim": "Produce self-check",
+      "outcome": "passed",
+      "rationale": "Gate GATE-005-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-009": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-change-manifest",
+      "claim": "Produce change-manifest",
+      "outcome": "passed",
+      "rationale": "Gate GATE-005-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-010": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "execution-complete",
+      "claim": "execution-complete",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-005-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-005-011": {
+      "run_id": "20260727-005-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "self-check-passed",
+      "claim": "self-check-passed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-005-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-005-001",
+        "ART-005-002",
+        "ART-005-003",
+        "ART-005-004",
+        "ART-005-005",
+        "ART-005-002",
+        "ART-005-005",
+        "ART-005-004",
+        "ART-005-001"
+      ],
+      "gate_refs": [
+        "GATE-005-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-001": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-006-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-002": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-006-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-003": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-fix-directions",
+      "claim": "Resolve required fix-directions input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-006-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-004": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-006-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-005": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-006-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-006": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-execution",
+      "claim": "Produce execution",
+      "outcome": "passed",
+      "rationale": "Gate GATE-006-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-007": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-task-results",
+      "claim": "Produce task-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-006-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-008": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-self-check",
+      "claim": "Produce self-check",
+      "outcome": "passed",
+      "rationale": "Gate GATE-006-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-009": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-change-manifest",
+      "claim": "Produce change-manifest",
+      "outcome": "passed",
+      "rationale": "Gate GATE-006-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-010": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "execution-complete",
+      "claim": "execution-complete",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-006-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-006-011": {
+      "run_id": "20260727-006-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "self-check-passed",
+      "claim": "self-check-passed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-006-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-006-001",
+        "ART-006-002",
+        "ART-006-003",
+        "ART-006-004",
+        "ART-006-005",
+        "ART-006-006",
+        "ART-006-002",
+        "ART-006-006",
+        "ART-006-005",
+        "ART-006-001",
+        "ART-006-003"
+      ],
+      "gate_refs": [
+        "GATE-006-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-001": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-analysis",
+      "claim": "Resolve required findings input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-007-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-002": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-003": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-blueprint",
+      "claim": "Resolve required blueprint input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-004": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-roadmap",
+      "claim": "Resolve required roadmap input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-005": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-007-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-006": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-007-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-007": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-plan",
+      "claim": "Produce plan",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-008": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-plan-task",
+      "claim": "Produce plan-task",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-009": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-execution-waves",
+      "claim": "Produce execution-waves",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-09 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-010": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-dependency-graph",
+      "claim": "Produce dependency-graph",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-011": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-collision-report",
+      "claim": "Produce collision-report",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-012": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "produce-plan-check",
+      "claim": "Produce plan-check",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-12 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-12"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-013": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "context-collected",
+      "claim": "context-collected",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-13 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-13"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-014": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "plan-generated",
+      "claim": "plan-generated",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-14 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-14"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-015": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "plan-checked",
+      "claim": "plan-checked",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-15 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-15"
+      ],
+      "source_refs": []
+    },
+    "EVD-007-016": {
+      "run_id": "20260727-007-plan",
+      "command": "plan",
+      "kind": "gate",
+      "point": "plan-confirmed",
+      "claim": "plan-confirmed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-007-16 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-007-16"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-001": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-008-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-002": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-008-02 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-003": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "produce-verification",
+      "claim": "Produce verification",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-008-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-004": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "produce-requirement-coverage",
+      "claim": "Produce requirement-coverage",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-008-04 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-005": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "produce-antipattern-report",
+      "claim": "Produce antipattern-report",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-008-05 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-006": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "goal-backward-verified",
+      "claim": "goal-backward-verified",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-008-06 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-008-007": {
+      "run_id": "20260727-008-verify",
+      "command": "verify",
+      "kind": "gate",
+      "point": "nyquist-covered",
+      "claim": "nyquist-covered",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-008-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-008-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-001": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "decision",
+      "point": "D-DEBUG-1",
+      "claim": "首个 bounded attempt 仅收窄 Tokio features，并把专用 SSE 线程内 runtime 改为 current-thread。",
+      "outcome": "proposed",
+      "rationale": "首个 bounded attempt 仅收窄 Tokio features，并把专用 SSE 线程内 runtime 改为 current-thread。",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-009-002": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "decision",
+      "point": "D-DEBUG-2",
+      "claim": "Locked click、pinned overflow、unsnapped work-area clamp 分别作为低风险 G3 repair direction。",
+      "outcome": "proposed",
+      "rationale": "Locked click、pinned overflow、unsnapped work-area clamp 分别作为低风险 G3 repair direction。",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-009-003": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "consume-latest-test",
+      "claim": "Resolve required test-results input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-009-01 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-004": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-009-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-005": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-009-03 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-006": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "produce-diagnosis",
+      "claim": "Produce diagnosis",
+      "outcome": "passed",
+      "rationale": "Gate GATE-009-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-007": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "produce-hypotheses",
+      "claim": "Produce hypotheses",
+      "outcome": "passed",
+      "rationale": "Gate GATE-009-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-008": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "produce-reproduction",
+      "claim": "Produce reproduction",
+      "outcome": "passed",
+      "rationale": "Gate GATE-009-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-009": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "produce-fix-directions",
+      "claim": "Produce fix-directions",
+      "outcome": "passed",
+      "rationale": "Gate GATE-009-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-010": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "hypothesis-tested",
+      "claim": "hypothesis-tested",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-009-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-009-011": {
+      "run_id": "20260727-009-debug",
+      "command": "debug",
+      "kind": "gate",
+      "point": "evidence-grounded",
+      "claim": "evidence-grounded",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-009-09 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-009-001",
+        "ART-009-002",
+        "ART-009-003",
+        "ART-009-004",
+        "ART-009-005",
+        "ART-009-006"
+      ],
+      "gate_refs": [
+        "GATE-009-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-001": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-002": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-010-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-003": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-fix-directions",
+      "claim": "Resolve required fix-directions input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-010-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-004": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-005": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "consume-session-priors",
+      "claim": "Resolve required priors input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-006": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-execution",
+      "claim": "Produce execution",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-007": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-task-results",
+      "claim": "Produce task-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-008": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-self-check",
+      "claim": "Produce self-check",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-009": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "produce-change-manifest",
+      "claim": "Produce change-manifest",
+      "outcome": "passed",
+      "rationale": "Gate GATE-010-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-010": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "execution-complete",
+      "claim": "execution-complete",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-010-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-010-011": {
+      "run_id": "20260727-010-execute",
+      "command": "execute",
+      "kind": "gate",
+      "point": "self-check-passed",
+      "claim": "self-check-passed",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-010-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-010-001",
+        "ART-010-002",
+        "ART-010-003",
+        "ART-010-004",
+        "ART-010-005",
+        "ART-010-006"
+      ],
+      "gate_refs": [
+        "GATE-010-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-001": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "decision",
+      "point": "D-AT-1",
+      "claim": "source_route=gap (no blueprint package; scenarios from G3 parity gaps + memory gate).",
+      "outcome": "accepted",
+      "rationale": "source_route=gap (no blueprint package; scenarios from G3 parity gaps + memory gate).",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-011-002": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "decision",
+      "point": "D-AT-2",
+      "claim": "L1 coverage = reference existing passing parity tests, re-confirmed by L0 cargo test convergence check.",
+      "outcome": "accepted",
+      "rationale": "L1 coverage = reference existing passing parity tests, re-confirmed by L0 cargo test convergence check.",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-011-003": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "decision",
+      "point": "D-AT-3",
+      "claim": "L2 coverage = read-only reference to sealed memory-samples-post-repair.json + G3 SC-10.",
+      "outcome": "accepted",
+      "rationale": "L2 coverage = read-only reference to sealed memory-samples-post-repair.json + G3 SC-10.",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-011-004": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-latest-verification",
+      "claim": "Resolve required verification input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-01 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-005": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-011-02 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-006": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-007": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-011-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-008": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-auto-test-report",
+      "claim": "Produce auto-test-report",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-05 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-009": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-test-plan",
+      "claim": "Produce test-plan",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-06 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-010": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-auto-test-state",
+      "claim": "Produce auto-test-state",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-011": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-reflection-log",
+      "claim": "Produce reflection-log",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-012": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-traceability",
+      "claim": "Produce traceability",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-09 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-013": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "tests-generated",
+      "claim": "tests-generated",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-011-014": {
+      "run_id": "20260728-011-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "execution-converged",
+      "claim": "execution-converged",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-011-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-011-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-001": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "decision",
+      "point": "D-RV-1",
+      "claim": "Verdict=ready_with_concerns: 1 medium finding (spec-doc contradiction), 0 critical, 0 high.",
+      "outcome": "accepted",
+      "rationale": "Verdict=ready_with_concerns: 1 medium finding (spec-doc contradiction), 0 critical, 0 high.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-012-002": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "decision",
+      "point": "D-RV-2",
+      "claim": "Memory gate amendment honest: SC-09 FAIL (<10 MiB), SC-10 PASS (<40 MiB), no suppression, no fabrication.",
+      "outcome": "accepted",
+      "rationale": "Memory gate amendment honest: SC-09 FAIL (<10 MiB), SC-10 PASS (<40 MiB), no suppression, no fabrication.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-012-003": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "decision",
+      "point": "D-RV-3",
+      "claim": "G3 parity all PASS: Locked toggle, pinned overflow, unsnapped clamp — verified against C# source.",
+      "outcome": "accepted",
+      "rationale": "G3 parity all PASS: Locked toggle, pinned overflow, unsnapped clamp — verified against C# source.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-012-004": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "decision",
+      "point": "D-RV-4",
+      "claim": "Antipattern check clean: cargo clippy -p xhm-desktop --all-targets -- -D warnings exit 0.",
+      "outcome": "accepted",
+      "rationale": "Antipattern check clean: cargo clippy -p xhm-desktop --all-targets -- -D warnings exit 0.",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-012-005": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-012-01 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-006": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "consume-latest-verification",
+      "claim": "Resolve required verification input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-012-02 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-007": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "consume-prior-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-012-03 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-008": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "produce-review-findings",
+      "claim": "Produce review-findings",
+      "outcome": "passed",
+      "rationale": "Gate GATE-012-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-009": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "produce-spec-conflicts",
+      "claim": "Produce spec-conflicts",
+      "outcome": "passed",
+      "rationale": "Gate GATE-012-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-010": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "produce-issue-candidates",
+      "claim": "Produce issue-candidates",
+      "outcome": "passed",
+      "rationale": "Gate GATE-012-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-011": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "dimension-coverage",
+      "claim": "dimension-coverage",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-012-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-012-012": {
+      "run_id": "20260728-012-review",
+      "command": "review",
+      "kind": "gate",
+      "point": "severity-triaged",
+      "claim": "severity-triaged",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-012-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-012-001",
+        "ART-012-002",
+        "ART-012-003",
+        "ART-012-004",
+        "ART-012-005"
+      ],
+      "gate_refs": [
+        "GATE-012-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-001": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "decision",
+      "point": "D-AT13-1",
+      "claim": "L0 is the freshly executed cargo test baseline (128 passed).",
+      "outcome": "accepted",
+      "rationale": "L0 is the freshly executed cargo test baseline (128 passed).",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-013-002": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "decision",
+      "point": "D-AT13-2",
+      "claim": "COR-001 is resolved by the CHG-001 documentation amendment and needs no Rust test.",
+      "outcome": "accepted",
+      "rationale": "COR-001 is resolved by the CHG-001 documentation amendment and needs no Rust test.",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-013-003": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "decision",
+      "point": "D-AT13-3",
+      "claim": "PRF-001 functional regression risk is covered by existing SSE tests; memory reduction remains unproven.",
+      "outcome": "accepted",
+      "rationale": "PRF-001 functional regression risk is covered by existing SSE tests; memory reduction remains unproven.",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [],
+      "source_refs": [
+        "report.md"
+      ]
+    },
+    "EVD-013-004": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-latest-verification",
+      "claim": "Resolve required verification input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-01 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-005": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-013-02 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-006": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-013-03 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-007": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-013-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-008": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-auto-test-report",
+      "claim": "Produce auto-test-report",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-05 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-009": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-test-plan",
+      "claim": "Produce test-plan",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-06 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-010": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-auto-test-state",
+      "claim": "Produce auto-test-state",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-011": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-reflection-log",
+      "claim": "Produce reflection-log",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-012": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "produce-traceability",
+      "claim": "Produce traceability",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-09 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-013": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "tests-generated",
+      "claim": "tests-generated",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-013-014": {
+      "run_id": "20260728-013-auto-test",
+      "command": "auto-test",
+      "kind": "gate",
+      "point": "execution-converged",
+      "claim": "execution-converged",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-013-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [],
+      "gate_refs": [
+        "GATE-013-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-001": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-latest-verification",
+      "claim": "Resolve required verification input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-014-01 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-002": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-02 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-003": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-03 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-004": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-005": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-006": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-test-plan",
+      "claim": "Produce test-plan",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-06 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-007": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-test-results",
+      "claim": "Produce test-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-07 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-008": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-acceptance",
+      "claim": "Produce acceptance",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-08 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-009": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-coverage",
+      "claim": "Produce coverage",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-09 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-010": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-uat-log",
+      "claim": "Produce uat-log",
+      "outcome": "passed",
+      "rationale": "Gate GATE-014-10 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-011": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-issue-candidates",
+      "claim": "Produce issue-candidates",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-014-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-012": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-e2e-results",
+      "claim": "Produce e2e-results",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-014-12 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-12"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-013": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "coverage-met",
+      "claim": "coverage-met",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-014-13 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-13"
+      ],
+      "source_refs": []
+    },
+    "EVD-014-014": {
+      "run_id": "20260728-014-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "pass-rate-met",
+      "claim": "pass-rate-met",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-014-14 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-014-001",
+        "ART-014-002",
+        "ART-014-003",
+        "ART-014-004",
+        "ART-014-005",
+        "ART-014-006"
+      ],
+      "gate_refs": [
+        "GATE-014-14"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-001": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-latest-verification",
+      "claim": "Resolve required verification input",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-01 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-01"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-002": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-current-plan",
+      "claim": "Resolve required plan input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-015-02 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-02"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-003": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-current-execution",
+      "claim": "Resolve required execution input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-015-03 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-03"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-004": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-latest-review",
+      "claim": "Resolve required review-findings input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-015-04 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-04"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-005": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "consume-latest-debug",
+      "claim": "Resolve required diagnosis input",
+      "outcome": "passed",
+      "rationale": "Gate GATE-015-05 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-05"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-006": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-test-plan",
+      "claim": "Produce test-plan",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-06 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-06"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-007": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-test-results",
+      "claim": "Produce test-results",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-07 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-07"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-008": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-acceptance",
+      "claim": "Produce acceptance",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-08 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-08"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-009": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-coverage",
+      "claim": "Produce coverage",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-09 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-09"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-010": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-uat-log",
+      "claim": "Produce uat-log",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-10 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-10"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-011": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-issue-candidates",
+      "claim": "Produce issue-candidates",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-11 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-11"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-012": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "produce-e2e-results",
+      "claim": "Produce e2e-results",
+      "outcome": "passed",
+      "rationale": "Gate GATE-015-12 evaluated as passed",
+      "status": "accepted",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-12"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-013": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "coverage-met",
+      "claim": "coverage-met",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-13 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-13"
+      ],
+      "source_refs": []
+    },
+    "EVD-015-014": {
+      "run_id": "20260728-015-test",
+      "command": "test",
+      "kind": "gate",
+      "point": "pass-rate-met",
+      "claim": "pass-rate-met",
+      "outcome": "skipped",
+      "rationale": "Gate GATE-015-14 evaluated as skipped",
+      "status": "proposed",
+      "artifact_refs": [
+        "ART-015-001",
+        "ART-015-002",
+        "ART-015-003"
+      ],
+      "gate_refs": [
+        "GATE-015-14"
+      ],
+      "source_refs": []
+    }
+  }
+}

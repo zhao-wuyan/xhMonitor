@@ -1,0 +1,20 @@
+{
+  "schema_version": "antipattern-report/1.0",
+  "run_id": "20260728-012-review",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "tool": "cargo clippy",
+  "command": "cargo clippy -p xhm-desktop --all-targets -- -D warnings",
+  "exit_code": 0,
+  "status": "clean",
+  "warnings": 0,
+  "errors": 0,
+  "checked_at": "2026-07-28T10:03:00+08:00",
+  "evidence": "Re-verified during review: exit code 0, no output (clean). Run 010 self-check SC-02 corroborates: 'Finished dev profile in 8.08s; clean'. No anti-patterns detected across all 5 changed files and all targets. No unsafe code added. No hardcoded secrets. No suppression mechanisms (skip/ignore/allow). Saturating arithmetic prevents integer overflow in clamp_rect_to_work_area.",
+  "files_checked": [
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/src/lib.rs",
+    "xhm-desktop/src/ui/floating_window.rs",
+    "xhm-desktop/src/ui/floating_interactions.rs",
+    "xhm-desktop/ui/floating_window.slint"
+  ]
+}

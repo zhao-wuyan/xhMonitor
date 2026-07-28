@@ -1,0 +1,99 @@
+{
+  "session_id": "maestro-20260725-plan-rust-migration-20260726-051006",
+  "intent": "xhMonitor Rust 迁移设计文档与分阶段路线图",
+  "status": "sealed",
+  "identity_revision": 2,
+  "activity_revision": 1,
+  "active_run_id": null,
+  "latest_completed_run_id": null,
+  "boundary_contract": {
+    "in_scope": [],
+    "out_of_scope": [],
+    "constraints": [],
+    "definition_of_done": ""
+  },
+  "orchestration": {
+    "engine": "manual",
+    "quality_mode": "standard",
+    "auto_mode": false,
+    "chain": [
+      {
+        "step_id": "step-000-analyze",
+        "command": "analyze",
+        "status": "pending",
+        "run_id": null,
+        "inserted_by": "build",
+        "decision_ref": null,
+        "retry": {
+          "count": 0,
+          "max": 2
+        }
+      },
+      {
+        "step_id": "step-001-plan",
+        "command": "plan",
+        "status": "pending",
+        "run_id": null,
+        "inserted_by": "build",
+        "decision_ref": null,
+        "retry": {
+          "count": 0,
+          "max": 2
+        }
+      },
+      {
+        "step_id": "step-002-harvest",
+        "command": "harvest",
+        "status": "pending",
+        "run_id": null,
+        "inserted_by": "build",
+        "decision_ref": null,
+        "retry": {
+          "count": 0,
+          "max": 2
+        }
+      }
+    ],
+    "decision_points": [],
+    "position": null,
+    "decomposition": null,
+    "lease": null,
+    "executor": null
+  },
+  "lifecycle": {
+    "sealed_at": "2026-07-26T13:12:50+08:00",
+    "seal_summary": "跳过：用户选择直接产出文档，绕过 maestro session 协议",
+    "promoted_spec_ids": [],
+    "promoted_knowhow_ids": [],
+    "forked_from": null
+  },
+  "refs": {
+    "gates": "gates.json",
+    "artifacts": "artifacts.json",
+    "evidence": "evidence.json"
+  },
+  "intent_identity": {
+    "schema_version": "intent-identity/1.0",
+    "normalization": "NFKC+unicode-lower+whitespace-collapse/1",
+    "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+    "command": "session",
+    "verbatim": "xhMonitor Rust 迁移设计文档与分阶段路线图",
+    "normalized": "xhmonitor rust 迁移设计文档与分阶段路线图",
+    "normalized_length": 28,
+    "normalized_hash": "sha256:eed41a6328840bdc89f3e8e2a821793a684363c56cc43550322db37937408ba9",
+    "revision": 1,
+    "source": "persisted",
+    "backfill_status": "native",
+    "empty": false
+  },
+  "provenance": {
+    "source": "native",
+    "forked_from": null,
+    "imported_from": [],
+    "created_by": "session-store"
+  },
+  "requests": [],
+  "ralph_authority": null,
+  "schema_version": "session/1.3",
+  "topic_identity": null
+}

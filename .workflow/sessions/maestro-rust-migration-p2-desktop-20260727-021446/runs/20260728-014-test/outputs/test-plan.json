@@ -1,0 +1,39 @@
+{
+  "schema_version": "test-plan/1.0",
+  "target": "xhm-desktop",
+  "generated_at": "2026-07-28T10:15:04+08:00",
+  "tests": [
+    {
+      "id": "T-001",
+      "name": "xhm-desktop Cargo test suite",
+      "category": "unit",
+      "expected": "cargo test -p xhm-desktop completes successfully with all 128 tests passing and 0 failures",
+      "requirement_ref": "P2 xhm-desktop regression baseline",
+      "source": "current-execution"
+    },
+    {
+      "id": "T-002",
+      "name": "Review finding regression coverage",
+      "category": "integration",
+      "expected": "tests covering the reviewed desktop parity and service-client paths remain green",
+      "requirement_ref": "latest-review",
+      "source": "review_finding"
+    },
+    {
+      "id": "T-003",
+      "name": "Diagnosed desktop regression coverage",
+      "category": "integration",
+      "expected": "tests covering the diagnosed desktop behavior remain green",
+      "requirement_ref": "latest-debug",
+      "source": "debug_root_cause"
+    }
+  ],
+  "coverage": {
+    "requirements_mapped": [
+      "P2 xhm-desktop regression baseline",
+      "latest-review",
+      "latest-debug"
+    ],
+    "requirements_unmapped": []
+  }
+}

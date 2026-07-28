@@ -1,0 +1,6 @@
+{
+  "ServiceEndpoints": {
+    "ApiBaseUrl": "http://127.0.0.1:45281",
+    "SignalRUrl": "http://127.0.0.1:45281/hubs/metrics"
+  }
+}

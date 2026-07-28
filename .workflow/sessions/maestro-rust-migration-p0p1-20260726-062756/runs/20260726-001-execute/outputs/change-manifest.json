@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "changes": [
+    { "path": "Cargo.toml", "action": "added", "detail": "workspace 根清单：members / workspace.package / workspace.dependencies / release profile" },
+    { "path": ".gitignore", "action": "modified", "detail": "追加 Rust target/ 忽略规则" },
+    { "path": "xhm-core/Cargo.toml", "action": "added", "detail": "crate 清单，仅依赖 serde / serde_json / thiserror / chrono" },
+    { "path": "xhm-core/src/lib.rs", "action": "added", "detail": "crate 根，导出 error / models / time / traits / wire" },
+    { "path": "xhm-core/src/error.rs", "action": "added", "detail": "CoreError 领域错误枚举 + Result 别名" },
+    { "path": "xhm-core/src/models.rs", "action": "added", "detail": "持久化实体 + REST 契约 + Widget 双表示 + LHM IPC 类型" },
+    { "path": "xhm-core/src/wire.rs", "action": "added", "detail": "5 个 SignalR 事件载荷、订阅模式解析、pinned 归一化、lite 子集选择、PushEvent 总线枚举" },
+    { "path": "xhm-core/src/time.rs", "action": "added", "detail": ".NET 兼容的三种时间格式与解析" },
+    { "path": "xhm-core/src/traits.rs", "action": "added", "detail": "Clock / LhmReader / RyzenAdjClient / MetricStore 边界 + 内存 mock" },
+    { "path": "lhm-bridge/", "action": "moved", "from": "poc/lhm-bridge/", "detail": "git mv 提升为正式目录，清理 bin/obj/.artifacts" },
+    { "path": "lhm-bridge/Program.cs", "action": "modified", "detail": "修正管理员权限检测；新增 banner / --require-admin / --interval；优雅退出覆盖 SIGINT/SIGTERM/SIGHUP" }
+  ],
+  "summary": {
+    "added": 8,
+    "modified": 2,
+    "moved": 1,
+    "deleted": 0
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "_meta": {
+    "kind": "issue-candidates",
+    "schema": "issue-candidates/1.0",
+    "role": "evidence"
+  },
+  "candidates": [],
+  "note": "All review findings were fixed and re-verified in the same review cycle."
+}

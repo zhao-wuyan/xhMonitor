@@ -1,0 +1,277 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-010-execute",
+  "sequence": 10,
+  "parent_run_id": null,
+  "command": {
+    "name": "execute",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/execute.md",
+    "content_hash": "482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "resolved_prompt_hash": "482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "contract_hash": "2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-010-01",
+    "GATE-010-02",
+    "GATE-010-03",
+    "GATE-010-04",
+    "GATE-010-05",
+    "GATE-010-06",
+    "GATE-010-07",
+    "GATE-010-08",
+    "GATE-010-09",
+    "GATE-010-10",
+    "GATE-010-11"
+  ],
+  "output": {
+    "produces": [
+      "ART-010-001",
+      "ART-010-002",
+      "ART-010-003",
+      "ART-010-004",
+      "ART-010-005",
+      "ART-010-006"
+    ],
+    "primary_artifact_id": "ART-010-002",
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260727-010-execute",
+    "command": "execute",
+    "verdict": "ready",
+    "summary": "Post-execute repair: 3 G3 parity fixes (Locked->Expanded, pinned capped ListView, unsnapped work-area clamp) implemented with tests; bounded Tokio optimization attempted and did not reduce memory. 128 tests pass, clippy clean, release builds. Normal release 33.66 MiB and UI_SMOKE 37.04 MiB both meet user-approved < 40 MiB fallback; original < 10 MiB gate remains unmet.",
+    "constraints": [],
+    "decisions": [],
+    "concerns": [
+      "completed with concerns"
+    ],
+    "artifact_refs": [
+      "ART-010-001",
+      "ART-010-002",
+      "ART-010-003",
+      "ART-010-004",
+      "ART-010-005",
+      "ART-010-006"
+    ],
+    "next": [],
+    "details": {}
+  },
+  "started_at": "2026-07-27T23:40:38+08:00",
+  "completed_at": "2026-07-28T00:01:27+08:00",
+  "sealed_at": "2026-07-28T00:01:27+08:00",
+  "chain_step_id": "step-007-execute",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "plan",
+          "alias": "current-plan",
+          "required": false
+        },
+        {
+          "kind": "review-findings",
+          "alias": "latest-review",
+          "required": false
+        },
+        {
+          "kind": "fix-directions",
+          "alias": "latest-fix-directions",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        },
+        {
+          "kind": "priors",
+          "alias": "session-priors",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "execution",
+          "primary": false,
+          "path": "outputs/execution.json",
+          "alias": "current-execution"
+        },
+        {
+          "kind": "task-results",
+          "primary": false,
+          "path": "outputs/task-results.json"
+        },
+        {
+          "kind": "self-check",
+          "primary": false,
+          "path": "outputs/self-check.json"
+        },
+        {
+          "kind": "change-manifest",
+          "primary": false,
+          "path": "outputs/change-manifest.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "execution-complete",
+          "self-check-passed"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-27T15:40:38.586Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/execute.md",
+    "content_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "resolved_prompt_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "prepare_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "workflow_hash": "sha256:a07b36e4da5cdb979fd6ebddbe650d1180c7fcaf6c8ee86462bb05aeb5595211",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_46b0088ded193908fc4a0c84",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-27T23:40:38+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 32,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "--session {session}"
+    ],
+    "consumes": [
+      "ART-001-002",
+      "ART-002-004",
+      "ART-009-001"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "plan",
+          "alias": "current-plan",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-002-plan",
+          "producer_run_hash": "sha256:e79170dad7557c6fe35f6697c229ab4ef632c6838eefec78168fd2a1ae1a7b2d",
+          "producer_status": "sealed",
+          "artifact_id": "ART-002-004",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "observed_artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "artifact_schema": "plan/1.0",
+          "artifact_registry_revision": 9,
+          "producer_contract_hash": "sha256:20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41"
+        },
+        "assessment_hash": "sha256:614cef5042bbb307d6e6c4979b40d4a5074707729f2c480701fbeb6554dfcfdb"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-009-debug",
+          "producer_run_hash": "sha256:dd6445bda4e60feffd825acc55d3b2f5bf5b963896b4f3a29b9e4d2d27eba586",
+          "producer_status": "sealed",
+          "artifact_id": "ART-009-001",
+          "artifact_role": "attachment",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+          "observed_artifact_hash": "sha256:c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+          "artifact_schema": "diagnosis/1.0",
+          "artifact_registry_revision": 9,
+          "producer_contract_hash": "sha256:fd2e9a8f41463fb30c094dcb1267b71880215e0e352de7edf540ec9d8ec34ed4"
+        },
+        "assessment_hash": "sha256:6ef569e281daf7acb48bed32f0e891a45f49f98ebd31f4e12e796cfd2409b472"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REUSE",
+        "reason_codes": [
+          "REUSE_ELIGIBLE"
+        ],
+        "consumer": {
+          "kind": "priors",
+          "alias": "session-priors",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-001-analyze",
+          "producer_run_hash": "sha256:0e6376c8a98e34c7743036d86f7f7d8c6d1c8496e6356adb476b6f740c75b2e1",
+          "producer_status": "sealed",
+          "artifact_id": "ART-001-002",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "observed_artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "artifact_schema": "priors/1.0",
+          "artifact_registry_revision": 9,
+          "producer_contract_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+        },
+        "assessment_hash": "sha256:ab2a8e425f465471a04eee99c623892b24243eed602c344fb4edc7aa1a3c8641"
+      }
+    ]
+  }
+}

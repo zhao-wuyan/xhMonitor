@@ -1,0 +1,116 @@
+{
+  "schema_version": "fix-directions/1.0",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-009-debug",
+  "completed_at": "2026-07-27T23:27:44+08:00",
+  "status": "proposed",
+  "scope": "Directions only; no product source or Cargo files changed in this Run.",
+  "directions": [
+    {
+      "id": "FD-MEM-01",
+      "priority": 1,
+      "risk": "low-to-medium",
+      "title": "Bound Tokio to the dedicated SSE thread's actual workload",
+      "root_cause_ref": "H3",
+      "change_direction": [
+        "In the workspace normal dependency, replace tokio features=[\"full\"] with the direct xhm-desktop requirement set rt/sync/time/macros. Preserve transitive reqwest networking features selected by reqwest itself.",
+        "Inside the existing xhm-desktop-sse dedicated std::thread, replace tokio::runtime::Builder::new_multi_thread().worker_threads(2) with Builder::new_current_thread().enable_all().",
+        "Do not remove or change Slint accessibility in this first attempt. Do not merge renderer/window lifecycle changes into the same measurement."
+      ],
+      "affected_files": [
+        "Cargo.toml:16",
+        "xhm-desktop/src/lib.rs:397"
+      ],
+      "behavior_to_preserve": [
+        "Two independent SSE subscriptions remain live.",
+        "Floating resubscribe cancels and recreates only its active request.",
+        "Taskbar stream remains independent.",
+        "Retry, cancellation, bounded channel backpressure, config probe, tray, and Slint event loop behavior remain unchanged.",
+        "Accessibility remains enabled."
+      ],
+      "expected_impact": {
+        "measured_mib": null,
+        "qualitative": "Removes two Tokio worker threads from the three-thread SSE arrangement and reduces direct Tokio feature/code surface. Some stack/control private commit and binary size reduction is expected, but no MiB value or <10 MiB pass is claimed before measurement.",
+        "target_assessment": "Conservative first optimization only; a 23.5 MiB normal-state gap is too large to assume this change alone closes the gate."
+      },
+      "verification": [
+        "cargo test -p xhm-desktop",
+        "cargo build -p xhm-desktop --release",
+        "Run the local live dual-SSE fixture and verify both streams connect, receive heartbeats, resubscribe, cancel, and stop cleanly.",
+        "Repeat normal collapsed and XHM_DESKTOP_UI_SMOKE profiles with the same launcher, warmup, and 60 one-second samples.",
+        "Record binary hash/size, thread count, Private Bytes, VirtualQueryEx categories, and compare against this Run without changing another variable."
+      ],
+      "regression_tests": [
+        "Existing xhm-desktop SSE supervisor tests",
+        "Existing xhm-desktop config discovery tests",
+        "Windows release smoke for dual HWND, tray exit, taskbar placement, and dual SSE"
+      ],
+      "rollback": "Revert the Tokio feature list and runtime builder together. Roll back immediately if either SSE stream starves, resubscribe/cancel ordering changes, shutdown hangs, or the measured reduction is too small to justify keeping the narrower runtime.",
+      "success_boundary": "Behavior remains P2-equivalent and Private Bytes decreases reproducibly. The P2 memory gate remains failed unless every acceptance sample is below 10 MiB."
+    },
+    {
+      "id": "FD-G3-01",
+      "priority": 2,
+      "risk": "low",
+      "title": "Restore Locked click transition parity",
+      "root_cause_ref": "G3-LOCKED-CLICK",
+      "change_direction": "Change Rust panel_after_click so Expanded -> Locked, Locked -> Expanded, Clickthrough -> Clickthrough, and Collapsed remains Collapsed. The C# source of truth explicitly ignores Collapsed clicks.",
+      "affected_files": [
+        "xhm-desktop/src/ui/floating_window.rs:92",
+        "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:258"
+      ],
+      "expected_impact": {
+        "memory": "none expected",
+        "behavior": "Unlocking a locked panel returns to Expanded so pointer-leave can collapse it; collapsed clicks no longer lock without hover."
+      },
+      "verification": [
+        "Add/adjust transition tests for all four PanelState inputs.",
+        "Verify subscription remains Full across Locked -> Expanded and becomes Lite only after pointer leave collapses."
+      ],
+      "rollback": "Revert the transition table if C# parity or subscription state tests regress."
+    },
+    {
+      "id": "FD-G3-02",
+      "priority": 3,
+      "risk": "low",
+      "title": "Cap pinned-card viewport and keep overflow scrollable",
+      "root_cause_ref": "G3-PINNED-OVERFLOW",
+      "change_direction": "Replace the uncapped pinned VerticalLayout with a capped ListView/viewport sized for at most four visible cards. Keep all pinned processes accessible by scrolling and derive the details panel offset/height from the capped viewport height rather than total pinned count.",
+      "affected_files": [
+        "xhm-desktop/ui/floating_window.slint:274"
+      ],
+      "expected_impact": {
+        "memory": "no material reduction claimed",
+        "behavior": "Five or more pinned cards remain within the window and no longer drive the process-list panel to negative or clipped geometry."
+      },
+      "verification": [
+        "Render 0, 1, 4, 5, and 12 pinned rows in collapsed, Expanded, and Locked states.",
+        "Verify the first four are visible, overflow scrolls, unpin works, and the process ListView retains a positive bounded height."
+      ],
+      "rollback": "Restore the previous layout if scrolling or pin/unpin projection regresses; no data-model migration is involved."
+    },
+    {
+      "id": "FD-G3-03",
+      "priority": 4,
+      "risk": "low",
+      "title": "Clamp unsnapped drag release to monitor work area",
+      "root_cause_ref": "G3-UNSNAPPED-CLAMP",
+      "change_direction": "When snap_floating_window returns None, clamp the current physical rectangle to the selected monitor's work_area and call move_topmost with the clamped origin before setting organic_state=floating. Preserve the existing 24 px edge snap path and physical-pixel/DPI conversion.",
+      "affected_files": [
+        "xhm-desktop/src/ui/floating_window.rs:822",
+        "xhm-desktop/src/ui/floating_interactions.rs:408"
+      ],
+      "expected_impact": {
+        "memory": "none expected",
+        "behavior": "An unsnapped release cannot leave the floating window outside usable monitor bounds or under the taskbar."
+      },
+      "verification": [
+        "Add deterministic work-area clamp cases for each edge, oversized/off-screen coordinates, negative-origin monitors, and an already-valid rectangle.",
+        "On Windows, drag near but outside the snap threshold on monitors with taskbars on all four edges and verify physical RECT remains inside rcWork."
+      ],
+      "rollback": "Revert only the unsnapped else-branch clamp if multi-monitor placement regresses; the snap path stays unchanged."
+    }
+  ],
+  "ordering": "Apply and measure FD-MEM-01 alone first. The three G3 parity directions are independent low-risk behavior repairs and must not be mixed into the memory attribution build.",
+  "chain_effects": []
+}

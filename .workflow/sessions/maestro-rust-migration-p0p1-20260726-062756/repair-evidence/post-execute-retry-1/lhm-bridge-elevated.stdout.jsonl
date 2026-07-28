@@ -1,0 +1,16 @@
+{"ts":"2026-07-26T09:44:01.7762211Z","cpu_temp":79.4,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":34,"net_up_mbps":0.104,"net_down_mbps":0.068,"disk_read_mbps":0,"disk_write_mbps":0}
+{"ts":"2026-07-26T09:44:02.0829869Z","cpu_temp":78,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":34,"net_up_mbps":0.081,"net_down_mbps":0.014,"disk_read_mbps":1.395,"disk_write_mbps":0.051}
+{"ts":"2026-07-26T09:44:02.4510526Z","cpu_temp":77.4,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":31,"net_up_mbps":0.096,"net_down_mbps":0.021,"disk_read_mbps":0.154,"disk_write_mbps":1.787}
+{"ts":"2026-07-26T09:44:02.7412953Z","cpu_temp":75.5,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":31,"net_up_mbps":0.077,"net_down_mbps":0.012,"disk_read_mbps":0.144,"disk_write_mbps":0.247}
+{"ts":"2026-07-26T09:44:03.025727Z","cpu_temp":74.3,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":31,"net_up_mbps":0.103,"net_down_mbps":0.655,"disk_read_mbps":0.003,"disk_write_mbps":1.103}
+{"ts":"2026-07-26T09:44:03.3555257Z","cpu_temp":73.8,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":31,"net_up_mbps":0.087,"net_down_mbps":0.007,"disk_read_mbps":0,"disk_write_mbps":0.196}
+{"ts":"2026-07-26T09:44:03.6662212Z","cpu_temp":73.3,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":28,"net_up_mbps":0.075,"net_down_mbps":0.008,"disk_read_mbps":0.068,"disk_write_mbps":1.071}
+{"ts":"2026-07-26T09:44:04.0245084Z","cpu_temp":72.6,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":28,"net_up_mbps":0.089,"net_down_mbps":0.06,"disk_read_mbps":0.014,"disk_write_mbps":0.85}
+{"ts":"2026-07-26T09:44:04.3115288Z","cpu_temp":73.1,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":28,"net_up_mbps":0.098,"net_down_mbps":0.119,"disk_read_mbps":0.091,"disk_write_mbps":0.674}
+{"ts":"2026-07-26T09:44:04.6147455Z","cpu_temp":74,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":30,"net_up_mbps":0.247,"net_down_mbps":0.322,"disk_read_mbps":0.781,"disk_write_mbps":1.533}
+{"ts":"2026-07-26T09:44:04.9087492Z","cpu_temp":74.5,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":30,"net_up_mbps":0.085,"net_down_mbps":0.004,"disk_read_mbps":0,"disk_write_mbps":0.028}
+{"ts":"2026-07-26T09:44:05.2143316Z","cpu_temp":75.3,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":30,"net_up_mbps":0.097,"net_down_mbps":0.005,"disk_read_mbps":0,"disk_write_mbps":1.992}
+{"ts":"2026-07-26T09:44:05.5072668Z","cpu_temp":76,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":34,"net_up_mbps":0.095,"net_down_mbps":0.017,"disk_read_mbps":0,"disk_write_mbps":0.544}
+{"ts":"2026-07-26T09:44:05.8110332Z","cpu_temp":76.9,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":34,"net_up_mbps":0.101,"net_down_mbps":0.051,"disk_read_mbps":0,"disk_write_mbps":0.722}
+{"ts":"2026-07-26T09:44:06.1828021Z","cpu_temp":78.5,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":34,"net_up_mbps":0.08,"net_down_mbps":0.007,"disk_read_mbps":0.134,"disk_write_mbps":1.246}
+{"ts":"2026-07-26T09:44:06.7286674Z","cpu_temp":81,"cpu_temp_label":"Core (Tctl/Tdie)","gpu_temp":52,"gpu_load":32,"net_up_mbps":0.127,"net_down_mbps":0.005,"disk_read_mbps":0.172,"disk_write_mbps":20.684}

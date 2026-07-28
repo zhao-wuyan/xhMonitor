@@ -1,0 +1,93 @@
+{
+  "schema_version": "diagnosis/1.0",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "debug_session_id": "20260727-009-debug",
+  "completed_at": "2026-07-27T23:27:44+08:00",
+  "status": "partial",
+  "target": "xhm-desktop release Private Bytes versus P2 <10 MiB",
+  "summary": "The gate failure is a stable startup-footprint problem in the current Slint/winit-software plus Windows UI and async-client architecture, not a time-growing leak or SSE payload/retry problem. Ordinary release state measures 33.492-33.531 MiB and 31.609 MiB of its committed map is MEM_PRIVATE; six anonymous allocation bases contain 29.672 MiB (93.87% of MEM_PRIVATE). Window rendering is material: showing Settings and About adds 6.269 MiB in one process. Exact ownership of the anonymous arenas among Slint renderer, Windows allocator/UI, accessibility, and Tokio is inferred rather than symbol-confirmed, so the diagnosis is partial and no fabricated per-component MiB values are reported.",
+  "expected": {
+    "contract": "Private Bytes < 10 MiB in software-rendered release mode",
+    "source": "docs/rust-migration-guide.md:303"
+  },
+  "actual": {
+    "accepted_baseline": "60/60 failed; 34.504-34.719 MiB, mean 34.558 MiB",
+    "fresh_exact_ui_smoke": "60/60 failed; 37.184-37.559 MiB, mean 37.409 MiB",
+    "fresh_normal_release": "30/30 failed; 33.492-33.531 MiB, mean 33.514 MiB",
+    "fresh_connected_sse": "30/30 failed; 33.277 MiB",
+    "normal_mean_excess_mib": 23.513932,
+    "normal_reduction_required_percent": 70.161663
+  },
+  "clusters": [
+    {
+      "name": "xhm-desktop-release-memory",
+      "gaps": [
+        {
+          "test_id": "P2-PRIVATE-BYTES",
+          "root_cause": "The current release architecture commits a stable approximately 33.5 MiB normal-state footprint before optional Settings/About visibility. Anonymous private allocations dominate: 31.609 MiB is committed MEM_PRIVATE and 29.672 MiB is concentrated in six large RW/private allocation bases. The startup path constructs four Slint windows, shows main and taskbar, retains hidden Settings/About components, installs native tray state, and starts a dedicated SSE thread with a two-worker Tokio multi-thread runtime. Measured differentials show rendered window state is material, while SSE connection traffic is not dominant. The exact split of the retained anonymous arenas is not identifiable from the stripped binary under the no-source-edit boundary.",
+          "fix_direction": "First make one bounded, behavior-preserving runtime change: narrow the direct Tokio feature set to rt/sync/time/macros and replace the two-worker multi-thread runtime inside the already-dedicated SSE thread with new_current_thread. Keep Slint accessibility unchanged. Re-run the same normal, UI_SMOKE, live dual-SSE, resubscribe/cancel, and 60-sample release checks; roll back both edits together if any P2 behavior regresses or the footprint does not improve enough to justify the change.",
+          "affected_files": ["Cargo.toml:16", "xhm-desktop/src/lib.rs:397"],
+          "confidence": {
+            "overall": 0.84,
+            "dimensions": {
+              "hypothesis_quality": 0.92,
+              "evidence_completeness": 0.9,
+              "root_cause_isolation": 0.78,
+              "fix_confidence": 0.72
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "measured_facts": [
+    {"id": "M1", "fact": "Accepted baseline has 60 samples, min 34.504 MiB, max 34.719 MiB, below_10_count 0.", "evidence": "../20260727-006-execute/outputs/memory-samples.json:3"},
+    {"id": "M2", "fact": "Fresh ordinary release mean is 33.513932 MiB with a 0.039062 MiB range over 30 one-second samples.", "evidence": "work/normal-release-30.json:15"},
+    {"id": "M3", "fact": "Normal VirtualQueryEx map has 31.609375 MiB MEM_PRIVATE in 64 committed regions; six largest anonymous allocation bases total 29.671875 MiB, 93.87% of MEM_PRIVATE.", "evidence": "work/normal-release-30.json:479"},
+    {"id": "M4", "fact": "Showing Settings adds 4.648242 MiB and then showing About adds 1.620703 MiB in the same process; cumulative 6.268945 MiB.", "evidence": "work/runtime-actions.json:1"},
+    {"id": "M5", "fact": "Connected dual SSE mean is 33.277344 MiB, 0.236588 MiB below disconnected/retrying normal mean; both variants keep the async runtime and clients.", "evidence": "work/connected-sse-30.json:15"},
+    {"id": "M6", "fact": "Release executable is 4,529,152 bytes, SHA-256 1b63922559edc0c4a737a6eca682cf37773d89787fad6f517b370f4b42754431, with opt-level=z, LTO, one codegen unit, abort panic, and strip enabled.", "evidence": "Cargo.toml:56"},
+    {"id": "M7", "fact": "Normal run maps 51 modules; 67.473 MiB MEM_IMAGE is mapped image commit and is not assigned as Private Bytes. UIAutomationCore is loaded, but accessibility was not isolated and is excluded from the first optimization attempt.", "evidence": "work/normal-release-30.json:171"}
+  ],
+  "inferences": [
+    {"id": "I1", "inference": "The six large anonymous allocation bases are allocator/runtime arenas serving UI rendering and runtime state; VirtualQueryEx cannot assign exact owners without heap stacks/symbols.", "basis": ["M3", "M4"], "confidence": 0.74},
+    {"id": "I2", "inference": "Switching the SSE runtime to current-thread should remove two Tokio worker threads and reduce some stack/control allocation and feature/code surface, but it cannot be claimed to close a 23.5 MiB gap before measurement.", "basis": ["xhm-desktop/src/lib.rs:397", "Cargo.toml:16"], "confidence": 0.76},
+    {"id": "I3", "inference": "The historical 34.5 MiB numeric band is not a normal collapsed-production baseline because the reconstructed launch enabled XHM_DESKTOP_UI_SMOKE; its pass/fail evidence remains valid.", "basis": ["work/exact-ui-smoke-60.stdout.log:10", "xhm-desktop/src/ui/floating_window.rs:283"], "confidence": 0.91}
+  ],
+  "ruled_out_or_bounded": [
+    {"candidate": "monotonic leak during the sample minute", "status": "refuted", "evidence": "Stable plateaus in accepted and fresh runs"},
+    {"candidate": "SSE connected payload/retry traffic is the dominant gap", "status": "refuted_as_dominant", "evidence": "Connected versus unavailable differential is 0.237 MiB and both remain above 33 MiB"},
+    {"candidate": "Settings/About visibility explains the ordinary base", "status": "refuted", "evidence": "Ordinary run has both hidden yet remains 33.514 MiB; showing them adds a separate 6.269-6.421 MiB"},
+    {"candidate": "native tray has a fabricated component total", "status": "inconclusive", "evidence": "WM_CLOSE lifecycle did not provide a clean teardown; no tray MiB number is assigned"}
+  ],
+  "backward_trace": [
+    "P2 gate observes Process.PrivateMemorySize64 above 10 MiB.",
+    "VirtualQueryEx traces the dominant committed category backward to anonymous MEM_PRIVATE regions, not mapped image size.",
+    "Runtime differentials trace a material incremental branch to making Slint windows visible.",
+    "Code traces the normal retained baseline to unconditional Slint component construction plus main/taskbar show, native tray, and dedicated multi-thread SSE runtime.",
+    "Cargo traces the bounded removable runtime surface to direct tokio/full and rt-multi-thread; no evidence supports removing accessibility first."
+  ],
+  "residual_g3_parity": [
+    {"id": "G3-LOCKED-CLICK", "severity": "low-risk repair", "finding": "Rust maps Locked click to Collapsed; C# contract maps Locked to Expanded.", "evidence": ["xhm-desktop/src/ui/floating_window.rs:92", "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:258"]},
+    {"id": "G3-PINNED-OVERFLOW", "severity": "low-risk repair", "finding": "Pinned cards are an uncapped VerticalLayout and process panel height subtracts every pin, so more than four pins can overflow/produce invalid space.", "evidence": ["xhm-desktop/ui/floating_window.slint:274"]},
+    {"id": "G3-UNSNAPPED-CLAMP", "severity": "low-risk repair", "finding": "Unsnapped drag release only changes organic state and leaves the current rectangle outside the selected monitor work area.", "evidence": ["xhm-desktop/src/ui/floating_window.rs:822"]}
+  ],
+  "confidence": {
+    "overall": 0.84,
+    "level": "high for gate/root category; medium for component ownership and optimization impact",
+    "factors": {
+      "evidence_depth": {"score": 0.94, "weight": 0.3},
+      "evidence_strength": {"score": 0.9, "weight": 0.25},
+      "coverage_breadth": {"score": 0.86, "weight": 0.2},
+      "reproduction": {"score": 1.0, "weight": 0.15},
+      "consistency": {"score": 0.82, "weight": 0.1}
+    }
+  },
+  "pressure_pass": {
+    "done": true,
+    "devils_advocate": "A deeper allocator/framework cause may own the large private arenas. This diagnosis confirms the stable architectural footprint and observable window differential, but labels Slint/Tokio ownership as inference and proposes only a reversible first experiment.",
+    "contradicting_evidence_resolved": "Fresh UI_SMOKE numeric mismatch is preserved in reproduction.json; every normal/smoke/connected variant still fails, so gate outcome and structural diagnosis remain consistent.",
+    "readiness_gate": {"evidence_completeness": 0.9, "specific_affected_files": true, "no_unresolved_blocking_contradiction": true, "passed": true}
+  },
+  "chain_effects": []
+}

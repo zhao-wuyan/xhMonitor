@@ -1,0 +1,59 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "change-manifest/1.0",
+  "run_id": "20260727-006-execute",
+  "goal_ref": "G4",
+  "scope": "xhm-desktop taskbar/settings/about/update integration and current Run outputs only",
+  "created_files": [
+    "xhm-desktop/ui/taskbar_metrics.slint",
+    "xhm-desktop/ui/settings.slint",
+    "xhm-desktop/ui/about.slint",
+    "xhm-desktop/src/ui/taskbar_metrics.rs",
+    "xhm-desktop/src/ui/settings.rs",
+    "xhm-desktop/src/ui/about.rs",
+    "xhm-desktop/src/ui/update_check.rs"
+  ],
+  "modified_files": [
+    "xhm-desktop/ui/shell.slint",
+    "xhm-desktop/src/ui/mod.rs",
+    "xhm-desktop/src/lib.rs"
+  ],
+  "run_output_files": [
+    "outputs/execution.json",
+    "outputs/task-results.json",
+    "outputs/self-check.json",
+    "outputs/change-manifest.json",
+    "outputs/memory-samples.json",
+    "outputs/report.md"
+  ],
+  "unchanged_files": [
+    "xhm-desktop/ui/floating_window.slint",
+    "xhm-desktop/src/ui/floating_window.rs",
+    "xhm-desktop/src/ui/floating_interactions.rs",
+    "xhm-desktop/src/win32/**",
+    "xhm-desktop/src/service_client/**",
+    "xhm-desktop/src/shell.rs",
+    "xhm-desktop/src/tray/**",
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/build.rs",
+    "xhm-desktop/src/main.rs",
+    "xhmonitor-web/**",
+    "XhMonitor.*/**",
+    "xhm-core/**",
+    "xhm-service/**"
+  ],
+  "module_summary": {
+    "ui/taskbar_metrics.slint": "Four compact Text/Bar horizontal/vertical renderers and stable pointer-intent window surface",
+    "src/ui/taskbar_metrics.rs": "Taskbar settings/projection, layout-token updates, compact metrics, edge normalization and G2 native dock/drag bridge",
+    "ui/settings.slint": "Allowed P2 display/collection controls plus explicit read-only P3 system section",
+    "src/ui/settings.rs": "Allowed-subset GET/PUT mapping, validation, background REST runtime and live taskbar settings store",
+    "ui/about.slint": "About and update-state window",
+    "src/ui/about.rs": "About state presentation and event-loop-safe check runtime",
+    "src/ui/update_check.rs": "Single fixed Gitee release metadata request and numeric version comparison",
+    "src/lib.rs": "Four-window lifetime, taskbar SSE projection, Settings/About tray wiring, release smoke and orderly cancellation"
+  }
+}

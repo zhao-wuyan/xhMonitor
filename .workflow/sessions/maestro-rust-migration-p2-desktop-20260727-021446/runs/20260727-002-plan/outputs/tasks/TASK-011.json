@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-011"
+  },
+  "id": "TASK-011",
+  "title": "实现主窗拖拽、长按/点击、功耗与 Kill 状态机",
+  "description": "用可注入 clock/timer 完成主窗交互，所有 Win32、REST 和进程副作用委托既有 G1/G2 边界。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G3",
+  "execute_step_id": "step-005-execute",
+  "wave_id": "WAVE-011",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "P2-C06",
+    "P2-C07",
+    "P2-C08",
+    "P2-C09",
+    "P2-C10",
+    "P2-C15",
+    "G3-DONE",
+    "SESSION-EC-01",
+    "SESSION-EC-04",
+    "BOUNDARY-NO-HOTKEY"
+  ],
+  "deps": [
+    "TASK-010",
+    "TASK-003",
+    "TASK-006",
+    "TASK-007"
+  ],
+  "files": [
+    "xhm-desktop/ui/floating_window.slint",
+    "xhm-desktop/src/ui/floating_window.rs",
+    "xhm-desktop/src/ui/floating_interactions.rs",
+    "xhm-desktop/src/ui/mod.rs"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs:413-763,758-986,1102-1218",
+    "XhMonitor.Desktop/Services/WindowManagementService.cs:623-694",
+    "XhMonitor.Desktop/Services/PowerControlService.cs:18-53",
+    "XhMonitor.Desktop/Services/IProcessManager.cs:5-11",
+    "XhMonitor.Desktop.Tests/FloatingWindowDimensionTests.cs:5-17",
+    "XhMonitor.Desktop.Tests/FloatingWindowCoordinateTransformTests.cs:7-34",
+    "TASK-009 approved timing evidence",
+    "TASK-006/TASK-007 actual action boundaries"
+  ],
+  "action": "建立 press/drag/long-press/click/release 与 Kill 的纯状态机；>5px drag 和 24px snap 委托 G2，power 使用既有 warmup/next REST，Kill 只调用一次 TASK-007。",
+  "implementation_steps": [
+    "注入 clock/timer，严格区分 press、>5px drag、2s long-press、click、release 和丢失 MouseUp；drag 不触发 click/long-press。",
+    "复用 TASK-009：长按 2s 1.0→0.90，取消 200ms；click 0.92@50ms→1.0@150ms；pointer intent 交给 TASK-006 5/24px native boundary。",
+    "power metric 先 GET /api/v1/power/warmup，成功后 POST /api/v1/power/scheme/next，成功/失败 Toast；不新增 service API。",
+    "Kill 状态 Idle→Confirming(1s)→Killing；第一次 click 做 1.2 auto-reverse + 43.98 arc，1s 超时回 Idle；第二次只调用一次 TASK-007，执行中禁重入。",
+    "不得实现 RegisterHotKey、WM_HOTKEY 或替代全局热键；click-through 仅由 tray 恢复。"
+  ],
+  "convergence_criteria": [
+    "Test：50/150/200/1000/2000ms 边界、drag-vs-click、MouseUp 丢失和 long-press cancel 确定。",
+    "Test：Kill 第二击只调用一次，超时不 kill，错误进入 Toast。",
+    "[UI-observable] 手工：drag/snap、长按、短按、power 成败、Kill confirm 和 tray 恢复 click-through 可操作。",
+    "CLI：热键 grep 0 命中。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop floating_interactions",
+      "rg -n \"RegisterHotKey|WM_HOTKEY|Ctrl\\+Alt\\+Shift\\+X\" xhm-desktop"
+    ],
+    "manual_scenarios": [
+      "真实窗口 drag/24px、长按/短按、power、Kill 成败与 tray 恢复。"
+    ],
+    "expected": "G3 全部交互可操作、定时确定且副作用去重。"
+  },
+  "acceptance_evidence": [
+    "确定性时钟测试",
+    "交互录屏与 REST/process 日志",
+    "热键 grep 零命中"
+  ],
+  "rollback": {
+    "steps": [
+      "回退 interaction module/callback wiring"
+    ],
+    "preserves": [
+      "TASK-010 只读呈现",
+      "G1/G2 boundaries"
+    ]
+  }
+}

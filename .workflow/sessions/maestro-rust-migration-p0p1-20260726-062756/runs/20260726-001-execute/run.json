@@ -1,0 +1,225 @@
+{
+  "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+  "run_id": "20260726-001-execute",
+  "sequence": 1,
+  "parent_run_id": null,
+  "command": {
+    "name": "execute",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/execute.md",
+    "content_hash": "482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "resolved_prompt_hash": "482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "contract_hash": "2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-001-01",
+    "GATE-001-02",
+    "GATE-001-03",
+    "GATE-001-04",
+    "GATE-001-05",
+    "GATE-001-06",
+    "GATE-001-07",
+    "GATE-001-08",
+    "GATE-001-09",
+    "GATE-001-10",
+    "GATE-001-11"
+  ],
+  "output": {
+    "produces": [
+      "ART-001-001",
+      "ART-001-002",
+      "ART-001-003",
+      "ART-001-003",
+      "ART-001-001"
+    ],
+    "primary_artifact_id": "ART-001-002",
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260726-001-execute",
+    "command": "execute",
+    "verdict": "ready",
+    "summary": "建立 Cargo workspace 与 xhm-core 共享层（models/wire/time/traits/error，52 tests green， clippy 零警告），并将 lhm-bridge 从 poc/ 提升为正式目录（修正管理员权限检测、新增 banner 与 --require-admin/--interval、优雅退出实测 exit 0）。",
+    "constraints": [],
+    "decisions": [
+      {
+        "id": "D-P0-1",
+        "text": "持久化只接受 DateTime<Utc> 落库，不复刻 C# MetricRepository.MapToEntity:79 的 SpecifyKind 假转换；llama 历史行的时区偏移保留为已知数据事实，读取端不补偿。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-P0-2",
+        "text": "推送层 transport-agnostic —— 一份 PushEvent 枚举 + SignalR over WebSocket（Web 前端零改动）与 SSE（Desktop）两个适配器。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-P0-3",
+        "text": "MetricStore 采用同步签名，调用侧用 tokio::task::spawn_blocking 包装；避免 async-trait 装箱与 dyn 兼容性问题。",
+        "status": "accepted"
+      },
+      {
+        "id": "D-CLI-1",
+        "status": "accepted",
+        "text": "持久化只接受 DateTime<Utc>，不复刻 C# SpecifyKind 假转换，llama 历史行时区偏移不做读取端补偿"
+      },
+      {
+        "id": "D-CLI-2",
+        "status": "accepted",
+        "text": "推送层 transport-agnostic：一份 PushEvent + SignalR WS(Web 零改动) / SSE(Desktop) 双适配器"
+      },
+      {
+        "id": "D-CLI-3",
+        "status": "accepted",
+        "text": "MetricStore 同步签名 + spawn_blocking，避免 async-trait 装箱"
+      }
+    ],
+    "concerns": [
+      "C-P0-1 (medium)：lhm-bridge 提权路径未验证——当前环境非管理员，cpu_temp/cpu_temp_label 无证据；降级路径已验证正确。",
+      "C-P0-2 (low)：docs/rust-migration-guide.md 的 ConfigController/MetricsController 行号引用已过期，实现按实际源码对齐。",
+      "C-P0-1 medium: lhm-bridge 提权路径未验证，当前环境非管理员，cpu_temp/cpu_temp_label 无证据；降级路径已验证正确",
+      "C-P0-2 low: docs/rust-migration-guide.md 的 Controller 行号引用已过期，实现按实际源码对齐"
+    ],
+    "artifact_refs": [
+      "ART-001-001",
+      "ART-001-002",
+      "ART-001-003",
+      "ART-001-003",
+      "ART-001-001"
+    ],
+    "next": [
+      {
+        "command": "maestro session next --session maestro-rust-migration-p0p1-20260726-062756",
+        "reason": "进入 P1 —— xhm-service（axum）：SQLite 层、20 个 REST 端点、SignalR negotiate+WS、SSE、LHM 子进程管理、RyzenAdj 回退、采样/聚合/清理三个 worker；并行端口 35181。",
+        "needs": []
+      },
+      {
+        "command": "lhm-bridge\\bin\\Release\\net8.0\\win-x64\\lhm-bridge.exe --require-admin",
+        "reason": "以管理员身份复核提权路径，确认输出含 cpu_temp 与 cpu_temp_label（C-P0-1）。",
+        "needs": []
+      }
+    ],
+    "details": {}
+  },
+  "started_at": "2026-07-26T14:28:04+08:00",
+  "completed_at": "2026-07-26T14:48:42+08:00",
+  "sealed_at": "2026-07-26T14:48:42+08:00",
+  "chain_step_id": "step-000-execute",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "plan",
+          "alias": "current-plan",
+          "required": false
+        },
+        {
+          "kind": "review-findings",
+          "alias": "latest-review",
+          "required": false
+        },
+        {
+          "kind": "fix-directions",
+          "alias": "latest-fix-directions",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        },
+        {
+          "kind": "priors",
+          "alias": "session-priors",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "execution",
+          "primary": false,
+          "path": "outputs/execution.json",
+          "alias": "current-execution"
+        },
+        {
+          "kind": "task-results",
+          "primary": false,
+          "path": "outputs/task-results.json"
+        },
+        {
+          "kind": "self-check",
+          "primary": false,
+          "path": "outputs/self-check.json"
+        },
+        {
+          "kind": "change-manifest",
+          "primary": false,
+          "path": "outputs/change-manifest.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "execution-complete",
+          "self-check-passed"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-26T06:28:04.248Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/execute.md",
+    "content_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "resolved_prompt_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "prepare_hash": "sha256:482f199905479fbf1bc9b6cd02ab72d3293c499c06b1dedb3cca8193aaa2ebb7",
+    "workflow_hash": "sha256:a07b36e4da5cdb979fd6ebddbe650d1180c7fcaf6c8ee86462bb05aeb5595211",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_6f39bb441c75e4d2a035710a",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-26T14:28:04+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 0,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "--session {session}"
+    ],
+    "consumes": [],
+    "context_identity_revision": 2,
+    "reuse_assessments": []
+  }
+}

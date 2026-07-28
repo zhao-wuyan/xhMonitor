@@ -1,0 +1,279 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260728-011-auto-test",
+  "sequence": 11,
+  "parent_run_id": null,
+  "command": {
+    "name": "auto-test",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/auto-test.md",
+    "content_hash": "2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "resolved_prompt_hash": "2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "contract_hash": "0e2f7583ee717c01af422fb5fd76b3a0b1e0b77e4cd8775d7222b7caeeece842"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-011-01",
+    "GATE-011-02",
+    "GATE-011-03",
+    "GATE-011-04",
+    "GATE-011-05",
+    "GATE-011-06",
+    "GATE-011-07",
+    "GATE-011-08",
+    "GATE-011-09",
+    "GATE-011-10",
+    "GATE-011-11"
+  ],
+  "output": {
+    "produces": [],
+    "primary_artifact_id": null,
+    "verdict": "ready_with_concerns"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260728-011-auto-test",
+    "command": "auto-test",
+    "verdict": "ready_with_concerns",
+    "summary": "business-test auto-test single-pass: L0 cargo test baseline 128/128 pass; L1 references 3 G3 parity tests (pass); L2 references memory gate evidence (normal 33.66 MiB < 40 MiB amended threshold PASS; < 10 MiB original gate FAIL). No product changes; Run left unsealed.",
+    "constraints": [
+      {
+        "id": "C-AT-1",
+        "text": "Run artifacts only (.tests/auto-test/ and Run outputs dir); product source read-only.",
+        "status": "locked"
+      },
+      {
+        "id": "C-AT-2",
+        "text": "No subagents; no agy/aug; Auggie MCP unavailable — target definitions pre-read by parent.",
+        "status": "locked"
+      },
+      {
+        "id": "C-AT-3",
+        "text": "max_iter=1 single-pass; L1 parity tests already exist and pass (referenced, not regenerated).",
+        "status": "locked"
+      }
+    ],
+    "decisions": [
+      {
+        "id": "D-AT-1",
+        "text": "source_route=gap (no blueprint package; scenarios from G3 parity gaps + memory gate).",
+        "status": "accepted"
+      },
+      {
+        "id": "D-AT-2",
+        "text": "L1 coverage = reference existing passing parity tests, re-confirmed by L0 cargo test convergence check.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-AT-3",
+        "text": "L2 coverage = read-only reference to sealed memory-samples-post-repair.json + G3 SC-10.",
+        "status": "accepted"
+      }
+    ],
+    "concerns": [
+      "completed with concerns"
+    ],
+    "artifact_refs": [],
+    "next": [
+      {
+        "command": "maestro session amend",
+        "reason": "G4 done_when / definition_of_done memory threshold amendment (< 10 MiB -> < 40 MiB); user-authorized, outside this Run.",
+        "needs": []
+      },
+      {
+        "command": "review business-test",
+        "reason": "auto-test artifacts written; Run left unsealed pending memory gate amendment.",
+        "needs": [
+          "latest-auto-test"
+        ]
+      }
+    ],
+    "details": {}
+  },
+  "started_at": "2026-07-28T09:20:49+08:00",
+  "completed_at": "2026-07-28T09:36:48+08:00",
+  "sealed_at": "2026-07-28T09:36:48+08:00",
+  "chain_step_id": "step-008-auto-test",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "verification",
+          "alias": "latest-verification",
+          "required": false
+        },
+        {
+          "kind": "execution",
+          "alias": "current-execution",
+          "required": false
+        },
+        {
+          "kind": "review-findings",
+          "alias": "latest-review",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "auto-test-report",
+          "primary": false,
+          "path": ".tests/auto-test/report.json",
+          "alias": "latest-auto-test"
+        },
+        {
+          "kind": "test-plan",
+          "primary": false,
+          "path": ".tests/auto-test/test-plan.json"
+        },
+        {
+          "kind": "auto-test-state",
+          "primary": false,
+          "path": ".tests/auto-test/state.json"
+        },
+        {
+          "kind": "reflection-log",
+          "primary": false,
+          "path": ".tests/auto-test/reflection-log.md"
+        },
+        {
+          "kind": "traceability",
+          "primary": false,
+          "path": ".tests/auto-test/traceability.md"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "tests-generated",
+          "execution-converged"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:0e2f7583ee717c01af422fb5fd76b3a0b1e0b77e4cd8775d7222b7caeeece842",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-28T01:20:49.097Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[4].optional is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[4].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/auto-test.md",
+    "content_hash": "sha256:2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "resolved_prompt_hash": "sha256:2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "prepare_hash": "sha256:2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "workflow_hash": "sha256:08e84983b000600f2e6880286117855bbc299b36cc8114dd835b05df76c939e7",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_b6116e2426bdf7987b8a8ebd",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-28T09:20:49+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 40,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "business-test --session {session}"
+    ],
+    "consumes": [
+      "ART-010-002",
+      "ART-009-001"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "execution",
+          "alias": "current-execution",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-010-execute",
+          "producer_run_hash": "sha256:6a5090e2cbd3087bfa271cb9653473f7c58380d2f3299e7fc728756df00965a9",
+          "producer_status": "sealed",
+          "artifact_id": "ART-010-002",
+          "artifact_role": "primary",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+          "observed_artifact_hash": "sha256:e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+          "artifact_schema": "execution/1.0",
+          "artifact_registry_revision": 10,
+          "producer_contract_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+        },
+        "assessment_hash": "sha256:ef8e851c7d0320362b2d3279a310eb2f0a8210c4213d650bf02790f01853e96f"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-009-debug",
+          "producer_run_hash": "sha256:dd6445bda4e60feffd825acc55d3b2f5bf5b963896b4f3a29b9e4d2d27eba586",
+          "producer_status": "sealed",
+          "artifact_id": "ART-009-001",
+          "artifact_role": "attachment",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+          "observed_artifact_hash": "sha256:c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+          "artifact_schema": "diagnosis/1.0",
+          "artifact_registry_revision": 10,
+          "producer_contract_hash": "sha256:fd2e9a8f41463fb30c094dcb1267b71880215e0e352de7edf540ec9d8ec34ed4"
+        },
+        "assessment_hash": "sha256:270e433dc0e941d59f832ec9f2b7beb2904b9c9acdf6d205317a519e7d9443f9"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "kind": "execution",
+    "schema": "execution/1.0",
+    "role": "primary",
+    "alias": "current-execution"
+  },
+  "schema_version": "execution/1.0",
+  "run_id": "20260727-006-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "command": "execute",
+  "goal_ref": "G4",
+  "status": "completed_with_blocker",
+  "task_ids": ["TASK-012", "TASK-013", "TASK-014"],
+  "method": "inline",
+  "executor": "G4Exec",
+  "upstream_plan": {
+    "artifact_id": "ART-002-004",
+    "path": "sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-002-plan/outputs/plan.json"
+  },
+  "summary": "G4 implemented the independent taskbar metrics window, four presentation variants with edge-derived production orientation, G2-backed dock/drag behavior, allowed-subset settings, About and one-request Gitee release checks, and real release smoke. Package tests and clippy pass; TASK-014 remains blocked because all 60 observed Private Bytes samples exceeded the 10 MiB gate.",
+  "evidence": {
+    "cargo_test": "cargo test -p xhm-desktop passed 125 tests with 0 failures in three consecutive final rounds",
+    "cargo_clippy": "cargo clippy -p xhm-desktop --all-targets -- -D warnings: clean",
+    "cargo_release": "cargo build -p xhm-desktop --release: passed",
+    "taskbar": "16 presentation/edge cells are covered by deterministic geometry tests; production normalization maps Top/Bottom to horizontal and Left/Right to vertical; Slint model updates values in place while layout tokens rebuild only for style/orientation/columns/unit/gap changes",
+    "settings": "GET and PUT mock covers allowed subset, missing/unknown keys, clamps and invalid JSON; deferred system controls are absent from request bodies",
+    "update": "404, malformed metadata, same/newer release and server failure are deterministic; newer-release test observed exactly one GET request",
+    "smoke": "release process used winit-software; logs recorded distinct dual HWND wiring, taskbar placement, independent dual SSE startup, and G4 taskbar/settings/About show path; Orca observed the live xhm-desktop UI",
+    "memory": "60 one-second release samples: min 34.504 MiB, max 34.719 MiB, 0/60 below 10 MiB; gate failed",
+    "anti_pattern": "zero prohibited update-side-effect patterns and zero RegisterHotKey/WM_HOTKEY/Ctrl+Alt+Shift+X matches",
+    "run_check": "maestro run check 20260727-006-execute --session maestro-rust-migration-p2-desktop-20260727-021446 is the final unsealed command"
+  },
+  "artifacts": {
+    "execution": "outputs/execution.json",
+    "task_results": "outputs/task-results.json",
+    "self_check": "outputs/self-check.json",
+    "change_manifest": "outputs/change-manifest.json",
+    "memory_samples": "outputs/memory-samples.json",
+    "report": "outputs/report.md"
+  }
+}

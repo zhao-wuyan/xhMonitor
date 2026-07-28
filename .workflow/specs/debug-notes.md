@@ -28,3 +28,12 @@ priority: normal
 - 修复这类问题时应补充路径解析测试，覆盖相对路径、绝对路径和 `:memory:`。
 
 </spec-entry>
+
+
+<spec-entry category="debug" keywords="时区,时间戳,数据缺陷,rust迁移,聚合" date="2026-07-26" sid="S-20260726-n9zy" title="ProcessMetricRecords.Timestamp 混存 UTC 与本地时间" description="C# 侧 SpecifyKind 假转换导致 llama 历史行时区偏移；Rust 侧不复刻不补偿" source="analysis/rust-migration-feasibility@2d3c220">
+
+### ProcessMetricRecords.Timestamp 混存 UTC 与本地时间
+
+既有 C# 实现有一个持久化时间基准缺陷：MetricRepository.MapToEntity:79 用 DateTime.SpecifyKind(cycleTimestamp, DateTimeKind.Utc) —— 只贴 Kind 标签不做换算。而调用侧基准不统一：Worker.cs:455-461 的 llama 采样路径传 DateTime.Now（本地），PerformanceMonitor.cs:32 传 DateTime.UtcNow。结果同一列混存两种基准，llama 行整体偏移一个时区（东八区 +8h），而 AggregationWorker 水位线与 DatabaseCleanupWorker 保留期裁剪又一律按 UTC 比较，导致 llama 行的聚合归桶与裁剪时机都是歪的。Rust 迁移的取舍：只接受 DateTime<Utc> 落库，不复刻 SpecifyKind；不做读取端补偿（补偿需猜测每行来源 provider，会把可见的数据缺陷变成不可见的启发式）。
+
+</spec-entry>

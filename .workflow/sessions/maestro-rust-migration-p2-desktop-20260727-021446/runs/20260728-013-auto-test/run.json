@@ -1,0 +1,290 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260728-013-auto-test",
+  "sequence": 13,
+  "parent_run_id": null,
+  "command": {
+    "name": "auto-test",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/auto-test.md",
+    "content_hash": "2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "resolved_prompt_hash": "2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "contract_hash": "0e2f7583ee717c01af422fb5fd76b3a0b1e0b77e4cd8775d7222b7caeeece842"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-013-01",
+    "GATE-013-02",
+    "GATE-013-03",
+    "GATE-013-04",
+    "GATE-013-05",
+    "GATE-013-06",
+    "GATE-013-07",
+    "GATE-013-08",
+    "GATE-013-09",
+    "GATE-013-10",
+    "GATE-013-11"
+  ],
+  "output": {
+    "produces": [],
+    "primary_artifact_id": null,
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260728-013-auto-test",
+    "command": "auto-test",
+    "verdict": "ready",
+    "summary": "test-gen single pass completed: cargo baseline 128/128 passed; both review findings are covered without new tests; diagnosis gaps are recorded without claiming memory improvement.",
+    "constraints": [
+      {
+        "id": "C-AT13-1",
+        "text": "Run artifacts only; xhm-desktop product source remained read-only.",
+        "status": "locked"
+      },
+      {
+        "id": "C-AT13-2",
+        "text": "No new tests were generated because existing coverage is sufficient for all review findings.",
+        "status": "locked"
+      }
+    ],
+    "decisions": [
+      {
+        "id": "D-AT13-1",
+        "text": "L0 is the freshly executed cargo test baseline (128 passed).",
+        "status": "accepted"
+      },
+      {
+        "id": "D-AT13-2",
+        "text": "COR-001 is resolved by the CHG-001 documentation amendment and needs no Rust test.",
+        "status": "accepted"
+      },
+      {
+        "id": "D-AT13-3",
+        "text": "PRF-001 functional regression risk is covered by existing SSE tests; memory reduction remains unproven.",
+        "status": "accepted"
+      }
+    ],
+    "concerns": [],
+    "artifact_refs": [],
+    "next": [],
+    "details": {}
+  },
+  "started_at": "2026-07-28T09:56:02+08:00",
+  "completed_at": "2026-07-28T10:11:47+08:00",
+  "sealed_at": "2026-07-28T10:11:47+08:00",
+  "chain_step_id": "step-012-auto-test",
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "verification",
+          "alias": "latest-verification",
+          "required": false
+        },
+        {
+          "kind": "execution",
+          "alias": "current-execution",
+          "required": false
+        },
+        {
+          "kind": "review-findings",
+          "alias": "latest-review",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "auto-test-report",
+          "primary": false,
+          "path": ".tests/auto-test/report.json",
+          "alias": "latest-auto-test"
+        },
+        {
+          "kind": "test-plan",
+          "primary": false,
+          "path": ".tests/auto-test/test-plan.json"
+        },
+        {
+          "kind": "auto-test-state",
+          "primary": false,
+          "path": ".tests/auto-test/state.json"
+        },
+        {
+          "kind": "reflection-log",
+          "primary": false,
+          "path": ".tests/auto-test/reflection-log.md"
+        },
+        {
+          "kind": "traceability",
+          "primary": false,
+          "path": ".tests/auto-test/traceability.md"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "tests-generated",
+          "execution-converged"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:0e2f7583ee717c01af422fb5fd76b3a0b1e0b77e4cd8775d7222b7caeeece842",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-28T01:56:02.555Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[4].optional is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[4].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/auto-test.md",
+    "content_hash": "sha256:2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "resolved_prompt_hash": "sha256:2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "prepare_hash": "sha256:2322801dcef698201a807084746dc5f92c82e3056998a2728ba647927a6944d0",
+    "workflow_hash": "sha256:08e84983b000600f2e6880286117855bbc299b36cc8114dd835b05df76c939e7",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_142131ee1a5ae234a8a38fd3",
+    "request_id": null,
+    "mode": "chain-next",
+    "authority": "chain-transition",
+    "decided_at": "2026-07-28T09:56:02+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 50,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "test-gen --session {session}"
+    ],
+    "consumes": [
+      "ART-010-002",
+      "ART-012-003",
+      "ART-009-001"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "execution",
+          "alias": "current-execution",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-010-execute",
+          "producer_run_hash": "sha256:6a5090e2cbd3087bfa271cb9653473f7c58380d2f3299e7fc728756df00965a9",
+          "producer_status": "sealed",
+          "artifact_id": "ART-010-002",
+          "artifact_role": "primary",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+          "observed_artifact_hash": "sha256:e8acacad3b517477e4e5668e73ad9d87a3eb743c9a893af861cb3d7324ada332",
+          "artifact_schema": "execution/1.0",
+          "artifact_registry_revision": 12,
+          "producer_contract_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+        },
+        "assessment_hash": "sha256:c69515b8cf24f0989cce29f0a13fdea803da0b521a377e103e612d015659184a"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "review-findings",
+          "alias": "latest-review",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260728-012-review",
+          "producer_run_hash": "sha256:9e03df8f434ed36690bf4cd43b6a301b01aaa4ac58b4d2868a1cdcd80ec34fd8",
+          "producer_status": "sealed",
+          "artifact_id": "ART-012-003",
+          "artifact_role": "attachment",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:2e2ce53a3c9652c28313b69903d09f6fb2f45bcb59125618d8bd559e1a7c3e6c",
+          "observed_artifact_hash": "sha256:2e2ce53a3c9652c28313b69903d09f6fb2f45bcb59125618d8bd559e1a7c3e6c",
+          "artifact_schema": "review-findings/1.0",
+          "artifact_registry_revision": 12,
+          "producer_contract_hash": "sha256:cf5f15e03994559fa3b7543ab838fd95137ebcf53210769936be2ac032b55679"
+        },
+        "assessment_hash": "sha256:548c07f8798b558677b5651dfd24553736694031899d512c5107f078c0490b09"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-009-debug",
+          "producer_run_hash": "sha256:dd6445bda4e60feffd825acc55d3b2f5bf5b963896b4f3a29b9e4d2d27eba586",
+          "producer_status": "sealed",
+          "artifact_id": "ART-009-001",
+          "artifact_role": "attachment",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+          "observed_artifact_hash": "sha256:c0d54d6980c2361b806f334efb2c9b0f0816753e9e8594e070d545706cac474d",
+          "artifact_schema": "diagnosis/1.0",
+          "artifact_registry_revision": 12,
+          "producer_contract_hash": "sha256:fd2e9a8f41463fb30c094dcb1267b71880215e0e352de7edf540ec9d8ec34ed4"
+        },
+        "assessment_hash": "sha256:4ed39ac680519de8082a83d90c4752176150015945985d9ac168a6f5f96491f1"
+      }
+    ]
+  }
+}

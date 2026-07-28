@@ -1,0 +1,18 @@
+{
+  "schema_version": "issue-candidates/1.0",
+  "run_id": "20260728-012-review",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "candidates": [
+    {
+      "finding_ref": "COR-001",
+      "title": "[correctness] Memory gate spec-doc contradiction: docs <10 MiB vs amended goal <40 MiB",
+      "severity": "medium",
+      "priority": 3,
+      "location": "docs/rust-migration-guide.md:305",
+      "description": "P2 Done condition specifies Private Bytes < 10 MiB. Session amended G4 goal done_when from <10 MiB to <40 MiB via amend-g4-memory-threshold-chg001 (status: applied). Amendment is honest: SC-09 records original <10 MiB gate as FAIL (33.66 MiB normal, 37.04 MiB UI_SMOKE, 0/60 below 10 MiB), SC-10 records <40 MiB fallback as PASS. No suppressed thresholds, no fabricated evidence. Spec doc was neither superseded nor conflict-marked, leaving a code/spec contradiction.",
+      "fix_direction": "Route per review contract: maestro spec conflict mark for the threshold dispute (both valid at different scopes: <10 MiB ideal P3 target, <40 MiB P2 reality), then adjudicate via knowledge audit. Do not edit spec in place.",
+      "notes": "Pre-existing condition escalated and amended in prior runs; not a regression introduced by Run 010 code changes.",
+      "tags": ["review", "correctness", "spec-compliance", "memory-gate"]
+    }
+  ]
+}

@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\XhMonitor.Core\XhMonitor.Core.csproj" />
     <ProjectReference Include="..\XhMonitor.Service\XhMonitor.Service.csproj" />
+    <ProjectReference Include="..\lhm-bridge\lhm-bridge.csproj" />
   </ItemGroup>
 
   <ItemGroup>

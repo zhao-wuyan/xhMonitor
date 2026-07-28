@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-003-execute",
+  "changes": [
+    {"path": "Cargo.toml", "change_type": "modify", "task_refs": ["TASK-001", "TASK-002", "TASK-003", "TASK-004"], "summary": "add xhm-desktop member, G1 workspace deps, pin slint/slint-build =1.12.1, add Win32 Shell/WindowsAndMessaging features"},
+    {"path": "Cargo.lock", "change_type": "modify", "task_refs": ["TASK-001", "TASK-002", "TASK-003", "TASK-004"], "summary": "lock xhm-desktop dependency graph: slint 1.12.1, slint-build 1.12.1; tray-icon 0.24.1 removed after Shell_NotifyIconW decision; muda 0.19 workspace dep removed (Slint winit backend still pulls muda 0.17.2 transitively)"},
+    {"path": "xhm-desktop/Cargo.toml", "change_type": "modify", "task_refs": ["TASK-001", "TASK-002", "TASK-003", "TASK-004"], "summary": "desktop crate manifest with windows-sys workspace dep; dead tray-icon/muda workspace deps removed post-review"},
+    {"path": "xhm-desktop/build.rs", "change_type": "create", "task_refs": ["TASK-001"], "summary": "single Slint compilation root"},
+    {"path": "xhm-desktop/ui/shell.slint", "change_type": "create", "task_refs": ["TASK-001"], "summary": "minimal software-rendered host shell with connected/status-text properties"},
+    {"path": "xhm-desktop/src/main.rs", "change_type": "create", "task_refs": ["TASK-001"], "summary": "bootstrap-only executable entrypoint"},
+    {"path": "xhm-desktop/src/lib.rs", "change_type": "modify", "task_refs": ["TASK-001", "TASK-002", "TASK-003", "TASK-004"], "summary": "module root, Slint assembly, bootstrap with active-loop tray timer (install_tray_runtime)"},
+    {"path": "xhm-desktop/src/tray/mod.rs", "change_type": "modify", "task_refs": ["TASK-002"], "summary": "Shell_NotifyIconW fallback as sole active tray path; tray-icon 0.24.1 evaluated and rejected (no balloon/notification-click)"},
+    {"path": "xhm-desktop/src/tray/event_bridge.rs", "change_type": "modify", "task_refs": ["TASK-002"], "summary": "seven-command UI queue boundary"},
+    {"path": "xhm-desktop/src/tray/native.rs", "change_type": "create", "task_refs": ["TASK-002"], "summary": "Shell_NotifyIconW native tray: hidden HWND, 7-item menu, checked toggle, balloon notification, double-click, exit; WndProc forwards to channel"},
+    {"path": "xhm-desktop/src/config.rs", "change_type": "modify", "task_refs": ["TASK-003"], "summary": "exe-relative endpoint discovery with injected ConfigReader/PortProbe, Url origin normalization, deterministic isolated tests"},
+    {"path": "xhm-desktop/src/service_client/mod.rs", "change_type": "modify", "task_refs": ["TASK-003", "TASK-004"], "summary": "REST/SSE client module root with SseControl/SseSubscription exports"},
+    {"path": "xhm-desktop/src/service_client/rest.rs", "change_type": "create", "task_refs": ["TASK-003"], "summary": "typed existing-route REST client"},
+    {"path": "xhm-desktop/src/service_client/sse.rs", "change_type": "modify", "task_refs": ["TASK-004"], "summary": "supervised SSE: watch-driven resubscribe, cancellable connect/send, retry reset, lifecycle messages, paused-time tests"},
+    {"path": "xhm-desktop/src/desktop_state.rs", "change_type": "modify", "task_refs": ["TASK-004"], "summary": "UI-neutral pure reducer with lifecycle, Lite stale removal, PID reuse clearing, maxima preserve"}
+  ],
+  "restricted_paths_touched": [],
+  "scope_assertion": "No xhmonitor-web, XhMonitor.Desktop, XhMonitor.Service, XhMonitor.Core, xhm-core, xhm-service, or C# code was modified. Only root Cargo.toml/Cargo.lock and xhm-desktop/** were changed."
+}

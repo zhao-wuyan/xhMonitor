@@ -1,0 +1,207 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-008-verify",
+  "sequence": 8,
+  "parent_run_id": null,
+  "command": {
+    "name": "verify",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/verify.md",
+    "content_hash": "90d3c63f09cc2875ceeba0db19d197f3d6a37ae5e780974bb0a7a9b30bf61778",
+    "resolved_prompt_hash": "90d3c63f09cc2875ceeba0db19d197f3d6a37ae5e780974bb0a7a9b30bf61778",
+    "contract_hash": "eba25fc10b133a1086e9ab80f46e60de666d9c674dd680f9ba858aa3b949e1da"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-008-01",
+    "GATE-008-02",
+    "GATE-008-03",
+    "GATE-008-04",
+    "GATE-008-05",
+    "GATE-008-06",
+    "GATE-008-07"
+  ],
+  "output": {
+    "produces": [],
+    "primary_artifact_id": null,
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260727-008-verify",
+    "command": "verify",
+    "verdict": "ready",
+    "summary": "Verify Run 已绑定 current-plan/current-execution，但 chain_effects=[]，无法合法产出 repair proposal。",
+    "constraints": [],
+    "decisions": [],
+    "concerns": [
+      "Runtime 未授予 plan/verify Skill pending-tail mutation capability；需 post-execute escalate + audited recovery retry。"
+    ],
+    "artifact_refs": [],
+    "next": [],
+    "details": {}
+  },
+  "started_at": "2026-07-27T22:39:37+08:00",
+  "completed_at": "2026-07-27T22:43:27+08:00",
+  "sealed_at": "2026-07-27T22:43:27+08:00",
+  "chain_step_id": null,
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "plan",
+          "alias": "current-plan",
+          "required": true
+        },
+        {
+          "kind": "execution",
+          "alias": "current-execution",
+          "required": true
+        }
+      ],
+      "produces": [
+        {
+          "kind": "verification",
+          "primary": false,
+          "path": "outputs/verification.json",
+          "alias": "latest-verification"
+        },
+        {
+          "kind": "requirement-coverage",
+          "primary": false,
+          "path": "outputs/requirement-coverage.json"
+        },
+        {
+          "kind": "antipattern-report",
+          "primary": false,
+          "path": "outputs/antipattern-report.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "goal-backward-verified",
+          "nyquist-covered"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:eba25fc10b133a1086e9ab80f46e60de666d9c674dd680f9ba858aa3b949e1da",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-27T14:39:37.381Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/verify.md",
+    "content_hash": "sha256:90d3c63f09cc2875ceeba0db19d197f3d6a37ae5e780974bb0a7a9b30bf61778",
+    "resolved_prompt_hash": "sha256:90d3c63f09cc2875ceeba0db19d197f3d6a37ae5e780974bb0a7a9b30bf61778",
+    "prepare_hash": "sha256:90d3c63f09cc2875ceeba0db19d197f3d6a37ae5e780974bb0a7a9b30bf61778",
+    "workflow_hash": "sha256:17d50f9869a23a89af7622e6e6f837934d8220d31d4013a59250401baf3b0c31",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_bc017944c2df580b7e56dfb3",
+    "request_id": null,
+    "mode": "explicit-create",
+    "authority": "explicit-command",
+    "decided_at": "2026-07-27T22:39:37+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 21,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "strict verify memory hard gate and G3 three parity gaps; propose one bounded repair execute step, fallback acceptance <40 MiB only if optimized release still fails <10 MiB"
+    ],
+    "consumes": [
+      "ART-002-004",
+      "ART-006-002"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "plan",
+          "alias": "current-plan",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-002-plan",
+          "producer_run_hash": "sha256:e79170dad7557c6fe35f6697c229ab4ef632c6838eefec78168fd2a1ae1a7b2d",
+          "producer_status": "sealed",
+          "artifact_id": "ART-002-004",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "observed_artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "artifact_schema": "plan/1.0",
+          "artifact_registry_revision": 7,
+          "producer_contract_hash": "sha256:20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41"
+        },
+        "assessment_hash": "sha256:c5469a370823a4399324393cb5805d772ac003e2660b15a440f266d72cb8fd02"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "execution",
+          "alias": "current-execution",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-006-execute",
+          "producer_run_hash": "sha256:9ca69dde6e74c7c96b90fe62acd0fce5b68a0cfa7e796ccc39fe1554615b13e2",
+          "producer_status": "sealed",
+          "artifact_id": "ART-006-002",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:4aae4ef58d8ecc6118f039cf5c0c7b7445cc1b7329dadb00510004f999a028e3",
+          "observed_artifact_hash": "sha256:4aae4ef58d8ecc6118f039cf5c0c7b7445cc1b7329dadb00510004f999a028e3",
+          "artifact_schema": "execution/1.0",
+          "artifact_registry_revision": 7,
+          "producer_contract_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+        },
+        "assessment_hash": "sha256:4b6ced23d5c917d62beafbce30c139140503fc7f83237f120fe3434ddeea242a"
+      }
+    ]
+  }
+}

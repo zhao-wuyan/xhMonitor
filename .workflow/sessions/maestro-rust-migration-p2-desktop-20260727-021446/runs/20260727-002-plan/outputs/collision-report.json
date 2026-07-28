@@ -1,0 +1,257 @@
+{
+  "_meta": {
+    "kind": "collision-report",
+    "schema": "collision-report/1.0",
+    "role": "attachment",
+    "alias": "collision-report"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-002-plan",
+  "calculation": {
+    "basis": "Exact intersections of task files[] within each wave; read_first is excluded.",
+    "wave_count": 14,
+    "task_count": 14
+  },
+  "same_wave_conflicts": {
+    "count": 0,
+    "items": []
+  },
+  "resolved_sequential_shared_files": {
+    "count": 14,
+    "items": [
+      {
+        "file": "Cargo.toml",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-003@WAVE-003",
+          "TASK-004@WAVE-004"
+        ],
+        "resolution": "TASK-001→TASK-002→TASK-003→TASK-004；workspace/dependency 更新只在 G1 串行。"
+      },
+      {
+        "file": "Cargo.lock",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-002@WAVE-002",
+          "TASK-003@WAVE-003",
+          "TASK-004@WAVE-004"
+        ],
+        "resolution": "G1 manifest 任务依次更新锁文件。"
+      },
+      {
+        "file": "xhm-desktop/Cargo.toml",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-002@WAVE-002",
+          "TASK-003@WAVE-003",
+          "TASK-004@WAVE-004"
+        ],
+        "resolution": "crate→tray 0.24.1→HTTP→SSE 依赖顺序。"
+      },
+      {
+        "file": "xhm-desktop/build.rs",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-009@WAVE-009",
+          "TASK-013@WAVE-013"
+        ],
+        "resolution": "基础 compile root→OrganicShell export→最终 settings/about import；跨 goal barrier 串行。"
+      },
+      {
+        "file": "xhm-desktop/src/lib.rs",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-003@WAVE-003",
+          "TASK-004@WAVE-004",
+          "TASK-008@WAVE-008",
+          "TASK-013@WAVE-013"
+        ],
+        "resolution": "模块 export/装配按依赖链逐步加入。"
+      },
+      {
+        "file": "xhm-desktop/src/main.rs",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-002@WAVE-002",
+          "TASK-008@WAVE-008",
+          "TASK-013@WAVE-013"
+        ],
+        "resolution": "最小壳→tray spike→双窗 shell→最终四窗口/tray callbacks。"
+      },
+      {
+        "file": "xhm-desktop/ui/shell.slint",
+        "owners": [
+          "TASK-001@WAVE-001",
+          "TASK-002@WAVE-002",
+          "TASK-008@WAVE-008",
+          "TASK-009@WAVE-009",
+          "TASK-010@WAVE-010",
+          "TASK-012@WAVE-012",
+          "TASK-013@WAVE-013"
+        ],
+        "resolution": "唯一 Slint compile root；所有 import/export 依 task DAG 串行。"
+      },
+      {
+        "file": "xhm-desktop/src/service_client/mod.rs",
+        "owners": [
+          "TASK-003@WAVE-003",
+          "TASK-004@WAVE-004"
+        ],
+        "resolution": "REST/config export 先于 SSE export。"
+      },
+      {
+        "file": "xhm-desktop/src/tray/mod.rs",
+        "owners": [
+          "TASK-002@WAVE-002",
+          "TASK-008@WAVE-008"
+        ],
+        "resolution": "spike 通过后才生产化。"
+      },
+      {
+        "file": "xhm-desktop/src/tray/event_bridge.rs",
+        "owners": [
+          "TASK-002@WAVE-002",
+          "TASK-008@WAVE-008"
+        ],
+        "resolution": "active-loop spike bridge 先于 shell lifecycle wiring。"
+      },
+      {
+        "file": "xhm-desktop/src/win32/mod.rs",
+        "owners": [
+          "TASK-005@WAVE-005",
+          "TASK-006@WAVE-006",
+          "TASK-007@WAVE-007"
+        ],
+        "resolution": "window primitives→placement→process action exports。"
+      },
+      {
+        "file": "xhm-desktop/src/ui/mod.rs",
+        "owners": [
+          "TASK-010@WAVE-010",
+          "TASK-011@WAVE-011",
+          "TASK-012@WAVE-012",
+          "TASK-013@WAVE-013"
+        ],
+        "resolution": "floating projection→interaction→taskbar→settings/about exports。"
+      },
+      {
+        "file": "xhm-desktop/ui/floating_window.slint",
+        "owners": [
+          "TASK-010@WAVE-010",
+          "TASK-011@WAVE-011"
+        ],
+        "resolution": "呈现先于交互 wiring。"
+      },
+      {
+        "file": "xhm-desktop/src/ui/floating_window.rs",
+        "owners": [
+          "TASK-010@WAVE-010",
+          "TASK-011@WAVE-011"
+        ],
+        "resolution": "state projection 先于 interaction dispatch。"
+      }
+    ]
+  },
+  "read_only_overlap_excluded": [
+    {
+      "paths": [
+        "xhm-core/src/wire.rs",
+        "xhm-core/src/models.rs",
+        "xhm-service/src/state.rs",
+        "xhm-service/src/realtime/mod.rs",
+        "xhm-service/src/api/config.rs",
+        "xhm-service/src/api/power.rs",
+        "xhm-service/src/api/widget.rs"
+      ],
+      "consumers": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-010",
+        "TASK-012",
+        "TASK-013"
+      ],
+      "reason": "冻结 contract source，仅 read_first；无 files[] 写目标。"
+    },
+    {
+      "paths": [
+        "XhMonitor.Desktop/**"
+      ],
+      "consumers": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "reason": "行为/资产/测试证据只读；P2 与 C# 并行。"
+    },
+    {
+      "paths": [
+        "xhmonitor-web/**"
+      ],
+      "consumers": [
+        "TASK-008",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "reason": "只打开既有 http://localhost:35180，不写前端。"
+    },
+    {
+      "paths": [
+        "xhm-desktop/ui/components/organic_shell.slint"
+      ],
+      "consumers": [
+        "TASK-012"
+      ],
+      "reason": "G3 TASK-009 owns/write；G4 taskbar 只读 import，不计 write collision。"
+    },
+    {
+      "paths": [
+        "XhMonitor.Desktop/service-endpoints.json"
+      ],
+      "consumers": [
+        "TASK-003",
+        "TASK-014"
+      ],
+      "reason": "exe-relative fixture/兼容输入只读。"
+    },
+    {
+      "paths": [
+        "XhMonitor.Desktop/Assets/icon.ico"
+      ],
+      "consumers": [
+        "TASK-002",
+        "TASK-008"
+      ],
+      "reason": "品牌资产只读复用。"
+    }
+  ],
+  "restricted_prefix_write_audit": {
+    "prefixes": [
+      "xhmonitor-web/",
+      "XhMonitor.Desktop/",
+      "xhm-service/",
+      "xhm-core/"
+    ],
+    "planned_write_targets": [],
+    "count": 0,
+    "root_workspace_exception": [
+      "Cargo.toml",
+      "Cargo.lock"
+    ],
+    "result": "pass"
+  },
+  "resolution_policy": [
+    "同一 shared file 的 owner 必须先完成前一 task，并在编辑前 re-read。",
+    "依赖 task 失败或 spike NO-GO 时后继不得写 shared file。",
+    "不得用并行 cherry-pick 或 duplicate compile root 规避碰撞。"
+  ]
+}

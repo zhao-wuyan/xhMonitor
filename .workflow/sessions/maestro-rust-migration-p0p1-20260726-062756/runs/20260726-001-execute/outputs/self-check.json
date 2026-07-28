@@ -1,0 +1,73 @@
+{
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "evidence"
+  },
+  "result": "passed",
+  "ran_at_stage": "execute",
+  "checks": [
+    {
+      "id": "build-rust",
+      "kind": "build",
+      "command": "cargo build -p xhm-core",
+      "status": "passed",
+      "detail": "workspace 解析成功，crate 编译通过"
+    },
+    {
+      "id": "test-rust",
+      "kind": "test",
+      "command": "cargo test -p xhm-core",
+      "status": "passed",
+      "detail": "52 passed; 0 failed; 0 ignored",
+      "counts": { "passed": 52, "failed": 0, "ignored": 0 }
+    },
+    {
+      "id": "lint-rust",
+      "kind": "lint",
+      "command": "cargo clippy -p xhm-core --all-targets -- -D warnings",
+      "status": "passed",
+      "detail": "零警告（修复 1 处 needless_borrows_for_generic_args）"
+    },
+    {
+      "id": "build-dotnet",
+      "kind": "build",
+      "command": "dotnet build -c Release (lhm-bridge)",
+      "status": "passed",
+      "detail": "0 警告 0 错误；产出 lhm-bridge.dll / lhm-bridge.exe (win-x64 self-contained)"
+    },
+    {
+      "id": "smoke-bridge-output",
+      "kind": "smoke",
+      "command": "lhm-bridge.exe --interval 500",
+      "status": "passed",
+      "detail": "stderr 首行输出 banner JSON；stdout 逐行输出 LhmSnapshot JSON Lines，含 gpu_temp / gpu_load / net_up_mbps / net_down_mbps / disk_read_mbps / disk_write_mbps"
+    },
+    {
+      "id": "smoke-bridge-graceful-exit",
+      "kind": "smoke",
+      "command": "PTY 发送真实 Ctrl+C 至 lhm-bridge.exe",
+      "status": "passed",
+      "detail": "进程退出码 0（首次用 hub stop 硬终止得到 exit=1，改用 PTY 真实信号后复测通过）"
+    },
+    {
+      "id": "smoke-bridge-elevated",
+      "kind": "smoke",
+      "command": "以管理员身份运行 lhm-bridge.exe 并检查 cpu_temp + cpu_temp_label",
+      "status": "not_run",
+      "detail": "当前会话进程非管理员，无法取得提权证据。非提权降级路径已验证正确（banner is_admin:false + 温度键缺失）。"
+    }
+  ],
+  "tech_stack_scan": {
+    "status": "passed",
+    "allowed_languages": ["rust", "csharp"],
+    "violations": []
+  },
+  "gaps": [
+    {
+      "id": "C-P0-1",
+      "detail": "lhm-bridge 提权路径（cpu_temp + cpu_temp_label）未取得证据，需开发机以管理员身份复核。",
+      "blocking": false
+    }
+  ]
+}

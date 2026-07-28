@@ -1,0 +1,276 @@
+{
+  "_meta": {
+    "kind": "plan-check",
+    "schema": "plan-check/1.0",
+    "role": "evidence"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-002-plan",
+  "status": "PASS",
+  "ready": true,
+  "checked_at": "2026-07-27T11:48:00+08:00",
+  "checked_by": "P2PlanExecutor (direct structural check)",
+  "plan_ref": "outputs/plan.json#aref:current-plan",
+  "inputs": [
+    "outputs/plan.json",
+    "outputs/tasks/TASK-001..014.json",
+    "outputs/waves.json",
+    "outputs/dependency-graph.json",
+    "outputs/collision-report.json",
+    "sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-001-analyze/outputs/findings.json",
+    "sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-001-analyze/outputs/priors.json",
+    "sessions/maestro-rust-migration-p2-desktop-20260727-021446/session.json",
+    "docs/rust-migration-guide.md:238-308"
+  ],
+  "counts": {
+    "tasks": 14,
+    "waves": 14,
+    "dependency_edges": 28,
+    "cataloged_requirements": 54,
+    "covered_requirements": 54,
+    "uncovered_requirements": 0,
+    "same_wave_write_conflicts": 0,
+    "resolved_sequential_shared_files": 14,
+    "restricted_prefix_write_violations": 0,
+    "task_files_written": 14,
+    "estimated_minutes_total": 765
+  },
+  "goal_distribution": {
+    "G1": 4,
+    "G2": 4,
+    "G3": 3,
+    "G4": 3
+  },
+  "topological_order": [
+    "TASK-001",
+    "TASK-002",
+    "TASK-003",
+    "TASK-004",
+    "TASK-005",
+    "TASK-006",
+    "TASK-007",
+    "TASK-008",
+    "TASK-009",
+    "TASK-010",
+    "TASK-011",
+    "TASK-012",
+    "TASK-013",
+    "TASK-014"
+  ],
+  "confidence": {
+    "overall": 0.94,
+    "dimensions": {
+      "requirements_coverage": {
+        "score": 1,
+        "weight": 0.3,
+        "evidence": "54/54 cataloged requirements covered; P2 guide rows, 8 session execution_criteria, G1-G4 done_when, and boundary exclusions each mapped to responsible task(s) with evidence."
+      },
+      "task_quality": {
+        "score": 0.9,
+        "weight": 0.25,
+        "evidence": "Each task carries concrete action, implementation_steps with exact files/symbols, read_first, grep/CLI/manual convergence_criteria, richer verify object, acceptance_evidence, rollback. Minor: verify is an object richer than the skeleton verify:[]."
+      },
+      "dependency_correctness": {
+        "score": 1,
+        "weight": 0.2,
+        "evidence": "28 dependency edges; all dependencies exist, precede dependents in topological and wave order; dependency-graph acyclic=true and matches task deps 1:1; no extra edges."
+      },
+      "estimation_accuracy": {
+        "score": 0.8,
+        "weight": 0.15,
+        "evidence": "14 tasks span 30-60 min, total 765 min; several at the 60-minute ceiling for milestone work; revise if execute reports slippage."
+      },
+      "collision_safety": {
+        "score": 0.95,
+        "weight": 0.1,
+        "evidence": "Zero same-wave exact write intersections across 14 waves; 14 sequential shared files (workspace/Cargo.toml/Cargo.lock, crate manifest/build/lib/main, ui/shell.slint compile root) accounted for in collision-report with owning tasks/waves and dependency-based resolution."
+      }
+    },
+    "factors": {
+      "completeness": 0.3,
+      "specificity": 0.25,
+      "structural_validity": 0.2,
+      "user_validation": 0.15,
+      "consistency": 0.1
+    }
+  },
+  "pressure_pass": {
+    "target_task": "TASK-011",
+    "rationale": "Highest-complexity main-window interaction task: threshold colors + ThinProgressBar + PinnedStack + virtualized ListView + drag/snap 24px + long-press 2s scale 1.0->0.90 + click 0.92@50ms/1.0@150ms + Kill double-confirm 1s arc circumference 43.98 + Toast, layered on top of the organic-animation go/no-go spike.",
+    "read_first_complete": true,
+    "convergence_grep_or_ui_observable": true,
+    "action_concrete_values": true,
+    "dependencies_satisfied_first": true,
+    "outcome": "PASS — read_first cites exact FloatingWindow.xaml.cs:575-755,810-933; convergence cites #990A0A0A, 3px ThinProgressBar, 24px snap, 2s/0.90 long-press, 50ms/150ms click, 1s/43.98 Kill arc; rollback removes ui/floating_window.* only."
+  },
+  "boundary_grill": [
+    {
+      "type": "RSC",
+      "conflict": "Plan decomposes execute-scoped work across four goal-specific execute Runs.",
+      "resolution": "ACCEPTED — plan.json carries goal_execution_bindings G1->step-003, G2->step-004, G3->step-005, G4->step-006 and waves/tasks inherit the single goal_ref/execute_step_id; plan stays within the plan command scope.",
+      "evidence": "outputs/plan.json#goal_execution_bindings"
+    },
+    {
+      "type": "DEC",
+      "conflict": "Locked decision winit-software vs. potential Skia fallback if organic spike fails.",
+      "resolution": "RESOLVED — locked_decisions forbid renderer swap; TASK-009 spike may only emit a go/no-go decision and block downstream UI on no-go, never change the renderer.",
+      "evidence": "outputs/plan.json#locked_decisions; docs/rust-migration-guide.md:384"
+    },
+    {
+      "type": "DEC",
+      "conflict": "Locked five-PushEvent contract vs. any new client-side event.",
+      "resolution": "RESOLVED — TASK-004 maps the exact five xhm-core PushEvent constants to /api/v1/events payloads and forbids protocol extension.",
+      "evidence": "xhm-core/src/wire.rs:17-228; outputs/plan.json#locked_decisions"
+    },
+    {
+      "type": "MOD",
+      "conflict": "Plan touches workspace root plus the new crate, spanning multiple modules.",
+      "resolution": "ACCEPTED — only xhm-desktop/* is created; collision-report restricts writes outside xhm-desktop to root Cargo.toml/Cargo.lock dependency consumption.",
+      "evidence": "outputs/collision-report.json#restricted_prefix_write_audit"
+    }
+  ],
+  "scope_minimizer": {
+    "task_count": 14,
+    "guardrail": "<=16 for large milestone",
+    "within_budget": true,
+    "note": "14 tasks (G1=4, G2=4, G3=3, G4=3); no artificial split — each task is a vertical feature slice; smoke/quality verification consolidated into TASK-014."
+  },
+  "devils_advocate": {
+    "implicit_requirement_probe": "Does the plan smuggle in P3 work?",
+    "response": "No — all G3/G4 delivery tasks (TASK-009..TASK-013) carry >=1 [UI-observable] convergence criterion.",
+    "coverage_completeness_probe": "Any UI delivery wave without a [UI-observable] criterion?"
+  },
+  "checks": [
+    {
+      "id": "CHK-META",
+      "name": "Artifact _meta kind/schema/role",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-TASK-PARITY",
+      "name": "plan.task_ids equal TASK file IDs",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-WAVE-PARITY",
+      "name": "plan.wave_ids equal waves.json; task->wave 1:1",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-DEPS-EXIST",
+      "name": "Every dependency exists and precedes in topo+wave order",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-ACYCLIC",
+      "name": "dependency-graph acyclic and matches task deps 1:1",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-NO-COLLISION",
+      "name": "No same-wave exact write intersections",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-SHARED-ACCOUNTED",
+      "name": "All sequential shared files reported",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-RESTRICTED",
+      "name": "No restricted product-prefix write targets",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-GOAL-BINDING",
+      "name": "goal_execution_bindings match goal_ref and task IDs",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-REQ-COVERAGE",
+      "name": "All cataloged requirements covered with evidence",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-SPIKES",
+      "name": "Early tray+Slint and organic-animation go/no-go spikes present",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-CONTRACT",
+      "name": "Five PushEvent / /api/v1/events / 35181 / current_exe config locked",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-NO-HOTKEY",
+      "name": "No RegisterHotKey/WM_HOTKEY/Ctrl+Alt+Shift+X",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-NO-INSTALLER",
+      "name": "No installer download/launch or P3 cutover",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-UI-OBSERVABLE",
+      "name": "Every G3/G4 delivery task has [UI-observable] criterion",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-EVIDENCE",
+      "name": "Manual Windows smoke + Private Bytes + 4K + cargo test/clippy covered",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-PRESSURE",
+      "name": "Pressure pass on highest-complexity task",
+      "status": "pass"
+    },
+    {
+      "id": "CHK-TASK-SIZE",
+      "name": "Each task 15-60 min, no trivial <5 min tasks",
+      "status": "warning",
+      "note": "Several tasks at 60-min ceiling; acceptable for milestone."
+    }
+  ],
+  "issues": [],
+  "critical_issues": [],
+  "blocking_issues": [],
+  "warnings": [
+    "verify schema is the richer object {commands[], manual_scenarios[], expected} rather than the prepare skeleton's verify:[]; semantically complete and internally consistent — non-blocking.",
+    "estimated_minutes total 765 across 14 tasks; several tasks at the 60-minute ceiling; revisit if execute reports slippage.",
+    "coverage_map references participating evidence tasks (e.g. smoke/quality TASK-014) without duplicating every requirement id into each task.requirement_refs; structural coverage remains 54/54 with evidence and is recorded as informational, not a failure."
+  ],
+  "residual_risks": [
+    {
+      "id": "RR-01",
+      "risk": "winit-software organic animation visual mismatch with the HTML/C# baseline.",
+      "mitigation": "TASK-009 go/no-go spike with recorded evidence; on no-go downstream UI blocks and an explicit decision is required (no renderer swap).",
+      "status": "open"
+    },
+    {
+      "id": "RR-02",
+      "risk": "tray-icon 0.24.1 + Slint active event loop coexistence panic/event loss.",
+      "mitigation": "TASK-002 go/no-go spike with EventLoopProxy forwarding; recorded Shell_NotifyIcon fallback only.",
+      "status": "open"
+    },
+    {
+      "id": "RR-03",
+      "risk": "Multi-monitor DPI coordinate transform pixel divergence vs C# TransformDevicePointToLogical.",
+      "mitigation": "Pure-function PlacementCalculator with table-driven tests + 4K manual smoke in TASK-014.",
+      "status": "open"
+    },
+    {
+      "id": "RR-04",
+      "risk": "Deferred system-level settings mislead users in P2 UI.",
+      "mitigation": "AdminMode/Startup/LAN/Firewall/System read-only/disabled with 'P3 启用' label; no system writes.",
+      "status": "accepted"
+    }
+  ],
+  "recommendation": "PASS — proceed to execute. The plan is internally consistent, acyclic, collision-free, covers all P2 guide rows, session execution_criteria, and G1-G4 done conditions, and carries go/no-go spikes plus full Windows/4K/memory/quality evidence. Address warnings during execute; no blocking issues.",
+  "synthesis_notes": [
+    "Unified 8+6 planner proposals into 14 consecutive TASKs aligned to G1->G2->G3->G4 execute steps.",
+    "TASK-002 owns the tray+Slint spike under G1 and gates TASK-008 tray implementation; TASK-009 owns the organic-animation spike under G3 and gates TASK-010/011/012.",
+    "No task carries multiple goal_refs; shared bootstrap files resolved sequentially via dependencies, not parallel writes."
+  ]
+}

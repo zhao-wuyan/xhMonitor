@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-013"
+  },
+  "id": "TASK-013",
+  "title": "实现设置、About、仅检查更新并接入 tray/bootstrap",
+  "description": "完成 P2 扩展系统界面；只写允许的非系统设置，更新仅 Gitee check+prompt，并把所有 tray command 接到真实窗口。",
+  "type": "integration",
+  "status": "pending",
+  "goal_ref": "G4",
+  "execute_step_id": "step-006-execute",
+  "wave_id": "WAVE-013",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "P2-C12",
+    "P2-C13",
+    "P2-C14",
+    "P2-C15",
+    "G4-DONE",
+    "SESSION-EC-06",
+    "BOUNDARY-SYSTEM-SETTINGS-READONLY",
+    "BOUNDARY-NO-INSTALLER",
+    "BOUNDARY-NO-P3",
+    "BOUNDARY-NO-CSHARP-CUTOVER",
+    "BOUNDARY-NO-WEB-WRITES"
+  ],
+  "deps": [
+    "TASK-012",
+    "TASK-003",
+    "TASK-011",
+    "TASK-002",
+    "TASK-008"
+  ],
+  "files": [
+    "xhm-desktop/ui/settings.slint",
+    "xhm-desktop/src/ui/settings.rs",
+    "xhm-desktop/ui/about.slint",
+    "xhm-desktop/src/ui/about.rs",
+    "xhm-desktop/src/ui/update_check.rs",
+    "xhm-desktop/src/ui/mod.rs",
+    "xhm-desktop/ui/shell.slint",
+    "xhm-desktop/build.rs",
+    "xhm-desktop/src/lib.rs",
+    "xhm-desktop/src/main.rs"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/Windows/SettingsWindow.xaml:340-401,704-932,1002-1006",
+    "XhMonitor.Desktop/ViewModels/SettingsViewModel.cs:18-218,359-527",
+    "xhm-service/src/api/config.rs:19,69-85,235-350,578-646",
+    "XhMonitor.Desktop/Windows/AboutWindow.xaml:62-120",
+    "XhMonitor.Desktop/Windows/AboutWindow.xaml.cs:6-38",
+    "XhMonitor.Desktop/Windows/AppUpdatePanelController.cs:6-70",
+    "XhMonitor.Desktop/Services/GitHubAppUpdateService.cs:17-22,61-179,369-628,814-852",
+    "XhMonitor.Desktop/Configuration/AppUpdateOptions.cs:3-19",
+    "XhMonitor.Desktop/Services/TrayIconService.cs:42-107,128-187",
+    "TASK-008 ShellCommand 与 tray callback 实际符号"
+  ],
+  "action": "用 G1 settings REST 实现允许键的 subset GET/PUT；About 只做 Gitee latest check+prompt；最后一次性注册 G3/G4 窗口和七项 tray callback。",
+  "implementation_steps": [
+    "可写项严格限于 Appearance.Opacity(20..100)、DataCollection.ProcessKeywords（JSON array string）、Monitoring 的 CPU/Memory/GPU/VRAM/Power/Network、EnableFloatingMode/EnableEdgeDockMode、现有 7 labels、DockColumnGap(0..24)、DockVisualStyle Bar/Text。",
+    "AdminMode、Startup、LAN、Firewall/System 全部 read-only/disabled，并显示 P3 启用；不得写注册表、计划任务、防火墙、Service 配置或触发重启。PUT 仅发送允许 subset，未知 category/key 不丢失。",
+    "About 显示 XhMonitor、Rust app version、项目说明；状态 Idle/Checking/SourceUnavailable/UpToDate/UpdateAvailable/Error。",
+    "只 GET https://gitee.com/api/v5/repos/zhaowuyan/xhMonitor/releases/tags/latest，解析 tag_name/name/body/assets[].name/browser_download_url|download_url|url 与 Source release: vX.Y.Z，仅比较版本并提示；不得下载、缓存或启动 installer。",
+    "一次性接线：show/hide+double-click→主窗，Web→既有 35180，click-through→G2/G3 state，settings/about→对应窗口，exit→双窗/SSE/tray teardown；startup update notification click 打开 About，Admin 保持 deferred。"
+  ],
+  "convergence_criteria": [
+    "Test：settings mock GET/PUT 覆盖 subset、缺项、错误；deferred 控件产生 0 PUT/0 系统调用。",
+    "Test：update 404/invalid/up-to-date/newer/error 状态确定，只有一次 check request，filesystem/process launch counters 为 0。",
+    "[UI-observable] 手工：修改允许设置后主窗/任务栏即时更新，失败保留编辑值；系统项灰显并显示 P3 启用。",
+    "[UI-observable] 手工：七项 tray、About 各状态、notification click 和四窗口打开/关闭路径完整。",
+    "CLI：update_check.rs 不含 Downloading、Downloaded、download_installer、launch_installer、Command::new 或 ShellExecute。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop settings",
+      "cargo test -p xhm-desktop update_check",
+      "rg -n \"Downloading|Downloaded|download_installer|launch_installer|Command::new|ShellExecute\" xhm-desktop/src/ui/update_check.rs"
+    ],
+    "manual_scenarios": [
+      "允许设置保存与 deferred 点击",
+      "About check 各状态",
+      "tray 七项、双击与 notification click。"
+    ],
+    "expected": "扩展 UI 可用且无系统级写入、下载或 installer 启动。"
+  },
+  "acceptance_evidence": [
+    "settings request body 与 deferred 0-write",
+    "update mock URL/state/0-side-effect",
+    "设置/About/tray 截图录屏"
+  ],
+  "rollback": {
+    "steps": [
+      "回退 settings/about/update modules",
+      "回退共享 root/bootstrap 注册"
+    ],
+    "preserves": [
+      "G1-G3",
+      "taskbar UI",
+      "服务与 C#"
+    ]
+  }
+}

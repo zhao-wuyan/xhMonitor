@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "change-manifest/1.0",
+  "run_id": "20260727-005-execute",
+  "goal_ref": "G3",
+  "scope": "xhm-desktop/ui/**, xhm-desktop/examples/organic_animation_spike.rs, xhm-desktop/src/ui/**, xhm-desktop/src/lib.rs",
+  "created_files": [
+    "xhm-desktop/ui/components/organic_shell.slint",
+    "xhm-desktop/ui/floating_window.slint",
+    "xhm-desktop/examples/organic_animation_spike.rs",
+    "xhm-desktop/src/ui/mod.rs",
+    "xhm-desktop/src/ui/floating_window.rs",
+    "xhm-desktop/src/ui/floating_interactions.rs"
+  ],
+  "modified_files": [
+    "xhm-desktop/ui/shell.slint",
+    "xhm-desktop/src/lib.rs"
+  ],
+  "unchanged_files": [
+    "xhm-desktop/Cargo.toml",
+    "xhm-desktop/build.rs",
+    "xhm-desktop/src/main.rs",
+    "xhm-desktop/src/config.rs",
+    "xhm-desktop/src/desktop_state.rs",
+    "xhm-desktop/src/service_client/**",
+    "xhm-desktop/src/shell.rs",
+    "xhm-desktop/src/tray/**",
+    "xhm-desktop/src/win32/**",
+    "xhmonitor-web/**",
+    "XhMonitor.*/**",
+    "xhm-core/**",
+    "xhm-service/**"
+  ],
+  "module_summary": {
+    "ui/components/organic_shell.slint": "Reusable six-state OrganicShell with renderer-safe radii, contact edges, shadows, gaps, transition, and independent timeline harness window",
+    "ui/floating_window.slint": "Main #990A0A0A-equivalent floating UI with six metrics, threshold colors, 3px ThinProgressBar, model PinnedStack, ListView process details, disk rows, Kill confirmation, and Toast",
+    "examples/organic_animation_spike.rs": "Release winit-software GO/NO-GO harness entry point with explicit backend evidence",
+    "src/ui/floating_window.rs": "DesktopState projection, Slint model dispatch, panel/pin bindings, power sequence, KillOnce integration, Toast lifecycle, and production callback wiring",
+    "src/ui/floating_interactions.rs": "Injectable monotonic interaction machines, exact timing boundaries, DPI mapping, monitor work-area detection, and snap release geometry",
+    "src/lib.rs": "Consumes G1/G2 state/SSE/window resources, installs G3 runtime, dispatches SSE projections, resubscribes mode/pins, owns UI timer and smoke process, and keeps deterministic shutdown",
+    "ui/shell.slint": "Re-exports the G3 Shell/data structs and organic spike while preserving the independent G2 TaskbarWindow"
+  }
+}

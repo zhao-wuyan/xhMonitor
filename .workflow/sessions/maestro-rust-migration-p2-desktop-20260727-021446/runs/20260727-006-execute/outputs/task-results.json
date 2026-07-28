@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "kind": "task-results",
+    "schema": "task-results/1.0",
+    "role": "attachment"
+  },
+  "schema_version": "task-results/1.0",
+  "run_id": "20260727-006-execute",
+  "goal_ref": "G4",
+  "tasks": [
+    {
+      "task_id": "TASK-012",
+      "plan_ref": "WAVE-012",
+      "title": "完成任务栏指标第二窗口与四种呈现",
+      "status": "completed",
+      "files": [
+        "xhm-desktop/ui/taskbar_metrics.slint",
+        "xhm-desktop/src/ui/taskbar_metrics.rs",
+        "xhm-desktop/src/ui/mod.rs",
+        "xhm-desktop/ui/shell.slint",
+        "xhm-desktop/src/lib.rs"
+      ],
+      "convergence": {
+        "presentations": "TextHorizontal, TextVertical, BarHorizontal, BarVertical",
+        "production_normalization": "Top/Bottom horizontal; Left/Right vertical; style selected by DockVisualStyle",
+        "metrics": "upload, download, CPU, RAM, GPU, VRAM and available Power with compact units and temperature trailing text",
+        "model_updates": "layout fingerprint covers presentation, columns, labels, unit tokens and gap; value-only updates call set_row_data",
+        "drag": "pointer intent uses G2 drag_anchor, origin_for_anchor and snap_taskbar_window with the fixed 80px/half-out rule",
+        "sse": "taskbar state receives and dispatches its independent SseStream projection; runtime Drop cancels its token",
+        "smoke": "release logs recorded distinct taskbar HWND, placement, physical RECT and independent taskbar SSE lifecycle"
+      },
+      "tests": 4,
+      "verify_commands": [
+        "cargo test -p xhm-desktop taskbar_metrics",
+        "cargo test -p xhm-desktop"
+      ]
+    },
+    {
+      "task_id": "TASK-013",
+      "plan_ref": "WAVE-013",
+      "title": "实现设置、About、仅检查更新并接入 tray/bootstrap",
+      "status": "completed",
+      "files": [
+        "xhm-desktop/ui/settings.slint",
+        "xhm-desktop/src/ui/settings.rs",
+        "xhm-desktop/ui/about.slint",
+        "xhm-desktop/src/ui/about.rs",
+        "xhm-desktop/src/ui/update_check.rs",
+        "xhm-desktop/src/ui/mod.rs",
+        "xhm-desktop/ui/shell.slint",
+        "xhm-desktop/src/lib.rs"
+      ],
+      "convergence": {
+        "settings": "only Appearance.Opacity, DataCollection.ProcessKeywords and the existing Monitoring display keys are serialized",
+        "deferred": "Admin, startup, LAN, firewall and system controls are read-only P3 text and produce no request entries",
+        "taskbar_sync": "successful GET/PUT atomically updates the shared taskbar settings observed by the taskbar projection timer",
+        "about": "shows app version and Idle/Checking/SourceUnavailable/UpToDate/UpdateAvailable/Error states",
+        "update": "one GET to the fixed Gitee latest-release URL parses tag/name/body/assets and only compares versions",
+        "tray": "Settings and About commands show real Slint windows; notification click maps to About; Web opens existing port 35180; Admin remains deferred"
+      },
+      "tests": 10,
+      "verify_commands": [
+        "cargo test -p xhm-desktop settings",
+        "cargo test -p xhm-desktop update_check",
+        "cargo test -p xhm-desktop"
+      ]
+    },
+    {
+      "task_id": "TASK-014",
+      "plan_ref": "WAVE-014",
+      "title": "完成确定性回归与真实 Windows P2 验收",
+      "status": "blocked",
+      "files": [
+        ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-006-execute/outputs/memory-samples.json"
+      ],
+      "convergence": {
+        "tests": "125 passed, 0 failed, three consecutive package rounds",
+        "clippy": "clean with -D warnings",
+        "release": "winit-software release build and live process started",
+        "smoke": "dual HWND/taskbar placement/dual SSE and G4 auxiliary-window startup logged; Orca observed live main UI",
+        "anti_pattern": "prohibited hotkey and update-side-effect scans returned zero matches",
+        "memory": "failed: 60/60 samples were 34.504-34.719 MiB; required every sample below 10 MiB"
+      },
+      "blocking_issue": "Desktop Private Bytes gate is not met; no threshold was suppressed and no passing evidence was fabricated.",
+      "verify_commands": [
+        "cargo test -p xhm-desktop",
+        "cargo clippy -p xhm-desktop --all-targets -- -D warnings",
+        "cargo build -p xhm-desktop --release"
+      ]
+    }
+  ],
+  "new_tests": 14,
+  "full_suite_tests": 125,
+  "full_suite_passes": 3,
+  "blocking_tasks": ["TASK-014"]
+}

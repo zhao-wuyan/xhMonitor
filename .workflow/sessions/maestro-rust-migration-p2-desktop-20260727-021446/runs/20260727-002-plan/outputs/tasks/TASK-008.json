@@ -1,0 +1,97 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-008"
+  },
+  "id": "TASK-008",
+  "title": "集成双 Slint window、独立 SSE、生产 tray 与 shell 生命周期",
+  "description": "将 G1 客户端/state 和 G2 原生能力装配为可操作的双窗口 Windows 壳，保留 G3/G4 内容边界。",
+  "type": "integration",
+  "status": "pending",
+  "goal_ref": "G2",
+  "execute_step_id": "step-004-execute",
+  "wave_id": "WAVE-008",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "GUIDE-P2-WIN-SECOND-WINDOW",
+    "GUIDE-P2-WIN-TRAY",
+    "GUIDE-P2-WIN-TRAY-MENU",
+    "G2-DONE",
+    "SESSION-EC-02",
+    "SESSION-EC-03",
+    "SESSION-EC-06",
+    "SESSION-EC-08",
+    "BOUNDARY-SOFTWARE-RENDERER",
+    "BOUNDARY-SYSTEM-SETTINGS-READONLY",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [
+    "TASK-002",
+    "TASK-004",
+    "TASK-005",
+    "TASK-006",
+    "TASK-007"
+  ],
+  "files": [
+    "xhm-desktop/src/shell.rs",
+    "xhm-desktop/src/state_bridge.rs",
+    "xhm-desktop/src/tray/mod.rs",
+    "xhm-desktop/src/tray/event_bridge.rs",
+    "xhm-desktop/src/main.rs",
+    "xhm-desktop/src/lib.rs",
+    "xhm-desktop/ui/shell.slint"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/Services/WindowManagementService.cs:15-227,285-313,367-510",
+    "XhMonitor.Desktop/App.xaml.cs:30-98,135-182",
+    "poc/slint-desktop/src/main.rs:9-50",
+    "XhMonitor.Desktop/Services/TrayIconService.cs:42-78,128-187",
+    "docs/rust-migration-guide.md:251-258",
+    ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/session.json:339-370"
+  ],
+  "action": "按固定顺序装配 Rust mutex→winit-software→Tokio→两个唯一 title 的 Slint window→延迟 HWND→topmost/DPI/placement→唯一 tray→两个独立 SSE session→Slint loop。",
+  "implementation_steps": [
+    "两个窗口各有 DesktopState、subscription、bounded channel 与 cancellation；worker 只发 delta，state_bridge 经 Slint event-loop queue 在 UI thread 应用。",
+    "复制 ActiveDisplayMode::{None,Floating,EdgeDock} 生命周期：两窗均构造，show/hide/close 独立，close 默认 hide，真正 exit 才取消两 SSE、销毁 tray、释放 mutex。",
+    "生产 tray 复用 TASK-002 唯一通过路径；七项语义完整，open_web 打开既有 http://localhost:35180，click-through 操作主 HWND，settings/about 发真实 ShellCommand，admin 只读/P3 启用。",
+    "恢复/clamp Rust 自己的位置，四边 placement 与拖出/吸附调用 TASK-006；启动和 deactivation 后 reassert topmost。",
+    "仅提供最小内容槽，不实现 G3/G4 指标细节；完成软件/SSE/tray/双窗/四边壳冒烟。"
+  ],
+  "convergence_criteria": [
+    "[UI-observable] 手工：两个 title 对应同 PID 不同 HWND，各自 SSE 断开/重连互不影响。",
+    "[UI-observable] 手工：七项 tray、双击、notification、click-through 恢复与 exit cleanup 可操作。",
+    "[UI-observable] 手工：Bottom/Top/Left/Right 真机定位、拖出/吸附和 4K physical/logical 日志无越界。",
+    "CLI：cargo test -p xhm-desktop 覆盖 shell controller，Rust/C# 可并存且第二 Rust 被拒绝。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop",
+      "$env:SLINT_BACKEND='winit-software'; cargo run -p xhm-desktop"
+    ],
+    "manual_scenarios": [
+      "C#+Rust+second Rust",
+      "Service restart 下双 SSE",
+      "七项 tray 与退出",
+      "四边任务栏和 4K 多 DPI"
+    ],
+    "expected": "G2 双窗口原生壳端到端可操作。"
+  },
+  "acceptance_evidence": [
+    "PID/HWND/title 与双 SSE 日志",
+    "tray 命令/通知/退出日志",
+    "四边与 4K 截图/RECT/DPI",
+    "单实例矩阵"
+  ],
+  "rollback": {
+    "steps": [
+      "恢复 TASK-002 spike main/shell",
+      "停止双窗生产接线"
+    ],
+    "preserves": [
+      "纯 Win32/geometry/process modules",
+      "C# 运行路径"
+    ]
+  }
+}

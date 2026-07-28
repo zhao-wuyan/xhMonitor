@@ -1,0 +1,47 @@
+{
+  "schema_version": "execution/1.0",
+  "run_id": "20260727-010-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "summary": "Post-execute repair: implemented 3 G3 parity fixes (Locked->Expanded click, pinned capped scrollable ListView, unsnapped drag work-area clamp) and one bounded memory optimization attempt (Tokio current-thread + minimal features). 128 tests pass, clippy clean, release builds. Bounded optimization FAILED to reduce memory: post-repair UI_SMOKE 37.0 MiB vs baseline UI_SMOKE 34.5 MiB under the same measurement condition. The +2.5 MiB delta is unexplained without a controlled runtime-only A/B. Original < 10 MiB gate remains unmet; normal release 33.66 MiB and UI_SMOKE 37.0 MiB both satisfy user-approved fallback acceptance < 40 MiB.",
+  "evidence": {
+    "cargo_check": "cargo check -p xhm-desktop --all-targets: passed (8.69s)",
+    "cargo_clippy": "cargo clippy -p xhm-desktop --all-targets -- -D warnings: clean (8.08s)",
+    "cargo_test": "cargo test -p xhm-desktop: 128 passed, 0 failed (includes 3 new parity/clamp tests)",
+    "cargo_release": "cargo build -p xhm-desktop --release: passed (75s)",
+    "memory_post_repair_ui_smoke": "60 samples, same condition as baseline (release,winit-software,UI_SMOKE): min 37.039 MiB, max 37.277 MiB, 0/60 below 10 MiB (outputs/memory-samples-post-repair.json)",
+    "memory_post_repair_normal": "30 samples, release winit-software, no UI_SMOKE: min 33.656 MiB, max 33.660 MiB",
+    "memory_baseline_delta": "baseline UI_SMOKE min 34.504 MiB -> post-repair UI_SMOKE min 37.039 MiB; delta +2.535 MiB; cause unproven (no controlled runtime-only A/B performed)"
+  },
+  "changes": [
+    {
+      "file": "xhm-desktop/Cargo.toml",
+      "change": "tokio normal features rt/sync/time/macros; dev-dep retains workspace test-util"
+    },
+    {
+      "file": "xhm-desktop/src/lib.rs",
+      "change": "SSE dedicated thread uses new_current_thread().enable_all(); removed worker_threads(2) multi_thread"
+    },
+    {
+      "file": "xhm-desktop/src/ui/floating_window.rs",
+      "change": "panel_after_click Locked->Expanded parity; finish_drag unsnapped clamp branch; new parity test"
+    },
+    {
+      "file": "xhm-desktop/src/ui/floating_interactions.rs",
+      "change": "clamp_rect_to_work_area pure helper; 2 deterministic tests"
+    },
+    {
+      "file": "xhm-desktop/ui/floating_window.slint",
+      "change": "pinned cards capped ListView; pinned-area-height property; collapsed/details geometry consume capped height"
+    }
+  ],
+  "artifact_refs": {
+    "self_check": "outputs/self-check.json",
+    "memory_post_repair": "outputs/memory-samples-post-repair.json",
+    "report": "outputs/report.md"
+  },
+  "_meta": {
+    "kind": "execution",
+    "schema": "execution/1.0",
+    "role": "primary"
+  }
+}

@@ -1,0 +1,61 @@
+[workspace]
+members = [
+    "xhm-core",
+    "xhm-service",
+    "xhm-desktop",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.3.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = { version = "0.4", features = ["serde"] }
+axum = { version = "0.7", features = ["macros", "ws"] }
+tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures = "0.3"
+rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
+sysinfo = { version = "0.32", default-features = false, features = ["system", "disk"] }
+libloading = "0.8"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+tower = { version = "0.5", features = ["util"] }
+uuid = { version = "1", features = ["v4"] }
+http-body-util = "0.1"
+
+# xhm-desktop（G1+）消费的桌面 UI / HTTP / 托盘依赖。
+# 版本选择遵循 current-plan 的 locked_decisions：Slint winit-software、reqwest 0.12；托盘改为 Shell_NotifyIconW 原生实现（tray-icon 0.24 评估后弃用，见 G1 review）。
+slint = { version = "=1.12.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software", "accessibility"] }
+slint-build = "=1.12.1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream"] }
+url = "2"
+wiremock = "0.6"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

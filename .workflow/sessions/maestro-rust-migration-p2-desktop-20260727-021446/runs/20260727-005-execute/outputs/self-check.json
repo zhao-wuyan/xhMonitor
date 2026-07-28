@@ -1,0 +1,99 @@
+{
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "self-check/1.0",
+  "run_id": "20260727-005-execute",
+  "goal_ref": "G3",
+  "check_items": [
+    {
+      "id": "SC-01",
+      "check": "cargo build and cargo test -p xhm-desktop green x3 consecutive",
+      "status": "pass",
+      "evidence": "Round 1: build pass, 111 tests pass; Round 2: build pass, 111 tests pass; Round 3: build pass, 111 tests pass; 0 failures"
+    },
+    {
+      "id": "SC-02",
+      "check": "cargo clippy -p xhm-desktop --all-targets -- -D warnings clean",
+      "status": "pass",
+      "evidence": "0 errors and 0 warnings after final UI/runtime changes"
+    },
+    {
+      "id": "SC-03",
+      "check": "TASK-009 release winit-software organic spike is GO",
+      "status": "pass",
+      "evidence": "Release harness logged backend=winit-software states=6 timelines=3; Orca observed six states and all timeline labels at SLINT_SCALE_FACTOR 1.0/1.5/2.0"
+    },
+    {
+      "id": "SC-04",
+      "check": "Main floating UI displays the required metrics and stable model-backed details",
+      "status": "pass",
+      "evidence": "Orca observed NET, CPU, RAM, GPU, VRAM, POWER, threshold colors, 3px bars, two pinned cards, virtualized 36-row process fixture, three disk rows, and Toast overlay"
+    },
+    {
+      "id": "SC-05",
+      "check": "50/80/max<=0 thresholds and 0..1 progress clamp are deterministic",
+      "status": "pass",
+      "evidence": "floating_window::threshold_boundaries_and_progress_clamp_are_exact passed"
+    },
+    {
+      "id": "SC-06",
+      "check": "Collapsed/full projection, pin/late metadata/PID restart rules converge",
+      "status": "pass",
+      "evidence": "4 floating_window tests passed; collapsed emits pinned rows only, full emits sorted full model, late metadata merges, vanished PID clears pin, reused PID does not rebind"
+    },
+    {
+      "id": "SC-07",
+      "check": "TouchArea drag is wired to physical coordinates, snap_floating_window, and SetWindowPos",
+      "status": "pass",
+      "evidence": "Real drag moved HWND off edge then into 24px boundary; Orca observed final x=0; production log: edge=Left x=0 y=130 snap_distance_px=24 set_window_pos=true"
+    },
+    {
+      "id": "SC-08",
+      "check": "2s long press, 200ms cancel, and 50/150ms click feedback converge",
+      "status": "pass",
+      "evidence": "7 interaction tests passed; native mouse hold for 2150ms logged metric=cpu elapsed_ms=2000; click log recorded down_ms=50 recover_ms=150 and panel transition"
+    },
+    {
+      "id": "SC-09",
+      "check": "Kill double confirmation uses 1s/43.98 and invokes the process boundary exactly once",
+      "status": "pass",
+      "evidence": "Safe cmd.exe fixture was clicked twice 300ms apart; logs recorded confirm, one execute dispatch, KillOutcome::Success; accessibility tree no longer contained the target row"
+    },
+    {
+      "id": "SC-10",
+      "check": "Power action consumes only the existing REST boundary",
+      "status": "pass",
+      "evidence": "UI worker calls RestClient::warmup then RestClient::power_next_scheme and returns success/error through the event-loop Toast channel; no service route or client duplicate was added"
+    },
+    {
+      "id": "SC-11",
+      "check": "SSE reducer and UI-thread boundaries remain single-owner",
+      "status": "pass",
+      "evidence": "Shared G1 DesktopState is reduced in the owned SSE worker; immutable FloatingProjection is applied through Weak::upgrade_in_event_loop; UI changes resubscribe the existing SseControl"
+    },
+    {
+      "id": "SC-12",
+      "check": "No global hotkey or suppression anti-pattern was added",
+      "status": "pass",
+      "evidence": "RegisterHotKey|WM_HOTKEY|Ctrl+Alt+Shift+X returned zero matches; G3 files contain no TODO/FIXME/unimplemented/todo!/allow suppression markers"
+    },
+    {
+      "id": "SC-13",
+      "check": "Scope remains xhm-desktop plus current Run outputs",
+      "status": "pass",
+      "evidence": "Implementation touched only xhm-desktop UI/Rust files; xhmonitor-web, XhMonitor.*, xhm-core, and xhm-service were not modified"
+    },
+    {
+      "id": "SC-14",
+      "check": "JSON artifacts parse and final Run check is non-blocking",
+      "status": "pass",
+      "evidence": "All four JSON attachments are validated with jq before the final maestro run check command"
+    }
+  ],
+  "overall": "pass",
+  "blocking_issues": [],
+  "deferred_items": []
+}

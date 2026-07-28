@@ -1,0 +1,491 @@
+{
+  "schema_version": "memory-samples/1.0",
+  "summary": {
+    "count": 60,
+    "min_mib": 34.504,
+    "max_mib": 34.719,
+    "below_10_count": 0
+  },
+  "samples": [
+    {
+      "sample": 1,
+      "timestamp": "2026-07-27T22:07:49.5647071+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 2,
+      "timestamp": "2026-07-27T22:07:50.6006967+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 3,
+      "timestamp": "2026-07-27T22:07:51.6237811+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 4,
+      "timestamp": "2026-07-27T22:07:52.6457554+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 5,
+      "timestamp": "2026-07-27T22:07:53.6809927+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 6,
+      "timestamp": "2026-07-27T22:07:54.7049264+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 7,
+      "timestamp": "2026-07-27T22:07:55.7283758+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 8,
+      "timestamp": "2026-07-27T22:07:56.7572293+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 9,
+      "timestamp": "2026-07-27T22:07:57.7771973+08:00",
+      "pid": 59224,
+      "private_bytes": 36405248,
+      "private_mib": 34.719,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 10,
+      "timestamp": "2026-07-27T22:07:58.8037300+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 11,
+      "timestamp": "2026-07-27T22:07:59.8262517+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 12,
+      "timestamp": "2026-07-27T22:08:00.8558861+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 13,
+      "timestamp": "2026-07-27T22:08:01.8812958+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 14,
+      "timestamp": "2026-07-27T22:08:02.9076116+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 15,
+      "timestamp": "2026-07-27T22:08:03.9319346+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 16,
+      "timestamp": "2026-07-27T22:08:04.9577040+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 17,
+      "timestamp": "2026-07-27T22:08:05.9781788+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 18,
+      "timestamp": "2026-07-27T22:08:07.0004397+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 19,
+      "timestamp": "2026-07-27T22:08:08.0180865+08:00",
+      "pid": 59224,
+      "private_bytes": 36294656,
+      "private_mib": 34.613,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 20,
+      "timestamp": "2026-07-27T22:08:09.0399541+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 21,
+      "timestamp": "2026-07-27T22:08:10.0625439+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 22,
+      "timestamp": "2026-07-27T22:08:11.0843007+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 23,
+      "timestamp": "2026-07-27T22:08:12.1067982+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 24,
+      "timestamp": "2026-07-27T22:08:13.1287755+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 25,
+      "timestamp": "2026-07-27T22:08:14.1547272+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 26,
+      "timestamp": "2026-07-27T22:08:15.1799686+08:00",
+      "pid": 59224,
+      "private_bytes": 36212736,
+      "private_mib": 34.535,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 27,
+      "timestamp": "2026-07-27T22:08:16.1989886+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 28,
+      "timestamp": "2026-07-27T22:08:17.2184830+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 29,
+      "timestamp": "2026-07-27T22:08:18.2473875+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 30,
+      "timestamp": "2026-07-27T22:08:19.2669437+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 31,
+      "timestamp": "2026-07-27T22:08:20.2888676+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 32,
+      "timestamp": "2026-07-27T22:08:21.3091491+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 33,
+      "timestamp": "2026-07-27T22:08:22.3334973+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 34,
+      "timestamp": "2026-07-27T22:08:23.3617156+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 35,
+      "timestamp": "2026-07-27T22:08:24.3885553+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 36,
+      "timestamp": "2026-07-27T22:08:25.4116032+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 37,
+      "timestamp": "2026-07-27T22:08:26.4329269+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 38,
+      "timestamp": "2026-07-27T22:08:27.4552836+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 39,
+      "timestamp": "2026-07-27T22:08:28.4741859+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 40,
+      "timestamp": "2026-07-27T22:08:29.5024085+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 41,
+      "timestamp": "2026-07-27T22:08:30.5237122+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 42,
+      "timestamp": "2026-07-27T22:08:31.5436591+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 43,
+      "timestamp": "2026-07-27T22:08:32.5658624+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 44,
+      "timestamp": "2026-07-27T22:08:33.5898086+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 45,
+      "timestamp": "2026-07-27T22:08:34.6176560+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 46,
+      "timestamp": "2026-07-27T22:08:35.6421190+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 47,
+      "timestamp": "2026-07-27T22:08:36.6559392+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 48,
+      "timestamp": "2026-07-27T22:08:37.6835327+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 49,
+      "timestamp": "2026-07-27T22:08:38.7064348+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 50,
+      "timestamp": "2026-07-27T22:08:39.7304548+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 51,
+      "timestamp": "2026-07-27T22:08:40.7548222+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 52,
+      "timestamp": "2026-07-27T22:08:41.7715544+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 53,
+      "timestamp": "2026-07-27T22:08:42.8000758+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 54,
+      "timestamp": "2026-07-27T22:08:43.8270859+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 55,
+      "timestamp": "2026-07-27T22:08:44.8467150+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 56,
+      "timestamp": "2026-07-27T22:08:45.8700619+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 57,
+      "timestamp": "2026-07-27T22:08:46.8930322+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 58,
+      "timestamp": "2026-07-27T22:08:47.9139924+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 59,
+      "timestamp": "2026-07-27T22:08:48.9336910+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    },
+    {
+      "sample": 60,
+      "timestamp": "2026-07-27T22:08:49.9538449+08:00",
+      "pid": 59224,
+      "private_bytes": 36179968,
+      "private_mib": 34.504,
+      "condition": "release,winit-software,main+taskbar,dual-SSE"
+    }
+  ]
+}

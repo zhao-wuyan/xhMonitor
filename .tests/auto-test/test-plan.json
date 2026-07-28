@@ -1,0 +1,143 @@
+{
+  "schema_version": "test-plan/1.0",
+  "phase": "test-gen",
+  "source_route": "gap",
+  "blueprint_ref": null,
+  "spec_mode": null,
+  "generated_at": "2026-07-28T10:04:12+08:00",
+  "run_id": "20260728-013-auto-test",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "csv_plan": ".tests/auto-test/test-gen-plan.csv",
+  "infrastructure": {
+    "framework": "cargo (rustc unit tests, #[cfg(test)])",
+    "language": "rust",
+    "package": "xhm-desktop",
+    "test_dir": "xhm-desktop/src (inline #[cfg(test)] mod tests)",
+    "run_command": "cargo test -p xhm-desktop",
+    "convergence_command": "cargo test -p xhm-desktop"
+  },
+  "layers": {
+    "L0": {
+      "scenario_count": 1,
+      "description": "Existing 128 cargo tests as the executed baseline.",
+      "commands": ["cargo test -p xhm-desktop"],
+      "existing_test_count": 128
+    },
+    "L1": {
+      "scenario_count": 2,
+      "priority_distribution": { "critical": 0, "high": 0, "medium": 1, "low": 1 },
+      "description": "Review findings: COR-001 is resolved by the CHG-001 documentation amendment; PRF-001 functional behavior is covered by existing SSE tests."
+    },
+    "L2": {
+      "scenario_count": 2,
+      "priority_distribution": { "critical": 0, "high": 0, "medium": 1, "low": 1 },
+      "description": "Diagnosis gaps are assessed explicitly: anonymous arena ownership needs heap symbols/stacks, and the memory delta needs a controlled release A/B. Neither is suitable for a generated deterministic cargo test."
+    },
+    "L3": {
+      "scenario_count": 0,
+      "priority_distribution": { "critical": 0, "high": 0, "medium": 0, "low": 0 },
+      "description": "No E2E scenario is required for the two review findings."
+    }
+  },
+  "scenarios": [
+    {
+      "id": "AT-000",
+      "source": "existing_suite",
+      "layer": "L0",
+      "priority": "critical",
+      "category": "baseline",
+      "name": "Existing 128-test cargo baseline",
+      "target_file": "xhm-desktop/src/**",
+      "test_file": "xhm-desktop/src (inline #[cfg(test)] modules)",
+      "req_ref": "L0-BASELINE",
+      "description": "Execute the full existing xhm-desktop cargo suite. Product source and existing tests remain read-only.",
+      "test_cases": ["cargo test -p xhm-desktop -> 128 passed; 0 failed; 0 ignored"],
+      "expected": { "status": "pass", "behavior": "128 existing tests pass" },
+      "disposition": "execute_existing",
+      "new_test_required": false
+    },
+    {
+      "id": "AT-001",
+      "source": "review_finding",
+      "layer": "L1",
+      "priority": "medium",
+      "category": "spec_compliance",
+      "name": "COR-001 documentation threshold amendment",
+      "target_file": "docs/rust-migration-guide.md:303-307",
+      "test_file": null,
+      "req_ref": "COR-001",
+      "description": "The stale <10 MiB P2 Done text now states <40 MiB and records the CHG-001 rationale. This resolves the documentation contradiction and does not create an executable Rust behavior contract.",
+      "test_cases": ["P2 Done states Private Bytes <40 MiB and preserves amendment rationale"],
+      "expected": { "status": "pass", "behavior": "review finding resolved in documentation" },
+      "disposition": "resolved_no_new_test",
+      "new_test_required": false
+    },
+    {
+      "id": "AT-002",
+      "source": "review_finding",
+      "layer": "L1",
+      "priority": "low",
+      "category": "functional_regression",
+      "name": "PRF-001 Tokio optimization functional regression coverage",
+      "target_file": "xhm-desktop/src/lib.rs; xhm-desktop/Cargo.toml; xhm-desktop/src/service_client/sse.rs",
+      "test_file": "xhm-desktop/src/service_client/sse.rs::tests",
+      "req_ref": "PRF-001",
+      "description": "Existing deterministic SSE tests cover connection lifecycle, resubscribe, retry timing and budget reset, and cancellation under header wait and channel backpressure. The freshly executed 128-test baseline includes all of them.",
+      "test_cases": [
+        "finite_stream_emits_connection_lifecycle_and_events",
+        "resubscribe_cancels_old_request_and_recreates_query",
+        "ten_consecutive_failures_use_nine_exact_two_second_delays",
+        "established_connection_resets_budget_and_service_restart_recovers",
+        "cancellation_interrupts_peer_that_never_sends_headers",
+        "cancellation_interrupts_bounded_channel_backpressure"
+      ],
+      "expected": { "status": "pass", "behavior": "current-thread runtime preserves SSE behavior" },
+      "disposition": "covered_by_existing_tests",
+      "new_test_required": false
+    },
+    {
+      "id": "AT-003",
+      "source": "debug_root_cause",
+      "layer": "L2",
+      "priority": "medium",
+      "category": "diagnosis_gap",
+      "name": "Anonymous allocation ownership diagnosis gap",
+      "target_file": ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-009-debug/outputs/diagnosis.json",
+      "test_file": null,
+      "req_ref": "DIAG-I1",
+      "description": "Exact ownership of large anonymous MEM_PRIVATE arenas remains inferred. Heap symbols/stacks are needed; generating a unit test would fabricate attribution rather than verify behavior.",
+      "test_cases": ["Record the ownership gap without fabricated per-component MiB values"],
+      "expected": { "status": "pass", "behavior": "gap is accurately bounded and not converted into a false test" },
+      "disposition": "assessment_only_no_test",
+      "new_test_required": false
+    },
+    {
+      "id": "AT-004",
+      "source": "debug_root_cause",
+      "layer": "L2",
+      "priority": "low",
+      "category": "diagnosis_gap",
+      "name": "Controlled runtime-only memory A/B gap",
+      "target_file": ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-010-execute/outputs/memory-samples-post-repair.json",
+      "test_file": null,
+      "req_ref": "PRF-001-A-B",
+      "description": "The +2.535 MiB post-repair delta remains unexplained because no controlled runtime-only A/B exists. This needs a Windows release-process benchmark, not a deterministic cargo unit test.",
+      "test_cases": ["Do not claim memory reduction; retain the diagnostic gap while checking functional convergence"],
+      "expected": { "status": "pass", "behavior": "coverage assessment is honest and no false regression test is generated" },
+      "disposition": "diagnostic_gap_recorded_no_test",
+      "new_test_required": false
+    }
+  ],
+  "fixtures": {},
+  "requirement_coverage_plan": {
+    "requirements_targeted": ["L0-BASELINE", "COR-001", "PRF-001", "DIAG-I1", "PRF-001-A-B"],
+    "requirements_skipped": []
+  },
+  "coverage_assessment": {
+    "new_tests_needed": 0,
+    "existing_coverage_sufficient_for_review_findings": true,
+    "reason": "COR-001 is documentation-only and resolved; PRF-001's functional regression surface is already exercised by the existing SSE tests included in the 128-test cargo baseline. Memory reduction itself is not proven and is not reported as proven."
+  },
+  "max_iter": 1,
+  "flags": { "max_iter": 1, "layer": null, "dry_run": false, "re_run": false, "single_pass": true }
+}

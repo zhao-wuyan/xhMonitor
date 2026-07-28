@@ -1,0 +1,55 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "change-manifest/1.0",
+  "run_id": "20260727-010-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "changed_files": [
+    {
+      "path": "xhm-desktop/Cargo.toml",
+      "change": "tokio normal dependency features narrowed to rt,sync,time,macros; dev-dep retains workspace test-util"
+    },
+    {
+      "path": "xhm-desktop/src/lib.rs",
+      "change": "dedicated SSE std thread uses new_current_thread().enable_all(); removed worker_threads(2) multi_thread"
+    },
+    {
+      "path": "xhm-desktop/src/ui/floating_window.rs",
+      "change": "panel_after_click Locked->Expanded parity (C# FloatingWindowViewModel.cs:258-270); finish_drag unsnapped clamp branch; new parity test"
+    },
+    {
+      "path": "xhm-desktop/src/ui/floating_interactions.rs",
+      "change": "clamp_rect_to_work_area pure helper; 2 deterministic tests (offscreen/negative, oversized/invalid)"
+    },
+    {
+      "path": "xhm-desktop/ui/floating_window.slint",
+      "change": "pinned cards moved to capped ListView; max-visible-pinned and pinned-area-height properties; collapsed/details geometry consume capped height"
+    }
+  ],
+  "unchanged_files": [
+    "xhm-desktop/src/config.rs",
+    "xhm-desktop/src/service_client/*",
+    "xhm-desktop/src/win32/*",
+    "xhm-desktop/src/shell.rs",
+    "xhm-desktop/src/tray.rs",
+    "xhm-desktop/src/desktop_state.rs",
+    "xhm-desktop/src/persistence.rs",
+    "xhm-desktop/ui/settings.slint",
+    "xhm-desktop/ui/about.slint",
+    "xhm-desktop/ui/shell.slint",
+    "xhm-desktop/ui/taskbar_metrics.slint",
+    "xhm-desktop/ui/components/*",
+    "Cargo.toml (workspace)"
+  ],
+  "outputs": [
+    "outputs/execution.json",
+    "outputs/self-check.json",
+    "outputs/task-results.json",
+    "outputs/change-manifest.json",
+    "outputs/memory-samples-post-repair.json",
+    "outputs/report.md"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "changes": [
+    { "path": "Cargo.toml", "action": "modified", "detail": "workspace dependencies include sysinfo 0.32 with system/disk features" },
+    { "path": "Cargo.lock", "action": "modified", "detail": "lock xhm-service and transitive dependency graph" },
+    { "path": "xhm-core/src/models.rs", "action": "modified", "detail": "add service DTO/defaults and per-disk LHM snapshot contract" },
+    { "path": "xhm-core/src/wire.rs", "action": "modified", "detail": "complete realtime payloads and C#-equivalent Lite Top-N/pinned selection" },
+    { "path": "lhm-bridge/Program.cs", "action": "modified", "detail": "emit per-disk capacity/usage/throughput snapshots while preserving aggregate fields" },
+    { "path": "xhm-service/Cargo.toml", "action": "added", "detail": "service crate dependencies and binary/library targets" },
+    { "path": "xhm-service/src/lib.rs", "action": "added", "detail": "router composition and exact configured-origin CORS" },
+    { "path": "xhm-service/src/state.rs", "action": "added", "detail": "runtime configuration, service paths, realtime registry and AppState" },
+    { "path": "xhm-service/src/main.rs", "action": "added", "detail": "35181 service entry point, production dependency wiring and graceful shutdown" },
+    { "path": "xhm-service/src/worker.rs", "action": "added", "detail": "system/process collection, persistence, realtime routing, aggregation and cleanup loops" },
+    { "path": "xhm-service/src/api/mod.rs", "action": "added", "detail": "API module composition" },
+    { "path": "xhm-service/src/api/config.rs", "action": "added", "detail": "config, alerts, settings, health and admin-status endpoints" },
+    { "path": "xhm-service/src/api/metrics.rs", "action": "added", "detail": "raw/latest/history/process/aggregation metrics endpoints" },
+    { "path": "xhm-service/src/api/power.rs", "action": "added", "detail": "power status and scheme switching endpoints" },
+    { "path": "xhm-service/src/api/widget.rs", "action": "added", "detail": "widget settings and per-metric click config endpoints" },
+    { "path": "xhm-service/src/db/mod.rs", "action": "added", "detail": "rusqlite store, migrations, query/aggregation/retention/config/widget operations" },
+    { "path": "xhm-service/src/lhm/mod.rs", "action": "added", "detail": "bridge subprocess supervision, restart/graceful stop, IPC reader and .NET GC memory controls" },
+    { "path": "xhm-service/src/power/mod.rs", "action": "added", "detail": "RyzenAdj native and CLI backends plus injectable device verification" },
+    { "path": "xhm-service/src/realtime/mod.rs", "action": "added", "detail": "SignalR negotiate/WS and SSE adapters with connection-scoped subscriptions" }
+  ],
+  "summary": {
+    "added": 14,
+    "modified": 5,
+    "moved": 0,
+    "deleted": 0
+  }
+}

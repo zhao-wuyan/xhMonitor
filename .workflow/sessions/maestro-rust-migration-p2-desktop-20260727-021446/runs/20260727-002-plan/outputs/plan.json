@@ -1,0 +1,1122 @@
+{
+  "_meta": {
+    "kind": "plan",
+    "schema": "plan/1.0",
+    "role": "primary",
+    "alias": "current-plan"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-002-plan",
+  "title": "Rust migration P2 canonical execution plan",
+  "status": "ready-for-check",
+  "summary": "14 个连续 task 在四个 goal-specific execute Runs 中交付 xhm-desktop：G1 基础/服务消费，G2 Windows 壳，G3 主窗，G4 任务栏/系统页/最终验收。",
+  "source_inputs": [
+    "agent://P2PlanExecutor.FoundationShellPlanner",
+    "agent://P2PlanExecutor.UiAcceptancePlanner",
+    ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-001-analyze/outputs/findings.json",
+    ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-001-analyze/outputs/priors.json",
+    ".workflow/sessions/maestro-rust-migration-p2-desktop-20260727-021446/session.json",
+    "docs/rust-migration-guide.md:238-308"
+  ],
+  "locked_decisions": [
+    "Slint backend 固定 winit-software；spike NO-GO 不自行切 renderer。",
+    "PushEvent 仅五类，payload 直接使用 xhm-core；SSE 固定 /api/v1/events，默认端口 35181。",
+    "tray 首选 tray-icon 0.24，锁文件证据为 0.24.1；只在完整 NO-GO 记录后用 Shell_NotifyIcon，且不得并存。",
+    "不迁移 RegisterHotKey/WM_HOTKEY/Ctrl+Alt+Shift+X。",
+    "P2 与现有 C# 并行；不做 P3 cutover、端口切换、发布脚本或 installer 下载/启动。",
+    "不修改 xhmonitor-web、XhMonitor.Desktop、xhm-service、xhm-core。",
+    "AdminMode/Startup/LAN/Firewall/System 只读禁用并显示 P3 启用；只写既有 Appearance/DataCollection/非系统 Monitoring keys。"
+  ],
+  "goal_execution_bindings": [
+    {
+      "goal_ref": "G1",
+      "execute_step_id": "step-003-execute",
+      "task_ids": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004"
+      ]
+    },
+    {
+      "goal_ref": "G2",
+      "execute_step_id": "step-004-execute",
+      "task_ids": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008"
+      ]
+    },
+    {
+      "goal_ref": "G3",
+      "execute_step_id": "step-005-execute",
+      "task_ids": [
+        "TASK-009",
+        "TASK-010",
+        "TASK-011"
+      ]
+    },
+    {
+      "goal_ref": "G4",
+      "execute_step_id": "step-006-execute",
+      "task_ids": [
+        "TASK-012",
+        "TASK-013",
+        "TASK-014"
+      ]
+    }
+  ],
+  "task_count": 14,
+  "task_ids": [
+    "TASK-001",
+    "TASK-002",
+    "TASK-003",
+    "TASK-004",
+    "TASK-005",
+    "TASK-006",
+    "TASK-007",
+    "TASK-008",
+    "TASK-009",
+    "TASK-010",
+    "TASK-011",
+    "TASK-012",
+    "TASK-013",
+    "TASK-014"
+  ],
+  "wave_count": 14,
+  "wave_ids": [
+    "WAVE-001",
+    "WAVE-002",
+    "WAVE-003",
+    "WAVE-004",
+    "WAVE-005",
+    "WAVE-006",
+    "WAVE-007",
+    "WAVE-008",
+    "WAVE-009",
+    "WAVE-010",
+    "WAVE-011",
+    "WAVE-012",
+    "WAVE-013",
+    "WAVE-014"
+  ],
+  "goal_distribution": {
+    "G1": 4,
+    "G2": 4,
+    "G3": 3,
+    "G4": 3
+  },
+  "requirements_catalog": [
+    {
+      "id": "GUIDE-P2-WIN-HWND",
+      "source": "docs/rust-migration-guide.md:245",
+      "text": "HWND 定位采用 EnumWindows + PID 验证"
+    },
+    {
+      "id": "GUIDE-P2-WIN-TOPMOST",
+      "source": "docs/rust-migration-guide.md:246",
+      "text": "HWND_TOPMOST + SWP_NOSIZE，不覆盖 Slint logical size"
+    },
+    {
+      "id": "GUIDE-P2-WIN-TASKBAR-NEAR",
+      "source": "docs/rust-migration-guide.md:247",
+      "text": "任务栏贴近定位"
+    },
+    {
+      "id": "GUIDE-P2-WIN-CLICK-THROUGH",
+      "source": "docs/rust-migration-guide.md:248",
+      "text": "点击穿透需真实手工验证"
+    },
+    {
+      "id": "GUIDE-P2-WIN-NO-HOTKEY",
+      "source": "docs/rust-migration-guide.md:249",
+      "text": "Ctrl+Alt+Shift+X 全局热键不迁移"
+    },
+    {
+      "id": "GUIDE-P2-WIN-TASKBAR-PLACEMENT",
+      "source": "docs/rust-migration-guide.md:251-252",
+      "text": "四边、8px/6px、tray/task-list 避让、virtual clamp"
+    },
+    {
+      "id": "GUIDE-P2-WIN-SECOND-WINDOW",
+      "source": "docs/rust-migration-guide.md:253",
+      "text": "第二任务栏窗口、停靠/浮动、独立 SSE"
+    },
+    {
+      "id": "GUIDE-P2-WIN-TRAY",
+      "source": "docs/rust-migration-guide.md:254",
+      "text": "Windows 托盘图标"
+    },
+    {
+      "id": "GUIDE-P2-WIN-TRAY-MENU",
+      "source": "docs/rust-migration-guide.md:255",
+      "text": "七项 tray 菜单语义"
+    },
+    {
+      "id": "GUIDE-P2-WIN-PERSISTENCE",
+      "source": "docs/rust-migration-guide.md:256",
+      "text": "窗口位置持久化"
+    },
+    {
+      "id": "GUIDE-P2-WIN-DPI",
+      "source": "docs/rust-migration-guide.md:257",
+      "text": "多显示器 DPI 感知定位"
+    },
+    {
+      "id": "GUIDE-P2-WIN-SINGLE-INSTANCE",
+      "source": "docs/rust-migration-guide.md:258",
+      "text": "Mutex 单实例"
+    },
+    {
+      "id": "P2-C01",
+      "source": "docs/rust-migration-guide.md:264",
+      "text": "#990A0A0A + radius 8 + shadow"
+    },
+    {
+      "id": "P2-C02",
+      "source": "docs/rust-migration-guide.md:265",
+      "text": "CPU/GPU/MEM/NET/Disk 实时值与阈值色"
+    },
+    {
+      "id": "P2-C03",
+      "source": "docs/rust-migration-guide.md:266",
+      "text": "3px ThinProgressBar"
+    },
+    {
+      "id": "P2-C04",
+      "source": "docs/rust-migration-guide.md:267",
+      "text": "PinnedStack 固定进程"
+    },
+    {
+      "id": "P2-C05",
+      "source": "docs/rust-migration-guide.md:268",
+      "text": "虚拟化 ListView 进程列表"
+    },
+    {
+      "id": "P2-C06",
+      "source": "docs/rust-migration-guide.md:269",
+      "text": "拖拽移动 + 24px snap"
+    },
+    {
+      "id": "P2-C07",
+      "source": "docs/rust-migration-guide.md:270",
+      "text": "2s 长按缩至 0.90"
+    },
+    {
+      "id": "P2-C08",
+      "source": "docs/rust-migration-guide.md:271",
+      "text": "50ms/150ms 点击反馈"
+    },
+    {
+      "id": "P2-C09",
+      "source": "docs/rust-migration-guide.md:272",
+      "text": "Kill 二次确认 + 1s 圆弧"
+    },
+    {
+      "id": "P2-C10",
+      "source": "docs/rust-migration-guide.md:273",
+      "text": "全局热键不迁移"
+    },
+    {
+      "id": "P2-C11",
+      "source": "docs/rust-migration-guide.md:274",
+      "text": "任务栏窗 Text/Bar × Horizontal/Vertical 四呈现"
+    },
+    {
+      "id": "P2-C12",
+      "source": "docs/rust-migration-guide.md:275",
+      "text": "托盘图标、菜单、双击和更新提示"
+    },
+    {
+      "id": "P2-C13",
+      "source": "docs/rust-migration-guide.md:276",
+      "text": "设置：监控项、关键词、功耗入口"
+    },
+    {
+      "id": "P2-C14",
+      "source": "docs/rust-migration-guide.md:277",
+      "text": "About + update check"
+    },
+    {
+      "id": "P2-C15",
+      "source": "docs/rust-migration-guide.md:278",
+      "text": "Toast overlay"
+    },
+    {
+      "id": "GUIDE-P2-SERVICE-DISCOVERY",
+      "source": "docs/rust-migration-guide.md:280-300",
+      "text": "current_exe().parent() 发现且错误默认回退"
+    },
+    {
+      "id": "GUIDE-P2-DONE-SOFTWARE-UI",
+      "source": "docs/rust-migration-guide.md:303-304",
+      "text": "软件渲染运行且核心 UI 全过"
+    },
+    {
+      "id": "GUIDE-P2-DONE-MEMORY",
+      "source": "docs/rust-migration-guide.md:305",
+      "text": "xhm-desktop Private Bytes <10 MiB"
+    },
+    {
+      "id": "GUIDE-P2-DONE-4K",
+      "source": "docs/rust-migration-guide.md:306",
+      "text": "4K 任务栏定位通过"
+    },
+    {
+      "id": "GUIDE-P2-DONE-DESKTOP-TEST",
+      "source": "docs/rust-migration-guide.md:307",
+      "text": "cargo test -p xhm-desktop 全绿且 Win32 mock"
+    },
+    {
+      "id": "SESSION-EC-01",
+      "source": "session.json:339-340",
+      "text": "PID/topmost/click-through 且无热键"
+    },
+    {
+      "id": "SESSION-EC-02",
+      "source": "session.json:341",
+      "text": "五事件 SSE，重连不阻塞 UI"
+    },
+    {
+      "id": "SESSION-EC-03",
+      "source": "session.json:342",
+      "text": "四边 8/6px、避让、clamp"
+    },
+    {
+      "id": "SESSION-EC-04",
+      "source": "session.json:343",
+      "text": "主窗完整指标/列表/动画/Kill"
+    },
+    {
+      "id": "SESSION-EC-05",
+      "source": "session.json:344",
+      "text": "任务栏四呈现与停靠/浮动"
+    },
+    {
+      "id": "SESSION-EC-06",
+      "source": "session.json:345",
+      "text": "七项 tray 菜单"
+    },
+    {
+      "id": "SESSION-EC-07",
+      "source": "session.json:346",
+      "text": "workspace test 与 clippy"
+    },
+    {
+      "id": "SESSION-EC-08",
+      "source": "session.json:347",
+      "text": "真实 Windows software/SSE/tray/dual-window/memory/4K"
+    },
+    {
+      "id": "G1-DONE",
+      "source": "session.json:351-355",
+      "text": "crate、exe-relative config、五 SSE/state、deterministic HTTP/SSE"
+    },
+    {
+      "id": "G2-DONE",
+      "source": "session.json:362-366",
+      "text": "单实例/双窗/DPI/taskbar/drag/topmost/click/tray/persistence"
+    },
+    {
+      "id": "G3-DONE",
+      "source": "session.json:373-377",
+      "text": "主窗 metrics/colors/progress/pin/list/drag/animations/Kill/Toast"
+    },
+    {
+      "id": "G4-DONE",
+      "source": "session.json:384-388",
+      "text": "taskbar/settings/about + <10MiB + 4K + workspace quality"
+    },
+    {
+      "id": "BOUNDARY-SOFTWARE-RENDERER",
+      "source": "session.json:25-31; findings.json:259-265",
+      "text": "默认且最终门固定 winit-software"
+    },
+    {
+      "id": "BOUNDARY-FROZEN-SSE",
+      "source": "session.json:29-31; findings.json:248-256",
+      "text": "只消费五 PushEvent、/api/v1/events、35181"
+    },
+    {
+      "id": "BOUNDARY-NO-HOTKEY",
+      "source": "session.json:18-23; docs/rust-migration-guide.md:249,273",
+      "text": "零 RegisterHotKey/WM_HOTKEY/Ctrl+Alt+Shift+X"
+    },
+    {
+      "id": "BOUNDARY-NO-INSTALLER",
+      "source": "findings.json:313-319",
+      "text": "更新只 check+prompt，无下载/launch"
+    },
+    {
+      "id": "BOUNDARY-NO-P3",
+      "source": "session.json:18-23",
+      "text": "无 cutover/端口切换/发布/installer 迁移"
+    },
+    {
+      "id": "BOUNDARY-NO-CSHARP-CUTOVER",
+      "source": "session.json:18-23; findings.json:277-283",
+      "text": "不删除或修改 C# Desktop/Service"
+    },
+    {
+      "id": "BOUNDARY-NO-WEB-WRITES",
+      "source": "session.json:18-20",
+      "text": "不修改 xhmonitor-web"
+    },
+    {
+      "id": "BOUNDARY-NO-SERVICE-CORE-WRITES",
+      "source": "session.json:23,29-31; findings.json:250-256",
+      "text": "不修改 xhm-service/xhm-core 冻结契约"
+    },
+    {
+      "id": "BOUNDARY-SYSTEM-SETTINGS-READONLY",
+      "source": "findings.json:321-328",
+      "text": "AdminMode/Startup/LAN/Firewall/System 灰显且 P3 启用"
+    },
+    {
+      "id": "P0P1-NO-REGRESSION",
+      "source": "findings.json:36-48",
+      "text": "P0/P1 service+bridge 保持 <30 MiB 且 workspace 无回归"
+    }
+  ],
+  "coverage_map": [
+    {
+      "requirement_id": "GUIDE-P2-WIN-HWND",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "fake EnumWindows + real PID/HWND/title",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-TOPMOST",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "SetWindowPos flags test + real style log",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-TASKBAR-NEAR",
+      "responsible_tasks": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "pure placement table + four-edge screenshots",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-CLICK-THROUGH",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "style-bit tests + tray recovery smoke",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-NO-HOTKEY",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "exact regex 0 matches",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-TASKBAR-PLACEMENT",
+      "responsible_tasks": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "8/6px/tray/task-list/clamp table and real RECT",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-SECOND-WINDOW",
+      "responsible_tasks": [
+        "TASK-008",
+        "TASK-012",
+        "TASK-014"
+      ],
+      "evidence": "distinct HWND/connection ids + dock/float evidence",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-TRAY",
+      "responsible_tasks": [
+        "TASK-002",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "0.24.1 spike decision + real tray smoke",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-TRAY-MENU",
+      "responsible_tasks": [
+        "TASK-002",
+        "TASK-008",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "seven command ids + recording",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-PERSISTENCE",
+      "responsible_tasks": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "temp-dir round trip + restart/clamp",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-DPI",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "96/144/192 tests + 4K/multi-DPI RECT",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-WIN-SINGLE-INSTANCE",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "RAII fake + C#/Rust/second-Rust matrix",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C01",
+      "responsible_tasks": [
+        "TASK-010",
+        "TASK-014"
+      ],
+      "evidence": "main-window screenshot",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C02",
+      "responsible_tasks": [
+        "TASK-010",
+        "TASK-014"
+      ],
+      "evidence": "50/80 tests + metrics/disk screenshot",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C03",
+      "responsible_tasks": [
+        "TASK-010",
+        "TASK-014"
+      ],
+      "evidence": "3px screenshot + clamp test",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C04",
+      "responsible_tasks": [
+        "TASK-010",
+        "TASK-014"
+      ],
+      "evidence": "pin/unpin/PID restart tests",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C05",
+      "responsible_tasks": [
+        "TASK-010",
+        "TASK-014"
+      ],
+      "evidence": "large ListView fixture and scroll recording",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C06",
+      "responsible_tasks": [
+        "TASK-006",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "5/24px pure tests + real drag",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C07",
+      "responsible_tasks": [
+        "TASK-009",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "2s/200ms deterministic test + recording",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C08",
+      "responsible_tasks": [
+        "TASK-009",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "50/150ms deterministic test + recording",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C09",
+      "responsible_tasks": [
+        "TASK-007",
+        "TASK-009",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "1s/43.98/one-call test + real safe process",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C10",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "hotkey regex zero + tray recovery",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C11",
+      "responsible_tasks": [
+        "TASK-009",
+        "TASK-012",
+        "TASK-014"
+      ],
+      "evidence": "16-cell tests + 8 production screenshots",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C12",
+      "responsible_tasks": [
+        "TASK-002",
+        "TASK-008",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "tray spike, callback mapping and real recording",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C13",
+      "responsible_tasks": [
+        "TASK-011",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "settings subset request + power next/Toast",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C14",
+      "responsible_tasks": [
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "mock Gitee states + About screenshots",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P2-C15",
+      "responsible_tasks": [
+        "TASK-010",
+        "TASK-011",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "3s Toast + action/update results; no sixth event",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-SERVICE-DISCOVERY",
+      "responsible_tasks": [
+        "TASK-003",
+        "TASK-014"
+      ],
+      "evidence": "exe-dir fixtures, 35179 compatibility probe, 35181 default",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-DONE-SOFTWARE-UI",
+      "responsible_tasks": [
+        "TASK-001",
+        "TASK-009",
+        "TASK-014"
+      ],
+      "evidence": "backend log + signed UI matrix",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-DONE-MEMORY",
+      "responsible_tasks": [
+        "TASK-014"
+      ],
+      "evidence": "60/60 one-second desktop samples <10 MiB",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-DONE-4K",
+      "responsible_tasks": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-012",
+        "TASK-014"
+      ],
+      "evidence": "3840x2160 four-edge RECT/screenshots",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "GUIDE-P2-DONE-DESKTOP-TEST",
+      "responsible_tasks": [
+        "TASK-014"
+      ],
+      "evidence": "cargo test -p xhm-desktop + Win32 fake suite",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-01",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-014"
+      ],
+      "evidence": "POC behavior tests + hotkey zero",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-02",
+      "responsible_tasks": [
+        "TASK-004",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "five-event/reconnect tests + responsive real UI",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-03",
+      "responsible_tasks": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "four-edge tables and smoke",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-04",
+      "responsible_tasks": [
+        "TASK-004",
+        "TASK-010",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "main-window state/visual/interaction matrix",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-05",
+      "responsible_tasks": [
+        "TASK-012",
+        "TASK-014"
+      ],
+      "evidence": "16-cell tests + dock/float recording",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-06",
+      "responsible_tasks": [
+        "TASK-002",
+        "TASK-008",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "seven tray items/double-click/update prompt",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-07",
+      "responsible_tasks": [
+        "TASK-014"
+      ],
+      "evidence": "workspace tests and all-target clippy output",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "SESSION-EC-08",
+      "responsible_tasks": [
+        "TASK-008",
+        "TASK-012",
+        "TASK-014"
+      ],
+      "evidence": "real Windows full smoke, 4K and memory dataset",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "G1-DONE",
+      "responsible_tasks": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-004",
+        "TASK-014"
+      ],
+      "evidence": "crate/config/REST/SSE/state deterministic evidence",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "G2-DONE",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "native fake tests + real shell smoke",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "G3-DONE",
+      "responsible_tasks": [
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "approved spike + complete interaction matrix",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "G4-DONE",
+      "responsible_tasks": [
+        "TASK-012",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "taskbar/settings/about/update + final quality/performance",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-SOFTWARE-RENDERER",
+      "responsible_tasks": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-009",
+        "TASK-014"
+      ],
+      "evidence": "backend logs show winit-software; no fallback",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-FROZEN-SSE",
+      "responsible_tasks": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-010",
+        "TASK-014"
+      ],
+      "evidence": "exact constants/payloads/path and unknown-event skip",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-NO-HOTKEY",
+      "responsible_tasks": [
+        "TASK-005",
+        "TASK-011",
+        "TASK-014"
+      ],
+      "evidence": "exact regex zero",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-NO-INSTALLER",
+      "responsible_tasks": [
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "one check request, filesystem/process counters zero, source guard",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-NO-P3",
+      "responsible_tasks": [
+        "TASK-001",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "no P3 target/action in files or smoke",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-NO-CSHARP-CUTOVER",
+      "responsible_tasks": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-005",
+        "TASK-014"
+      ],
+      "evidence": "C#/Rust coexistence and restricted-target audit",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-NO-WEB-WRITES",
+      "responsible_tasks": [
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "open existing Web only; write-target prefix count zero",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-NO-SERVICE-CORE-WRITES",
+      "responsible_tasks": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-007",
+        "TASK-014"
+      ],
+      "evidence": "read-only contract consumption; prefix count zero",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "BOUNDARY-SYSTEM-SETTINGS-READONLY",
+      "responsible_tasks": [
+        "TASK-002",
+        "TASK-008",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "evidence": "disabled/P3 text + 0 PUT/system-call evidence",
+      "status": "covered"
+    },
+    {
+      "requirement_id": "P0P1-NO-REGRESSION",
+      "responsible_tasks": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-006",
+        "TASK-008",
+        "TASK-014"
+      ],
+      "evidence": "workspace quality + 60/60 service+bridge samples <30 MiB",
+      "status": "covered"
+    }
+  ],
+  "confidence_dimensions": [
+    {
+      "name": "Feasibility",
+      "score": 4,
+      "confidence": 0.86,
+      "evidence": "POC software 3.8 MiB and Win32 primitives; P1 SSE/REST frozen; remaining tray/organic are explicit spikes."
+    },
+    {
+      "name": "Impact",
+      "score": 5,
+      "confidence": 0.95,
+      "evidence": "Replaces 149-165 MiB WPF Desktop path while preserving P0/P1 and C# parallel operation."
+    },
+    {
+      "name": "Risk",
+      "score": 3,
+      "confidence": 0.7,
+      "evidence": "Human visual, tray event-loop, DPI and final <10 MiB remain real Windows gates."
+    },
+    {
+      "name": "Complexity",
+      "score": 2,
+      "confidence": 0.82,
+      "evidence": "Four goal barriers, dual windows/connections and 15 guide UI rows are decomposed into 14 bounded tasks."
+    },
+    {
+      "name": "Dependencies",
+      "score": 4,
+      "confidence": 0.93,
+      "evidence": "All tasks bind one goal Run and an explicit earlier dependency; frozen core/service contracts are read-only."
+    },
+    {
+      "name": "Coverage",
+      "score": 5,
+      "confidence": 0.94,
+      "evidence": "Every guide row, eight Session criteria, G1-G4 Done and boundary exclusion maps to tasks and evidence."
+    }
+  ],
+  "pressure_pass": {
+    "target_task": "TASK-011",
+    "reason": "主窗交互同时组合 pointer precedence、五个时间边界、REST 与进程副作用，是最高复杂度交互 task。",
+    "gradient": [
+      {
+        "step": "evidence-demand",
+        "challenge": "是否可把动画与副作用一起直接写在 Slint callback？",
+        "response": "否；C# 行为和确定性测试要求纯 Rust state machine，Slint callback 只投递 action。"
+      },
+      {
+        "step": "precedence-probe",
+        "challenge": "drag、long-press 与 click 同一 pointer sequence 如何避免多触发？",
+        "response": "press 后 >5px drag 优先取消 timer；2s long-press 消费 click；release 仅在未 drag/long-press 时触发 50/150ms click。"
+      },
+      {
+        "step": "side-effect-grill",
+        "challenge": "Kill 双击与 power retry 会否重复副作用？",
+        "response": "Kill 用 Idle→Confirming→Killing 且 TASK-007 call-count=1；power 只走现有 warmup/next route，状态机禁重入。"
+      },
+      {
+        "step": "boundary-grill",
+        "challenge": "click-through 无鼠标输入时如何退出？",
+        "response": "仅由 TASK-002/008 tray command 恢复；禁止热键。"
+      }
+    ],
+    "outcome": "保持 TASK-011 单一交互状态机；所有 native/HTTP/process 依赖只读消费，测试 50/150/200/1000/2000ms 与异常路径。"
+  },
+  "boundary_grill": {
+    "verdict": "preserved",
+    "results": [
+      {
+        "boundary": "renderer",
+        "result": "固定 winit-software",
+        "evidence": "session.json:27; findings.json:259-265",
+        "tasks": [
+          "TASK-001",
+          "TASK-009",
+          "TASK-014"
+        ]
+      },
+      {
+        "boundary": "frozen SSE",
+        "result": "五事件、/api/v1/events、35181，无第六事件",
+        "evidence": "xhm-core/src/wire.rs:17-228; xhm-service/src/state.rs:14-16; findings.json:248-256",
+        "tasks": [
+          "TASK-003",
+          "TASK-004",
+          "TASK-014"
+        ]
+      },
+      {
+        "boundary": "global hotkey",
+        "result": "规划与最终 grep 均要求零 RegisterHotKey|WM_HOTKEY|Ctrl+Alt+Shift+X",
+        "evidence": "session.json:18-23; docs/rust-migration-guide.md:249,273",
+        "tasks": [
+          "TASK-005",
+          "TASK-011",
+          "TASK-014"
+        ]
+      },
+      {
+        "boundary": "installer/P3",
+        "result": "Gitee check+prompt only，无 download/cache/launch/cutover",
+        "evidence": "findings.json:313-319; session.json:18-23",
+        "tasks": [
+          "TASK-013",
+          "TASK-014"
+        ]
+      },
+      {
+        "boundary": "system settings",
+        "result": "AdminMode/Startup/LAN/Firewall/System read-only disabled，显示 P3 启用",
+        "evidence": "findings.json:321-328",
+        "tasks": [
+          "TASK-002",
+          "TASK-008",
+          "TASK-013",
+          "TASK-014"
+        ]
+      },
+      {
+        "boundary": "restricted repositories",
+        "result": "所有 task files[] 均无 xhmonitor-web/、XhMonitor.Desktop/、xhm-service/、xhm-core/ 写目标；仅根 Cargo workspace 消费依赖",
+        "evidence": "session.json:18-23,29-31; 14 task files[]",
+        "tasks": [
+          "TASK-014"
+        ]
+      }
+    ]
+  },
+  "residual_risks": [
+    {
+      "id": "R-01",
+      "risk": "tray-icon 0.24.1 与 Slint active loop/Windows notification click 尚未在项目实测",
+      "owner": "TASK-002",
+      "mitigation": "首个 G1 spike GO；完整 NO-GO 后唯一 Shell_NotifyIcon fallback。"
+    },
+    {
+      "id": "R-02",
+      "risk": "winit-software 下 OrganicShell 与三时间线可能视觉/CPU 不达标",
+      "owner": "TASK-009",
+      "mitigation": "首个 G3 wave 人工 100/150/200% DPI gate；不自动换 renderer。"
+    },
+    {
+      "id": "R-03",
+      "risk": "4K、多显示器、负坐标与 DPI rounding 可能偏离 C#",
+      "owner": "TASK-006/TASK-014",
+      "mitigation": "physical-pixel table tests + real four-edge RECT/screenshots。"
+    },
+    {
+      "id": "R-04",
+      "risk": "完整 UI Private Bytes 可能超过 POC 3.8 MiB 基线",
+      "owner": "TASK-014",
+      "mitigation": "60 个逐秒样本，每个 desktop <10 MiB；service+bridge 同步回归 <30 MiB。"
+    },
+    {
+      "id": "R-05",
+      "risk": "现有 35179 endpoints 文件与 P1 35181 不同",
+      "owner": "TASK-003",
+      "mitigation": "PascalCase parser + preferred..+10 300ms health probe；SSE path 固定。"
+    },
+    {
+      "id": "R-06",
+      "risk": "指南 Toast 写阈值告警，但冻结五事件无 alert source",
+      "owner": "TASK-010/TASK-014",
+      "mitigation": "交付可复用 3s Toast 和 power/kill/update 结果；不伪造第六 SSE 事件。"
+    },
+    {
+      "id": "R-07",
+      "risk": "“4 种样式×4 边”与 C# 生产 selector 实际为 2 style×edge-derived orientation",
+      "owner": "TASK-012/TASK-014",
+      "mitigation": "16-cell 逻辑矩阵 + 8 个真实生产组合，不添加无依据 orientation setting。"
+    }
+  ],
+  "rollback_strategy": {
+    "principle": "按 goal 倒序、保持冻结 contract 和 C# 并行路径；不得通过放宽 renderer/内存/no-scope gate 回滚。",
+    "steps": [
+      "G4：移除 taskbar/settings/about/update 注册，保留 G3/G2。",
+      "G3：回退 main UI/interaction/OrganicShell export，恢复 G2 最小双窗壳。",
+      "G2：回退双窗/tray production 接线，再移除 process/placement/native modules，保留 G1。",
+      "G1：按 SSE/state→REST/config→tray spike→workspace crate 倒序移除；不触碰 xhm-core/xhm-service/C#。"
+    ],
+    "shared_file_rule": "所有共享文件依 dependency graph 顺序修改；执行者每次先 re-read，失败只回退当前 task hunk。"
+  },
+  "synthesis_concerns": [
+    {
+      "id": "SC-01",
+      "concern": "自动阈值 Toast 缺少冻结事件来源",
+      "resolution": "实现通用 Toast 与既有 action result；自动 alert 不扩协议。"
+    },
+    {
+      "id": "SC-02",
+      "concern": "任务栏“4 样式×4 边”表述可能被误读为 16 个用户选项",
+      "resolution": "16-cell 逻辑/几何验证，生产仍为 Text/Bar × edge-derived orientation 的 8 组合。"
+    }
+  ]
+}

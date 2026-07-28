@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-005"
+  },
+  "id": "TASK-005",
+  "title": "提升可替换 Win32 窗口主机 primitives",
+  "description": "从已验证 POC 提升 PID-safe HWND、topmost、click-through、DPI 和 Rust 单实例边界，不迁移热键。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G2",
+  "execute_step_id": "step-004-execute",
+  "wave_id": "WAVE-005",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "GUIDE-P2-WIN-HWND",
+    "GUIDE-P2-WIN-TOPMOST",
+    "GUIDE-P2-WIN-CLICK-THROUGH",
+    "GUIDE-P2-WIN-DPI",
+    "GUIDE-P2-WIN-SINGLE-INSTANCE",
+    "GUIDE-P2-WIN-NO-HOTKEY",
+    "P2-C10",
+    "G2-DONE",
+    "SESSION-EC-01",
+    "BOUNDARY-NO-HOTKEY",
+    "BOUNDARY-NO-CSHARP-CUTOVER"
+  ],
+  "deps": [
+    "TASK-004"
+  ],
+  "files": [
+    "xhm-desktop/src/win32/mod.rs",
+    "xhm-desktop/src/win32/api.rs",
+    "xhm-desktop/src/win32/hwnd.rs",
+    "xhm-desktop/src/win32/window_style.rs",
+    "xhm-desktop/src/win32/single_instance.rs",
+    "xhm-desktop/src/win32/dpi.rs"
+  ],
+  "read_first": [
+    "poc/slint-desktop/src/win32.rs:29-164",
+    "poc/slint-desktop/src/main.rs:9-35",
+    "XhMonitor.Desktop/App.xaml.cs:18-50,135-162",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs:279-298,1330-1382",
+    "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:662-678"
+  ],
+  "action": "复制 POC 的 find_own_hwnd(title: &str) -> Option<HWND>、set_topmost(HWND) 和 set_click_through(HWND,bool) 行为，补齐 DPI 与独立 Rust mutex，并把 FFI 收窄到可替换 adapter。",
+  "implementation_steps": [
+    "EnumWindows 后先 GetWindowThreadProcessId 验 current PID，再精确匹配两个唯一 title；外进程同标题不可命中。",
+    "topmost 用 SetWindowPos(HWND_TOPMOST, SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE，必要时 NOOWNERZORDER)；click-through 开启保留旧 flags 后 OR WS_EX_LAYERED|WS_EX_TRANSPARENT，关闭只清 WS_EX_TRANSPARENT。",
+    "CreateMutexW/GetLastError/CloseHandle 封装 RAII guard，使用 Local\\XhMonitor_xhm-desktop_SingleInstance；不得与 C# XhMonitor_Desktop_SingleInstance 冲突。",
+    "GetDpiForWindow/MonitorFromWindow/GetMonitorInfoW 建立 dpi/96 physical↔logical 边界；SetWindowPos 与 taskbar RECT 始终使用 physical pixels。",
+    "真实 FFI 仅 cfg(windows)，fake adapter 覆盖 handle/rect/style。绝不复制 RegisterExitHotkey/WM_HOTKEY。"
+  ],
+  "convergence_criteria": [
+    "Test：外进程同 title 不命中；本进程两个 title 得到不同正确 HWND。",
+    "Test：style bits、SetWindowPos flags、96/144/192 DPI 往返与 mutex RAII 可重复。",
+    "CLI：rg -n \"RegisterHotKey|WM_HOTKEY|Ctrl\\+Alt\\+Shift\\+X\" xhm-desktop 为 0 命中。",
+    "手工：C# Desktop 与首个 Rust Desktop 共存，第二个 Rust 实例被拒绝。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop win32",
+      "rg -n \"RegisterHotKey|WM_HOTKEY|Ctrl\\+Alt\\+Shift\\+X\" xhm-desktop"
+    ],
+    "manual_scenarios": [
+      "C# + Rust + second Rust 三进程矩阵；记录 HWND/PID/title/style/DPI。"
+    ],
+    "expected": "原生窗口边界可测且无全局热键。"
+  },
+  "acceptance_evidence": [
+    "Win32 fake 测试",
+    "真实 HWND/style/DPI/mutex 日志",
+    "热键 grep 零命中"
+  ],
+  "rollback": {
+    "steps": [
+      "移除 win32 host modules"
+    ],
+    "preserves": [
+      "G1 客户端与状态",
+      "C# mutex/窗口"
+    ]
+  }
+}

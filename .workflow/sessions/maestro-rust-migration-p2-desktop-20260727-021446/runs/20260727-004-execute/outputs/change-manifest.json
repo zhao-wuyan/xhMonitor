@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "kind": "change-manifest",
+    "schema": "change-manifest/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "change-manifest/1.0",
+  "run_id": "20260727-004-execute",
+  "goal_ref": "G2",
+  "scope": "xhm-desktop/src/win32/**, xhm-desktop/src/persistence.rs, xhm-desktop/src/shell.rs, xhm-desktop/src/lib.rs, xhm-desktop/ui/shell.slint",
+  "created_files": ["xhm-desktop/src/win32/geometry.rs", "xhm-desktop/src/win32/taskbar.rs", "xhm-desktop/src/win32/drag.rs", "xhm-desktop/src/win32/process.rs", "xhm-desktop/src/persistence.rs", "xhm-desktop/src/shell.rs"],
+  "modified_files": ["xhm-desktop/src/win32/mod.rs", "xhm-desktop/src/win32/hwnd.rs", "xhm-desktop/src/win32/dpi.rs", "xhm-desktop/src/win32/process.rs", "xhm-desktop/src/lib.rs", "xhm-desktop/ui/shell.slint"],
+  "unchanged_files": ["xhm-desktop/src/win32/window.rs", "xhm-desktop/src/win32/mutex.rs", "xhm-desktop/src/tray/**", "xhm-desktop/src/config.rs", "xhm-desktop/src/desktop_state.rs", "xhm-desktop/src/service_client/**", "xhm-desktop/src/main.rs", "xhm-desktop/Cargo.toml", "xhm-desktop/build.rs"],
+  "module_summary": {
+    "win32/process.rs": "Process32NextW FALSE now distinguishes ERROR_NO_MORE_FILES from mid-enumeration failures; failures return Other",
+    "win32/drag.rs": "5px strict threshold and snap/anchor pure geometry remain unchanged and tested",
+    "lib.rs": "fixed delimiters; Rc-owned controller/guard/runtime resources; save timer drops with tray runtime; SSE thread cancels and joins",
+    "ui/shell.slint": "removed incomplete drag TouchArea callbacks; production drag/snap wiring deferred to G3"
+  }
+}

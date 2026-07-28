@@ -1,0 +1,71 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-007"
+  },
+  "id": "TASK-007",
+  "title": "实现可注入的进程树终止边界",
+  "description": "为 G3 Kill 二次确认提供一次性、可测试的原生进程树动作，不把进程 API 放入 UI。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G2",
+  "execute_step_id": "step-004-execute",
+  "wave_id": "WAVE-007",
+  "estimated_minutes": 30,
+  "requirement_refs": [
+    "P2-C09",
+    "G2-DONE",
+    "SESSION-EC-04",
+    "BOUNDARY-NO-HOTKEY",
+    "BOUNDARY-NO-SERVICE-CORE-WRITES"
+  ],
+  "deps": [
+    "TASK-006"
+  ],
+  "files": [
+    "xhm-desktop/src/win32/mod.rs",
+    "xhm-desktop/src/win32/process.rs"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/Services/IProcessManager.cs:5-11",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs:810-933",
+    "XhMonitor.Desktop/Services/WindowManagementService.cs:623-694"
+  ],
+  "action": "按现有 IProcessManager 的进程树终止行为建立窄、可注入 Rust 边界；UI 只提交 PID，边界返回成功/失败并保证每次确认最多执行一次。",
+  "implementation_steps": [
+    "先逐字读取 IProcessManager 及实际实现签名和错误语义，再复制行为，不发明 service API 或 UI callback。",
+    "生产实现位于 cfg(windows) 原生层；测试 fake 记录 PID、调用次数、成功和真实错误。",
+    "拒绝无效/自身 PID；终止与 Toast/动画完全解耦，G3 状态机负责 1s 确认与去重。",
+    "不引入 shell command fallback、全局热键或 xhm-service 进程终止端点。"
+  ],
+  "convergence_criteria": [
+    "Test：有效 PID 恰好调用一次，重复确认期间不重入。",
+    "Test：无效 PID、自身 PID、权限错误和进程已退出返回确定结果。",
+    "Read：process.rs 不依赖 Slint，且无 RegisterHotKey/WM_HOTKEY。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop process"
+    ],
+    "manual_scenarios": [
+      "选择可安全退出的测试子进程，确认树终止与错误日志。"
+    ],
+    "expected": "Kill 的原生副作用有唯一可替换边界。"
+  },
+  "acceptance_evidence": [
+    "fake 调用计数断言",
+    "测试子进程结果",
+    "错误映射日志"
+  ],
+  "rollback": {
+    "steps": [
+      "移除 process module"
+    ],
+    "preserves": [
+      "窗口 primitives",
+      "G1 状态"
+    ]
+  }
+}

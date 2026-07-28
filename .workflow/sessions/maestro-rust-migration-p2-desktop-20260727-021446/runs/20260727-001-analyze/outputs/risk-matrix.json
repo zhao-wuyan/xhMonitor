@@ -1,0 +1,210 @@
+{
+  "_meta": {
+    "kind": "risk-matrix",
+    "schema": "risk-matrix/1.0",
+    "role": "evidence"
+  },
+  "risks": [
+    {
+      "id": "RISK-01",
+      "title": "Slint 软件渲染视觉与 WPF 基线不对齐（有机矩阵/长按/Kill 倒计时）",
+      "category": "ui-parity",
+      "probability": "medium",
+      "probability_rationale": "POC 仅验证脉冲矩形（poc/slint-desktop/ui/app.slint:20-22），未覆盖 12 核心交互的复杂动画",
+      "impact": "high",
+      "impact_rationale": "UI 对等是 P2 Done 条件（docs/rust-migration-guide.md:304）；视觉不达标阻塞 G3/G4 验收",
+      "severity_score": 12,
+      "evidence_refs": [
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs:662-754 (ScaleTransform 2s→0.90 + 点击反馈 50ms/150ms keyframes)",
+        "XhMonitor.Desktop/FloatingWindow.xaml.cs:810-933 (Kill 倒计时圆弧 周长 43.98)",
+        "docs/【设计稿】有机吸附矩阵-Organic-Dock.html",
+        "docs/rust-migration-feasibility.md:352 (软件后端 CPU 占用与渲染质量未在 POC 测量)"
+      ],
+      "mitigation": "G3 sprint-1 交付有机吸附矩阵 Slint 原型让用户确认；记录稳态 CPU + Private Bytes；不达标评估 Skia renderer 回退（注意 <10 MiB 门禁）",
+      "owner": "G3"
+    },
+    {
+      "id": "RISK-02",
+      "title": "tray-icon crate 与 Slint winit 事件循环共存不稳定",
+      "category": "integration",
+      "probability": "medium",
+      "probability_rationale": "未在本仓库验证过；winit 事件循环与系统托盘消息泵的线程亲和性是已知痛点",
+      "impact": "high",
+      "impact_rationale": "托盘是 P2 核心项（docs/rust-migration-guide.md:275）+ 点击穿透切换的退出路径替代（hotkey 已移除）",
+      "severity_score": 12,
+      "evidence_refs": [
+        "XhMonitor.Desktop/Services/TrayIconService.cs:42-78 (NotifyIcon + ContextMenuStrip 7 项 + DoubleClick)",
+        "poc/slint-desktop/src/main.rs:9-52 (Slint 事件循环占用主线程)"
+      ],
+      "mitigation": "plan 前置 spike：tray-icon + slint::Timer 共存验证（go/no-go 1 里程碑）；回退方案为手写 Shell_NotifyIcon FFI",
+      "owner": "G2"
+    },
+    {
+      "id": "RISK-03",
+      "title": "多显示器 + DPI 坐标变换在 Rust 侧与 C# 像素不一致",
+      "category": "geometry",
+      "probability": "medium",
+      "probability_rationale": "C# TransformDevicePointToLogical 依赖 HwndSource.CompositionTarget 矩阵，Rust 侧需用 GetDpiForWindow/MonitorFromWindow 重建",
+      "impact": "medium",
+      "impact_rationale": "4K 任务栏定位是 P2 Done 硬条件（docs/rust-migration-guide.md:306）",
+      "severity_score": 9,
+      "evidence_refs": [
+        "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:619-650 (TransformDevicePointToLogical/TransformDeviceRectangleToLogical)",
+        "XhMonitor.Desktop/Services/TaskbarPlacementService.cs:84-90 (SystemParameters.VirtualScreenLeft/Top/Width/Height + Math.Clamp)",
+        "session.json boundary_contract.constraints (4K 任务栏定位验证证据)"
+      ],
+      "mitigation": "PlacementCalculator 端口为纯函数 + 表驱动单测；Windows 冒烟在 4K 显示器覆盖 Bottom/Top/Left/Right 四边",
+      "owner": "G2"
+    },
+    {
+      "id": "RISK-04",
+      "title": "SSE 断线重连阻塞 Slint UI 线程",
+      "category": "realtime",
+      "probability": "low",
+      "probability_rationale": "reqwest + tokio 已是异步范式；风险来自实现错误而非协议",
+      "impact": "high",
+      "impact_rationale": "UI 卡死直接违反 DoD 与 cadence 门禁",
+      "severity_score": 8,
+      "evidence_refs": [
+        "XhMonitor.Desktop/Services/SignalRService.cs:37-157 (WithAutomaticReconnect + 10×2s 重试)",
+        "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:387-418 (InitializeAsync 10 次重试)",
+        "xhm-service/src/realtime/mod.rs:639-705 (SSE keepalive 15s + comment ping + 断连 cleanup)"
+      ],
+      "mitigation": "SSE 客户端跑独立 tokio 任务，通过 mpsc/channel 把 PushEvent 推回 Slint UI 线程；mock HTTP server 写断线重连确定性测试",
+      "owner": "G1"
+    },
+    {
+      "id": "RISK-05",
+      "title": "windows 0.58（POC）与 windows-sys 0.59（workspace）FFI 路径分裂",
+      "category": "dependency",
+      "probability": "low",
+      "probability_rationale": "不同 crate 可共存；但增加编译时间与心智负担",
+      "impact": "low",
+      "impact_rationale": "功能不受影响，仅工程整洁度",
+      "severity_score": 4,
+      "evidence_refs": [
+        "Cargo.toml:30-35 (windows-sys 0.59)",
+        "poc/slint-desktop/Cargo.toml:10-17 (windows 0.58)"
+      ],
+      "mitigation": "xhm-desktop 选用 windows（高级包装）；与 workspace windows-sys 共存；如出现 symbol 冲突再统一",
+      "owner": "G1"
+    },
+    {
+      "id": "RISK-06",
+      "title": "Deferred 的系统级设置在 P2 UI 上误导用户",
+      "category": "scope-leak",
+      "probability": "medium",
+      "probability_rationale": "UI 存在但灰显/禁用容易让用户误以为是 bug",
+      "impact": "low",
+      "impact_rationale": "不影响并行验证，仅用户体验",
+      "severity_score": 6,
+      "evidence_refs": [
+        "XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs:128-282 (AdminMode/Startup/LAN 变更 + 防火墙)",
+        "session.json boundary_contract.out_of_scope (不切换现有 C# 项目)"
+      ],
+      "mitigation": "P2 UI 灰显或显式“P3 启用”提示；不在 P2 写入注册表/计划任务/防火墙",
+      "owner": "G4",
+      "status": "accepted"
+    },
+    {
+      "id": "RISK-07",
+      "title": "cargo test --workspace / clippy -D warnings 在 CI（无管理员/无硬件）出现回归",
+      "category": "regression",
+      "probability": "low",
+      "probability_rationale": "P0/P1 已建立隔离范式（trait + cfg(test) + mock）",
+      "impact": "high",
+      "impact_rationale": "DoD 硬条件，阻塞 P2 完成",
+      "severity_score": 8,
+      "evidence_refs": [
+        "docs/rust-migration-guide.md:359-363 (CI 约束)",
+        "maestro knowhow session-maestro-rust-migration-p0p1-20260726-062756 (158 cargo test + clippy -D warnings 通过)"
+      ],
+      "mitigation": "Win32/HTTP/SSE/文件系统/时钟边界全部 trait 注入；硬件依赖测试 #[ignore] 标记",
+      "owner": "all"
+    },
+    {
+      "id": "RISK-08",
+      "title": "Private Bytes 在真实多窗口 + 托盘 + SSE 稳态下突破 <10 MiB 门禁",
+      "category": "memory",
+      "probability": "medium",
+      "probability_rationale": "POC 3.8 MiB 是单窗口脉冲矩形；双窗口 + 托盘 + SSE 缓冲会增加",
+      "impact": "medium",
+      "impact_rationale": "DoD 硬条件（docs/rust-migration-guide.md:305）",
+      "severity_score": 9,
+      "evidence_refs": [
+        "docs/rust-migration-feasibility.md:346-354 (POC 3.8 MiB 软件)",
+        "docs/rust-migration-guide.md:303-307 (P2 Done 条件)"
+      ],
+      "mitigation": "G4 验收阶段用 GetProcessMemoryInfo 采样 60s（对齐 bridge 门禁方法论）；超限则 profile 后优化（Slint 模型去重、SSE 缓冲深度、tray icon 复用）",
+      "owner": "G4"
+    }
+  ],
+  "probability_axis": ["low", "medium", "high"],
+  "impact_axis": ["low", "medium", "high"],
+  "assumptions": [
+    {
+      "id": "A-01",
+      "assumption": "xhm-service 的 SSE/REST 契约在 P2 期内不变更",
+      "validation": "P1 review PASS + spec:architecture-constraints-003 已封板；boundary_contract.constraints[4] 禁止回归",
+      "confidence": "high"
+    },
+    {
+      "id": "A-02",
+      "assumption": "Slint 1.x 软件渲染后端在 Windows 11 + AMD Ryzen AI MAX 395 上稳定",
+      "validation": "POC 在同一机器实测 3.8 MiB 稳态 30s（docs/rust-migration-feasibility.md:344-354）",
+      "confidence": "medium-high",
+      "gap": "稳态 CPU 占用与动画视觉质量未测"
+    },
+    {
+      "id": "A-03",
+      "assumption": "tray-icon/tao 类 crate 能与 Slint winit 后端共享主线程",
+      "validation": "待 plan 阶段 spike 验证",
+      "confidence": "medium",
+      "gap": "本仓库无先例"
+    },
+    {
+      "id": "A-04",
+      "assumption": "C# Desktop 与 xhm-desktop 可并行运行（不同 Mutex 名/不同窗口标题）",
+      "validation": "C# Mutex 名为 XhMonitor_Desktop_SingleInstance；xhm-desktop 需用不同名或 P2 期接受不并行常驻",
+      "confidence": "medium",
+      "gap": "并行运行同一用户会话时托盘图标会重复，需冒烟确认无资源冲突"
+    },
+    {
+      "id": "A-05",
+      "assumption": "service-endpoints.json 的 PascalCase 键可被 Rust serde 直接消费",
+      "validation": "serde 默认大小写不敏感需配置 rename_all 或 revisit；C# 用 PropertyNameCaseInsensitive=true",
+      "confidence": "high",
+      "note": "Rust 侧建议 #[serde(rename_all = \"PascalCase\")] 或保留 C# 键并配 aliases"
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "Q-01",
+      "question": "xhm-desktop 是否需要在 P2 期内与 C# Desktop 真正并行常驻，还是仅按需启动做对比验证？",
+      "impact": "决定单实例 Mutex 名、托盘图标共存策略、service-endpoints.json 是否共用",
+      "blocking": "plan",
+      "suggested_resolution": "post-analyze-scope 或 plan 启动时由用户确认"
+    },
+    {
+      "id": "Q-02",
+      "question": "有机吸附矩阵动画的视觉验收由谁签字（用户直接确认还是对照截图）？",
+      "impact": "G3 完成定义与可能的 Skia renderer 回退触发",
+      "blocking": "G3 验收",
+      "suggested_resolution": "plan 阶段产出验收脚本（截图对比 + 用户确认 gate）"
+    },
+    {
+      "id": "Q-03",
+      "question": "更新检查的 Gitee API 调用是否需要鉴权 token？",
+      "impact": "GitHubAppUpdateService 端口范围（P2 仅检查+提示 vs 全量下载）",
+      "blocking": "no（Deferred 已限定 P2 仅检查+提示）",
+      "suggested_resolution": "P3 发布包阶段处理"
+    },
+    {
+      "id": "Q-04",
+      "question": "settings 持久化是否复用 /api/v1/config/settings（与 C# Service 共享 DB）还是 xhm-desktop 独立配置文件？",
+      "impact": "并行运行时 C# 与 Rust Desktop 设置互相覆盖风险",
+      "blocking": "G4 设置实现",
+      "suggested_resolution": "P2 内只读 /api/v1/config/settings；写入路径若与 C# Service 共享 DB 需在 plan 确认"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "kind": "task-results",
+    "schema": "task-results/1.0",
+    "role": "attachment"
+  },
+  "schema_version": "task-results/1.0",
+  "run_id": "20260727-004-execute",
+  "goal_ref": "G2",
+  "tasks": [
+    {
+      "task_id": "TASK-005",
+      "plan_ref": "A-06",
+      "title": "Win32 primitives",
+      "status": "completed",
+      "files": ["xhm-desktop/src/win32/mod.rs", "xhm-desktop/src/win32/hwnd.rs", "xhm-desktop/src/win32/window.rs", "xhm-desktop/src/win32/mutex.rs", "xhm-desktop/src/win32/dpi.rs"],
+      "convergence": {
+        "pid_title_match": "rejects foreign PID/title",
+        "style_bits": "EX_LAYERED|EX_TRANSPARENT toggle",
+        "topmost_flags": "SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE|SWP_NOOWNERZORDER",
+        "dpi_conversion": "96/144/192 round-trip",
+        "single_instance": "Local\\XhMonitor_xhm-desktop_SingleInstance",
+        "no_hotkeys": "0 matches"
+      },
+      "tests": 13,
+      "verify_commands": ["cargo test -p xhm-desktop win32"]
+    },
+    {
+      "task_id": "TASK-006",
+      "plan_ref": "A-07",
+      "title": "Four-edge placement, drag/snap geometry, persistence",
+      "status": "completed",
+      "files": ["xhm-desktop/src/win32/geometry.rs", "xhm-desktop/src/win32/taskbar.rs", "xhm-desktop/src/win32/drag.rs", "xhm-desktop/src/persistence.rs"],
+      "convergence": {
+        "four_edge_table": "pure-function test covers Bottom/Top/Left/Right; real smoke observed Bottom only",
+        "drag_threshold": "strict > 5px C# parity",
+        "floating_snap": "24px pure geometry",
+        "taskbar_snap": "80px plus half-outside pure geometry",
+        "anchor": "preserved",
+        "production_drag_wiring": "deferred to G3; incomplete local-coordinate/no-op callback removed",
+        "persistence_path": "Rust-specific",
+        "persistence_save": "5s auto-save plus tray hide/exit save"
+      },
+      "tests": 17,
+      "verify_commands": ["cargo test -p xhm-desktop"]
+    },
+    {
+      "task_id": "TASK-007",
+      "plan_ref": "A-07",
+      "title": "Injectable process-tree termination",
+      "status": "completed",
+      "files": ["xhm-desktop/src/win32/process.rs"],
+      "convergence": {
+        "exactly_once": "KillOnce",
+        "invalid_self_pid": "0 to NotFound; self to AccessDenied",
+        "nonexistent_root": "returns NotFound without terminate",
+        "invalid_handle_value": "INVALID_HANDLE_VALUE checked",
+        "process32_first_failure": "mapped to Other via GetLastError",
+        "process32_next_end": "ERROR_NO_MORE_FILES ends enumeration",
+        "process32_next_failure": "all other GetLastError values map to Other",
+        "other_not_silenced": "Other errors tracked and returned"
+      },
+      "tests": 11,
+      "verify_commands": ["cargo test -p xhm-desktop"]
+    },
+    {
+      "task_id": "TASK-008",
+      "plan_ref": "A-08",
+      "title": "Dual-window shell and tray lifecycle",
+      "status": "completed",
+      "files": ["xhm-desktop/src/shell.rs", "xhm-desktop/src/lib.rs", "xhm-desktop/ui/shell.slint"],
+      "convergence": {
+        "dual_window_hwnd": "two Slint Windows; bounded retry 20x50ms; smoke observed distinct HWNDs 52890544 and 31196916",
+        "guard_lifetime": "Rc<RefCell<Option<SingleInstanceGuard>>> retained until controller ownership or tray runtime drop",
+        "place_taskbar": "Bottom origin=(1086,1040) in current smoke",
+        "topmost_both": "reassert_topmost both",
+        "click_through_toggle": "tray ClickThrough to NativeWindowOps",
+        "tray_show_hide": "real Slint show/hide plus reassert/save",
+        "tray_exit": "save, shutdown, quit",
+        "dual_sse": "independent streams; cancellation stops and joins owned runtime thread",
+        "persistence_save": "owned 5s timer plus hide/exit save",
+        "drag_snap": "production wiring deferred to G3; broken G2 callback stub removed",
+        "controller_kept_alive": "Rc-owned by TrayRuntime with deterministic drop; no resource forgetting"
+      },
+      "tests": 6,
+      "verify_commands": ["cargo test -p xhm-desktop shell"]
+    }
+  ],
+  "total_tests": 47,
+  "full_suite_tests": 100,
+  "full_suite_passes": 3
+}

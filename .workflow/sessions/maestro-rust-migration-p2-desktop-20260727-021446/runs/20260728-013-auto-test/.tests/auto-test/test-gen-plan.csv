@@ -1,0 +1,6 @@
+id,layer,source,priority,name,disposition,status,evidence
+AT-000,L0,existing_suite,critical,Existing 128-test cargo baseline,execute_existing,passed,"cargo test -p xhm-desktop: 128 passed; 0 failed"
+AT-001,L1,review_finding,medium,COR-001 documentation amendment,resolved_no_new_test,passed,"P2 Done now states <40 MiB with CHG-001 rationale"
+AT-002,L1,review_finding,low,PRF-001 functional regression coverage,covered_by_existing_tests,passed,"existing SSE lifecycle/resubscribe/retry/cancellation tests passed"
+AT-003,L2,debug_root_cause,medium,Anonymous allocation ownership gap,assessment_only_no_test,passed,"requires heap symbols/stacks; no attribution fabricated"
+AT-004,L2,debug_root_cause,low,Controlled runtime-only memory A/B gap,diagnostic_gap_recorded_no_test,passed,"+2.535 MiB remains unexplained; no memory reduction claimed"

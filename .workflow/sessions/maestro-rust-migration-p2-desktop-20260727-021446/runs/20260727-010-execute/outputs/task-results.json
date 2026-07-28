@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "kind": "task-results",
+    "schema": "task-results/1.0",
+    "role": "attachment"
+  },
+  "schema_version": "task-results/1.0",
+  "run_id": "20260727-010-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "tasks": [
+    {
+      "id": "REPAIR-001",
+      "title": "G3 Locked click parity + pinned overflow + unsnapped drag clamp",
+      "status": "done",
+      "files": [
+        "xhm-desktop/src/ui/floating_window.rs",
+        "xhm-desktop/src/ui/floating_interactions.rs",
+        "xhm-desktop/ui/floating_window.slint"
+      ],
+      "tests": 3,
+      "verify_commands": [
+        "cargo test -p xhm-desktop -- floating_interactions clamp",
+        "cargo test -p xhm-desktop -- panel_after_click_parity"
+      ],
+      "evidence": {
+        "locked": "panel_after_click(Locked)->Expanded matches C# FloatingWindowViewModel.cs:258-270",
+        "pinned": "capped ListView max-visible-pinned=3; pinned-area-height property",
+        "clamp": "clamp_rect_to_work_area + finish_drag unsnapped branch; 2 deterministic tests"
+      }
+    },
+    {
+      "id": "REPAIR-002",
+      "title": "Bounded memory optimization attempt (Tokio current-thread + minimal features)",
+      "status": "done",
+      "files": [
+        "xhm-desktop/Cargo.toml",
+        "xhm-desktop/src/lib.rs"
+      ],
+      "tests": 0,
+      "verify_commands": [
+        "cargo check -p xhm-desktop --all-targets",
+        "cargo build -p xhm-desktop --release"
+      ],
+      "evidence": {
+        "cargo": "check/clippy/test/release all pass",
+        "memory": "optimization did not reduce memory; UI_SMOKE 37.039 MiB vs baseline 34.504 MiB; delta unproven"
+      },
+      "blocking_issue": "Original < 10 MiB gate not met; bounded attempt did not reduce memory"
+    }
+  ],
+  "convergence": {
+    "tests": "128 passed, 0 failed",
+    "clippy": "clean with -D warnings",
+    "release": "winit-software release build passed",
+    "memory_gate_10mib": "failed: post-repair normal 33.66 MiB, UI_SMOKE 37.04 MiB",
+    "memory_fallback_40mib": "passed: normal 33.66 < 40, UI_SMOKE 37.04 < 40"
+  }
+}

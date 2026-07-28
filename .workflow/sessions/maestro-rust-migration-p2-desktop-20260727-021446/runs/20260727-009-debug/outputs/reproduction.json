@@ -1,0 +1,115 @@
+{
+  "schema_version": "reproduction/1.0",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-009-debug",
+  "completed_at": "2026-07-27T23:27:44+08:00",
+  "target": "xhm-desktop release Private Bytes < 10 MiB in winit-software mode",
+  "status": "confirmed",
+  "environment": {
+    "os": "Windows 11 Pro 10.0.26200 x64",
+    "rustc": "1.94.0 (4a4ef493e 2026-03-02)",
+    "cargo": "1.94.0 (85eff7c80 2026-01-15)",
+    "binary": "target/release/xhm-desktop.exe",
+    "binary_sha256": "1b63922559edc0c4a737a6eca682cf37773d89787fad6f517b370f4b42754431",
+    "binary_size_bytes": 4529152,
+    "binary_last_write_time": "2026-07-27T22:03:04.4545448+08:00",
+    "release_profile": {
+      "opt_level": "z",
+      "lto": true,
+      "codegen_units": 1,
+      "panic": "abort",
+      "strip": true
+    }
+  },
+  "accepted_baseline": {
+    "artifact": "../20260727-006-execute/outputs/memory-samples.json",
+    "sample_count": 60,
+    "interval_ms": 1000,
+    "recorded_condition": "release,winit-software,main+taskbar,dual-SSE",
+    "launch_reconstruction": "SLINT_BACKEND=winit-software XHM_DESKTOP_UI_SMOKE=1 RUST_LOG=info target/release/xhm-desktop.exe",
+    "private_min_mib": 34.504,
+    "private_max_mib": 34.719,
+    "private_mean_mib": 34.558008,
+    "private_median_mib": 34.503906,
+    "below_10_count": 0,
+    "observation": "All accepted samples breach the P2 threshold. The condition string omits XHM_DESKTOP_UI_SMOKE; the launch witness and fresh trace show that this fixture expands the main panel, loads 36 process rows, and spawns a ping child. Child processes are not included in desktop PID samples."
+  },
+  "runs": [
+    {
+      "id": "R1",
+      "condition": "exact accepted launch reconstruction: release + winit-software + XHM_DESKTOP_UI_SMOKE=1 + dual SSE unavailable",
+      "command": "powershell.exe -NoProfile -File work/measure-desktop.ps1 -Label exact-ui-smoke-60 -ExePath target/release/xhm-desktop.exe -OutputPath work/exact-ui-smoke-60.json -UiSmoke -WarmupSeconds 10 -SampleCount 60 -IntervalMs 1000",
+      "artifact": "work/exact-ui-smoke-60.json",
+      "log": "work/exact-ui-smoke-60.stdout.log",
+      "sample_count": 60,
+      "private_min_mib": 37.183594,
+      "private_max_mib": 37.558594,
+      "private_mean_mib": 37.409245,
+      "private_median_mib": 37.410156,
+      "below_10_count": 0,
+      "observation": "Threshold breach reproduced. The fresh range is 2.69-3.05 MiB above the accepted range, so the accepted numeric band is launcher/state sensitive, but the pass/fail result is unchanged.",
+      "contradicting_evidence": "The exact numeric range did not match the historical baseline; no claim is made that UI_SMOKE is representative of ordinary collapsed production state."
+    },
+    {
+      "id": "R2",
+      "condition": "normal release + winit-software + main/taskbar visible + settings/about constructed hidden + tray + dual SSE unavailable",
+      "command": "powershell.exe -NoProfile -File work/measure-desktop.ps1 -Label normal-release-30 -ExePath target/release/xhm-desktop.exe -OutputPath work/normal-release-30.json -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000",
+      "artifact": "work/normal-release-30.json",
+      "log": "work/normal-release-30.stdout.log",
+      "sample_count": 30,
+      "private_min_mib": 33.492188,
+      "private_max_mib": 33.53125,
+      "private_mean_mib": 33.513932,
+      "private_median_mib": 33.511719,
+      "below_10_count": 0,
+      "observation": "Ordinary collapsed release state is lower than UI_SMOKE but still exceeds the threshold by 23.514 MiB on mean and would require a 70.16% reduction.",
+      "contradicting_evidence": "This run had no live service; R4 separately covers connected SSE."
+    },
+    {
+      "id": "R3",
+      "condition": "normal release + XHM_DESKTOP_G4_SMOKE=1; settings and about visible in addition to main/taskbar",
+      "command": "powershell.exe -NoProfile -File work/measure-desktop.ps1 -Label g4-smoke-30 -ExePath target/release/xhm-desktop.exe -OutputPath work/g4-smoke-30.json -G4Smoke -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000",
+      "artifact": "work/g4-smoke-30.json",
+      "log": "work/g4-smoke-30.stdout.log",
+      "sample_count": 30,
+      "private_min_mib": 39.894531,
+      "private_max_mib": 39.949219,
+      "private_mean_mib": 39.935026,
+      "private_median_mib": 39.945312,
+      "below_10_count": 0,
+      "observation": "Making the already-constructed Settings/About windows visible adds 6.421 MiB versus the separate normal run.",
+      "contradicting_evidence": "Separate-launch comparison includes normal allocator/ASLR variance; R5 confirms a 6.269 MiB cumulative delta in one process."
+    },
+    {
+      "id": "R4",
+      "condition": "normal release copied beside a debug-only endpoint config; health succeeds and two SSE streams remain connected to a local fixture",
+      "command": "powershell.exe -NoProfile -File work/measure-desktop.ps1 -Label connected-sse-30 -ExePath work/runtime-connected/xhm-desktop.exe -OutputPath work/connected-sse-30.json -WarmupSeconds 10 -SampleCount 30 -IntervalMs 1000",
+      "artifact": "work/connected-sse-30.json",
+      "log": "work/connected-sse-30.stdout.log",
+      "sample_count": 30,
+      "private_min_mib": 33.277344,
+      "private_max_mib": 33.277344,
+      "private_mean_mib": 33.277344,
+      "private_median_mib": 33.277344,
+      "below_10_count": 0,
+      "observation": "Connected dual SSE is 0.237 MiB below the disconnected/retrying normal mean. Transport activity is not the dominant 23.5 MiB gap; both variants retain the async runtime and clients.",
+      "contradicting_evidence": "This differential does not isolate Tokio runtime ownership because the runtime exists in both runs."
+    },
+    {
+      "id": "R5",
+      "condition": "single normal process with sequential tray/window actions; 20 samples per stage at 250 ms",
+      "command": "powershell.exe -NoProfile -File work/profile-runtime-actions.ps1 -ExePath target/release/xhm-desktop.exe -OutputPath work/runtime-actions.json",
+      "artifact": "work/runtime-actions.json",
+      "observation": "Normal mean 33.711 MiB; showing Settings adds 4.648 MiB; then showing About adds another 1.621 MiB (6.269 MiB cumulative). Hiding the floating window does not decommit its retained backing allocations. WM_CLOSE requests for auxiliary/taskbar windows did not make those Slint windows disappear and are not treated as component-removal evidence.",
+      "contradicting_evidence": "Tray close and late thread-count changes are confounded by lifecycle timing and are not assigned a component MiB value."
+    }
+  ],
+  "result": {
+    "gate": "failed",
+    "accepted_below_10": "0/60",
+    "fresh_exact_below_10": "0/60",
+    "fresh_normal_below_10": "0/30",
+    "fresh_connected_below_10": "0/30",
+    "conclusion": "The P2 release-memory failure is reproducible in ordinary and smoke states; it is not limited to the historical sample run."
+  }
+}

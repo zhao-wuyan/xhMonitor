@@ -22,7 +22,6 @@
       "description": "Existing workflow issue records preserved during non-destructive recovery."
     }
   ],
-  "last_updated": "2026-05-20T00:00:00+08:00",
   "accumulated_context": {
     "key_decisions": [
       "Recovered missing maestro initialization metadata without overwriting existing .workflow assets.",
@@ -39,5 +38,33 @@
       "reason": "Restored missing .workflow/project.md, .workflow/state.json, and .workflow/config.json while preserving existing workflow assets."
     }
   ],
-  "milestone_history": []
+  "milestone_history": [],
+  "last_updated": "2026-07-28T10:28:30+08:00",
+  "sessions": [
+    {
+      "session_id": "maestro-20260725-plan-rust-migration-20260726-051006",
+      "intent": "xhMonitor Rust 迁移设计文档与分阶段路线图",
+      "status": "sealed",
+      "depends_on": [],
+      "roadmap_artifact_id": null,
+      "seed_ref": null
+    },
+    {
+      "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+      "intent": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P0+P1",
+      "status": "sealed",
+      "depends_on": [],
+      "roadmap_artifact_id": null,
+      "seed_ref": null
+    },
+    {
+      "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+      "intent": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P2（xhm-desktop）",
+      "status": "sealed",
+      "depends_on": [],
+      "roadmap_artifact_id": null,
+      "seed_ref": null
+    }
+  ],
+  "active_session_id": null
 }

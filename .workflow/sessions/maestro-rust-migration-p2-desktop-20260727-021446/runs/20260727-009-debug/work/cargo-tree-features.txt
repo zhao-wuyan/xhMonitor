@@ -1,0 +1,2954 @@
+xhm-desktop v0.3.0 (C:\ProjectDev\project\xinghe\xhMonitor\xhm-desktop)
+├── anyhow feature "default"
+│   ├── anyhow v1.0.104
+│   └── anyhow feature "std"
+│       └── anyhow v1.0.104
+├── chrono feature "default"
+│   ├── chrono v0.4.45
+│   │   ├── num-traits v0.2.19
+│   │   │   └── libm feature "default"
+│   │   │       ├── libm v0.2.16
+│   │   │       └── libm feature "arch"
+│   │   │           └── libm v0.2.16
+│   │   │   [build-dependencies]
+│   │   │   └── autocfg feature "default"
+│   │   │       └── autocfg v1.5.1
+│   │   ├── serde v1.0.229
+│   │   │   ├── serde_core feature "result"
+│   │   │   │   └── serde_core v1.0.229
+│   │   │   └── serde_derive feature "default"
+│   │   │       └── serde_derive v1.0.229 (proc-macro)
+│   │   │           ├── proc-macro2 feature "proc-macro"
+│   │   │           │   └── proc-macro2 v1.0.107
+│   │   │           │       └── unicode-ident feature "default"
+│   │   │           │           └── unicode-ident v1.0.24
+│   │   │           ├── quote feature "proc-macro"
+│   │   │           │   ├── quote v1.0.47
+│   │   │           │   │   └── proc-macro2 v1.0.107 (*)
+│   │   │           │   └── proc-macro2 feature "proc-macro" (*)
+│   │   │           ├── syn feature "clone-impls"
+│   │   │           │   └── syn v3.0.3
+│   │   │           │       ├── proc-macro2 v1.0.107 (*)
+│   │   │           │       ├── quote v1.0.47 (*)
+│   │   │           │       └── unicode-ident feature "default" (*)
+│   │   │           ├── syn feature "derive"
+│   │   │           │   └── syn v3.0.3 (*)
+│   │   │           ├── syn feature "parsing"
+│   │   │           │   └── syn v3.0.3 (*)
+│   │   │           ├── syn feature "printing"
+│   │   │           │   └── syn v3.0.3 (*)
+│   │   │           └── syn feature "proc-macro"
+│   │   │               ├── syn v3.0.3 (*)
+│   │   │               ├── proc-macro2 feature "proc-macro" (*)
+│   │   │               └── quote feature "proc-macro" (*)
+│   │   └── windows-link feature "default"
+│   │       └── windows-link v0.2.1
+│   ├── chrono feature "clock"
+│   │   ├── chrono v0.4.45 (*)
+│   │   ├── chrono feature "iana-time-zone"
+│   │   │   └── chrono v0.4.45 (*)
+│   │   ├── chrono feature "now"
+│   │   │   ├── chrono v0.4.45 (*)
+│   │   │   └── chrono feature "std"
+│   │   │       ├── chrono v0.4.45 (*)
+│   │   │       └── chrono feature "alloc"
+│   │   │           └── chrono v0.4.45 (*)
+│   │   └── chrono feature "winapi"
+│   │       ├── chrono v0.4.45 (*)
+│   │       └── chrono feature "windows-link"
+│   │           └── chrono v0.4.45 (*)
+│   ├── chrono feature "oldtime"
+│   │   └── chrono v0.4.45 (*)
+│   ├── chrono feature "std" (*)
+│   └── chrono feature "wasmbind"
+│       ├── chrono v0.4.45 (*)
+│       ├── chrono feature "js-sys"
+│       │   └── chrono v0.4.45 (*)
+│       └── chrono feature "wasm-bindgen"
+│           └── chrono v0.4.45 (*)
+├── chrono feature "serde"
+│   └── chrono v0.4.45 (*)
+├── serde feature "default"
+│   ├── serde v1.0.229 (*)
+│   └── serde feature "std"
+│       ├── serde v1.0.229 (*)
+│       └── serde_core feature "std"
+│           └── serde_core v1.0.229
+├── serde feature "derive"
+│   ├── serde v1.0.229 (*)
+│   └── serde feature "serde_derive"
+│       └── serde v1.0.229 (*)
+├── futures feature "default"
+│   ├── futures v0.3.33
+│   │   ├── futures-core v0.3.33
+│   │   ├── futures-executor v0.3.33
+│   │   │   ├── futures-core v0.3.33
+│   │   │   ├── futures-task v0.3.33
+│   │   │   └── futures-util v0.3.33
+│   │   │       ├── futures-core v0.3.33
+│   │   │       ├── futures-macro v0.3.33 (proc-macro)
+│   │   │       │   ├── proc-macro2 feature "default"
+│   │   │       │   │   ├── proc-macro2 v1.0.107 (*)
+│   │   │       │   │   └── proc-macro2 feature "proc-macro" (*)
+│   │   │       │   ├── quote feature "default"
+│   │   │       │   │   ├── quote v1.0.47 (*)
+│   │   │       │   │   └── quote feature "proc-macro" (*)
+│   │   │       │   ├── syn feature "default"
+│   │   │       │   │   ├── syn v2.0.119
+│   │   │       │   │   │   ├── proc-macro2 v1.0.107 (*)
+│   │   │       │   │   │   ├── quote v1.0.47 (*)
+│   │   │       │   │   │   └── unicode-ident feature "default" (*)
+│   │   │       │   │   ├── syn feature "clone-impls"
+│   │   │       │   │   │   └── syn v2.0.119 (*)
+│   │   │       │   │   ├── syn feature "derive"
+│   │   │       │   │   │   └── syn v2.0.119 (*)
+│   │   │       │   │   ├── syn feature "parsing"
+│   │   │       │   │   │   └── syn v2.0.119 (*)
+│   │   │       │   │   ├── syn feature "printing"
+│   │   │       │   │   │   └── syn v2.0.119 (*)
+│   │   │       │   │   └── syn feature "proc-macro"
+│   │   │       │   │       ├── syn v2.0.119 (*)
+│   │   │       │   │       ├── proc-macro2 feature "proc-macro" (*)
+│   │   │       │   │       └── quote feature "proc-macro" (*)
+│   │   │       │   └── syn feature "full"
+│   │   │       │       └── syn v2.0.119 (*)
+│   │   │       ├── futures-sink v0.3.33
+│   │   │       ├── futures-task v0.3.33
+│   │   │       ├── slab v0.4.12
+│   │   │       ├── futures-channel feature "std"
+│   │   │       │   ├── futures-channel v0.3.33
+│   │   │       │   │   ├── futures-core v0.3.33
+│   │   │       │   │   └── futures-sink v0.3.33
+│   │   │       │   ├── futures-channel feature "alloc"
+│   │   │       │   │   ├── futures-channel v0.3.33 (*)
+│   │   │       │   │   └── futures-core feature "alloc"
+│   │   │       │   │       └── futures-core v0.3.33
+│   │   │       │   └── futures-core feature "std"
+│   │   │       │       ├── futures-core v0.3.33
+│   │   │       │       └── futures-core feature "alloc" (*)
+│   │   │       ├── futures-io feature "std"
+│   │   │       │   └── futures-io v0.3.33
+│   │   │       ├── memchr feature "default"
+│   │   │       │   ├── memchr v2.8.3
+│   │   │       │   └── memchr feature "std"
+│   │   │       │       ├── memchr v2.8.3
+│   │   │       │       └── memchr feature "alloc"
+│   │   │       │           └── memchr v2.8.3
+│   │   │       └── pin-project-lite feature "default"
+│   │   │           └── pin-project-lite v0.2.17
+│   │   ├── futures-io v0.3.33
+│   │   ├── futures-sink v0.3.33
+│   │   ├── futures-task v0.3.33
+│   │   ├── futures-channel feature "sink"
+│   │   │   ├── futures-channel v0.3.33 (*)
+│   │   │   └── futures-channel feature "futures-sink"
+│   │   │       └── futures-channel v0.3.33 (*)
+│   │   └── futures-util feature "sink"
+│   │       ├── futures-util v0.3.33 (*)
+│   │       └── futures-util feature "futures-sink"
+│   │           └── futures-util v0.3.33 (*)
+│   ├── futures feature "async-await"
+│   │   ├── futures v0.3.33 (*)
+│   │   ├── futures-util feature "async-await"
+│   │   │   └── futures-util v0.3.33 (*)
+│   │   └── futures-util feature "async-await-macro"
+│   │       ├── futures-util v0.3.33 (*)
+│   │       ├── futures-util feature "async-await" (*)
+│   │       └── futures-util feature "futures-macro"
+│   │           └── futures-util v0.3.33 (*)
+│   ├── futures feature "executor"
+│   │   ├── futures v0.3.33 (*)
+│   │   ├── futures feature "futures-executor"
+│   │   │   └── futures v0.3.33 (*)
+│   │   ├── futures feature "std"
+│   │   │   ├── futures v0.3.33 (*)
+│   │   │   ├── futures feature "alloc"
+│   │   │   │   ├── futures v0.3.33 (*)
+│   │   │   │   ├── futures-channel feature "alloc" (*)
+│   │   │   │   ├── futures-core feature "alloc" (*)
+│   │   │   │   ├── futures-sink feature "alloc"
+│   │   │   │   │   └── futures-sink v0.3.33
+│   │   │   │   ├── futures-task feature "alloc"
+│   │   │   │   │   └── futures-task v0.3.33
+│   │   │   │   └── futures-util feature "alloc"
+│   │   │   │       ├── futures-util v0.3.33 (*)
+│   │   │   │       ├── futures-core feature "alloc" (*)
+│   │   │   │       ├── futures-task feature "alloc" (*)
+│   │   │   │       └── futures-util feature "slab"
+│   │   │   │           └── futures-util v0.3.33 (*)
+│   │   │   ├── futures-core feature "std" (*)
+│   │   │   ├── futures-sink feature "std"
+│   │   │   │   ├── futures-sink v0.3.33
+│   │   │   │   └── futures-sink feature "alloc" (*)
+│   │   │   ├── futures-task feature "std"
+│   │   │   │   ├── futures-task v0.3.33
+│   │   │   │   └── futures-task feature "alloc" (*)
+│   │   │   ├── futures-util feature "channel"
+│   │   │   │   ├── futures-util v0.3.33 (*)
+│   │   │   │   ├── futures-util feature "futures-channel"
+│   │   │   │   │   └── futures-util v0.3.33 (*)
+│   │   │   │   └── futures-util feature "std"
+│   │   │   │       ├── futures-util v0.3.33 (*)
+│   │   │   │       ├── futures-core feature "std" (*)
+│   │   │   │       ├── futures-task feature "std" (*)
+│   │   │   │       ├── futures-util feature "alloc" (*)
+│   │   │   │       ├── futures-util feature "slab" (*)
+│   │   │   │       └── slab feature "std"
+│   │   │   │           └── slab v0.4.12
+│   │   │   ├── futures-util feature "io"
+│   │   │   │   ├── futures-util v0.3.33 (*)
+│   │   │   │   ├── futures-util feature "futures-io"
+│   │   │   │   │   └── futures-util v0.3.33 (*)
+│   │   │   │   ├── futures-util feature "memchr"
+│   │   │   │   │   └── futures-util v0.3.33 (*)
+│   │   │   │   └── futures-util feature "std" (*)
+│   │   │   ├── futures-util feature "std" (*)
+│   │   │   └── futures-io feature "std" (*)
+│   │   └── futures-executor feature "std"
+│   │       ├── futures-executor v0.3.33 (*)
+│   │       ├── futures-core feature "std" (*)
+│   │       ├── futures-task feature "std" (*)
+│   │       └── futures-util feature "std" (*)
+│   └── futures feature "std" (*)
+├── reqwest feature "json"
+│   └── reqwest v0.12.28
+│       ├── futures-core v0.3.33
+│       ├── futures-util v0.3.33 (*)
+│       ├── serde feature "default" (*)
+│       ├── pin-project-lite feature "default" (*)
+│       ├── base64 feature "default"
+│       │   ├── base64 v0.22.1
+│       │   └── base64 feature "std"
+│       │       ├── base64 v0.22.1
+│       │       └── base64 feature "alloc"
+│       │           └── base64 v0.22.1
+│       ├── bytes feature "default"
+│       │   ├── bytes v1.12.1
+│       │   └── bytes feature "std"
+│       │       └── bytes v1.12.1
+│       ├── http feature "default"
+│       │   ├── http v1.4.2
+│       │   │   ├── bytes feature "default" (*)
+│       │   │   └── itoa feature "default"
+│       │   │       └── itoa v1.0.18
+│       │   └── http feature "std"
+│       │       └── http v1.4.2 (*)
+│       ├── http-body feature "default"
+│       │   └── http-body v1.1.0
+│       │       ├── bytes feature "default" (*)
+│       │       └── http feature "default" (*)
+│       ├── http-body-util feature "default"
+│       │   └── http-body-util v0.1.4
+│       │       ├── futures-core v0.3.33
+│       │       ├── pin-project-lite feature "default" (*)
+│       │       ├── bytes feature "default" (*)
+│       │       ├── http feature "default" (*)
+│       │       └── http-body feature "default" (*)
+│       ├── hyper feature "client"
+│       │   └── hyper v1.11.0
+│       │       ├── futures-channel feature "default"
+│       │       │   ├── futures-channel v0.3.33 (*)
+│       │       │   └── futures-channel feature "std" (*)
+│       │       ├── futures-core feature "default"
+│       │       │   ├── futures-core v0.3.33
+│       │       │   └── futures-core feature "std" (*)
+│       │       ├── pin-project-lite feature "default" (*)
+│       │       ├── bytes feature "default" (*)
+│       │       ├── http feature "default" (*)
+│       │       ├── itoa feature "default" (*)
+│       │       ├── http-body feature "default" (*)
+│       │       ├── atomic-waker feature "default"
+│       │       │   └── atomic-waker v1.1.2
+│       │       ├── h2 feature "default"
+│       │       │   └── h2 v0.4.15
+│       │       │       ├── futures-core v0.3.33
+│       │       │       ├── futures-sink v0.3.33
+│       │       │       ├── slab feature "default"
+│       │       │       │   ├── slab v0.4.12
+│       │       │       │   └── slab feature "std" (*)
+│       │       │       ├── bytes feature "default" (*)
+│       │       │       ├── http feature "default" (*)
+│       │       │       ├── atomic-waker feature "default" (*)
+│       │       │       ├── fnv feature "default"
+│       │       │       │   ├── fnv v1.0.7
+│       │       │       │   └── fnv feature "std"
+│       │       │       │       └── fnv v1.0.7
+│       │       │       ├── indexmap feature "default"
+│       │       │       │   ├── indexmap v2.14.0
+│       │       │       │   │   ├── equivalent v1.0.2
+│       │       │       │   │   └── hashbrown v0.17.1
+│       │       │       │   └── indexmap feature "std"
+│       │       │       │       └── indexmap v2.14.0 (*)
+│       │       │       ├── indexmap feature "std" (*)
+│       │       │       ├── tokio feature "default"
+│       │       │       │   └── tokio v1.53.1
+│       │       │       │       ├── mio v1.2.2
+│       │       │       │       │   ├── windows-sys feature "Wdk_Foundation"
+│       │       │       │       │   │   ├── windows-sys v0.61.2
+│       │       │       │       │   │   │   └── windows-link v0.2.1
+│       │       │       │       │   │   └── windows-sys feature "Wdk"
+│       │       │       │       │   │       ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │       └── windows-sys feature "Win32_Foundation"
+│       │       │       │       │   │           ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │           └── windows-sys feature "Win32"
+│       │       │       │       │   │               ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │               └── windows-sys feature "Win32_Foundation" (*)
+│       │       │       │       │   ├── windows-sys feature "Wdk_Storage_FileSystem"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Wdk_Storage"
+│       │       │       │       │   │       ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │       └── windows-sys feature "Wdk" (*)
+│       │       │       │       │   ├── windows-sys feature "Wdk_System_IO"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Wdk_System"
+│       │       │       │       │   │       ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │       └── windows-sys feature "Wdk" (*)
+│       │       │       │       │   ├── windows-sys feature "Win32_Foundation" (*)
+│       │       │       │       │   ├── windows-sys feature "Win32_Networking_WinSock"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Win32_Networking"
+│       │       │       │       │   │       ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │       └── windows-sys feature "Win32" (*)
+│       │       │       │       │   ├── windows-sys feature "Win32_Security"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Win32" (*)
+│       │       │       │       │   ├── windows-sys feature "Win32_Storage_FileSystem"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Win32_Storage"
+│       │       │       │       │   │       ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │       └── windows-sys feature "Win32" (*)
+│       │       │       │       │   ├── windows-sys feature "Win32_System_IO"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Win32_System"
+│       │       │       │       │   │       ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │       └── windows-sys feature "Win32" (*)
+│       │       │       │       │   ├── windows-sys feature "Win32_System_WindowsProgramming"
+│       │       │       │       │   │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │   │   └── windows-sys feature "Win32_System" (*)
+│       │       │       │       │   └── windows-sys feature "default"
+│       │       │       │       │       └── windows-sys v0.61.2 (*)
+│       │       │       │       ├── pin-project-lite feature "default" (*)
+│       │       │       │       ├── bytes feature "default" (*)
+│       │       │       │       ├── windows-sys feature "default" (*)
+│       │       │       │       ├── parking_lot feature "default"
+│       │       │       │       │   └── parking_lot v0.12.5
+│       │       │       │       │       ├── lock_api feature "default"
+│       │       │       │       │       │   ├── lock_api v0.4.14
+│       │       │       │       │       │   │   └── scopeguard v1.2.0
+│       │       │       │       │       │   └── lock_api feature "atomic_usize"
+│       │       │       │       │       │       └── lock_api v0.4.14 (*)
+│       │       │       │       │       └── parking_lot_core feature "default"
+│       │       │       │       │           └── parking_lot_core v0.9.12
+│       │       │       │       │               ├── windows-link feature "default" (*)
+│       │       │       │       │               ├── cfg-if feature "default"
+│       │       │       │       │               │   └── cfg-if v1.0.4
+│       │       │       │       │               └── smallvec feature "default"
+│       │       │       │       │                   └── smallvec v1.15.2
+│       │       │       │       ├── socket2 feature "all"
+│       │       │       │       │   └── socket2 v0.6.5
+│       │       │       │       │       ├── windows-sys feature "Win32_Foundation" (*)
+│       │       │       │       │       ├── windows-sys feature "Win32_Networking_WinSock" (*)
+│       │       │       │       │       ├── windows-sys feature "Win32_System_IO" (*)
+│       │       │       │       │       ├── windows-sys feature "Win32_System_Threading"
+│       │       │       │       │       │   ├── windows-sys v0.61.2 (*)
+│       │       │       │       │       │   └── windows-sys feature "Win32_System" (*)
+│       │       │       │       │       ├── windows-sys feature "Win32_System_WindowsProgramming" (*)
+│       │       │       │       │       └── windows-sys feature "default" (*)
+│       │       │       │       ├── socket2 feature "default"
+│       │       │       │       │   └── socket2 v0.6.5 (*)
+│       │       │       │       └── tokio-macros feature "default"
+│       │       │       │           └── tokio-macros v2.7.1 (proc-macro)
+│       │       │       │               ├── proc-macro2 feature "default" (*)
+│       │       │       │               ├── quote feature "default" (*)
+│       │       │       │               ├── syn feature "default" (*)
+│       │       │       │               └── syn feature "full" (*)
+│       │       │       ├── tokio feature "io-util"
+│       │       │       │   ├── tokio v1.53.1 (*)
+│       │       │       │   └── tokio feature "bytes"
+│       │       │       │       └── tokio v1.53.1 (*)
+│       │       │       ├── tokio-util feature "codec"
+│       │       │       │   ├── tokio-util v0.7.19
+│       │       │       │   │   ├── futures-core feature "default" (*)
+│       │       │       │   │   ├── futures-sink feature "default"
+│       │       │       │   │   │   ├── futures-sink v0.3.33
+│       │       │       │   │   │   └── futures-sink feature "std" (*)
+│       │       │       │   │   ├── futures-util feature "default"
+│       │       │       │   │   │   ├── futures-util v0.3.33 (*)
+│       │       │       │   │   │   ├── futures-util feature "async-await" (*)
+│       │       │       │   │   │   ├── futures-util feature "async-await-macro" (*)
+│       │       │       │   │   │   └── futures-util feature "std" (*)
+│       │       │       │   │   ├── pin-project-lite feature "default" (*)
+│       │       │       │   │   ├── bytes feature "default" (*)
+│       │       │       │   │   ├── tokio feature "default" (*)
+│       │       │       │   │   └── tokio feature "sync"
+│       │       │       │   │       └── tokio v1.53.1 (*)
+│       │       │       │   └── tokio-util feature "libc"
+│       │       │       │       └── tokio-util v0.7.19 (*)
+│       │       │       ├── tokio-util feature "default"
+│       │       │       │   └── tokio-util v0.7.19 (*)
+│       │       │       ├── tokio-util feature "io"
+│       │       │       │   └── tokio-util v0.7.19 (*)
+│       │       │       └── tracing feature "std"
+│       │       │           ├── tracing v0.1.44
+│       │       │           │   ├── tracing-core v0.1.36
+│       │       │           │   │   └── once_cell feature "default"
+│       │       │           │   │       ├── once_cell v1.21.4
+│       │       │           │   │       │   ├── portable-atomic v1.14.0
+│       │       │           │   │       │   │   └── critical-section feature "default"
+│       │       │           │   │       │   │       └── critical-section v1.2.0
+│       │       │           │   │       │   └── critical-section feature "default" (*)
+│       │       │           │   │       └── once_cell feature "std"
+│       │       │           │   │           ├── once_cell v1.21.4 (*)
+│       │       │           │   │           └── once_cell feature "alloc"
+│       │       │           │   │               ├── once_cell v1.21.4 (*)
+│       │       │           │   │               └── once_cell feature "race"
+│       │       │           │   │                   └── once_cell v1.21.4 (*)
+│       │       │           │   ├── pin-project-lite feature "default" (*)
+│       │       │           │   └── tracing-attributes feature "default"
+│       │       │           │       └── tracing-attributes v0.1.31 (proc-macro)
+│       │       │           │           ├── proc-macro2 feature "default" (*)
+│       │       │           │           ├── quote feature "default" (*)
+│       │       │           │           ├── syn feature "clone-impls" (*)
+│       │       │           │           ├── syn feature "extra-traits"
+│       │       │           │           │   └── syn v2.0.119 (*)
+│       │       │           │           ├── syn feature "full" (*)
+│       │       │           │           ├── syn feature "parsing" (*)
+│       │       │           │           ├── syn feature "printing" (*)
+│       │       │           │           ├── syn feature "proc-macro" (*)
+│       │       │           │           └── syn feature "visit-mut"
+│       │       │           │               └── syn v2.0.119 (*)
+│       │       │           └── tracing-core feature "std"
+│       │       │               ├── tracing-core v0.1.36 (*)
+│       │       │               └── tracing-core feature "once_cell"
+│       │       │                   └── tracing-core v0.1.36 (*)
+│       │       ├── tokio feature "default" (*)
+│       │       ├── tokio feature "sync" (*)
+│       │       ├── smallvec feature "const_generics"
+│       │       │   └── smallvec v1.15.2
+│       │       ├── smallvec feature "const_new"
+│       │       │   ├── smallvec v1.15.2
+│       │       │   └── smallvec feature "const_generics" (*)
+│       │       ├── smallvec feature "default" (*)
+│       │       ├── httparse feature "default"
+│       │       │   ├── httparse v1.10.1
+│       │       │   └── httparse feature "std"
+│       │       │       └── httparse v1.10.1
+│       │       ├── httpdate feature "default"
+│       │       │   └── httpdate v1.0.3
+│       │       └── want feature "default"
+│       │           └── want v0.3.1
+│       │               └── try-lock feature "default"
+│       │                   └── try-lock v0.2.5
+│       ├── hyper feature "default"
+│       │   └── hyper v1.11.0 (*)
+│       ├── hyper feature "http1"
+│       │   └── hyper v1.11.0 (*)
+│       ├── tokio feature "net"
+│       │   ├── tokio v1.53.1 (*)
+│       │   ├── tokio feature "libc"
+│       │   │   └── tokio v1.53.1 (*)
+│       │   ├── tokio feature "mio"
+│       │   │   └── tokio v1.53.1 (*)
+│       │   ├── tokio feature "socket2"
+│       │   │   └── tokio v1.53.1 (*)
+│       │   ├── tokio feature "windows-sys"
+│       │   │   └── tokio v1.53.1 (*)
+│       │   ├── mio feature "net"
+│       │   │   └── mio v1.2.2 (*)
+│       │   ├── mio feature "os-ext"
+│       │   │   ├── mio v1.2.2 (*)
+│       │   │   ├── mio feature "os-poll"
+│       │   │   │   └── mio v1.2.2 (*)
+│       │   │   ├── windows-sys feature "Win32_Security" (*)
+│       │   │   └── windows-sys feature "Win32_System_Pipes"
+│       │   │       ├── windows-sys v0.61.2 (*)
+│       │   │       └── windows-sys feature "Win32_System" (*)
+│       │   ├── mio feature "os-poll" (*)
+│       │   ├── windows-sys feature "Win32_Foundation" (*)
+│       │   ├── windows-sys feature "Win32_Security" (*)
+│       │   ├── windows-sys feature "Win32_Storage_FileSystem" (*)
+│       │   ├── windows-sys feature "Win32_System_Pipes" (*)
+│       │   └── windows-sys feature "Win32_System_SystemServices"
+│       │       ├── windows-sys v0.61.2 (*)
+│       │       └── windows-sys feature "Win32_System" (*)
+│       ├── tokio feature "time"
+│       │   └── tokio v1.53.1 (*)
+│       ├── tokio-util feature "io" (*)
+│       ├── hyper-util feature "client"
+│       │   ├── hyper-util v0.1.20
+│       │   │   ├── futures-util v0.3.33 (*)
+│       │   │   ├── tokio v1.53.1 (*)
+│       │   │   ├── futures-channel feature "default" (*)
+│       │   │   ├── pin-project-lite feature "default" (*)
+│       │   │   ├── base64 feature "default" (*)
+│       │   │   ├── bytes feature "default" (*)
+│       │   │   ├── http feature "default" (*)
+│       │   │   ├── http-body feature "default" (*)
+│       │   │   ├── hyper feature "default" (*)
+│       │   │   ├── socket2 feature "all" (*)
+│       │   │   ├── socket2 feature "default" (*)
+│       │   │   ├── tracing feature "std" (*)
+│       │   │   ├── ipnet feature "default"
+│       │   │   │   ├── ipnet v2.12.0
+│       │   │   │   └── ipnet feature "std"
+│       │   │   │       └── ipnet v2.12.0
+│       │   │   ├── libc feature "default"
+│       │   │   │   ├── libc v0.2.189
+│       │   │   │   └── libc feature "std"
+│       │   │   │       └── libc v0.2.189
+│       │   │   ├── percent-encoding feature "default"
+│       │   │   │   ├── percent-encoding v2.3.2
+│       │   │   │   └── percent-encoding feature "std"
+│       │   │   │       ├── percent-encoding v2.3.2
+│       │   │   │       └── percent-encoding feature "alloc"
+│       │   │   │           └── percent-encoding v2.3.2
+│       │   │   └── tower-service feature "default"
+│       │   │       └── tower-service v0.3.3
+│       │   ├── hyper feature "client" (*)
+│       │   ├── tokio feature "net" (*)
+│       │   └── hyper-util feature "tokio"
+│       │       ├── hyper-util v0.1.20 (*)
+│       │       ├── tokio feature "rt"
+│       │       │   └── tokio v1.53.1 (*)
+│       │       ├── tokio feature "time" (*)
+│       │       └── hyper-util feature "tokio" (*)
+│       ├── hyper-util feature "client-legacy"
+│       │   ├── hyper-util v0.1.20 (*)
+│       │   ├── tokio feature "sync" (*)
+│       │   ├── hyper-util feature "client" (*)
+│       │   └── hyper-util feature "tokio" (*)
+│       ├── hyper-util feature "client-proxy"
+│       │   ├── hyper-util v0.1.20 (*)
+│       │   └── hyper-util feature "client" (*)
+│       ├── hyper-util feature "default"
+│       │   └── hyper-util v0.1.20 (*)
+│       ├── hyper-util feature "http1"
+│       │   ├── hyper-util v0.1.20 (*)
+│       │   └── hyper feature "http1" (*)
+│       ├── hyper-util feature "tokio" (*)
+│       ├── percent-encoding feature "default" (*)
+│       ├── tower-service feature "default" (*)
+│       ├── log feature "default"
+│       │   └── log v0.4.33
+│       ├── serde_json feature "default"
+│       │   ├── serde_json v1.0.151
+│       │   │   ├── memchr v2.8.3
+│       │   │   ├── serde_core v1.0.229
+│       │   │   ├── itoa feature "default" (*)
+│       │   │   └── zmij feature "default"
+│       │   │       └── zmij v1.0.23
+│       │   └── serde_json feature "std"
+│       │       ├── serde_json v1.0.151 (*)
+│       │       ├── serde_core feature "std" (*)
+│       │       └── memchr feature "std" (*)
+│       ├── serde_urlencoded feature "default"
+│       │   └── serde_urlencoded v0.7.1
+│       │       ├── serde feature "default" (*)
+│       │       ├── itoa feature "default" (*)
+│       │       ├── form_urlencoded feature "default"
+│       │       │   ├── form_urlencoded v1.2.2
+│       │       │   │   └── percent-encoding v2.3.2
+│       │       │   └── form_urlencoded feature "std"
+│       │       │       ├── form_urlencoded v1.2.2 (*)
+│       │       │       ├── percent-encoding feature "std" (*)
+│       │       │       └── form_urlencoded feature "alloc"
+│       │       │           ├── form_urlencoded v1.2.2 (*)
+│       │       │           └── percent-encoding feature "alloc" (*)
+│       │       └── ryu feature "default"
+│       │           └── ryu v1.0.23
+│       ├── sync_wrapper feature "default"
+│       │   └── sync_wrapper v1.0.2
+│       │       └── futures-core v0.3.33
+│       ├── sync_wrapper feature "futures"
+│       │   ├── sync_wrapper v1.0.2 (*)
+│       │   └── sync_wrapper feature "futures-core"
+│       │       └── sync_wrapper v1.0.2 (*)
+│       ├── tower feature "retry"
+│       │   ├── tower v0.5.3
+│       │   │   ├── futures-core feature "default" (*)
+│       │   │   ├── futures-util feature "alloc" (*)
+│       │   │   ├── pin-project-lite feature "default" (*)
+│       │   │   ├── tokio feature "default" (*)
+│       │   │   ├── tower-service feature "default" (*)
+│       │   │   ├── sync_wrapper feature "default" (*)
+│       │   │   └── tower-layer feature "default"
+│       │   │       └── tower-layer v0.3.3
+│       │   ├── tokio feature "time" (*)
+│       │   ├── tower feature "tokio"
+│       │   │   └── tower v0.5.3 (*)
+│       │   └── tower feature "util"
+│       │       ├── tower v0.5.3 (*)
+│       │       ├── tower feature "futures-core"
+│       │       │   └── tower v0.5.3 (*)
+│       │       ├── tower feature "futures-util"
+│       │       │   └── tower v0.5.3 (*)
+│       │       ├── tower feature "pin-project-lite"
+│       │       │   └── tower v0.5.3 (*)
+│       │       └── tower feature "sync_wrapper"
+│       │           └── tower v0.5.3 (*)
+│       ├── tower feature "timeout"
+│       │   ├── tower v0.5.3 (*)
+│       │   ├── tokio feature "time" (*)
+│       │   ├── tower feature "pin-project-lite" (*)
+│       │   └── tower feature "tokio" (*)
+│       ├── tower feature "util" (*)
+│       ├── tower-http feature "follow-redirect"
+│       │   ├── tower-http v0.6.11
+│       │   │   ├── futures-util v0.3.33 (*)
+│       │   │   ├── pin-project-lite feature "default" (*)
+│       │   │   ├── bytes feature "default" (*)
+│       │   │   ├── http feature "default" (*)
+│       │   │   ├── http-body feature "default" (*)
+│       │   │   ├── tower-service feature "default" (*)
+│       │   │   ├── tower feature "default"
+│       │   │   │   └── tower v0.5.3 (*)
+│       │   │   ├── tower-layer feature "default" (*)
+│       │   │   ├── bitflags feature "default"
+│       │   │   │   └── bitflags v2.13.1
+│       │   │   │       └── serde_core v1.0.229
+│       │   │   └── url feature "default"
+│       │   │       ├── url v2.5.8
+│       │   │       │   ├── percent-encoding feature "alloc" (*)
+│       │   │       │   ├── form_urlencoded feature "alloc" (*)
+│       │   │       │   ├── idna feature "alloc"
+│       │   │       │   │   └── idna v1.1.0
+│       │   │       │   │       ├── smallvec feature "const_generics" (*)
+│       │   │       │   │       ├── smallvec feature "default" (*)
+│       │   │       │   │       ├── idna_adapter feature "default"
+│       │   │       │   │       │   └── idna_adapter v1.2.2
+│       │   │       │   │       │       ├── icu_normalizer v2.2.0
+│       │   │       │   │       │       │   ├── icu_collections v2.2.0
+│       │   │       │   │       │       │   │   ├── displaydoc v0.2.6 (proc-macro)
+│       │   │       │   │       │       │   │   │   ├── proc-macro2 feature "default" (*)
+│       │   │       │   │       │       │   │   │   ├── quote feature "default" (*)
+│       │   │       │   │       │       │   │   │   └── syn feature "default" (*)
+│       │   │       │   │       │       │   │   ├── utf8_iter v1.0.4
+│       │   │       │   │       │       │   │   ├── potential_utf feature "zerovec"
+│       │   │       │   │       │       │   │   │   └── potential_utf v0.1.5
+│       │   │       │   │       │       │   │   │       └── zerovec v0.11.6
+│       │   │       │   │       │       │   │   │           ├── yoke v0.8.3
+│       │   │       │   │       │       │   │   │           │   ├── stable_deref_trait v1.2.1
+│       │   │       │   │       │       │   │   │           │   ├── yoke-derive v0.8.2 (proc-macro)
+│       │   │       │   │       │       │   │   │           │   │   ├── proc-macro2 feature "default" (*)
+│       │   │       │   │       │       │   │   │           │   │   ├── quote feature "default" (*)
+│       │   │       │   │       │       │   │   │           │   │   ├── syn feature "default" (*)
+│       │   │       │   │       │       │   │   │           │   │   ├── syn feature "fold"
+│       │   │       │   │       │       │   │   │           │   │   │   └── syn v2.0.119 (*)
+│       │   │       │   │       │       │   │   │           │   │   └── synstructure feature "default"
+│       │   │       │   │       │       │   │   │           │   │       ├── synstructure v0.13.2
+│       │   │       │   │       │       │   │   │           │   │       │   ├── proc-macro2 v1.0.107 (*)
+│       │   │       │   │       │       │   │   │           │   │       │   ├── quote v1.0.47 (*)
+│       │   │       │   │       │       │   │   │           │   │       │   ├── syn feature "clone-impls" (*)
+│       │   │       │   │       │       │   │   │           │   │       │   ├── syn feature "derive" (*)
+│       │   │       │   │       │       │   │   │           │   │       │   ├── syn feature "extra-traits" (*)
+│       │   │       │   │       │       │   │   │           │   │       │   ├── syn feature "parsing" (*)
+│       │   │       │   │       │       │   │   │           │   │       │   ├── syn feature "printing" (*)
+│       │   │       │   │       │       │   │   │           │   │       │   └── syn feature "visit"
+│       │   │       │   │       │       │   │   │           │   │       │       └── syn v2.0.119 (*)
+│       │   │       │   │       │       │   │   │           │   │       └── synstructure feature "proc-macro"
+│       │   │       │   │       │       │   │   │           │   │           ├── synstructure v0.13.2 (*)
+│       │   │       │   │       │       │   │   │           │   │           ├── proc-macro2 feature "proc-macro" (*)
+│       │   │       │   │       │       │   │   │           │   │           ├── quote feature "proc-macro" (*)
+│       │   │       │   │       │       │   │   │           │   │           └── syn feature "proc-macro" (*)
+│       │   │       │   │       │       │   │   │           │   └── zerofrom v0.1.8
+│       │   │       │   │       │       │   │   │           │       └── zerofrom-derive v0.1.7 (proc-macro)
+│       │   │       │   │       │       │   │   │           │           ├── proc-macro2 feature "default" (*)
+│       │   │       │   │       │       │   │   │           │           ├── quote feature "default" (*)
+│       │   │       │   │       │       │   │   │           │           ├── syn feature "default" (*)
+│       │   │       │   │       │       │   │   │           │           ├── syn feature "fold" (*)
+│       │   │       │   │       │       │   │   │           │           └── synstructure feature "default" (*)
+│       │   │       │   │       │       │   │   │           ├── zerofrom v0.1.8 (*)
+│       │   │       │   │       │       │   │   │           └── zerovec-derive v0.11.3 (proc-macro)
+│       │   │       │   │       │       │   │   │               ├── proc-macro2 feature "default" (*)
+│       │   │       │   │       │       │   │   │               ├── quote feature "default" (*)
+│       │   │       │   │       │       │   │   │               ├── syn feature "default" (*)
+│       │   │       │   │       │       │   │   │               └── syn feature "extra-traits" (*)
+│       │   │       │   │       │       │   │   ├── zerovec feature "derive"
+│       │   │       │   │       │       │   │   │   └── zerovec v0.11.6 (*)
+│       │   │       │   │       │       │   │   ├── zerovec feature "yoke"
+│       │   │       │   │       │       │   │   │   └── zerovec v0.11.6 (*)
+│       │   │       │   │       │       │   │   ├── yoke feature "derive"
+│       │   │       │   │       │       │   │   │   ├── yoke v0.8.3 (*)
+│       │   │       │   │       │       │   │   │   ├── yoke feature "zerofrom"
+│       │   │       │   │       │       │   │   │   │   └── yoke v0.8.3 (*)
+│       │   │       │   │       │       │   │   │   └── zerofrom feature "derive"
+│       │   │       │   │       │       │   │   │       └── zerofrom v0.1.8 (*)
+│       │   │       │   │       │       │   │   └── zerofrom feature "derive" (*)
+│       │   │       │   │       │       │   ├── icu_normalizer_data v2.2.0
+│       │   │       │   │       │       │   ├── icu_provider v2.2.0
+│       │   │       │   │       │       │   │   ├── displaydoc v0.2.6 (proc-macro) (*)
+│       │   │       │   │       │       │   │   ├── icu_locale_core v2.2.0
+│       │   │       │   │       │       │   │   │   ├── displaydoc v0.2.6 (proc-macro) (*)
+│       │   │       │   │       │       │   │   │   ├── litemap v0.8.2
+│       │   │       │   │       │       │   │   │   ├── tinystr v0.8.3
+│       │   │       │   │       │       │   │   │   │   ├── displaydoc v0.2.6 (proc-macro) (*)
+│       │   │       │   │       │       │   │   │   │   └── zerovec v0.11.6 (*)
+│       │   │       │   │       │       │   │   │   ├── writeable v0.6.3
+│       │   │       │   │       │       │   │   │   └── zerovec v0.11.6 (*)
+│       │   │       │   │       │       │   │   ├── writeable v0.6.3
+│       │   │       │   │       │       │   │   ├── zerotrie v0.2.4
+│       │   │       │   │       │       │   │   │   ├── displaydoc v0.2.6 (proc-macro) (*)
+│       │   │       │   │       │       │   │   │   ├── zerofrom v0.1.8 (*)
+│       │   │       │   │       │       │   │   │   └── yoke feature "derive" (*)
+│       │   │       │   │       │       │   │   ├── zerovec feature "derive" (*)
+│       │   │       │   │       │       │   │   ├── yoke feature "derive" (*)
+│       │   │       │   │       │       │   │   └── zerofrom feature "derive" (*)
+│       │   │       │   │       │       │   ├── smallvec v1.15.2
+│       │   │       │   │       │       │   └── zerovec v0.11.6 (*)
+│       │   │       │   │       │       └── icu_properties v2.2.0
+│       │   │       │   │       │           ├── icu_collections v2.2.0 (*)
+│       │   │       │   │       │           ├── icu_properties_data v2.2.0
+│       │   │       │   │       │           ├── icu_provider v2.2.0 (*)
+│       │   │       │   │       │           ├── zerovec feature "derive" (*)
+│       │   │       │   │       │           ├── zerovec feature "yoke" (*)
+│       │   │       │   │       │           ├── icu_locale_core feature "zerovec"
+│       │   │       │   │       │           │   ├── icu_locale_core v2.2.0 (*)
+│       │   │       │   │       │           │   └── tinystr feature "zerovec"
+│       │   │       │   │       │           │       └── tinystr v0.8.3 (*)
+│       │   │       │   │       │           ├── zerotrie feature "yoke"
+│       │   │       │   │       │           │   └── zerotrie v0.2.4 (*)
+│       │   │       │   │       │           └── zerotrie feature "zerofrom"
+│       │   │       │   │       │               └── zerotrie v0.2.4 (*)
+│       │   │       │   │       └── utf8_iter feature "default"
+│       │   │       │   │           └── utf8_iter v1.0.4
+│       │   │       │   └── idna feature "compiled_data"
+│       │   │       │       ├── idna v1.1.0 (*)
+│       │   │       │       └── idna_adapter feature "compiled_data"
+│       │   │       │           ├── idna_adapter v1.2.2 (*)
+│       │   │       │           ├── icu_normalizer feature "compiled_data"
+│       │   │       │           │   ├── icu_normalizer v2.2.0 (*)
+│       │   │       │           │   └── icu_provider feature "baked"
+│       │   │       │           │       └── icu_provider v2.2.0 (*)
+│       │   │       │           └── icu_properties feature "compiled_data"
+│       │   │       │               ├── icu_properties v2.2.0 (*)
+│       │   │       │               └── icu_provider feature "baked" (*)
+│       │   │       └── url feature "std"
+│       │   │           ├── url v2.5.8 (*)
+│       │   │           ├── percent-encoding feature "std" (*)
+│       │   │           ├── form_urlencoded feature "std" (*)
+│       │   │           └── idna feature "std"
+│       │   │               ├── idna v1.1.0 (*)
+│       │   │               └── idna feature "alloc" (*)
+│       │   ├── tower feature "util" (*)
+│       │   ├── tower-http feature "futures-util"
+│       │   │   └── tower-http v0.6.11 (*)
+│       │   └── tower-http feature "tower"
+│       │       └── tower-http v0.6.11 (*)
+│       └── url feature "default" (*)
+├── reqwest feature "stream"
+│   ├── reqwest v0.12.28 (*)
+│   └── tokio feature "fs"
+│       └── tokio v1.53.1 (*)
+├── tokio feature "default" (*)
+├── tokio feature "full"
+│   ├── tokio v1.53.1 (*)
+│   ├── tokio feature "fs" (*)
+│   ├── tokio feature "io-std"
+│   │   └── tokio v1.53.1 (*)
+│   ├── tokio feature "io-util" (*)
+│   ├── tokio feature "macros"
+│   │   ├── tokio v1.53.1 (*)
+│   │   └── tokio feature "tokio-macros"
+│   │       └── tokio v1.53.1 (*)
+│   ├── tokio feature "net" (*)
+│   ├── tokio feature "parking_lot"
+│   │   └── tokio v1.53.1 (*)
+│   ├── tokio feature "process"
+│   │   ├── tokio v1.53.1 (*)
+│   │   ├── tokio feature "bytes" (*)
+│   │   ├── tokio feature "libc" (*)
+│   │   ├── tokio feature "mio" (*)
+│   │   ├── tokio feature "signal-hook-registry"
+│   │   │   └── tokio v1.53.1 (*)
+│   │   ├── tokio feature "windows-sys" (*)
+│   │   ├── mio feature "net" (*)
+│   │   ├── mio feature "os-ext" (*)
+│   │   ├── mio feature "os-poll" (*)
+│   │   ├── windows-sys feature "Win32_Foundation" (*)
+│   │   ├── windows-sys feature "Win32_System_Threading" (*)
+│   │   └── windows-sys feature "Win32_System_WindowsProgramming" (*)
+│   ├── tokio feature "rt" (*)
+│   ├── tokio feature "rt-multi-thread"
+│   │   ├── tokio v1.53.1 (*)
+│   │   └── tokio feature "rt" (*)
+│   ├── tokio feature "signal"
+│   │   ├── tokio v1.53.1 (*)
+│   │   ├── tokio feature "libc" (*)
+│   │   ├── tokio feature "mio" (*)
+│   │   ├── tokio feature "signal-hook-registry" (*)
+│   │   ├── tokio feature "windows-sys" (*)
+│   │   ├── mio feature "net" (*)
+│   │   ├── mio feature "os-ext" (*)
+│   │   ├── mio feature "os-poll" (*)
+│   │   ├── windows-sys feature "Win32_Foundation" (*)
+│   │   └── windows-sys feature "Win32_System_Console"
+│   │       ├── windows-sys v0.61.2 (*)
+│   │       └── windows-sys feature "Win32_System" (*)
+│   ├── tokio feature "sync" (*)
+│   └── tokio feature "time" (*)
+├── tokio-util feature "default" (*)
+├── tokio-util feature "rt"
+│   ├── tokio-util v0.7.19 (*)
+│   ├── tokio feature "rt" (*)
+│   ├── tokio feature "sync" (*)
+│   └── tokio-util feature "futures-util"
+│       └── tokio-util v0.7.19 (*)
+├── tracing feature "default"
+│   ├── tracing v0.1.44 (*)
+│   ├── tracing feature "attributes"
+│   │   ├── tracing v0.1.44 (*)
+│   │   └── tracing feature "tracing-attributes"
+│   │       └── tracing v0.1.44 (*)
+│   └── tracing feature "std" (*)
+├── serde_json feature "default" (*)
+├── url feature "default" (*)
+├── slint feature "accessibility"
+│   ├── slint v1.12.1
+│   │   ├── i-slint-backend-selector v1.12.1
+│   │   │   ├── i-slint-core v1.12.1
+│   │   │   │   ├── euclid v0.22.14
+│   │   │   │   │   └── num-traits v0.2.19 (*)
+│   │   │   │   ├── num-traits v0.2.19 (*)
+│   │   │   │   ├── pin-weak v1.1.0
+│   │   │   │   ├── scopeguard v1.2.0
+│   │   │   │   ├── slab v0.4.12
+│   │   │   │   ├── chrono feature "alloc" (*)
+│   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │   ├── once_cell feature "critical-section"
+│   │   │   │   │   ├── once_cell v1.21.4 (*)
+│   │   │   │   │   └── once_cell feature "portable-atomic"
+│   │   │   │   │       └── once_cell v1.21.4 (*)
+│   │   │   │   ├── portable-atomic feature "critical-section"
+│   │   │   │   │   └── portable-atomic v1.14.0 (*)
+│   │   │   │   ├── portable-atomic feature "default"
+│   │   │   │   │   ├── portable-atomic v1.14.0 (*)
+│   │   │   │   │   └── portable-atomic feature "fallback"
+│   │   │   │   │       └── portable-atomic v1.14.0 (*)
+│   │   │   │   ├── bitflags feature "default" (*)
+│   │   │   │   ├── const-field-offset feature "default"
+│   │   │   │   │   └── const-field-offset v0.1.5
+│   │   │   │   │       ├── const-field-offset-macro feature "default"
+│   │   │   │   │       │   └── const-field-offset-macro v0.1.5 (proc-macro)
+│   │   │   │   │       │       ├── proc-macro2 feature "default" (*)
+│   │   │   │   │       │       ├── quote feature "default" (*)
+│   │   │   │   │       │       ├── syn feature "default" (*)
+│   │   │   │   │       │       └── syn feature "derive" (*)
+│   │   │   │   │       └── field-offset feature "default"
+│   │   │   │   │           └── field-offset v0.3.6
+│   │   │   │   │               └── memoffset feature "default"
+│   │   │   │   │                   └── memoffset v0.9.1
+│   │   │   │   │                       [build-dependencies]
+│   │   │   │   │                       └── autocfg feature "default" (*)
+│   │   │   │   │               [build-dependencies]
+│   │   │   │   │               └── rustc_version feature "default"
+│   │   │   │   │                   └── rustc_version v0.4.1
+│   │   │   │   │                       └── semver feature "default"
+│   │   │   │   │                           ├── semver v1.0.28
+│   │   │   │   │                           └── semver feature "std"
+│   │   │   │   │                               └── semver v1.0.28
+│   │   │   │   ├── unicode-segmentation feature "default"
+│   │   │   │   │   └── unicode-segmentation v1.13.3
+│   │   │   │   ├── bytemuck feature "default"
+│   │   │   │   │   └── bytemuck v1.25.2
+│   │   │   │   │       └── bytemuck_derive feature "default"
+│   │   │   │   │           └── bytemuck_derive v1.11.0 (proc-macro)
+│   │   │   │   │               ├── proc-macro2 feature "default" (*)
+│   │   │   │   │               ├── quote feature "default" (*)
+│   │   │   │   │               └── syn feature "default" (*)
+│   │   │   │   ├── bytemuck feature "derive"
+│   │   │   │   │   ├── bytemuck v1.25.2 (*)
+│   │   │   │   │   └── bytemuck feature "bytemuck_derive"
+│   │   │   │   │       └── bytemuck v1.25.2 (*)
+│   │   │   │   ├── derive_more feature "add"
+│   │   │   │   │   ├── derive_more v2.1.1
+│   │   │   │   │   │   └── derive_more-impl feature "default"
+│   │   │   │   │   │       └── derive_more-impl v2.1.1 (proc-macro)
+│   │   │   │   │   │           ├── proc-macro2 feature "default" (*)
+│   │   │   │   │   │           ├── quote feature "default" (*)
+│   │   │   │   │   │           ├── syn feature "default" (*)
+│   │   │   │   │   │           ├── convert_case feature "default"
+│   │   │   │   │   │           │   └── convert_case v0.10.0
+│   │   │   │   │   │           │       └── unicode-segmentation feature "default" (*)
+│   │   │   │   │   │           └── unicode-xid feature "default"
+│   │   │   │   │   │               └── unicode-xid v0.2.6
+│   │   │   │   │   │           [build-dependencies]
+│   │   │   │   │   │           └── rustc_version feature "default" (*)
+│   │   │   │   │   └── derive_more-impl feature "add"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       ├── syn feature "extra-traits" (*)
+│   │   │   │   │       └── syn feature "visit" (*)
+│   │   │   │   ├── derive_more feature "add_assign"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "add_assign"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       ├── syn feature "extra-traits" (*)
+│   │   │   │   │       └── syn feature "visit" (*)
+│   │   │   │   ├── derive_more feature "deref"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "deref"
+│   │   │   │   │       └── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   ├── derive_more feature "deref_mut"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "deref_mut"
+│   │   │   │   │       └── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   ├── derive_more feature "display"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "display"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       └── syn feature "extra-traits" (*)
+│   │   │   │   ├── derive_more feature "error"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "error"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       └── syn feature "extra-traits" (*)
+│   │   │   │   ├── derive_more feature "from"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "from"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       └── syn feature "extra-traits" (*)
+│   │   │   │   ├── derive_more feature "into"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "into"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       ├── syn feature "extra-traits" (*)
+│   │   │   │   │       └── syn feature "visit-mut" (*)
+│   │   │   │   ├── derive_more feature "mul"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "mul"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       ├── syn feature "extra-traits" (*)
+│   │   │   │   │       └── syn feature "visit" (*)
+│   │   │   │   ├── derive_more feature "not"
+│   │   │   │   │   ├── derive_more v2.1.1 (*)
+│   │   │   │   │   └── derive_more-impl feature "not"
+│   │   │   │   │       ├── derive_more-impl v2.1.1 (proc-macro) (*)
+│   │   │   │   │       └── syn feature "extra-traits" (*)
+│   │   │   │   ├── i-slint-common feature "default"
+│   │   │   │   │   └── i-slint-common v1.12.1
+│   │   │   │   │       ├── fontdb v0.23.0
+│   │   │   │   │       │   ├── slotmap v1.1.1
+│   │   │   │   │       │   │   [build-dependencies]
+│   │   │   │   │       │   │   └── version_check feature "default"
+│   │   │   │   │       │   │       └── version_check v0.9.5
+│   │   │   │   │       │   ├── log feature "default" (*)
+│   │   │   │   │       │   ├── memmap2 feature "default"
+│   │   │   │   │       │   │   └── memmap2 v0.9.11
+│   │   │   │   │       │   ├── tinyvec feature "alloc"
+│   │   │   │   │       │   │   ├── tinyvec v1.12.0
+│   │   │   │   │       │   │   │   └── tinyvec_macros feature "default"
+│   │   │   │   │       │   │   │       └── tinyvec_macros v0.1.1
+│   │   │   │   │       │   │   └── tinyvec feature "tinyvec_macros"
+│   │   │   │   │       │   │       └── tinyvec v1.12.0 (*)
+│   │   │   │   │       │   ├── tinyvec feature "default"
+│   │   │   │   │       │   │   └── tinyvec v1.12.0 (*)
+│   │   │   │   │       │   ├── ttf-parser feature "apple-layout"
+│   │   │   │   │       │   │   └── ttf-parser v0.25.1
+│   │   │   │   │       │   │       └── core_maths feature "default"
+│   │   │   │   │       │   │           └── core_maths v0.1.1
+│   │   │   │   │       │   │               └── libm feature "default" (*)
+│   │   │   │   │       │   ├── ttf-parser feature "glyph-names"
+│   │   │   │   │       │   │   └── ttf-parser v0.25.1 (*)
+│   │   │   │   │       │   ├── ttf-parser feature "no-std-float"
+│   │   │   │   │       │   │   ├── ttf-parser v0.25.1 (*)
+│   │   │   │   │       │   │   └── ttf-parser feature "core_maths"
+│   │   │   │   │       │   │       └── ttf-parser v0.25.1 (*)
+│   │   │   │   │       │   ├── ttf-parser feature "opentype-layout"
+│   │   │   │   │       │   │   └── ttf-parser v0.25.1 (*)
+│   │   │   │   │       │   └── ttf-parser feature "variable-fonts"
+│   │   │   │   │       │       └── ttf-parser v0.25.1 (*)
+│   │   │   │   │       ├── cfg-if feature "default" (*)
+│   │   │   │   │       ├── derive_more feature "add" (*)
+│   │   │   │   │       ├── derive_more feature "add_assign" (*)
+│   │   │   │   │       ├── derive_more feature "deref" (*)
+│   │   │   │   │       ├── derive_more feature "deref_mut" (*)
+│   │   │   │   │       ├── derive_more feature "display" (*)
+│   │   │   │   │       ├── derive_more feature "from" (*)
+│   │   │   │   │       ├── derive_more feature "into" (*)
+│   │   │   │   │       ├── derive_more feature "mul" (*)
+│   │   │   │   │       ├── derive_more feature "not" (*)
+│   │   │   │   │       ├── fontdb feature "fontconfig"
+│   │   │   │   │       │   ├── fontdb v0.23.0 (*)
+│   │   │   │   │       │   ├── fontdb feature "fontconfig-parser"
+│   │   │   │   │       │   │   └── fontdb v0.23.0 (*)
+│   │   │   │   │       │   └── fontdb feature "fs"
+│   │   │   │   │       │       ├── fontdb v0.23.0 (*)
+│   │   │   │   │       │       └── fontdb feature "std"
+│   │   │   │   │       │           ├── fontdb v0.23.0 (*)
+│   │   │   │   │       │           └── ttf-parser feature "std"
+│   │   │   │   │       │               └── ttf-parser v0.25.1 (*)
+│   │   │   │   │       ├── fontdb feature "fs" (*)
+│   │   │   │   │       ├── fontdb feature "memmap"
+│   │   │   │   │       │   ├── fontdb v0.23.0 (*)
+│   │   │   │   │       │   ├── fontdb feature "fs" (*)
+│   │   │   │   │       │   └── fontdb feature "memmap2"
+│   │   │   │   │       │       └── fontdb v0.23.0 (*)
+│   │   │   │   │       ├── fontdb feature "std" (*)
+│   │   │   │   │       └── ttf-parser feature "default"
+│   │   │   │   │           ├── ttf-parser v0.25.1 (*)
+│   │   │   │   │           ├── ttf-parser feature "apple-layout" (*)
+│   │   │   │   │           ├── ttf-parser feature "glyph-names" (*)
+│   │   │   │   │           ├── ttf-parser feature "opentype-layout" (*)
+│   │   │   │   │           ├── ttf-parser feature "std" (*)
+│   │   │   │   │           └── ttf-parser feature "variable-fonts" (*)
+│   │   │   │   ├── auto_enums feature "default"
+│   │   │   │   │   ├── auto_enums v0.8.10 (proc-macro)
+│   │   │   │   │   │   ├── proc-macro2 feature "default" (*)
+│   │   │   │   │   │   ├── quote feature "default" (*)
+│   │   │   │   │   │   ├── syn feature "clone-impls" (*)
+│   │   │   │   │   │   ├── syn feature "full"
+│   │   │   │   │   │   │   └── syn v3.0.3 (*)
+│   │   │   │   │   │   ├── syn feature "parsing" (*)
+│   │   │   │   │   │   ├── syn feature "printing" (*)
+│   │   │   │   │   │   ├── syn feature "proc-macro" (*)
+│   │   │   │   │   │   ├── syn feature "visit-mut"
+│   │   │   │   │   │   │   └── syn v3.0.3 (*)
+│   │   │   │   │   │   └── derive_utils feature "default"
+│   │   │   │   │   │       └── derive_utils v0.16.0
+│   │   │   │   │   │           ├── proc-macro2 feature "default" (*)
+│   │   │   │   │   │           ├── quote feature "default" (*)
+│   │   │   │   │   │           ├── syn feature "clone-impls" (*)
+│   │   │   │   │   │           ├── syn feature "full" (*)
+│   │   │   │   │   │           ├── syn feature "parsing" (*)
+│   │   │   │   │   │           ├── syn feature "printing" (*)
+│   │   │   │   │   │           └── syn feature "proc-macro" (*)
+│   │   │   │   │   └── auto_enums feature "std"
+│   │   │   │   │       └── auto_enums v0.8.10 (proc-macro) (*)
+│   │   │   │   ├── clru feature "default"
+│   │   │   │   │   └── clru v0.6.3
+│   │   │   │   │       └── hashbrown feature "default"
+│   │   │   │   │           ├── hashbrown v0.16.1
+│   │   │   │   │           │   ├── equivalent v1.0.2
+│   │   │   │   │           │   ├── foldhash v0.2.0
+│   │   │   │   │           │   └── allocator-api2 feature "alloc"
+│   │   │   │   │           │       └── allocator-api2 v0.2.21
+│   │   │   │   │           ├── hashbrown feature "allocator-api2"
+│   │   │   │   │           │   └── hashbrown v0.16.1 (*)
+│   │   │   │   │           ├── hashbrown feature "default-hasher"
+│   │   │   │   │           │   └── hashbrown v0.16.1 (*)
+│   │   │   │   │           ├── hashbrown feature "equivalent"
+│   │   │   │   │           │   └── hashbrown v0.16.1 (*)
+│   │   │   │   │           ├── hashbrown feature "inline-more"
+│   │   │   │   │           │   └── hashbrown v0.16.1 (*)
+│   │   │   │   │           └── hashbrown feature "raw-entry"
+│   │   │   │   │               └── hashbrown v0.16.1 (*)
+│   │   │   │   ├── fontdue feature "default"
+│   │   │   │   │   ├── fontdue v0.9.3
+│   │   │   │   │   │   ├── hashbrown feature "default"
+│   │   │   │   │   │   │   ├── hashbrown v0.15.5
+│   │   │   │   │   │   │   │   ├── equivalent v1.0.2
+│   │   │   │   │   │   │   │   ├── foldhash v0.1.5
+│   │   │   │   │   │   │   │   └── allocator-api2 feature "alloc" (*)
+│   │   │   │   │   │   │   ├── hashbrown feature "allocator-api2"
+│   │   │   │   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   │   │   │   ├── hashbrown feature "default-hasher"
+│   │   │   │   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   │   │   │   ├── hashbrown feature "equivalent"
+│   │   │   │   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   │   │   │   ├── hashbrown feature "inline-more"
+│   │   │   │   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   │   │   │   └── hashbrown feature "raw-entry"
+│   │   │   │   │   │   │       └── hashbrown v0.15.5 (*)
+│   │   │   │   │   │   └── ttf-parser feature "opentype-layout"
+│   │   │   │   │   │       └── ttf-parser v0.21.1
+│   │   │   │   │   ├── fontdue feature "hashbrown"
+│   │   │   │   │   │   └── fontdue v0.9.3 (*)
+│   │   │   │   │   └── fontdue feature "simd"
+│   │   │   │   │       └── fontdue v0.9.3 (*)
+│   │   │   │   ├── i-slint-core-macros feature "default"
+│   │   │   │   │   └── i-slint-core-macros v1.12.1 (proc-macro)
+│   │   │   │   │       ├── quote feature "default" (*)
+│   │   │   │   │       ├── syn feature "default" (*)
+│   │   │   │   │       ├── syn feature "full" (*)
+│   │   │   │   │       ├── syn feature "visit-mut" (*)
+│   │   │   │   │       └── serde_json feature "default" (*)
+│   │   │   │   ├── image feature "jpeg"
+│   │   │   │   │   └── image v0.25.10
+│   │   │   │   │       ├── zune-core v0.5.1
+│   │   │   │   │       ├── num-traits feature "default"
+│   │   │   │   │       │   ├── num-traits v0.2.19 (*)
+│   │   │   │   │       │   └── num-traits feature "std"
+│   │   │   │   │       │       └── num-traits v0.2.19 (*)
+│   │   │   │   │       ├── bytemuck feature "default" (*)
+│   │   │   │   │       ├── bytemuck feature "extern_crate_alloc"
+│   │   │   │   │       │   └── bytemuck v1.25.2 (*)
+│   │   │   │   │       ├── byteorder-lite feature "default"
+│   │   │   │   │       │   ├── byteorder-lite v0.1.0
+│   │   │   │   │       │   └── byteorder-lite feature "std"
+│   │   │   │   │       │       └── byteorder-lite v0.1.0
+│   │   │   │   │       ├── moxcms feature "default"
+│   │   │   │   │       │   ├── moxcms v0.8.1
+│   │   │   │   │       │   │   ├── num-traits feature "default" (*)
+│   │   │   │   │       │   │   └── pxfm feature "default"
+│   │   │   │   │       │   │       └── pxfm v0.1.30
+│   │   │   │   │       │   ├── moxcms feature "avx_luts"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   ├── moxcms feature "avx"
+│   │   │   │   │       │   │   │   └── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   └── moxcms feature "lut"
+│   │   │   │   │       │   │       └── moxcms v0.8.1 (*)
+│   │   │   │   │       │   ├── moxcms feature "avx_shaper_fixed_point_paths"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   └── moxcms feature "avx" (*)
+│   │   │   │   │       │   ├── moxcms feature "avx_shaper_paths"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   └── moxcms feature "avx" (*)
+│   │   │   │   │       │   ├── moxcms feature "lut" (*)
+│   │   │   │   │       │   ├── moxcms feature "neon_luts"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   ├── moxcms feature "lut" (*)
+│   │   │   │   │       │   │   └── moxcms feature "neon"
+│   │   │   │   │       │   │       └── moxcms v0.8.1 (*)
+│   │   │   │   │       │   ├── moxcms feature "neon_shaper_fixed_point_paths"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   └── moxcms feature "neon" (*)
+│   │   │   │   │       │   ├── moxcms feature "neon_shaper_paths"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   └── moxcms feature "neon" (*)
+│   │   │   │   │       │   ├── moxcms feature "sse_luts"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   ├── moxcms feature "lut" (*)
+│   │   │   │   │       │   │   └── moxcms feature "sse"
+│   │   │   │   │       │   │       └── moxcms v0.8.1 (*)
+│   │   │   │   │       │   ├── moxcms feature "sse_shaper_fixed_point_paths"
+│   │   │   │   │       │   │   ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │   │   └── moxcms feature "sse" (*)
+│   │   │   │   │       │   └── moxcms feature "sse_shaper_paths"
+│   │   │   │   │       │       ├── moxcms v0.8.1 (*)
+│   │   │   │   │       │       └── moxcms feature "sse" (*)
+│   │   │   │   │       ├── png feature "default"
+│   │   │   │   │       │   └── png v0.18.1
+│   │   │   │   │       │       ├── bitflags feature "default" (*)
+│   │   │   │   │       │       ├── crc32fast feature "default"
+│   │   │   │   │       │       │   ├── crc32fast v1.5.0
+│   │   │   │   │       │       │   │   └── cfg-if feature "default" (*)
+│   │   │   │   │       │       │   └── crc32fast feature "std"
+│   │   │   │   │       │       │       └── crc32fast v1.5.0 (*)
+│   │   │   │   │       │       ├── fdeflate feature "default"
+│   │   │   │   │       │       │   └── fdeflate v0.3.7
+│   │   │   │   │       │       │       └── simd-adler32 feature "default"
+│   │   │   │   │       │       │           ├── simd-adler32 v0.3.10
+│   │   │   │   │       │       │           ├── simd-adler32 feature "const-generics"
+│   │   │   │   │       │       │           │   └── simd-adler32 v0.3.10
+│   │   │   │   │       │       │           └── simd-adler32 feature "std"
+│   │   │   │   │       │       │               └── simd-adler32 v0.3.10
+│   │   │   │   │       │       ├── flate2 feature "default"
+│   │   │   │   │       │       │   ├── flate2 v1.1.9
+│   │   │   │   │       │       │   │   ├── crc32fast feature "default" (*)
+│   │   │   │   │       │       │   │   ├── miniz_oxide feature "simd"
+│   │   │   │   │       │       │   │   │   ├── miniz_oxide v0.8.9
+│   │   │   │   │       │       │   │   │   │   ├── adler2 v2.0.1
+│   │   │   │   │       │       │   │   │   │   └── simd-adler32 v0.3.10
+│   │   │   │   │       │       │   │   │   └── miniz_oxide feature "simd-adler32"
+│   │   │   │   │       │       │   │   │       └── miniz_oxide v0.8.9 (*)
+│   │   │   │   │       │       │   │   └── miniz_oxide feature "with-alloc"
+│   │   │   │   │       │       │   │       └── miniz_oxide v0.8.9 (*)
+│   │   │   │   │       │       │   └── flate2 feature "rust_backend"
+│   │   │   │   │       │       │       ├── flate2 v1.1.9 (*)
+│   │   │   │   │       │       │       ├── flate2 feature "any_impl"
+│   │   │   │   │       │       │       │   └── flate2 v1.1.9 (*)
+│   │   │   │   │       │       │       └── flate2 feature "miniz_oxide"
+│   │   │   │   │       │       │           ├── flate2 v1.1.9 (*)
+│   │   │   │   │       │       │           └── flate2 feature "any_impl" (*)
+│   │   │   │   │       │       ├── miniz_oxide feature "default"
+│   │   │   │   │       │       │   ├── miniz_oxide v0.8.9 (*)
+│   │   │   │   │       │       │   └── miniz_oxide feature "with-alloc" (*)
+│   │   │   │   │       │       └── miniz_oxide feature "simd" (*)
+│   │   │   │   │       └── zune-jpeg feature "default"
+│   │   │   │   │           ├── zune-jpeg v0.5.15
+│   │   │   │   │           │   └── zune-core feature "default"
+│   │   │   │   │           │       └── zune-core v0.5.1
+│   │   │   │   │           ├── zune-jpeg feature "neon"
+│   │   │   │   │           │   └── zune-jpeg v0.5.15 (*)
+│   │   │   │   │           ├── zune-jpeg feature "std"
+│   │   │   │   │           │   ├── zune-jpeg v0.5.15 (*)
+│   │   │   │   │           │   └── zune-core feature "std"
+│   │   │   │   │           │       └── zune-core v0.5.1
+│   │   │   │   │           └── zune-jpeg feature "x86"
+│   │   │   │   │               └── zune-jpeg v0.5.15 (*)
+│   │   │   │   ├── image feature "png"
+│   │   │   │   │   └── image v0.25.10 (*)
+│   │   │   │   ├── integer-sqrt feature "default"
+│   │   │   │   │   └── integer-sqrt v0.1.5
+│   │   │   │   │       └── num-traits v0.2.19 (*)
+│   │   │   │   ├── lyon_algorithms feature "default"
+│   │   │   │   │   ├── lyon_algorithms v1.0.20
+│   │   │   │   │   │   ├── lyon_path v1.0.19
+│   │   │   │   │   │   │   ├── lyon_geom v1.0.19
+│   │   │   │   │   │   │   │   ├── arrayvec v0.7.8
+│   │   │   │   │   │   │   │   ├── euclid v0.22.14 (*)
+│   │   │   │   │   │   │   │   └── num-traits feature "libm"
+│   │   │   │   │   │   │   │       └── num-traits v0.2.19 (*)
+│   │   │   │   │   │   │   └── num-traits feature "libm" (*)
+│   │   │   │   │   │   └── num-traits feature "libm" (*)
+│   │   │   │   │   └── lyon_algorithms feature "std"
+│   │   │   │   │       ├── lyon_algorithms v1.0.20 (*)
+│   │   │   │   │       ├── num-traits feature "std" (*)
+│   │   │   │   │       └── lyon_path feature "std"
+│   │   │   │   │           ├── lyon_path v1.0.19 (*)
+│   │   │   │   │           ├── num-traits feature "std" (*)
+│   │   │   │   │           └── lyon_geom feature "std"
+│   │   │   │   │               ├── lyon_geom v1.0.19 (*)
+│   │   │   │   │               ├── num-traits feature "std" (*)
+│   │   │   │   │               ├── euclid feature "std"
+│   │   │   │   │               │   ├── euclid v0.22.14 (*)
+│   │   │   │   │               │   └── num-traits feature "std" (*)
+│   │   │   │   │               └── arrayvec feature "std"
+│   │   │   │   │                   └── arrayvec v0.7.8
+│   │   │   │   ├── lyon_path feature "default"
+│   │   │   │   │   ├── lyon_path v1.0.19 (*)
+│   │   │   │   │   └── lyon_path feature "std" (*)
+│   │   │   │   ├── lyon_geom feature "default"
+│   │   │   │   │   ├── lyon_geom v1.0.19 (*)
+│   │   │   │   │   └── lyon_geom feature "std" (*)
+│   │   │   │   ├── lyon_extra feature "default"
+│   │   │   │   │   ├── lyon_extra v1.1.0
+│   │   │   │   │   │   ├── lyon_path v1.0.19 (*)
+│   │   │   │   │   │   └── thiserror v2.0.19
+│   │   │   │   │   │       └── thiserror-impl feature "default"
+│   │   │   │   │   │           └── thiserror-impl v2.0.19 (proc-macro)
+│   │   │   │   │   │               ├── proc-macro2 feature "default" (*)
+│   │   │   │   │   │               ├── quote feature "default" (*)
+│   │   │   │   │   │               └── syn feature "default"
+│   │   │   │   │   │                   ├── syn v3.0.3 (*)
+│   │   │   │   │   │                   ├── syn feature "clone-impls" (*)
+│   │   │   │   │   │                   ├── syn feature "derive" (*)
+│   │   │   │   │   │                   ├── syn feature "parsing" (*)
+│   │   │   │   │   │                   ├── syn feature "printing" (*)
+│   │   │   │   │   │                   └── syn feature "proc-macro" (*)
+│   │   │   │   │   └── lyon_extra feature "std"
+│   │   │   │   │       ├── lyon_extra v1.1.0 (*)
+│   │   │   │   │       ├── lyon_path feature "std" (*)
+│   │   │   │   │       └── thiserror feature "std"
+│   │   │   │   │           └── thiserror v2.0.19 (*)
+│   │   │   │   ├── pin-project feature "default"
+│   │   │   │   │   └── pin-project v1.1.13
+│   │   │   │   │       └── pin-project-internal feature "default"
+│   │   │   │   │           └── pin-project-internal v1.1.13 (proc-macro)
+│   │   │   │   │               ├── proc-macro2 feature "default" (*)
+│   │   │   │   │               ├── quote feature "default" (*)
+│   │   │   │   │               ├── syn feature "clone-impls" (*)
+│   │   │   │   │               ├── syn feature "full" (*)
+│   │   │   │   │               ├── syn feature "parsing" (*)
+│   │   │   │   │               ├── syn feature "printing" (*)
+│   │   │   │   │               ├── syn feature "proc-macro" (*)
+│   │   │   │   │               └── syn feature "visit-mut" (*)
+│   │   │   │   ├── resvg feature "raster-images"
+│   │   │   │   │   ├── resvg v0.45.1
+│   │   │   │   │   │   ├── usvg v0.45.1
+│   │   │   │   │   │   │   ├── fontdb v0.23.0 (*)
+│   │   │   │   │   │   │   ├── base64 feature "default" (*)
+│   │   │   │   │   │   │   ├── log feature "default" (*)
+│   │   │   │   │   │   │   ├── flate2 feature "rust_backend" (*)
+│   │   │   │   │   │   │   ├── pico-args feature "default"
+│   │   │   │   │   │   │   │   └── pico-args v0.5.0
+│   │   │   │   │   │   │   ├── pico-args feature "eq-separator"
+│   │   │   │   │   │   │   │   └── pico-args v0.5.0
+│   │   │   │   │   │   │   ├── svgtypes feature "default"
+│   │   │   │   │   │   │   │   └── svgtypes v0.15.3
+│   │   │   │   │   │   │   │       ├── kurbo feature "default"
+│   │   │   │   │   │   │   │       │   ├── kurbo v0.11.3
+│   │   │   │   │   │   │   │       │   │   ├── arrayvec v0.7.8
+│   │   │   │   │   │   │   │       │   │   └── smallvec feature "default" (*)
+│   │   │   │   │   │   │   │       │   └── kurbo feature "std"
+│   │   │   │   │   │   │   │       │       └── kurbo v0.11.3 (*)
+│   │   │   │   │   │   │   │       └── siphasher feature "default"
+│   │   │   │   │   │   │   │           ├── siphasher v1.0.3
+│   │   │   │   │   │   │   │           └── siphasher feature "std"
+│   │   │   │   │   │   │   │               └── siphasher v1.0.3
+│   │   │   │   │   │   │   ├── kurbo feature "default" (*)
+│   │   │   │   │   │   │   ├── siphasher feature "default" (*)
+│   │   │   │   │   │   │   ├── tiny-skia-path feature "default"
+│   │   │   │   │   │   │   │   ├── tiny-skia-path v0.11.4
+│   │   │   │   │   │   │   │   │   ├── strict-num v0.1.1
+│   │   │   │   │   │   │   │   │   │   └── float-cmp feature "std"
+│   │   │   │   │   │   │   │   │   │       └── float-cmp v0.9.0
+│   │   │   │   │   │   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   │   │   │   │   │   └── arrayref feature "default"
+│   │   │   │   │   │   │   │   │       └── arrayref v0.3.9
+│   │   │   │   │   │   │   │   └── tiny-skia-path feature "std"
+│   │   │   │   │   │   │   │       └── tiny-skia-path v0.11.4 (*)
+│   │   │   │   │   │   │   ├── strict-num feature "default"
+│   │   │   │   │   │   │   │   ├── strict-num v0.1.1 (*)
+│   │   │   │   │   │   │   │   └── strict-num feature "approx-eq"
+│   │   │   │   │   │   │   │       ├── strict-num v0.1.1 (*)
+│   │   │   │   │   │   │   │       └── strict-num feature "float-cmp"
+│   │   │   │   │   │   │   │           └── strict-num v0.1.1 (*)
+│   │   │   │   │   │   │   ├── data-url feature "default"
+│   │   │   │   │   │   │   │   ├── data-url v0.3.2
+│   │   │   │   │   │   │   │   └── data-url feature "std"
+│   │   │   │   │   │   │   │       ├── data-url v0.3.2
+│   │   │   │   │   │   │   │       └── data-url feature "alloc"
+│   │   │   │   │   │   │   │           └── data-url v0.3.2
+│   │   │   │   │   │   │   ├── imagesize feature "default"
+│   │   │   │   │   │   │   │   └── imagesize v0.13.0
+│   │   │   │   │   │   │   ├── roxmltree feature "default"
+│   │   │   │   │   │   │   │   ├── roxmltree v0.20.0
+│   │   │   │   │   │   │   │   ├── roxmltree feature "positions"
+│   │   │   │   │   │   │   │   │   └── roxmltree v0.20.0
+│   │   │   │   │   │   │   │   └── roxmltree feature "std"
+│   │   │   │   │   │   │   │       └── roxmltree v0.20.0
+│   │   │   │   │   │   │   ├── rustybuzz feature "default"
+│   │   │   │   │   │   │   │   ├── rustybuzz v0.20.1
+│   │   │   │   │   │   │   │   │   ├── smallvec feature "default" (*)
+│   │   │   │   │   │   │   │   │   ├── log feature "default" (*)
+│   │   │   │   │   │   │   │   │   ├── bitflags feature "default" (*)
+│   │   │   │   │   │   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   │   │   │   │   │   ├── bytemuck feature "extern_crate_alloc" (*)
+│   │   │   │   │   │   │   │   │   ├── ttf-parser feature "apple-layout" (*)
+│   │   │   │   │   │   │   │   │   ├── ttf-parser feature "glyph-names" (*)
+│   │   │   │   │   │   │   │   │   ├── ttf-parser feature "no-std-float" (*)
+│   │   │   │   │   │   │   │   │   ├── ttf-parser feature "opentype-layout" (*)
+│   │   │   │   │   │   │   │   │   ├── ttf-parser feature "variable-fonts" (*)
+│   │   │   │   │   │   │   │   │   ├── core_maths feature "default" (*)
+│   │   │   │   │   │   │   │   │   ├── unicode-bidi-mirroring feature "default"
+│   │   │   │   │   │   │   │   │   │   └── unicode-bidi-mirroring v0.4.0
+│   │   │   │   │   │   │   │   │   ├── unicode-ccc feature "default"
+│   │   │   │   │   │   │   │   │   │   └── unicode-ccc v0.4.0
+│   │   │   │   │   │   │   │   │   ├── unicode-properties feature "general-category"
+│   │   │   │   │   │   │   │   │   │   └── unicode-properties v0.1.4
+│   │   │   │   │   │   │   │   │   └── unicode-script feature "default"
+│   │   │   │   │   │   │   │   │       └── unicode-script v0.5.8
+│   │   │   │   │   │   │   │   └── rustybuzz feature "std"
+│   │   │   │   │   │   │   │       ├── rustybuzz v0.20.1 (*)
+│   │   │   │   │   │   │   │       └── ttf-parser feature "std" (*)
+│   │   │   │   │   │   │   ├── unicode-script feature "default" (*)
+│   │   │   │   │   │   │   ├── simplecss feature "default"
+│   │   │   │   │   │   │   │   ├── simplecss v0.2.2
+│   │   │   │   │   │   │   │   │   └── log v0.4.33
+│   │   │   │   │   │   │   │   └── simplecss feature "std"
+│   │   │   │   │   │   │   │       ├── simplecss v0.2.2 (*)
+│   │   │   │   │   │   │   │       └── log feature "std"
+│   │   │   │   │   │   │   │           └── log v0.4.33
+│   │   │   │   │   │   │   ├── unicode-bidi feature "default"
+│   │   │   │   │   │   │   │   ├── unicode-bidi v0.3.18
+│   │   │   │   │   │   │   │   ├── unicode-bidi feature "hardcoded-data"
+│   │   │   │   │   │   │   │   │   └── unicode-bidi v0.3.18
+│   │   │   │   │   │   │   │   └── unicode-bidi feature "std"
+│   │   │   │   │   │   │   │       └── unicode-bidi v0.3.18
+│   │   │   │   │   │   │   ├── unicode-vo feature "default"
+│   │   │   │   │   │   │   │   └── unicode-vo v0.1.0
+│   │   │   │   │   │   │   └── xmlwriter feature "default"
+│   │   │   │   │   │   │       └── xmlwriter v0.1.0
+│   │   │   │   │   │   ├── log feature "default" (*)
+│   │   │   │   │   │   ├── gif feature "default"
+│   │   │   │   │   │   │   ├── gif v0.13.3
+│   │   │   │   │   │   │   │   ├── color_quant feature "default"
+│   │   │   │   │   │   │   │   │   └── color_quant v1.1.0
+│   │   │   │   │   │   │   │   └── weezl feature "default"
+│   │   │   │   │   │   │   │       ├── weezl v0.1.12
+│   │   │   │   │   │   │   │       └── weezl feature "std"
+│   │   │   │   │   │   │   │           ├── weezl v0.1.12
+│   │   │   │   │   │   │   │           └── weezl feature "alloc"
+│   │   │   │   │   │   │   │               └── weezl v0.1.12
+│   │   │   │   │   │   │   ├── gif feature "color_quant"
+│   │   │   │   │   │   │   │   └── gif v0.13.3 (*)
+│   │   │   │   │   │   │   ├── gif feature "raii_no_panic"
+│   │   │   │   │   │   │   │   └── gif v0.13.3 (*)
+│   │   │   │   │   │   │   └── gif feature "std"
+│   │   │   │   │   │   │       └── gif v0.13.3 (*)
+│   │   │   │   │   │   ├── image-webp feature "default"
+│   │   │   │   │   │   │   └── image-webp v0.2.4
+│   │   │   │   │   │   │       ├── byteorder-lite feature "default" (*)
+│   │   │   │   │   │   │       └── quick-error feature "default"
+│   │   │   │   │   │   │           └── quick-error v2.0.1
+│   │   │   │   │   │   ├── pico-args feature "default" (*)
+│   │   │   │   │   │   ├── pico-args feature "eq-separator" (*)
+│   │   │   │   │   │   ├── rgb feature "default"
+│   │   │   │   │   │   │   ├── rgb v0.8.53
+│   │   │   │   │   │   │   │   └── bytemuck feature "default" (*)
+│   │   │   │   │   │   │   ├── rgb feature "argb"
+│   │   │   │   │   │   │   │   └── rgb v0.8.53 (*)
+│   │   │   │   │   │   │   ├── rgb feature "as-bytes"
+│   │   │   │   │   │   │   │   ├── rgb v0.8.53 (*)
+│   │   │   │   │   │   │   │   └── rgb feature "bytemuck"
+│   │   │   │   │   │   │   │       └── rgb v0.8.53 (*)
+│   │   │   │   │   │   │   └── rgb feature "grb"
+│   │   │   │   │   │   │       └── rgb v0.8.53 (*)
+│   │   │   │   │   │   ├── svgtypes feature "default" (*)
+│   │   │   │   │   │   ├── tiny-skia feature "default"
+│   │   │   │   │   │   │   ├── tiny-skia v0.11.4
+│   │   │   │   │   │   │   │   ├── arrayvec v0.7.8
+│   │   │   │   │   │   │   │   ├── tiny-skia-path v0.11.4 (*)
+│   │   │   │   │   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │   │   │   │   │   ├── log feature "default" (*)
+│   │   │   │   │   │   │   │   ├── bytemuck feature "aarch64_simd"
+│   │   │   │   │   │   │   │   │   └── bytemuck v1.25.2 (*)
+│   │   │   │   │   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   │   │   │   │   ├── arrayref feature "default" (*)
+│   │   │   │   │   │   │   │   └── png feature "default"
+│   │   │   │   │   │   │   │       └── png v0.17.16
+│   │   │   │   │   │   │   │           ├── crc32fast feature "default" (*)
+│   │   │   │   │   │   │   │           ├── fdeflate feature "default" (*)
+│   │   │   │   │   │   │   │           ├── flate2 feature "default" (*)
+│   │   │   │   │   │   │   │           ├── miniz_oxide feature "default" (*)
+│   │   │   │   │   │   │   │           ├── miniz_oxide feature "simd" (*)
+│   │   │   │   │   │   │   │           └── bitflags feature "default"
+│   │   │   │   │   │   │   │               └── bitflags v1.3.2
+│   │   │   │   │   │   │   ├── tiny-skia feature "png-format"
+│   │   │   │   │   │   │   │   ├── tiny-skia v0.11.4 (*)
+│   │   │   │   │   │   │   │   ├── tiny-skia feature "png"
+│   │   │   │   │   │   │   │   │   └── tiny-skia v0.11.4 (*)
+│   │   │   │   │   │   │   │   └── tiny-skia feature "std"
+│   │   │   │   │   │   │   │       ├── tiny-skia v0.11.4 (*)
+│   │   │   │   │   │   │   │       └── tiny-skia-path feature "std" (*)
+│   │   │   │   │   │   │   ├── tiny-skia feature "simd"
+│   │   │   │   │   │   │   │   └── tiny-skia v0.11.4 (*)
+│   │   │   │   │   │   │   └── tiny-skia feature "std" (*)
+│   │   │   │   │   │   └── zune-jpeg feature "default"
+│   │   │   │   │   │       ├── zune-jpeg v0.4.21
+│   │   │   │   │   │       │   └── zune-core feature "default"
+│   │   │   │   │   │       │       └── zune-core v0.4.12
+│   │   │   │   │   │       ├── zune-jpeg feature "neon"
+│   │   │   │   │   │       │   └── zune-jpeg v0.4.21 (*)
+│   │   │   │   │   │       ├── zune-jpeg feature "std"
+│   │   │   │   │   │       │   ├── zune-jpeg v0.4.21 (*)
+│   │   │   │   │   │       │   └── zune-core feature "std"
+│   │   │   │   │   │       │       └── zune-core v0.4.12
+│   │   │   │   │   │       └── zune-jpeg feature "x86"
+│   │   │   │   │   │           └── zune-jpeg v0.4.21 (*)
+│   │   │   │   │   ├── resvg feature "gif"
+│   │   │   │   │   │   └── resvg v0.45.1 (*)
+│   │   │   │   │   └── resvg feature "image-webp"
+│   │   │   │   │       └── resvg v0.45.1 (*)
+│   │   │   │   ├── resvg feature "text"
+│   │   │   │   │   ├── resvg v0.45.1 (*)
+│   │   │   │   │   └── usvg feature "text"
+│   │   │   │   │       ├── usvg v0.45.1 (*)
+│   │   │   │   │       ├── usvg feature "fontdb"
+│   │   │   │   │       │   └── usvg v0.45.1 (*)
+│   │   │   │   │       ├── usvg feature "rustybuzz"
+│   │   │   │   │       │   └── usvg v0.45.1 (*)
+│   │   │   │   │       ├── usvg feature "unicode-bidi"
+│   │   │   │   │       │   └── usvg v0.45.1 (*)
+│   │   │   │   │       ├── usvg feature "unicode-script"
+│   │   │   │   │       │   └── usvg v0.45.1 (*)
+│   │   │   │   │       └── usvg feature "unicode-vo"
+│   │   │   │   │           └── usvg v0.45.1 (*)
+│   │   │   │   ├── rgb feature "default" (*)
+│   │   │   │   ├── rustybuzz feature "default" (*)
+│   │   │   │   ├── unicode-script feature "default" (*)
+│   │   │   │   ├── rustversion feature "default"
+│   │   │   │   │   └── rustversion v1.0.23 (proc-macro)
+│   │   │   │   ├── scoped-tls-hkt feature "default"
+│   │   │   │   │   └── scoped-tls-hkt v0.1.5
+│   │   │   │   ├── strum feature "derive"
+│   │   │   │   │   ├── strum v0.27.2
+│   │   │   │   │   │   └── strum_macros feature "default"
+│   │   │   │   │   │       └── strum_macros v0.27.2 (proc-macro)
+│   │   │   │   │   │           ├── proc-macro2 feature "default" (*)
+│   │   │   │   │   │           ├── quote feature "default" (*)
+│   │   │   │   │   │           ├── syn feature "default" (*)
+│   │   │   │   │   │           ├── syn feature "parsing" (*)
+│   │   │   │   │   │           └── heck feature "default"
+│   │   │   │   │   │               └── heck v0.5.0
+│   │   │   │   │   └── strum feature "strum_macros"
+│   │   │   │   │       └── strum v0.27.2 (*)
+│   │   │   │   ├── sys-locale feature "default"
+│   │   │   │   │   └── sys-locale v0.3.2
+│   │   │   │   ├── unicode-linebreak feature "default"
+│   │   │   │   │   └── unicode-linebreak v0.1.5
+│   │   │   │   └── vtable feature "default"
+│   │   │   │       └── vtable v0.3.0
+│   │   │   │           ├── stable_deref_trait v1.2.1
+│   │   │   │           ├── portable-atomic feature "default" (*)
+│   │   │   │           ├── const-field-offset feature "default" (*)
+│   │   │   │           └── vtable-macro feature "default"
+│   │   │   │               └── vtable-macro v0.3.0 (proc-macro)
+│   │   │   │                   ├── proc-macro2 feature "default" (*)
+│   │   │   │                   ├── quote feature "default" (*)
+│   │   │   │                   ├── syn feature "default" (*)
+│   │   │   │                   └── syn feature "full" (*)
+│   │   │   ├── i-slint-core-macros v1.12.1 (proc-macro) (*)
+│   │   │   ├── cfg-if feature "default" (*)
+│   │   │   ├── i-slint-backend-winit feature "default"
+│   │   │   │   └── i-slint-backend-winit v1.12.1
+│   │   │   │       ├── copypasta v0.10.2
+│   │   │   │       │   ├── clipboard-win feature "default"
+│   │   │   │       │   │   └── clipboard-win v5.4.1
+│   │   │   │       │   │       └── error-code feature "default"
+│   │   │   │       │   │           └── error-code v3.3.2
+│   │   │   │       │   └── clipboard-win feature "std"
+│   │   │   │       │       ├── clipboard-win v5.4.1 (*)
+│   │   │   │       │       └── error-code feature "std"
+│   │   │   │       │           └── error-code v3.3.2
+│   │   │   │       ├── muda v0.17.2
+│   │   │   │       │   ├── once_cell feature "default" (*)
+│   │   │   │       │   ├── dpi feature "default"
+│   │   │   │       │   │   ├── dpi v0.1.2
+│   │   │   │       │   │   └── dpi feature "std"
+│   │   │   │       │   │       └── dpi v0.1.2
+│   │   │   │       │   ├── thiserror feature "default"
+│   │   │   │       │   │   ├── thiserror v2.0.19 (*)
+│   │   │   │       │   │   └── thiserror feature "std" (*)
+│   │   │   │       │   ├── crossbeam-channel feature "default"
+│   │   │   │       │   │   ├── crossbeam-channel v0.5.16
+│   │   │   │       │   │   │   └── crossbeam-utils v0.8.22
+│   │   │   │       │   │   └── crossbeam-channel feature "std"
+│   │   │   │       │   │       ├── crossbeam-channel v0.5.16 (*)
+│   │   │   │       │   │       └── crossbeam-utils feature "std"
+│   │   │   │       │   │           └── crossbeam-utils v0.8.22
+│   │   │   │       │   ├── keyboard-types feature "default"
+│   │   │   │       │   │   ├── keyboard-types v0.7.0
+│   │   │   │       │   │   │   ├── serde feature "default" (*)
+│   │   │   │       │   │   │   ├── serde feature "derive" (*)
+│   │   │   │       │   │   │   ├── bitflags feature "default" (*)
+│   │   │   │       │   │   │   └── unicode-segmentation feature "default" (*)
+│   │   │   │       │   │   ├── keyboard-types feature "serde"
+│   │   │   │       │   │   │   ├── keyboard-types v0.7.0 (*)
+│   │   │   │       │   │   │   └── bitflags feature "serde"
+│   │   │   │       │   │   │       ├── bitflags v2.13.1 (*)
+│   │   │   │       │   │   │       └── bitflags feature "serde_core"
+│   │   │   │       │   │   │           └── bitflags v2.13.1 (*)
+│   │   │   │       │   │   └── keyboard-types feature "webdriver"
+│   │   │   │       │   │       ├── keyboard-types v0.7.0 (*)
+│   │   │   │       │   │       └── keyboard-types feature "unicode-segmentation"
+│   │   │   │       │   │           └── keyboard-types v0.7.0 (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_Foundation"
+│   │   │   │       │   │   ├── windows-sys v0.60.2
+│   │   │   │       │   │   │   └── windows-targets v0.53.5
+│   │   │   │       │   │   │       └── windows_x86_64_msvc feature "default"
+│   │   │   │       │   │   │           └── windows_x86_64_msvc v0.53.1
+│   │   │   │       │   │   └── windows-sys feature "Win32"
+│   │   │   │       │   │       ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32_Foundation" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_Globalization"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_Graphics_Gdi"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_Graphics"
+│   │   │   │       │   │       ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_System_LibraryLoader"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_System"
+│   │   │   │       │   │       ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_System_SystemServices"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_Accessibility"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI"
+│   │   │   │       │   │       ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_Controls"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_HiDpi"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_Input_KeyboardAndMouse"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI_Input"
+│   │   │   │       │   │       ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_Shell"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_WindowsAndMessaging"
+│   │   │   │       │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   └── windows-sys feature "default"
+│   │   │   │       │       └── windows-sys v0.60.2 (*)
+│   │   │   │       ├── scopeguard v1.2.0
+│   │   │   │       ├── softbuffer v0.4.8
+│   │   │   │       │   ├── tracing v0.1.44 (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_Foundation" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_Graphics_Gdi"
+│   │   │   │       │   │   ├── windows-sys v0.61.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_Graphics"
+│   │   │   │       │   │       ├── windows-sys v0.61.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_Shell"
+│   │   │   │       │   │   ├── windows-sys v0.61.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI"
+│   │   │   │       │   │       ├── windows-sys v0.61.2 (*)
+│   │   │   │       │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   ├── windows-sys feature "Win32_UI_WindowsAndMessaging"
+│   │   │   │       │   │   ├── windows-sys v0.61.2 (*)
+│   │   │   │       │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   ├── windows-sys feature "default" (*)
+│   │   │   │       │   ├── raw-window-handle feature "default"
+│   │   │   │       │   │   └── raw-window-handle v0.6.2
+│   │   │   │       │   └── raw-window-handle feature "std"
+│   │   │   │       │       ├── raw-window-handle v0.6.2
+│   │   │   │       │       └── raw-window-handle feature "alloc"
+│   │   │   │       │           └── raw-window-handle v0.6.2
+│   │   │   │       ├── cfg-if feature "default" (*)
+│   │   │   │       ├── accesskit feature "default"
+│   │   │   │       │   └── accesskit v0.19.0
+│   │   │   │       ├── accesskit_winit feature "default"
+│   │   │   │       │   ├── accesskit_winit v0.27.0
+│   │   │   │       │   │   ├── winit v0.30.13
+│   │   │   │       │   │   │   ├── tracing v0.1.44 (*)
+│   │   │   │       │   │   │   ├── bitflags feature "default" (*)
+│   │   │   │       │   │   │   ├── raw-window-handle feature "default" (*)
+│   │   │   │       │   │   │   ├── raw-window-handle feature "std" (*)
+│   │   │   │       │   │   │   ├── cursor-icon feature "default"
+│   │   │   │       │   │   │   │   ├── cursor-icon v1.2.0
+│   │   │   │       │   │   │   │   └── cursor-icon feature "std"
+│   │   │   │       │   │   │   │       ├── cursor-icon v1.2.0
+│   │   │   │       │   │   │   │       └── cursor-icon feature "alloc"
+│   │   │   │       │   │   │   │           └── cursor-icon v1.2.0
+│   │   │   │       │   │   │   ├── dpi feature "default" (*)
+│   │   │   │       │   │   │   ├── smol_str feature "default"
+│   │   │   │       │   │   │   │   ├── smol_str v0.2.2
+│   │   │   │       │   │   │   │   └── smol_str feature "std"
+│   │   │   │       │   │   │   │       └── smol_str v0.2.2
+│   │   │   │       │   │   │   ├── unicode-segmentation feature "default" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Devices_HumanInterfaceDevice"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0
+│   │   │   │       │   │   │   │   │   └── windows-targets feature "default"
+│   │   │   │       │   │   │   │   │       └── windows-targets v0.52.6
+│   │   │   │       │   │   │   │   │           └── windows_x86_64_msvc feature "default"
+│   │   │   │       │   │   │   │   │               └── windows_x86_64_msvc v0.52.6
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_Devices"
+│   │   │   │       │   │   │   │       ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │       └── windows-sys feature "Win32"
+│   │   │   │       │   │   │   │           └── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Foundation"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Globalization"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Graphics_Dwm"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_Graphics"
+│   │   │   │       │   │   │   │       ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Graphics_Gdi"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_Graphics" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Media"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_Security"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_Com"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System"
+│   │   │   │       │   │   │   │       ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_Com_StructuredStorage"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System_Com" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_LibraryLoader"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_Ole"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_SystemInformation"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_SystemServices"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_Threading"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_System_WindowsProgramming"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Accessibility"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI"
+│   │   │   │       │   │   │   │       ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Controls"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_HiDpi"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Input_Ime"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI_Input"
+│   │   │   │       │   │   │   │       ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │       └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Input_KeyboardAndMouse"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI_Input" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Input_Pointer"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI_Input" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Input_Touch"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI_Input" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_Shell"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_TextServices"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   │   │   ├── windows-sys feature "Win32_UI_WindowsAndMessaging"
+│   │   │   │       │   │   │   │   ├── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   │   └── windows-sys feature "Win32_UI" (*)
+│   │   │   │       │   │   │   └── windows-sys feature "default"
+│   │   │   │       │   │   │       └── windows-sys v0.52.0 (*)
+│   │   │   │       │   │   │   [build-dependencies]
+│   │   │   │       │   │   │   └── cfg_aliases feature "default"
+│   │   │   │       │   │   │       └── cfg_aliases v0.2.2
+│   │   │   │       │   │   ├── accesskit feature "default" (*)
+│   │   │   │       │   │   ├── accesskit_windows feature "default"
+│   │   │   │       │   │   │   └── accesskit_windows v0.27.0
+│   │   │   │       │   │   │       ├── accesskit feature "default" (*)
+│   │   │   │       │   │   │       ├── accesskit_consumer feature "default"
+│   │   │   │       │   │   │       │   └── accesskit_consumer v0.28.0
+│   │   │   │       │   │   │       │       ├── accesskit feature "default" (*)
+│   │   │   │       │   │   │       │       └── hashbrown feature "default-hasher" (*)
+│   │   │   │       │   │   │       ├── hashbrown feature "default-hasher" (*)
+│   │   │   │       │   │   │       ├── static_assertions feature "default"
+│   │   │   │       │   │   │       │   └── static_assertions v1.1.0
+│   │   │   │       │   │   │       ├── windows feature "Win32_Foundation"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3
+│   │   │   │       │   │   │       │   │   ├── windows-collections v0.2.0
+│   │   │   │       │   │   │       │   │   │   └── windows-core v0.61.2
+│   │   │   │       │   │   │       │   │   │       ├── windows-implement v0.60.2 (proc-macro)
+│   │   │   │       │   │   │       │   │   │       │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "clone-impls" (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "full" (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "parsing" (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "printing" (*)
+│   │   │   │       │   │   │       │   │   │       │   └── syn feature "proc-macro" (*)
+│   │   │   │       │   │   │       │   │   │       ├── windows-interface v0.59.3 (proc-macro)
+│   │   │   │       │   │   │       │   │   │       │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "clone-impls" (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "full" (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "parsing" (*)
+│   │   │   │       │   │   │       │   │   │       │   ├── syn feature "printing" (*)
+│   │   │   │       │   │   │       │   │   │       │   └── syn feature "proc-macro" (*)
+│   │   │   │       │   │   │       │   │   │       ├── windows-link v0.1.3
+│   │   │   │       │   │   │       │   │   │       ├── windows-result v0.3.4
+│   │   │   │       │   │   │       │   │   │       │   └── windows-link v0.1.3
+│   │   │   │       │   │   │       │   │   │       └── windows-strings v0.4.2
+│   │   │   │       │   │   │       │   │   │           └── windows-link v0.1.3
+│   │   │   │       │   │   │       │   │   ├── windows-core v0.61.2 (*)
+│   │   │   │       │   │   │       │   │   ├── windows-future v0.2.1
+│   │   │   │       │   │   │       │   │   │   ├── windows-core v0.61.2 (*)
+│   │   │   │       │   │   │       │   │   │   ├── windows-link v0.1.3
+│   │   │   │       │   │   │       │   │   │   └── windows-threading v0.1.0
+│   │   │   │       │   │   │       │   │   │       └── windows-link v0.1.3
+│   │   │   │       │   │   │       │   │   ├── windows-link v0.1.3
+│   │   │   │       │   │   │       │   │   └── windows-numerics v0.2.0
+│   │   │   │       │   │   │       │   │       ├── windows-core v0.61.2 (*)
+│   │   │   │       │   │   │       │   │       └── windows-link v0.1.3
+│   │   │   │       │   │   │       │   └── windows feature "Win32"
+│   │   │   │       │   │   │       │       ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │       └── windows feature "Win32_Foundation" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_Graphics_Gdi"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_Graphics"
+│   │   │   │       │   │   │       │       ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │       └── windows feature "Win32" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_System_Com"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_System"
+│   │   │   │       │   │   │       │       ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │       └── windows feature "Win32" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_System_LibraryLoader"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_System" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_System_Ole"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_System" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_System_Variant"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_System" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_UI_Accessibility"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_UI"
+│   │   │   │       │   │   │       │       ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │       └── windows feature "Win32" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_UI_Input_KeyboardAndMouse"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_UI_Input"
+│   │   │   │       │   │   │       │       ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │       └── windows feature "Win32_UI" (*)
+│   │   │   │       │   │   │       ├── windows feature "Win32_UI_WindowsAndMessaging"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "Win32_UI" (*)
+│   │   │   │       │   │   │       ├── windows feature "default"
+│   │   │   │       │   │   │       │   ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │   └── windows feature "std"
+│   │   │   │       │   │   │       │       ├── windows v0.61.3 (*)
+│   │   │   │       │   │   │       │       └── windows-core feature "std"
+│   │   │   │       │   │   │       │           ├── windows-core v0.61.2 (*)
+│   │   │   │       │   │   │       │           ├── windows-result feature "std"
+│   │   │   │       │   │   │       │           │   └── windows-result v0.3.4 (*)
+│   │   │   │       │   │   │       │           └── windows-strings feature "std"
+│   │   │   │       │   │   │       │               └── windows-strings v0.4.2 (*)
+│   │   │   │       │   │   │       └── windows-core feature "default"
+│   │   │   │       │   │   │           ├── windows-core v0.61.2 (*)
+│   │   │   │       │   │   │           └── windows-core feature "std" (*)
+│   │   │   │       │   │   ├── raw-window-handle feature "default" (*)
+│   │   │   │       │   │   └── raw-window-handle feature "std" (*)
+│   │   │   │       │   ├── accesskit_winit feature "accesskit_unix"
+│   │   │   │       │   │   └── accesskit_winit v0.27.0 (*)
+│   │   │   │       │   ├── accesskit_winit feature "async-io"
+│   │   │   │       │   │   └── accesskit_winit v0.27.0 (*)
+│   │   │   │       │   ├── accesskit_winit feature "rwh_06"
+│   │   │   │       │   │   ├── accesskit_winit v0.27.0 (*)
+│   │   │   │       │   │   └── winit feature "rwh_06"
+│   │   │   │       │   │       └── winit v0.30.13 (*)
+│   │   │   │       │   ├── winit feature "wayland"
+│   │   │   │       │   │   ├── winit v0.30.13 (*)
+│   │   │   │       │   │   ├── winit feature "ahash"
+│   │   │   │       │   │   │   └── winit v0.30.13 (*)
+│   │   │   │       │   │   ├── winit feature "memmap2"
+│   │   │   │       │   │   │   └── winit v0.30.13 (*)
+│   │   │   │       │   │   ├── winit feature "sctk"
+│   │   │   │       │   │   │   └── winit v0.30.13 (*)
+│   │   │   │       │   │   ├── winit feature "wayland-backend"
+│   │   │   │       │   │   │   └── winit v0.30.13 (*)
+│   │   │   │       │   │   ├── winit feature "wayland-client"
+│   │   │   │       │   │   │   └── winit v0.30.13 (*)
+│   │   │   │       │   │   ├── winit feature "wayland-protocols"
+│   │   │   │       │   │   │   └── winit v0.30.13 (*)
+│   │   │   │       │   │   └── winit feature "wayland-protocols-plasma"
+│   │   │   │       │   │       └── winit v0.30.13 (*)
+│   │   │   │       │   └── winit feature "x11"
+│   │   │   │       │       ├── winit v0.30.13 (*)
+│   │   │   │       │       ├── winit feature "bytemuck"
+│   │   │   │       │       │   └── winit v0.30.13 (*)
+│   │   │   │       │       ├── winit feature "percent-encoding"
+│   │   │   │       │       │   └── winit v0.30.13 (*)
+│   │   │   │       │       ├── winit feature "x11-dl"
+│   │   │   │       │       │   └── winit v0.30.13 (*)
+│   │   │   │       │       └── winit feature "x11rb"
+│   │   │   │       │           └── winit v0.30.13 (*)
+│   │   │   │       ├── raw-window-handle feature "alloc" (*)
+│   │   │   │       ├── raw-window-handle feature "default" (*)
+│   │   │   │       ├── winit feature "rwh_06" (*)
+│   │   │   │       ├── bytemuck feature "default" (*)
+│   │   │   │       ├── bytemuck feature "derive" (*)
+│   │   │   │       ├── derive_more feature "add" (*)
+│   │   │   │       ├── derive_more feature "add_assign" (*)
+│   │   │   │       ├── derive_more feature "deref" (*)
+│   │   │   │       ├── derive_more feature "deref_mut" (*)
+│   │   │   │       ├── derive_more feature "display" (*)
+│   │   │   │       ├── derive_more feature "from" (*)
+│   │   │   │       ├── derive_more feature "into" (*)
+│   │   │   │       ├── derive_more feature "mul" (*)
+│   │   │   │       ├── derive_more feature "not" (*)
+│   │   │   │       ├── i-slint-common feature "default" (*)
+│   │   │   │       ├── i-slint-core feature "default"
+│   │   │   │       │   ├── i-slint-core v1.12.1 (*)
+│   │   │   │       │   ├── i-slint-core feature "std"
+│   │   │   │       │   │   ├── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── chrono feature "clock" (*)
+│   │   │   │       │   │   ├── chrono feature "std" (*)
+│   │   │   │       │   │   ├── chrono feature "wasmbind" (*)
+│   │   │   │       │   │   ├── once_cell feature "std" (*)
+│   │   │   │       │   │   ├── i-slint-core feature "image-decoders"
+│   │   │   │       │   │   │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── i-slint-core feature "lyon_algorithms"
+│   │   │   │       │   │   │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── i-slint-core feature "lyon_extra"
+│   │   │   │       │   │   │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── i-slint-core feature "lyon_geom"
+│   │   │   │       │   │   │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── i-slint-core feature "lyon_path"
+│   │   │   │       │   │   │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── i-slint-core feature "scoped-tls-hkt"
+│   │   │   │       │   │   │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   ├── i-slint-core feature "svg"
+│   │   │   │       │   │   │   ├── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   │   └── i-slint-core feature "shared-fontdb"
+│   │   │   │       │   │   │       ├── i-slint-core v1.12.1 (*)
+│   │   │   │       │   │   │       └── i-slint-common feature "shared-fontdb"
+│   │   │   │       │   │   │           ├── i-slint-common v1.12.1 (*)
+│   │   │   │       │   │   │           ├── i-slint-common feature "cfg-if"
+│   │   │   │       │   │   │           │   └── i-slint-common v1.12.1 (*)
+│   │   │   │       │   │   │           └── i-slint-common feature "derive_more"
+│   │   │   │       │   │   │               └── i-slint-common v1.12.1 (*)
+│   │   │   │       │   │   └── euclid feature "std" (*)
+│   │   │   │       │   └── i-slint-core feature "unicode"
+│   │   │   │       │       ├── i-slint-core v1.12.1 (*)
+│   │   │   │       │       ├── i-slint-core feature "unicode-linebreak"
+│   │   │   │       │       │   └── i-slint-core v1.12.1 (*)
+│   │   │   │       │       └── i-slint-core feature "unicode-script"
+│   │   │   │       │           └── i-slint-core v1.12.1 (*)
+│   │   │   │       ├── i-slint-core-macros feature "default" (*)
+│   │   │   │       ├── lyon_path feature "default" (*)
+│   │   │   │       ├── pin-weak feature "default"
+│   │   │   │       │   ├── pin-weak v1.1.0
+│   │   │   │       │   └── pin-weak feature "sync"
+│   │   │   │       │       └── pin-weak v1.1.0
+│   │   │   │       ├── rgb feature "default" (*)
+│   │   │   │       ├── scoped-tls-hkt feature "default" (*)
+│   │   │   │       ├── vtable feature "default" (*)
+│   │   │   │       └── imgref feature "default"
+│   │   │   │           ├── imgref v1.12.2
+│   │   │   │           └── imgref feature "deprecated"
+│   │   │   │               └── imgref v1.12.2
+│   │   │   │       [build-dependencies]
+│   │   │   │       └── cfg_aliases feature "default" (*)
+│   │   │   └── i-slint-backend-winit feature "muda"
+│   │   │       └── i-slint-backend-winit v1.12.1 (*)
+│   │   │   [build-dependencies]
+│   │   │   └── i-slint-common v1.12.1 (*)
+│   │   ├── i-slint-core v1.12.1 (*)
+│   │   ├── i-slint-core-macros v1.12.1 (proc-macro) (*)
+│   │   ├── num-traits v0.2.19 (*)
+│   │   ├── pin-weak v1.1.0
+│   │   ├── slint-macros v1.12.1 (proc-macro)
+│   │   │   ├── proc-macro2 feature "default" (*)
+│   │   │   ├── quote feature "default" (*)
+│   │   │   ├── i-slint-compiler feature "default"
+│   │   │   │   └── i-slint-compiler v1.12.1
+│   │   │   │       ├── rayon v1.12.0
+│   │   │   │       │   ├── either v1.17.0
+│   │   │   │       │   └── rayon-core feature "default"
+│   │   │   │       │       └── rayon-core v1.13.0
+│   │   │   │       │           ├── crossbeam-deque feature "default"
+│   │   │   │       │           │   ├── crossbeam-deque v0.8.7
+│   │   │   │       │           │   │   ├── crossbeam-epoch v0.9.20
+│   │   │   │       │           │   │   │   └── crossbeam-utils v0.8.22
+│   │   │   │       │           │   │   └── crossbeam-utils v0.8.22
+│   │   │   │       │           │   └── crossbeam-deque feature "std"
+│   │   │   │       │           │       ├── crossbeam-deque v0.8.7 (*)
+│   │   │   │       │           │       ├── crossbeam-epoch feature "std"
+│   │   │   │       │           │       │   ├── crossbeam-epoch v0.9.20 (*)
+│   │   │   │       │           │       │   ├── crossbeam-epoch feature "alloc"
+│   │   │   │       │           │       │   │   └── crossbeam-epoch v0.9.20 (*)
+│   │   │   │       │           │       │   └── crossbeam-utils feature "std"
+│   │   │   │       │           │       │       └── crossbeam-utils v0.8.22
+│   │   │   │       │           │       └── crossbeam-utils feature "std" (*)
+│   │   │   │       │           └── crossbeam-utils feature "default"
+│   │   │   │       │               ├── crossbeam-utils v0.8.22
+│   │   │   │       │               └── crossbeam-utils feature "std" (*)
+│   │   │   │       ├── proc-macro2 feature "default" (*)
+│   │   │   │       ├── quote feature "default" (*)
+│   │   │   │       ├── url feature "default" (*)
+│   │   │   │       ├── i-slint-common feature "default" (*)
+│   │   │   │       ├── lyon_path feature "default" (*)
+│   │   │   │       ├── lyon_extra feature "default" (*)
+│   │   │   │       ├── resvg feature "raster-images" (*)
+│   │   │   │       ├── resvg feature "text" (*)
+│   │   │   │       ├── strum feature "derive" (*)
+│   │   │   │       ├── by_address feature "default"
+│   │   │   │       │   └── by_address v1.2.1
+│   │   │   │       ├── codemap feature "default"
+│   │   │   │       │   └── codemap v0.1.3
+│   │   │   │       ├── codemap-diagnostic feature "default"
+│   │   │   │       │   └── codemap-diagnostic v0.1.2
+│   │   │   │       │       ├── codemap feature "default" (*)
+│   │   │   │       │       └── termcolor feature "default"
+│   │   │   │       │           └── termcolor v1.4.1
+│   │   │   │       │               └── winapi-util feature "default"
+│   │   │   │       │                   └── winapi-util v0.1.11
+│   │   │   │       │                       ├── windows-sys feature "Win32_Foundation"
+│   │   │   │       │                       │   ├── windows-sys v0.48.0
+│   │   │   │       │                       │   │   └── windows-targets feature "default"
+│   │   │   │       │                       │   │       └── windows-targets v0.48.5
+│   │   │   │       │                       │   │           └── windows_x86_64_msvc feature "default"
+│   │   │   │       │                       │   │               └── windows_x86_64_msvc v0.48.5
+│   │   │   │       │                       │   └── windows-sys feature "Win32"
+│   │   │   │       │                       │       └── windows-sys v0.48.0 (*)
+│   │   │   │       │                       ├── windows-sys feature "Win32_Storage_FileSystem"
+│   │   │   │       │                       │   ├── windows-sys v0.48.0 (*)
+│   │   │   │       │                       │   └── windows-sys feature "Win32_Storage"
+│   │   │   │       │                       │       ├── windows-sys v0.48.0 (*)
+│   │   │   │       │                       │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │                       ├── windows-sys feature "Win32_System_Console"
+│   │   │   │       │                       │   ├── windows-sys v0.48.0 (*)
+│   │   │   │       │                       │   └── windows-sys feature "Win32_System"
+│   │   │   │       │                       │       ├── windows-sys v0.48.0 (*)
+│   │   │   │       │                       │       └── windows-sys feature "Win32" (*)
+│   │   │   │       │                       ├── windows-sys feature "Win32_System_SystemInformation"
+│   │   │   │       │                       │   ├── windows-sys v0.48.0 (*)
+│   │   │   │       │                       │   └── windows-sys feature "Win32_System" (*)
+│   │   │   │       │                       └── windows-sys feature "default"
+│   │   │   │       │                           └── windows-sys v0.48.0 (*)
+│   │   │   │       ├── derive_more feature "add"
+│   │   │   │       │   ├── derive_more v2.1.1
+│   │   │   │       │   │   └── derive_more-impl feature "default" (*)
+│   │   │   │       │   └── derive_more-impl feature "add" (*)
+│   │   │   │       ├── derive_more feature "add_assign"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "add_assign" (*)
+│   │   │   │       ├── derive_more feature "deref"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "deref" (*)
+│   │   │   │       ├── derive_more feature "deref_mut"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "deref_mut" (*)
+│   │   │   │       ├── derive_more feature "display"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "display" (*)
+│   │   │   │       ├── derive_more feature "from"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "from" (*)
+│   │   │   │       ├── derive_more feature "into"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "into" (*)
+│   │   │   │       ├── derive_more feature "mul"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "mul" (*)
+│   │   │   │       ├── derive_more feature "not"
+│   │   │   │       │   ├── derive_more v2.1.1 (*)
+│   │   │   │       │   └── derive_more-impl feature "not" (*)
+│   │   │   │       ├── fontdue feature "default"
+│   │   │   │       │   ├── fontdue v0.9.3
+│   │   │   │       │   │   ├── ttf-parser feature "opentype-layout" (*)
+│   │   │   │       │   │   ├── hashbrown feature "default"
+│   │   │   │       │   │   │   ├── hashbrown v0.15.5
+│   │   │   │       │   │   │   │   ├── equivalent v1.0.2
+│   │   │   │       │   │   │   │   ├── foldhash v0.1.5
+│   │   │   │       │   │   │   │   ├── allocator-api2 feature "alloc" (*)
+│   │   │   │       │   │   │   │   └── rayon feature "default"
+│   │   │   │       │   │   │   │       └── rayon v1.12.0 (*)
+│   │   │   │       │   │   │   ├── hashbrown feature "allocator-api2"
+│   │   │   │       │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │       │   │   │   ├── hashbrown feature "default-hasher"
+│   │   │   │       │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │       │   │   │   ├── hashbrown feature "equivalent"
+│   │   │   │       │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │       │   │   │   ├── hashbrown feature "inline-more"
+│   │   │   │       │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │       │   │   │   └── hashbrown feature "raw-entry"
+│   │   │   │       │   │   │       └── hashbrown v0.15.5 (*)
+│   │   │   │       │   │   └── rayon feature "default" (*)
+│   │   │   │       │   ├── fontdue feature "hashbrown"
+│   │   │   │       │   │   └── fontdue v0.9.3 (*)
+│   │   │   │       │   └── fontdue feature "simd"
+│   │   │   │       │       └── fontdue v0.9.3 (*)
+│   │   │   │       ├── fontdue feature "parallel"
+│   │   │   │       │   ├── fontdue v0.9.3 (*)
+│   │   │   │       │   ├── fontdue feature "hashbrown" (*)
+│   │   │   │       │   ├── fontdue feature "rayon"
+│   │   │   │       │   │   └── fontdue v0.9.3 (*)
+│   │   │   │       │   └── hashbrown feature "rayon"
+│   │   │   │       │       └── hashbrown v0.15.5 (*)
+│   │   │   │       ├── image feature "default"
+│   │   │   │       │   ├── image v0.25.10
+│   │   │   │       │   │   ├── exr v1.74.2
+│   │   │   │       │   │   │   ├── miniz_oxide feature "default" (*)
+│   │   │   │       │   │   │   ├── rayon-core feature "default" (*)
+│   │   │   │       │   │   │   ├── bit_field feature "default"
+│   │   │   │       │   │   │   │   └── bit_field v0.10.3
+│   │   │   │       │   │   │   ├── half feature "default"
+│   │   │   │       │   │   │   │   ├── half v2.7.1
+│   │   │   │       │   │   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── zerocopy feature "derive"
+│   │   │   │       │   │   │   │   │   │   ├── zerocopy v0.8.55
+│   │   │   │       │   │   │   │   │   │   │   └── zerocopy-derive feature "default"
+│   │   │   │       │   │   │   │   │   │   │       └── zerocopy-derive v0.8.55 (proc-macro)
+│   │   │   │       │   │   │   │   │   │   │           ├── proc-macro2 feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   │           ├── quote feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   │           ├── syn feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   │           └── syn feature "full" (*)
+│   │   │   │       │   │   │   │   │   │   └── zerocopy feature "zerocopy-derive"
+│   │   │   │       │   │   │   │   │   │       └── zerocopy v0.8.55 (*)
+│   │   │   │       │   │   │   │   │   └── zerocopy feature "simd"
+│   │   │   │       │   │   │   │   │       └── zerocopy v0.8.55 (*)
+│   │   │   │       │   │   │   │   └── half feature "std"
+│   │   │   │       │   │   │   │       ├── half v2.7.1 (*)
+│   │   │   │       │   │   │   │       └── half feature "alloc"
+│   │   │   │       │   │   │   │           └── half v2.7.1 (*)
+│   │   │   │       │   │   │   ├── lebe feature "default"
+│   │   │   │       │   │   │   │   └── lebe v0.5.3
+│   │   │   │       │   │   │   ├── num-complex feature "default"
+│   │   │   │       │   │   │   │   ├── num-complex v0.4.6
+│   │   │   │       │   │   │   │   │   ├── bytemuck feature "default"
+│   │   │   │       │   │   │   │   │   │   └── bytemuck v1.25.2
+│   │   │   │       │   │   │   │   │   └── num-traits feature "i128"
+│   │   │   │       │   │   │   │   │       └── num-traits v0.2.19
+│   │   │   │       │   │   │   │   │           └── libm feature "default" (*)
+│   │   │   │       │   │   │   │   │           [build-dependencies]
+│   │   │   │       │   │   │   │   │           └── autocfg feature "default" (*)
+│   │   │   │       │   │   │   │   └── num-complex feature "std"
+│   │   │   │       │   │   │   │       ├── num-complex v0.4.6 (*)
+│   │   │   │       │   │   │   │       └── num-traits feature "std"
+│   │   │   │       │   │   │   │           └── num-traits v0.2.19 (*)
+│   │   │   │       │   │   │   ├── pulp feature "default"
+│   │   │   │       │   │   │   │   ├── pulp v0.22.3
+│   │   │   │       │   │   │   │   │   ├── libm v0.2.16
+│   │   │   │       │   │   │   │   │   ├── pulp-wasm-simd-flag v0.1.1
+│   │   │   │       │   │   │   │   │   ├── raw-cpuid v11.6.0
+│   │   │   │       │   │   │   │   │   │   └── bitflags feature "default"
+│   │   │   │       │   │   │   │   │   │       └── bitflags v2.13.1
+│   │   │   │       │   │   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── bytemuck feature "aarch64_simd"
+│   │   │   │       │   │   │   │   │   │   └── bytemuck v1.25.2
+│   │   │   │       │   │   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── bytemuck feature "wasm_simd"
+│   │   │   │       │   │   │   │   │   │   └── bytemuck v1.25.2
+│   │   │   │       │   │   │   │   │   ├── num-complex feature "bytemuck"
+│   │   │   │       │   │   │   │   │   │   └── num-complex v0.4.6 (*)
+│   │   │   │       │   │   │   │   │   ├── paste feature "default"
+│   │   │   │       │   │   │   │   │   │   └── paste v1.0.15 (proc-macro)
+│   │   │   │       │   │   │   │   │   └── reborrow feature "default"
+│   │   │   │       │   │   │   │   │       └── reborrow v0.5.5
+│   │   │   │       │   │   │   │   │   [build-dependencies]
+│   │   │   │       │   │   │   │   │   └── version_check feature "default" (*)
+│   │   │   │       │   │   │   │   ├── pulp feature "relaxed-simd"
+│   │   │   │       │   │   │   │   │   ├── pulp v0.22.3 (*)
+│   │   │   │       │   │   │   │   │   └── pulp-wasm-simd-flag feature "relaxed-simd"
+│   │   │   │       │   │   │   │   │       └── pulp-wasm-simd-flag v0.1.1
+│   │   │   │       │   │   │   │   ├── pulp feature "std"
+│   │   │   │       │   │   │   │   │   └── pulp v0.22.3 (*)
+│   │   │   │       │   │   │   │   └── pulp feature "x86-v3"
+│   │   │   │       │   │   │   │       └── pulp v0.22.3 (*)
+│   │   │   │       │   │   │   ├── smallvec feature "default"
+│   │   │   │       │   │   │   │   └── smallvec v1.15.2
+│   │   │   │       │   │   │   └── zune-inflate feature "zlib"
+│   │   │   │       │   │   │       ├── zune-inflate v0.2.54
+│   │   │   │       │   │   │       │   └── simd-adler32 v0.3.10
+│   │   │   │       │   │   │       └── zune-inflate feature "simd-adler32"
+│   │   │   │       │   │   │           └── zune-inflate v0.2.54 (*)
+│   │   │   │       │   │   ├── ravif v0.13.0
+│   │   │   │       │   │   │   ├── rav1e v0.8.1
+│   │   │   │       │   │   │   │   ├── av-scenechange v0.14.1
+│   │   │   │       │   │   │   │   │   ├── num-rational v0.4.2
+│   │   │   │       │   │   │   │   │   │   ├── num-bigint v0.4.8
+│   │   │   │       │   │   │   │   │   │   │   ├── num-traits feature "i128" (*)
+│   │   │   │       │   │   │   │   │   │   │   └── num-integer feature "i128"
+│   │   │   │       │   │   │   │   │   │   │       └── num-integer v0.1.46
+│   │   │   │       │   │   │   │   │   │   │           └── num-traits feature "i128" (*)
+│   │   │   │       │   │   │   │   │   │   ├── num-traits feature "i128" (*)
+│   │   │   │       │   │   │   │   │   │   └── num-integer feature "i128" (*)
+│   │   │   │       │   │   │   │   │   ├── anyhow feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── log feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── thiserror feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── rayon feature "default" (*)
+│   │   │   │       │   │   │   │   │   ├── num-traits feature "default"
+│   │   │   │       │   │   │   │   │   │   ├── num-traits v0.2.19 (*)
+│   │   │   │       │   │   │   │   │   │   └── num-traits feature "std" (*)
+│   │   │   │       │   │   │   │   │   ├── arrayvec feature "default"
+│   │   │   │       │   │   │   │   │   │   ├── arrayvec v0.7.8
+│   │   │   │       │   │   │   │   │   │   └── arrayvec feature "std"
+│   │   │   │       │   │   │   │   │   │       └── arrayvec v0.7.8
+│   │   │   │       │   │   │   │   │   ├── arg_enum_proc_macro feature "default"
+│   │   │   │       │   │   │   │   │   │   └── arg_enum_proc_macro v0.3.4 (proc-macro)
+│   │   │   │       │   │   │   │   │   │       ├── proc-macro2 feature "default" (*)
+│   │   │   │       │   │   │   │   │   │       ├── quote feature "default" (*)
+│   │   │   │       │   │   │   │   │   │       ├── syn feature "default" (*)
+│   │   │   │       │   │   │   │   │   │       └── syn feature "extra-traits" (*)
+│   │   │   │       │   │   │   │   │   ├── aligned feature "default"
+│   │   │   │       │   │   │   │   │   │   └── aligned v0.4.3
+│   │   │   │       │   │   │   │   │   │       └── as-slice feature "default"
+│   │   │   │       │   │   │   │   │   │           └── as-slice v0.2.1
+│   │   │   │       │   │   │   │   │   │               └── stable_deref_trait v1.2.1
+│   │   │   │       │   │   │   │   │   ├── pastey feature "default"
+│   │   │   │       │   │   │   │   │   │   └── pastey v0.1.1 (proc-macro)
+│   │   │   │       │   │   │   │   │   ├── v_frame feature "default"
+│   │   │   │       │   │   │   │   │   │   └── v_frame v0.3.9
+│   │   │   │       │   │   │   │   │   │       ├── num-traits feature "default" (*)
+│   │   │   │       │   │   │   │   │   │       └── aligned-vec feature "default"
+│   │   │   │       │   │   │   │   │   │           ├── aligned-vec v0.6.4
+│   │   │   │       │   │   │   │   │   │           │   └── equator feature "default"
+│   │   │   │       │   │   │   │   │   │           │       └── equator v0.4.2
+│   │   │   │       │   │   │   │   │   │           │           └── equator-macro feature "default"
+│   │   │   │       │   │   │   │   │   │           │               └── equator-macro v0.4.2 (proc-macro)
+│   │   │   │       │   │   │   │   │   │           │                   ├── proc-macro2 feature "default" (*)
+│   │   │   │       │   │   │   │   │   │           │                   ├── quote feature "default" (*)
+│   │   │   │       │   │   │   │   │   │           │                   ├── syn feature "default" (*)
+│   │   │   │       │   │   │   │   │   │           │                   └── syn feature "full" (*)
+│   │   │   │       │   │   │   │   │   │           └── aligned-vec feature "std"
+│   │   │   │       │   │   │   │   │   │               └── aligned-vec v0.6.4 (*)
+│   │   │   │       │   │   │   │   │   └── y4m feature "default"
+│   │   │   │       │   │   │   │   │       └── y4m v0.8.0
+│   │   │   │       │   │   │   │   ├── maybe-rayon v0.1.1
+│   │   │   │       │   │   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │       │   │   │   │   │   └── rayon feature "default" (*)
+│   │   │   │       │   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │       │   │   │   │   ├── libc feature "default" (*)
+│   │   │   │       │   │   │   │   ├── log feature "default" (*)
+│   │   │   │       │   │   │   │   ├── thiserror feature "default" (*)
+│   │   │   │       │   │   │   │   ├── num-traits feature "default" (*)
+│   │   │   │       │   │   │   │   ├── paste feature "default" (*)
+│   │   │   │       │   │   │   │   ├── arrayvec feature "default" (*)
+│   │   │   │       │   │   │   │   ├── aligned-vec feature "default" (*)
+│   │   │   │       │   │   │   │   ├── arg_enum_proc_macro feature "default" (*)
+│   │   │   │       │   │   │   │   ├── v_frame feature "default" (*)
+│   │   │   │       │   │   │   │   ├── av1-grain feature "default"
+│   │   │   │       │   │   │   │   │   ├── av1-grain v0.2.5
+│   │   │   │       │   │   │   │   │   │   ├── anyhow feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   ├── log feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   ├── arrayvec feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   ├── num-rational feature "default"
+│   │   │   │       │   │   │   │   │   │   │   ├── num-rational v0.4.2 (*)
+│   │   │   │       │   │   │   │   │   │   │   ├── num-rational feature "num-bigint"
+│   │   │   │       │   │   │   │   │   │   │   │   └── num-rational v0.4.2 (*)
+│   │   │   │       │   │   │   │   │   │   │   └── num-rational feature "std"
+│   │   │   │       │   │   │   │   │   │   │       ├── num-rational v0.4.2 (*)
+│   │   │   │       │   │   │   │   │   │   │       ├── num-traits feature "std" (*)
+│   │   │   │       │   │   │   │   │   │   │       ├── num-bigint feature "std"
+│   │   │   │       │   │   │   │   │   │   │       │   ├── num-bigint v0.4.8 (*)
+│   │   │   │       │   │   │   │   │   │   │       │   ├── num-traits feature "std" (*)
+│   │   │   │       │   │   │   │   │   │   │       │   └── num-integer feature "std"
+│   │   │   │       │   │   │   │   │   │   │       │       ├── num-integer v0.1.46 (*)
+│   │   │   │       │   │   │   │   │   │   │       │       └── num-traits feature "std" (*)
+│   │   │   │       │   │   │   │   │   │   │       └── num-integer feature "std" (*)
+│   │   │   │       │   │   │   │   │   │   ├── v_frame feature "default" (*)
+│   │   │   │       │   │   │   │   │   │   └── nom feature "default"
+│   │   │   │       │   │   │   │   │   │       ├── nom v8.0.0
+│   │   │   │       │   │   │   │   │   │       │   └── memchr v2.8.3
+│   │   │   │       │   │   │   │   │   │       └── nom feature "std"
+│   │   │   │       │   │   │   │   │   │           ├── nom v8.0.0 (*)
+│   │   │   │       │   │   │   │   │   │           ├── memchr feature "std" (*)
+│   │   │   │       │   │   │   │   │   │           └── nom feature "alloc"
+│   │   │   │       │   │   │   │   │   │               └── nom v8.0.0 (*)
+│   │   │   │       │   │   │   │   │   ├── av1-grain feature "create"
+│   │   │   │       │   │   │   │   │   │   └── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   │   ├── av1-grain feature "diff"
+│   │   │   │       │   │   │   │   │   │   ├── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   │   │   ├── av1-grain feature "num-rational"
+│   │   │   │       │   │   │   │   │   │   │   └── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   │   │   └── av1-grain feature "v_frame"
+│   │   │   │       │   │   │   │   │   │       └── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   │   ├── av1-grain feature "estimate"
+│   │   │   │       │   │   │   │   │   │   ├── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   │   │   └── av1-grain feature "v_frame" (*)
+│   │   │   │       │   │   │   │   │   └── av1-grain feature "parse"
+│   │   │   │       │   │   │   │   │       ├── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   │       └── av1-grain feature "nom"
+│   │   │   │       │   │   │   │   │           └── av1-grain v0.2.5 (*)
+│   │   │   │       │   │   │   │   ├── bitstream-io feature "default"
+│   │   │   │       │   │   │   │   │   ├── bitstream-io v4.10.0
+│   │   │   │       │   │   │   │   │   │   └── no_std_io2 feature "default"
+│   │   │   │       │   │   │   │   │   │       └── no_std_io2 v0.9.4
+│   │   │   │       │   │   │   │   │   │           └── memchr v2.8.3
+│   │   │   │       │   │   │   │   │   └── bitstream-io feature "std"
+│   │   │   │       │   │   │   │   │       ├── bitstream-io v4.10.0 (*)
+│   │   │   │       │   │   │   │   │       ├── bitstream-io feature "alloc"
+│   │   │   │       │   │   │   │   │       │   ├── bitstream-io v4.10.0 (*)
+│   │   │   │       │   │   │   │   │       │   └── no_std_io2 feature "alloc"
+│   │   │   │       │   │   │   │   │       │       └── no_std_io2 v0.9.4 (*)
+│   │   │   │       │   │   │   │   │       └── no_std_io2 feature "std"
+│   │   │   │       │   │   │   │   │           ├── no_std_io2 v0.9.4 (*)
+│   │   │   │       │   │   │   │   │           └── no_std_io2 feature "alloc" (*)
+│   │   │   │       │   │   │   │   ├── itertools feature "default"
+│   │   │   │       │   │   │   │   │   ├── itertools v0.14.0
+│   │   │   │       │   │   │   │   │   │   └── either v1.17.0
+│   │   │   │       │   │   │   │   │   └── itertools feature "use_std"
+│   │   │   │       │   │   │   │   │       ├── itertools v0.14.0 (*)
+│   │   │   │       │   │   │   │   │       ├── either feature "use_std"
+│   │   │   │       │   │   │   │   │       │   ├── either v1.17.0
+│   │   │   │       │   │   │   │   │       │   └── either feature "std"
+│   │   │   │       │   │   │   │   │       │       └── either v1.17.0
+│   │   │   │       │   │   │   │   │       └── itertools feature "use_alloc"
+│   │   │   │       │   │   │   │   │           └── itertools v0.14.0 (*)
+│   │   │   │       │   │   │   │   ├── new_debug_unreachable feature "default"
+│   │   │   │       │   │   │   │   │   └── new_debug_unreachable v1.0.6
+│   │   │   │       │   │   │   │   ├── noop_proc_macro feature "default"
+│   │   │   │       │   │   │   │   │   └── noop_proc_macro v0.3.0 (proc-macro)
+│   │   │   │       │   │   │   │   ├── num-derive feature "default"
+│   │   │   │       │   │   │   │   │   └── num-derive v0.4.2 (proc-macro)
+│   │   │   │       │   │   │   │   │       ├── proc-macro2 feature "default" (*)
+│   │   │   │       │   │   │   │   │       ├── quote feature "default" (*)
+│   │   │   │       │   │   │   │   │       └── syn feature "default" (*)
+│   │   │   │       │   │   │   │   ├── profiling feature "default"
+│   │   │   │       │   │   │   │   │   ├── profiling v1.0.18
+│   │   │   │       │   │   │   │   │   │   └── profiling-procmacros feature "default"
+│   │   │   │       │   │   │   │   │   │       └── profiling-procmacros v1.0.18 (proc-macro)
+│   │   │   │       │   │   │   │   │   │           ├── quote v1.0.47 (*)
+│   │   │   │       │   │   │   │   │   │           ├── syn feature "default" (*)
+│   │   │   │       │   │   │   │   │   │           └── syn feature "full" (*)
+│   │   │   │       │   │   │   │   │   └── profiling feature "procmacros"
+│   │   │   │       │   │   │   │   │       ├── profiling v1.0.18 (*)
+│   │   │   │       │   │   │   │   │       └── profiling feature "profiling-procmacros"
+│   │   │   │       │   │   │   │   │           └── profiling v1.0.18 (*)
+│   │   │   │       │   │   │   │   └── simd_helpers feature "default"
+│   │   │   │       │   │   │   │       └── simd_helpers v0.1.0 (proc-macro)
+│   │   │   │       │   │   │   │           └── quote feature "default" (*)
+│   │   │   │       │   │   │   │   [build-dependencies]
+│   │   │   │       │   │   │   │   └── built feature "default"
+│   │   │   │       │   │   │   │       └── built v0.8.1
+│   │   │   │       │   │   │   ├── rgb v0.8.53 (*)
+│   │   │   │       │   │   │   ├── quick-error feature "default" (*)
+│   │   │   │       │   │   │   ├── imgref feature "default" (*)
+│   │   │   │       │   │   │   ├── rayon feature "default" (*)
+│   │   │   │       │   │   │   ├── avif-serialize feature "default"
+│   │   │   │       │   │   │   │   └── avif-serialize v0.8.9
+│   │   │   │       │   │   │   │       └── arrayvec feature "default" (*)
+│   │   │   │       │   │   │   └── loop9 feature "default"
+│   │   │   │       │   │   │       └── loop9 v0.1.5
+│   │   │   │       │   │   │           └── imgref feature "default" (*)
+│   │   │   │       │   │   ├── rgb v0.8.53 (*)
+│   │   │   │       │   │   ├── zune-core v0.5.1
+│   │   │   │       │   │   ├── byteorder-lite feature "default" (*)
+│   │   │   │       │   │   ├── moxcms feature "default" (*)
+│   │   │   │       │   │   ├── png feature "default" (*)
+│   │   │   │       │   │   ├── zune-jpeg feature "default" (*)
+│   │   │   │       │   │   ├── color_quant feature "default" (*)
+│   │   │   │       │   │   ├── image-webp feature "default" (*)
+│   │   │   │       │   │   ├── rayon feature "default" (*)
+│   │   │   │       │   │   ├── bytemuck feature "default" (*)
+│   │   │   │       │   │   ├── bytemuck feature "extern_crate_alloc"
+│   │   │   │       │   │   │   └── bytemuck v1.25.2
+│   │   │   │       │   │   ├── num-traits feature "default" (*)
+│   │   │   │       │   │   ├── gif feature "default"
+│   │   │   │       │   │   │   ├── gif v0.14.2
+│   │   │   │       │   │   │   │   ├── color_quant feature "default" (*)
+│   │   │   │       │   │   │   │   └── weezl feature "default" (*)
+│   │   │   │       │   │   │   ├── gif feature "color_quant"
+│   │   │   │       │   │   │   │   └── gif v0.14.2 (*)
+│   │   │   │       │   │   │   ├── gif feature "raii_no_panic"
+│   │   │   │       │   │   │   │   └── gif v0.14.2 (*)
+│   │   │   │       │   │   │   └── gif feature "std"
+│   │   │   │       │   │   │       └── gif v0.14.2 (*)
+│   │   │   │       │   │   ├── qoi feature "default"
+│   │   │   │       │   │   │   ├── qoi v0.4.1
+│   │   │   │       │   │   │   │   └── bytemuck feature "default" (*)
+│   │   │   │       │   │   │   └── qoi feature "std"
+│   │   │   │       │   │   │       └── qoi v0.4.1 (*)
+│   │   │   │       │   │   └── tiff feature "default"
+│   │   │   │       │   │       ├── tiff v0.11.3
+│   │   │   │       │   │       │   ├── flate2 feature "default" (*)
+│   │   │   │       │   │       │   ├── zune-jpeg feature "default" (*)
+│   │   │   │       │   │       │   ├── weezl feature "default" (*)
+│   │   │   │       │   │       │   ├── quick-error feature "default" (*)
+│   │   │   │       │   │       │   ├── half feature "default" (*)
+│   │   │   │       │   │       │   └── fax feature "default"
+│   │   │   │       │   │       │       └── fax v0.2.7
+│   │   │   │       │   │       ├── tiff feature "deflate"
+│   │   │   │       │   │       │   └── tiff v0.11.3 (*)
+│   │   │   │       │   │       ├── tiff feature "fax"
+│   │   │   │       │   │       │   └── tiff v0.11.3 (*)
+│   │   │   │       │   │       ├── tiff feature "jpeg"
+│   │   │   │       │   │       │   └── tiff v0.11.3 (*)
+│   │   │   │       │   │       └── tiff feature "lzw"
+│   │   │   │       │   │           └── tiff v0.11.3 (*)
+│   │   │   │       │   ├── image feature "default-formats"
+│   │   │   │       │   │   ├── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "avif"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "bmp"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "dds"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "exr"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "ff"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "gif"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "hdr"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "ico"
+│   │   │   │       │   │   │   ├── image v0.25.10 (*)
+│   │   │   │       │   │   │   ├── image feature "bmp" (*)
+│   │   │   │       │   │   │   └── image feature "png"
+│   │   │   │       │   │   │       └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "jpeg"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "png" (*)
+│   │   │   │       │   │   ├── image feature "pnm"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "qoi"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "tga"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   ├── image feature "tiff"
+│   │   │   │       │   │   │   └── image v0.25.10 (*)
+│   │   │   │       │   │   └── image feature "webp"
+│   │   │   │       │   │       └── image v0.25.10 (*)
+│   │   │   │       │   └── image feature "rayon"
+│   │   │   │       │       ├── image v0.25.10 (*)
+│   │   │   │       │       ├── exr feature "rayon"
+│   │   │   │       │       │   └── exr v1.74.2 (*)
+│   │   │   │       │       └── ravif feature "threading"
+│   │   │   │       │           ├── ravif v0.13.0 (*)
+│   │   │   │       │           └── rav1e feature "threading"
+│   │   │   │       │               ├── rav1e v0.8.1 (*)
+│   │   │   │       │               └── maybe-rayon feature "threads"
+│   │   │   │       │                   ├── maybe-rayon v0.1.1 (*)
+│   │   │   │       │                   └── maybe-rayon feature "rayon"
+│   │   │   │       │                       └── maybe-rayon v0.1.1 (*)
+│   │   │   │       ├── image feature "jpeg" (*)
+│   │   │   │       ├── image feature "png" (*)
+│   │   │   │       ├── itertools feature "default" (*)
+│   │   │   │       ├── linked_hash_set feature "default"
+│   │   │   │       │   └── linked_hash_set v0.1.6
+│   │   │   │       │       └── linked-hash-map feature "default"
+│   │   │   │       │           └── linked-hash-map v0.5.6
+│   │   │   │       ├── num_enum feature "default"
+│   │   │   │       │   ├── num_enum v0.7.6
+│   │   │   │       │   │   ├── num_enum_derive v0.7.6 (proc-macro)
+│   │   │   │       │   │   │   ├── proc-macro2 feature "default" (*)
+│   │   │   │       │   │   │   ├── quote feature "default" (*)
+│   │   │   │       │   │   │   ├── syn feature "default" (*)
+│   │   │   │       │   │   │   ├── syn feature "derive" (*)
+│   │   │   │       │   │   │   ├── syn feature "extra-traits" (*)
+│   │   │   │       │   │   │   ├── syn feature "parsing" (*)
+│   │   │   │       │   │   │   └── proc-macro-crate feature "default"
+│   │   │   │       │   │   │       └── proc-macro-crate v3.5.0
+│   │   │   │       │   │   │           └── toml_edit feature "parse"
+│   │   │   │       │   │   │               └── toml_edit v0.25.13+spec-1.1.0
+│   │   │   │       │   │   │                   ├── indexmap feature "default" (*)
+│   │   │   │       │   │   │                   ├── indexmap feature "std" (*)
+│   │   │   │       │   │   │                   ├── toml_datetime feature "default"
+│   │   │   │       │   │   │                   │   ├── toml_datetime v1.1.1+spec-1.1.0
+│   │   │   │       │   │   │                   │   └── toml_datetime feature "std"
+│   │   │   │       │   │   │                   │       ├── toml_datetime v1.1.1+spec-1.1.0
+│   │   │   │       │   │   │                   │       └── toml_datetime feature "alloc"
+│   │   │   │       │   │   │                   │           └── toml_datetime v1.1.1+spec-1.1.0
+│   │   │   │       │   │   │                   ├── toml_parser feature "default"
+│   │   │   │       │   │   │                   │   ├── toml_parser v1.1.2+spec-1.1.0
+│   │   │   │       │   │   │                   │   │   └── winnow v1.0.4
+│   │   │   │       │   │   │                   │   └── toml_parser feature "std"
+│   │   │   │       │   │   │                   │       ├── toml_parser v1.1.2+spec-1.1.0 (*)
+│   │   │   │       │   │   │                   │       └── toml_parser feature "alloc"
+│   │   │   │       │   │   │                   │           └── toml_parser v1.1.2+spec-1.1.0 (*)
+│   │   │   │       │   │   │                   └── winnow feature "default"
+│   │   │   │       │   │   │                       ├── winnow v1.0.4
+│   │   │   │       │   │   │                       ├── winnow feature "ascii"
+│   │   │   │       │   │   │                       │   ├── winnow v1.0.4
+│   │   │   │       │   │   │                       │   └── winnow feature "parser"
+│   │   │   │       │   │   │                       │       └── winnow v1.0.4
+│   │   │   │       │   │   │                       ├── winnow feature "binary"
+│   │   │   │       │   │   │                       │   ├── winnow v1.0.4
+│   │   │   │       │   │   │                       │   └── winnow feature "parser" (*)
+│   │   │   │       │   │   │                       └── winnow feature "std"
+│   │   │   │       │   │   │                           ├── winnow v1.0.4
+│   │   │   │       │   │   │                           └── winnow feature "alloc"
+│   │   │   │       │   │   │                               └── winnow v1.0.4
+│   │   │   │       │   │   └── rustversion feature "default" (*)
+│   │   │   │       │   └── num_enum feature "std"
+│   │   │   │       │       ├── num_enum v0.7.6 (*)
+│   │   │   │       │       └── num_enum_derive feature "std"
+│   │   │   │       │           ├── num_enum_derive v0.7.6 (proc-macro) (*)
+│   │   │   │       │           └── num_enum_derive feature "proc-macro-crate"
+│   │   │   │       │               └── num_enum_derive v0.7.6 (proc-macro) (*)
+│   │   │   │       ├── polib feature "default"
+│   │   │   │       │   └── polib v0.2.0
+│   │   │   │       │       └── linereader feature "default"
+│   │   │   │       │           └── linereader v0.4.0
+│   │   │   │       │               └── memchr feature "default" (*)
+│   │   │   │       ├── rowan feature "default"
+│   │   │   │       │   └── rowan v0.16.1
+│   │   │   │       │       ├── countme feature "default"
+│   │   │   │       │       │   └── countme v3.0.1
+│   │   │   │       │       ├── hashbrown feature "inline-more"
+│   │   │   │       │       │   └── hashbrown v0.14.5
+│   │   │   │       │       ├── rustc-hash feature "default"
+│   │   │   │       │       │   ├── rustc-hash v1.1.0
+│   │   │   │       │       │   └── rustc-hash feature "std"
+│   │   │   │       │       │       └── rustc-hash v1.1.0
+│   │   │   │       │       └── text-size feature "default"
+│   │   │   │       │           └── text-size v1.1.1
+│   │   │   │       ├── smol_str feature "default"
+│   │   │   │       │   ├── smol_str v0.3.6
+│   │   │   │       │   └── smol_str feature "std"
+│   │   │   │       │       └── smol_str v0.3.6
+│   │   │   │       └── typed-index-collections feature "default"
+│   │   │   │           ├── typed-index-collections v3.5.0
+│   │   │   │           ├── typed-index-collections feature "alloc"
+│   │   │   │           │   └── typed-index-collections v3.5.0
+│   │   │   │           └── typed-index-collections feature "std"
+│   │   │   │               ├── typed-index-collections v3.5.0
+│   │   │   │               └── typed-index-collections feature "alloc" (*)
+│   │   │   ├── i-slint-compiler feature "display-diagnostics"
+│   │   │   │   ├── i-slint-compiler v1.12.1 (*)
+│   │   │   │   ├── i-slint-compiler feature "codemap"
+│   │   │   │   │   └── i-slint-compiler v1.12.1 (*)
+│   │   │   │   └── i-slint-compiler feature "codemap-diagnostic"
+│   │   │   │       └── i-slint-compiler v1.12.1 (*)
+│   │   │   ├── i-slint-compiler feature "proc_macro_span"
+│   │   │   │   ├── i-slint-compiler v1.12.1 (*)
+│   │   │   │   ├── i-slint-compiler feature "proc-macro2"
+│   │   │   │   │   └── i-slint-compiler v1.12.1 (*)
+│   │   │   │   └── i-slint-compiler feature "quote"
+│   │   │   │       └── i-slint-compiler v1.12.1 (*)
+│   │   │   ├── i-slint-compiler feature "rust"
+│   │   │   │   ├── i-slint-compiler v1.12.1 (*)
+│   │   │   │   ├── i-slint-compiler feature "proc-macro2" (*)
+│   │   │   │   └── i-slint-compiler feature "quote" (*)
+│   │   │   └── spin_on feature "default"
+│   │   │       └── spin_on v0.1.1
+│   │   │           └── pin-utils feature "default"
+│   │   │               └── pin-utils v0.1.0
+│   │   ├── once_cell feature "alloc" (*)
+│   │   ├── const-field-offset feature "default" (*)
+│   │   ├── unicode-segmentation feature "default" (*)
+│   │   └── vtable feature "default" (*)
+│   └── i-slint-backend-selector feature "accessibility"
+│       ├── i-slint-backend-selector v1.12.1 (*)
+│       └── i-slint-backend-winit feature "accessibility"
+│           └── i-slint-backend-winit v1.12.1 (*)
+├── slint feature "backend-winit"
+│   ├── slint v1.12.1 (*)
+│   ├── slint feature "std"
+│   │   ├── slint v1.12.1 (*)
+│   │   └── i-slint-core feature "std" (*)
+│   └── i-slint-backend-selector feature "backend-winit"
+│       ├── i-slint-backend-selector v1.12.1 (*)
+│       ├── i-slint-backend-selector feature "backend-winit-wayland"
+│       │   ├── i-slint-backend-selector v1.12.1 (*)
+│       │   ├── i-slint-backend-selector feature "i-slint-backend-winit"
+│       │   │   └── i-slint-backend-selector v1.12.1 (*)
+│       │   └── i-slint-backend-winit feature "wayland"
+│       │       ├── i-slint-backend-winit v1.12.1 (*)
+│       │       ├── winit feature "wayland" (*)
+│       │       ├── winit feature "wayland-csd-adwaita"
+│       │       │   ├── winit v0.30.13 (*)
+│       │       │   └── winit feature "sctk-adwaita"
+│       │       │       └── winit v0.30.13 (*)
+│       │       ├── copypasta feature "wayland"
+│       │       │   ├── copypasta v0.10.2 (*)
+│       │       │   └── copypasta feature "smithay-clipboard"
+│       │       │       └── copypasta v0.10.2 (*)
+│       │       ├── softbuffer feature "wayland"
+│       │       │   ├── softbuffer v0.4.8 (*)
+│       │       │   ├── softbuffer feature "fastrand"
+│       │       │   │   └── softbuffer v0.4.8 (*)
+│       │       │   ├── softbuffer feature "memmap2"
+│       │       │   │   └── softbuffer v0.4.8 (*)
+│       │       │   ├── softbuffer feature "rustix"
+│       │       │   │   └── softbuffer v0.4.8 (*)
+│       │       │   ├── softbuffer feature "wayland-backend"
+│       │       │   │   └── softbuffer v0.4.8 (*)
+│       │       │   ├── softbuffer feature "wayland-client"
+│       │       │   │   └── softbuffer v0.4.8 (*)
+│       │       │   └── softbuffer feature "wayland-sys"
+│       │       │       └── softbuffer v0.4.8 (*)
+│       │       └── softbuffer feature "wayland-dlopen"
+│       │           └── softbuffer v0.4.8 (*)
+│       └── i-slint-backend-selector feature "backend-winit-x11"
+│           ├── i-slint-backend-selector v1.12.1 (*)
+│           ├── i-slint-backend-selector feature "i-slint-backend-winit" (*)
+│           └── i-slint-backend-winit feature "x11"
+│               ├── i-slint-backend-winit v1.12.1 (*)
+│               ├── winit feature "x11" (*)
+│               ├── copypasta feature "x11"
+│               │   ├── copypasta v0.10.2 (*)
+│               │   └── copypasta feature "x11-clipboard"
+│               │       └── copypasta v0.10.2 (*)
+│               ├── softbuffer feature "x11"
+│               │   ├── softbuffer v0.4.8 (*)
+│               │   ├── softbuffer feature "as-raw-xcb-connection"
+│               │   │   └── softbuffer v0.4.8 (*)
+│               │   ├── softbuffer feature "bytemuck"
+│               │   │   └── softbuffer v0.4.8 (*)
+│               │   ├── softbuffer feature "fastrand" (*)
+│               │   ├── softbuffer feature "rustix" (*)
+│               │   ├── softbuffer feature "tiny-xlib"
+│               │   │   └── softbuffer v0.4.8 (*)
+│               │   └── softbuffer feature "x11rb"
+│               │       └── softbuffer v0.4.8 (*)
+│               └── softbuffer feature "x11-dlopen"
+│                   └── softbuffer v0.4.8 (*)
+├── slint feature "compat-1-2"
+│   └── slint v1.12.1 (*)
+├── slint feature "renderer-software"
+│   ├── slint v1.12.1 (*)
+│   ├── i-slint-backend-selector feature "renderer-software"
+│   │   ├── i-slint-backend-selector v1.12.1 (*)
+│   │   ├── i-slint-backend-winit feature "renderer-software"
+│   │   │   ├── i-slint-backend-winit v1.12.1 (*)
+│   │   │   └── i-slint-core feature "software-renderer-systemfonts"
+│   │   │       ├── i-slint-core v1.12.1 (*)
+│   │   │       ├── i-slint-core feature "fontdue"
+│   │   │       │   └── i-slint-core v1.12.1 (*)
+│   │   │       ├── i-slint-core feature "rustybuzz"
+│   │   │       │   └── i-slint-core v1.12.1 (*)
+│   │   │       ├── i-slint-core feature "shared-fontdb" (*)
+│   │   │       └── i-slint-core feature "software-renderer"
+│   │   │           ├── i-slint-core v1.12.1 (*)
+│   │   │           ├── i-slint-core feature "bytemuck"
+│   │   │           │   └── i-slint-core v1.12.1 (*)
+│   │   │           └── i-slint-core feature "rustversion"
+│   │   │               └── i-slint-core v1.12.1 (*)
+│   │   └── i-slint-core feature "software-renderer" (*)
+│   └── i-slint-core feature "software-renderer" (*)
+├── slint feature "std" (*)
+├── thiserror feature "default" (*)
+├── tracing-subscriber feature "default"
+│   ├── tracing-subscriber v0.3.23
+│   │   ├── tracing v0.1.44 (*)
+│   │   ├── tracing-core v0.1.36 (*)
+│   │   ├── smallvec feature "default" (*)
+│   │   ├── once_cell feature "default" (*)
+│   │   ├── matchers feature "default"
+│   │   │   └── matchers v0.2.0
+│   │   │       ├── regex-automata feature "dfa-build"
+│   │   │       │   ├── regex-automata v0.4.16
+│   │   │       │   │   ├── aho-corasick v1.1.4
+│   │   │       │   │   │   └── memchr v2.8.3
+│   │   │       │   │   ├── memchr v2.8.3
+│   │   │       │   │   └── regex-syntax v0.8.11
+│   │   │       │   ├── regex-automata feature "dfa-search"
+│   │   │       │   │   └── regex-automata v0.4.16 (*)
+│   │   │       │   └── regex-automata feature "nfa-thompson"
+│   │   │       │       ├── regex-automata v0.4.16 (*)
+│   │   │       │       └── regex-automata feature "alloc"
+│   │   │       │           └── regex-automata v0.4.16 (*)
+│   │   │       ├── regex-automata feature "dfa-search" (*)
+│   │   │       └── regex-automata feature "syntax"
+│   │   │           ├── regex-automata v0.4.16 (*)
+│   │   │           └── regex-automata feature "alloc" (*)
+│   │   ├── regex-automata feature "std"
+│   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   ├── memchr feature "std" (*)
+│   │   │   ├── regex-automata feature "alloc" (*)
+│   │   │   ├── aho-corasick feature "std"
+│   │   │   │   ├── aho-corasick v1.1.4 (*)
+│   │   │   │   └── memchr feature "std" (*)
+│   │   │   └── regex-syntax feature "std"
+│   │   │       └── regex-syntax v0.8.11
+│   │   ├── nu-ansi-term feature "default"
+│   │   │   ├── nu-ansi-term v0.50.3
+│   │   │   │   ├── windows-sys feature "Win32_Foundation"
+│   │   │   │   │   ├── windows-sys v0.59.0
+│   │   │   │   │   │   └── windows-targets feature "default" (*)
+│   │   │   │   │   └── windows-sys feature "Win32"
+│   │   │   │   │       ├── windows-sys v0.59.0 (*)
+│   │   │   │   │       └── windows-sys feature "Win32_Foundation" (*)
+│   │   │   │   ├── windows-sys feature "Win32_Security"
+│   │   │   │   │   ├── windows-sys v0.59.0 (*)
+│   │   │   │   │   └── windows-sys feature "Win32" (*)
+│   │   │   │   ├── windows-sys feature "Win32_Storage_FileSystem"
+│   │   │   │   │   ├── windows-sys v0.59.0 (*)
+│   │   │   │   │   └── windows-sys feature "Win32_Storage"
+│   │   │   │   │       ├── windows-sys v0.59.0 (*)
+│   │   │   │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │   ├── windows-sys feature "Win32_System_Console"
+│   │   │   │   │   ├── windows-sys v0.59.0 (*)
+│   │   │   │   │   └── windows-sys feature "Win32_System"
+│   │   │   │   │       ├── windows-sys v0.59.0 (*)
+│   │   │   │   │       └── windows-sys feature "Win32" (*)
+│   │   │   │   └── windows-sys feature "default"
+│   │   │   │       └── windows-sys v0.59.0 (*)
+│   │   │   └── nu-ansi-term feature "std"
+│   │   │       └── nu-ansi-term v0.50.3 (*)
+│   │   ├── sharded-slab feature "default"
+│   │   │   └── sharded-slab v0.1.7
+│   │   │       └── lazy_static feature "default"
+│   │   │           └── lazy_static v1.5.0
+│   │   ├── thread_local feature "default"
+│   │   │   └── thread_local v1.1.10
+│   │   │       └── cfg-if feature "default" (*)
+│   │   ├── tracing-log feature "log-tracer"
+│   │   │   └── tracing-log v0.2.0
+│   │   │       ├── tracing-core feature "default"
+│   │   │       │   ├── tracing-core v0.1.36 (*)
+│   │   │       │   └── tracing-core feature "std" (*)
+│   │   │       ├── once_cell feature "default" (*)
+│   │   │       └── log feature "default" (*)
+│   │   └── tracing-log feature "std"
+│   │       ├── tracing-log v0.2.0 (*)
+│   │       └── log feature "std" (*)
+│   ├── tracing-subscriber feature "ansi"
+│   │   ├── tracing-subscriber v0.3.23 (*)
+│   │   ├── tracing-subscriber feature "fmt"
+│   │   │   ├── tracing-subscriber v0.3.23 (*)
+│   │   │   ├── tracing-subscriber feature "registry"
+│   │   │   │   ├── tracing-subscriber v0.3.23 (*)
+│   │   │   │   ├── tracing-subscriber feature "sharded-slab"
+│   │   │   │   │   └── tracing-subscriber v0.3.23 (*)
+│   │   │   │   ├── tracing-subscriber feature "std"
+│   │   │   │   │   ├── tracing-subscriber v0.3.23 (*)
+│   │   │   │   │   ├── tracing-core feature "std" (*)
+│   │   │   │   │   └── tracing-subscriber feature "alloc"
+│   │   │   │   │       └── tracing-subscriber v0.3.23 (*)
+│   │   │   │   └── tracing-subscriber feature "thread_local"
+│   │   │   │       └── tracing-subscriber v0.3.23 (*)
+│   │   │   └── tracing-subscriber feature "std" (*)
+│   │   └── tracing-subscriber feature "nu-ansi-term"
+│   │       └── tracing-subscriber v0.3.23 (*)
+│   ├── tracing-subscriber feature "fmt" (*)
+│   ├── tracing-subscriber feature "smallvec"
+│   │   └── tracing-subscriber v0.3.23 (*)
+│   ├── tracing-subscriber feature "std" (*)
+│   └── tracing-subscriber feature "tracing-log"
+│       └── tracing-subscriber v0.3.23 (*)
+├── tracing-subscriber feature "env-filter"
+│   ├── tracing-subscriber v0.3.23 (*)
+│   ├── tracing-subscriber feature "matchers"
+│   │   └── tracing-subscriber v0.3.23 (*)
+│   ├── tracing-subscriber feature "once_cell"
+│   │   └── tracing-subscriber v0.3.23 (*)
+│   ├── tracing-subscriber feature "std" (*)
+│   ├── tracing-subscriber feature "thread_local" (*)
+│   └── tracing-subscriber feature "tracing"
+│       └── tracing-subscriber v0.3.23 (*)
+├── windows-sys feature "Win32_Foundation" (*)
+├── windows-sys feature "Win32_Graphics_Gdi"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_Graphics"
+│       ├── windows-sys v0.59.0 (*)
+│       └── windows-sys feature "Win32" (*)
+├── windows-sys feature "Win32_Security" (*)
+├── windows-sys feature "Win32_System_Diagnostics_ToolHelp"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_System_Diagnostics"
+│       ├── windows-sys v0.59.0 (*)
+│       └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_LibraryLoader"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_Registry"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_Threading"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_UI_HiDpi"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_UI"
+│       ├── windows-sys v0.59.0 (*)
+│       └── windows-sys feature "Win32" (*)
+├── windows-sys feature "Win32_UI_Shell"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_UI" (*)
+├── windows-sys feature "Win32_UI_WindowsAndMessaging"
+│   ├── windows-sys v0.59.0 (*)
+│   └── windows-sys feature "Win32_UI" (*)
+├── windows-sys feature "default" (*)
+└── xhm-core feature "default"
+    └── xhm-core v0.3.0 (C:\ProjectDev\project\xinghe\xhMonitor\xhm-core)
+        ├── chrono feature "default" (*)
+        ├── chrono feature "serde" (*)
+        ├── serde feature "default" (*)
+        ├── serde feature "derive" (*)
+        ├── serde_json feature "default" (*)
+        └── thiserror feature "default" (*)
+[build-dependencies]
+└── slint-build feature "default"
+    └── slint-build v1.12.1
+        ├── i-slint-compiler feature "bundle-translations"
+        │   └── i-slint-compiler v1.12.1 (*)
+        ├── i-slint-compiler feature "default" (*)
+        ├── i-slint-compiler feature "display-diagnostics" (*)
+        ├── i-slint-compiler feature "rust" (*)
+        ├── i-slint-compiler feature "software-renderer"
+        │   ├── i-slint-compiler v1.12.1 (*)
+        │   ├── i-slint-common feature "shared-fontdb" (*)
+        │   ├── i-slint-compiler feature "fontdue"
+        │   │   └── i-slint-compiler v1.12.1 (*)
+        │   └── i-slint-compiler feature "image"
+        │       └── i-slint-compiler v1.12.1 (*)
+        ├── derive_more feature "add" (*)
+        ├── derive_more feature "add_assign" (*)
+        ├── derive_more feature "deref" (*)
+        ├── derive_more feature "deref_mut" (*)
+        ├── derive_more feature "display" (*)
+        ├── derive_more feature "error"
+        │   ├── derive_more v2.1.1 (*)
+        │   └── derive_more-impl feature "error" (*)
+        ├── derive_more feature "from" (*)
+        ├── derive_more feature "into" (*)
+        ├── derive_more feature "mul" (*)
+        ├── derive_more feature "not" (*)
+        ├── derive_more feature "std"
+        │   └── derive_more v2.1.1 (*)
+        ├── spin_on feature "default" (*)
+        └── toml_edit feature "default"
+            ├── toml_edit v0.22.27
+            │   ├── indexmap feature "default" (*)
+            │   ├── indexmap feature "std" (*)
+            │   ├── toml_datetime feature "default"
+            │   │   └── toml_datetime v0.6.11
+            │   ├── toml_write feature "default"
+            │   │   ├── toml_write v0.1.2
+            │   │   └── toml_write feature "std"
+            │   │       ├── toml_write v0.1.2
+            │   │       └── toml_write feature "alloc"
+            │   │           └── toml_write v0.1.2
+            │   └── winnow feature "default"
+            │       ├── winnow v0.7.15
+            │       └── winnow feature "std"
+            │           ├── winnow v0.7.15
+            │           └── winnow feature "alloc"
+            │               └── winnow v0.7.15
+            ├── toml_edit feature "display"
+            │   └── toml_edit v0.22.27 (*)
+            └── toml_edit feature "parse"
+                └── toml_edit v0.22.27 (*)
+[dev-dependencies]
+├── tokio feature "default" (*)
+├── tokio feature "full" (*)
+├── tokio feature "test-util"
+│   ├── tokio v1.53.1 (*)
+│   ├── tokio feature "rt" (*)
+│   ├── tokio feature "sync" (*)
+│   └── tokio feature "time" (*)
+└── wiremock feature "default"
+    └── wiremock v0.6.5
+        ├── serde feature "default" (*)
+        ├── futures feature "default" (*)
+        ├── base64 feature "default" (*)
+        ├── http feature "default" (*)
+        ├── http-body-util feature "default" (*)
+        ├── hyper feature "default" (*)
+        ├── hyper feature "full"
+        │   ├── hyper v1.11.0 (*)
+        │   ├── hyper feature "client" (*)
+        │   ├── hyper feature "http1" (*)
+        │   ├── hyper feature "http2"
+        │   │   └── hyper v1.11.0 (*)
+        │   └── hyper feature "server"
+        │       └── hyper v1.11.0 (*)
+        ├── tokio feature "default" (*)
+        ├── tokio feature "macros" (*)
+        ├── tokio feature "net" (*)
+        ├── tokio feature "rt" (*)
+        ├── once_cell feature "default" (*)
+        ├── hyper-util feature "default" (*)
+        ├── hyper-util feature "http1" (*)
+        ├── hyper-util feature "http2"
+        │   ├── hyper-util v0.1.20 (*)
+        │   └── hyper feature "http2" (*)
+        ├── hyper-util feature "server"
+        │   ├── hyper-util v0.1.20 (*)
+        │   └── hyper feature "server" (*)
+        ├── hyper-util feature "tokio" (*)
+        ├── log feature "default" (*)
+        ├── serde_json feature "default" (*)
+        ├── url feature "default" (*)
+        ├── assert-json-diff feature "default"
+        │   └── assert-json-diff v2.0.2
+        │       ├── serde feature "default" (*)
+        │       └── serde_json feature "default" (*)
+        ├── deadpool feature "default"
+        │   ├── deadpool v0.12.3
+        │   │   ├── tokio feature "default" (*)
+        │   │   ├── tokio feature "sync" (*)
+        │   │   ├── lazy_static feature "default" (*)
+        │   │   ├── deadpool-runtime feature "default"
+        │   │   │   └── deadpool-runtime v0.1.4
+        │   │   └── num_cpus feature "default"
+        │   │       └── num_cpus v1.17.0
+        │   ├── deadpool feature "managed"
+        │   │   └── deadpool v0.12.3 (*)
+        │   └── deadpool feature "unmanaged"
+        │       └── deadpool v0.12.3 (*)
+        └── regex feature "default"
+            ├── regex v1.13.1
+            │   ├── aho-corasick v1.1.4 (*)
+            │   ├── memchr v2.8.3
+            │   ├── regex-syntax v0.8.11
+            │   ├── regex-automata feature "alloc" (*)
+            │   ├── regex-automata feature "meta"
+            │   │   ├── regex-automata v0.4.16 (*)
+            │   │   ├── regex-automata feature "nfa-pikevm"
+            │   │   │   ├── regex-automata v0.4.16 (*)
+            │   │   │   └── regex-automata feature "nfa-thompson" (*)
+            │   │   └── regex-automata feature "syntax" (*)
+            │   ├── regex-automata feature "nfa-pikevm" (*)
+            │   └── regex-automata feature "syntax" (*)
+            ├── regex-syntax feature "default"
+            │   ├── regex-syntax v0.8.11
+            │   ├── regex-syntax feature "std" (*)
+            │   └── regex-syntax feature "unicode"
+            │       ├── regex-syntax v0.8.11
+            │       ├── regex-syntax feature "unicode-age"
+            │       │   └── regex-syntax v0.8.11
+            │       ├── regex-syntax feature "unicode-bool"
+            │       │   └── regex-syntax v0.8.11
+            │       ├── regex-syntax feature "unicode-case"
+            │       │   └── regex-syntax v0.8.11
+            │       ├── regex-syntax feature "unicode-gencat"
+            │       │   └── regex-syntax v0.8.11
+            │       ├── regex-syntax feature "unicode-perl"
+            │       │   └── regex-syntax v0.8.11
+            │       ├── regex-syntax feature "unicode-script"
+            │       │   └── regex-syntax v0.8.11
+            │       └── regex-syntax feature "unicode-segment"
+            │           └── regex-syntax v0.8.11
+            ├── regex feature "perf"
+            │   ├── regex v1.13.1 (*)
+            │   ├── regex feature "perf-backtrack"
+            │   │   ├── regex v1.13.1 (*)
+            │   │   └── regex-automata feature "nfa-backtrack"
+            │   │       ├── regex-automata v0.4.16 (*)
+            │   │       └── regex-automata feature "nfa-thompson" (*)
+            │   ├── regex feature "perf-cache"
+            │   │   └── regex v1.13.1 (*)
+            │   ├── regex feature "perf-dfa"
+            │   │   ├── regex v1.13.1 (*)
+            │   │   └── regex-automata feature "hybrid"
+            │   │       ├── regex-automata v0.4.16 (*)
+            │   │       ├── regex-automata feature "alloc" (*)
+            │   │       └── regex-automata feature "nfa-thompson" (*)
+            │   ├── regex feature "perf-inline"
+            │   │   ├── regex v1.13.1 (*)
+            │   │   └── regex-automata feature "perf-inline"
+            │   │       └── regex-automata v0.4.16 (*)
+            │   ├── regex feature "perf-literal"
+            │   │   ├── regex v1.13.1 (*)
+            │   │   └── regex-automata feature "perf-literal"
+            │   │       ├── regex-automata v0.4.16 (*)
+            │   │       ├── regex-automata feature "perf-literal-multisubstring"
+            │   │       │   └── regex-automata v0.4.16 (*)
+            │   │       └── regex-automata feature "perf-literal-substring"
+            │   │           ├── regex-automata v0.4.16 (*)
+            │   │           └── aho-corasick feature "perf-literal"
+            │   │               └── aho-corasick v1.1.4 (*)
+            │   └── regex feature "perf-onepass"
+            │       ├── regex v1.13.1 (*)
+            │       └── regex-automata feature "dfa-onepass"
+            │           ├── regex-automata v0.4.16 (*)
+            │           └── regex-automata feature "nfa-thompson" (*)
+            ├── regex feature "std"
+            │   ├── regex v1.13.1 (*)
+            │   ├── memchr feature "std" (*)
+            │   ├── regex-automata feature "std" (*)
+            │   ├── aho-corasick feature "std" (*)
+            │   └── regex-syntax feature "std" (*)
+            └── regex feature "unicode"
+                ├── regex v1.13.1 (*)
+                ├── regex-automata feature "unicode"
+                │   ├── regex-automata v0.4.16 (*)
+                │   ├── regex-automata feature "unicode-age"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-age" (*)
+                │   ├── regex-automata feature "unicode-bool"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-bool" (*)
+                │   ├── regex-automata feature "unicode-case"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-case" (*)
+                │   ├── regex-automata feature "unicode-gencat"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-gencat" (*)
+                │   ├── regex-automata feature "unicode-perl"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-perl" (*)
+                │   ├── regex-automata feature "unicode-script"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-script" (*)
+                │   ├── regex-automata feature "unicode-segment"
+                │   │   ├── regex-automata v0.4.16 (*)
+                │   │   └── regex-syntax feature "unicode-segment" (*)
+                │   ├── regex-automata feature "unicode-word-boundary"
+                │   │   └── regex-automata v0.4.16 (*)
+                │   └── regex-syntax feature "unicode" (*)
+                ├── regex-syntax feature "unicode" (*)
+                ├── regex feature "unicode-age"
+                │   ├── regex v1.13.1 (*)
+                │   ├── regex-automata feature "unicode-age" (*)
+                │   └── regex-syntax feature "unicode-age" (*)
+                ├── regex feature "unicode-bool"
+                │   ├── regex v1.13.1 (*)
+                │   ├── regex-automata feature "unicode-bool" (*)
+                │   └── regex-syntax feature "unicode-bool" (*)
+                ├── regex feature "unicode-case"
+                │   ├── regex v1.13.1 (*)
+                │   ├── regex-automata feature "unicode-case" (*)
+                │   └── regex-syntax feature "unicode-case" (*)
+                ├── regex feature "unicode-gencat"
+                │   ├── regex v1.13.1 (*)
+                │   ├── regex-automata feature "unicode-gencat" (*)
+                │   └── regex-syntax feature "unicode-gencat" (*)
+                ├── regex feature "unicode-perl"
+                │   ├── regex v1.13.1 (*)
+                │   ├── regex-automata feature "unicode-perl" (*)
+                │   ├── regex-automata feature "unicode-word-boundary" (*)
+                │   └── regex-syntax feature "unicode-perl" (*)
+                ├── regex feature "unicode-script"
+                │   ├── regex v1.13.1 (*)
+                │   ├── regex-automata feature "unicode-script" (*)
+                │   └── regex-syntax feature "unicode-script" (*)
+                └── regex feature "unicode-segment"
+                    ├── regex v1.13.1 (*)
+                    ├── regex-automata feature "unicode-segment" (*)
+                    └── regex-syntax feature "unicode-segment" (*)

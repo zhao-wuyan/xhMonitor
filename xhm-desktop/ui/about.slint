@@ -1,0 +1,62 @@
+component AboutButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary: false;
+    callback clicked;
+    width: 132px;
+    height: 32px;
+    background: root.primary ? #0ea5e9cc : button-touch.has-hover ? #ffffff22 : #ffffff12;
+    border-color: root.primary ? #38bdf8 : #ffffff24;
+    border-width: 1px;
+    border-radius: 4px;
+    Text {
+        text: root.text;
+        color: #fffffff2;
+        font-size: 10px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    button-touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component AboutWindow inherits Window {
+    title: "About XhMonitor";
+    width: 430px;
+    height: 310px;
+    background: #101217;
+
+    in-out property <string> app-version: "";
+    in-out property <string> update-state: "Idle";
+    in-out property <string> update-message: "Check the latest release from Gitee.";
+    in-out property <string> release-summary: "";
+    callback check-update();
+    callback close-window();
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: 88px;
+        background: #151922;
+        Text { x: 22px; y: 18px; text: "XhMonitor"; color: #fffffff2; font-size: 22px; font-weight: 700; }
+        Text { x: 22px; y: 49px; text: "Rust desktop shell " + root.app-version; color: #ffffff9f; font-size: 10px; }
+        Text { x: 22px; y: 66px; text: "Local monitoring with an independent software-rendered UI."; color: #ffffff80; font-size: 9px; }
+    }
+
+    Rectangle {
+        x: 22px;
+        y: 106px;
+        width: 386px;
+        height: 126px;
+        background: #ffffff08;
+        border-color: #ffffff18;
+        border-width: 1px;
+        border-radius: 5px;
+        Text { x: 14px; y: 12px; text: root.update-state; color: root.update-state == "UpdateAvailable" ? #4ade80 : root.update-state == "Error" ? #f87171 : #38bdf8; font-size: 11px; font-weight: 700; }
+        Text { x: 14px; y: 34px; width: 358px; height: 38px; text: root.update-message; color: #ffffffe6; font-size: 10px; wrap: word-wrap; overflow: elide; }
+        Text { x: 14px; y: 80px; width: 358px; height: 34px; text: root.release-summary; color: #ffffff8f; font-size: 9px; wrap: word-wrap; overflow: elide; }
+    }
+
+    AboutButton { x: 22px; y: 252px; text: "Check for updates"; primary: true; clicked => { root.check-update(); } }
+    AboutButton { x: 276px; y: 252px; text: "Close"; clicked => { root.close-window(); } }
+}

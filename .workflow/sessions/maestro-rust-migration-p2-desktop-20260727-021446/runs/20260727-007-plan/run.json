@@ -1,0 +1,288 @@
+{
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-007-plan",
+  "sequence": 7,
+  "parent_run_id": null,
+  "command": {
+    "name": "plan",
+    "version": "1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/plan.md",
+    "content_hash": "95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "resolved_prompt_hash": "95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "contract_hash": "20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41"
+  },
+  "status": "sealed",
+  "gate_ids": [
+    "GATE-007-01",
+    "GATE-007-02",
+    "GATE-007-03",
+    "GATE-007-04",
+    "GATE-007-05",
+    "GATE-007-06",
+    "GATE-007-07",
+    "GATE-007-08",
+    "GATE-007-09",
+    "GATE-007-10",
+    "GATE-007-11",
+    "GATE-007-12",
+    "GATE-007-13",
+    "GATE-007-14",
+    "GATE-007-15",
+    "GATE-007-16"
+  ],
+  "output": {
+    "produces": [],
+    "primary_artifact_id": null,
+    "verdict": "ready"
+  },
+  "handoff": {
+    "schema_version": "command-handoff/1.0",
+    "producer_run_id": "20260727-007-plan",
+    "command": "plan",
+    "verdict": "ready",
+    "summary": "Repair planning Run 无 chain_effects capability，不能合法产出 chain-proposal；停止以避免绕过 canonical pending chain。",
+    "constraints": [],
+    "decisions": [],
+    "concerns": [
+      "execution_contract.orchestration.chain_effects=[]；需 Runtime audited repair-capable path。"
+    ],
+    "artifact_refs": [],
+    "next": [],
+    "details": {}
+  },
+  "started_at": "2026-07-27T22:32:51+08:00",
+  "completed_at": "2026-07-27T22:37:51+08:00",
+  "sealed_at": "2026-07-27T22:37:51+08:00",
+  "chain_step_id": null,
+  "resolved_platform": "claude",
+  "goal_binding": null,
+  "checkpoint_expectation": null,
+  "checkpoint": null,
+  "retry_fence": null,
+  "contract_snapshot": {
+    "schema_version": "contract-snapshot/1.0",
+    "contract_version": "command-contract/1.0",
+    "normalized": {
+      "contract_version": 1,
+      "consumes": [
+        {
+          "kind": "findings",
+          "alias": "current-analysis",
+          "required": false
+        },
+        {
+          "kind": "diagnosis",
+          "alias": "latest-debug",
+          "required": false
+        },
+        {
+          "kind": "blueprint",
+          "alias": "current-blueprint",
+          "required": false
+        },
+        {
+          "kind": "roadmap",
+          "alias": "current-roadmap",
+          "required": false
+        },
+        {
+          "kind": "plan",
+          "alias": "current-plan",
+          "required": false
+        },
+        {
+          "kind": "priors",
+          "alias": "session-priors",
+          "required": false
+        }
+      ],
+      "produces": [
+        {
+          "kind": "plan",
+          "primary": false,
+          "path": "outputs/plan.json",
+          "alias": "current-plan"
+        },
+        {
+          "kind": "plan-task",
+          "primary": false,
+          "path": "outputs/tasks/TASK-{NNN}.json"
+        },
+        {
+          "kind": "execution-waves",
+          "primary": false,
+          "path": "outputs/waves.json"
+        },
+        {
+          "kind": "dependency-graph",
+          "primary": false,
+          "path": "outputs/dependency-graph.json"
+        },
+        {
+          "kind": "collision-report",
+          "primary": false,
+          "path": "outputs/collision-report.json"
+        },
+        {
+          "kind": "plan-check",
+          "primary": false,
+          "path": "outputs/plan-check.json"
+        }
+      ],
+      "gates": {
+        "entry": [],
+        "exit": [
+          "context-collected",
+          "plan-generated",
+          "plan-checked",
+          "plan-confirmed"
+        ]
+      }
+    },
+    "snapshot_hash": "sha256:20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41",
+    "parser_version": "maestro-command-contract/2",
+    "captured_at": "2026-07-27T14:32:51.213Z",
+    "warnings": [
+      "v1 produces[0].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[1].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[2].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[3].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[4].role is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[5].optional is metadata-only; set contract_version: 2 to enforce it",
+      "v1 produces[5].role is metadata-only; set contract_version: 2 to enforce it"
+    ]
+  },
+  "guidance_snapshot": {
+    "schema_version": "guidance-snapshot/1.0",
+    "source_path": "../../../../Users/xinghe_zwy/.maestro/prepare/plan.md",
+    "content_hash": "sha256:95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "resolved_prompt_hash": "sha256:95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "prepare_hash": "sha256:95231ef6cd0bc6f29e3ed2acd0b7db4aaeeddd5ca30c66472f905b944088d049",
+    "workflow_hash": "sha256:97be0ee509700720c1fe4a6c17d829b4b86db6625fc07b51a39a9638b0c3c689",
+    "run_mode_hash": "sha256:e7a7f1ec4752fa79e823c717844bc5c2acf1c96152bdff907ffea7ecdd1b478c"
+  },
+  "creation_decision": {
+    "schema_version": "creation-decision/1.0",
+    "decision_id": "dec_4d69119772b0d61af9d0e50c",
+    "request_id": null,
+    "mode": "explicit-create",
+    "authority": "explicit-command",
+    "decided_at": "2026-07-27T22:32:51+08:00",
+    "session_identity_revision": 2,
+    "session_activity_revision": 18,
+    "confirmation_token_hash": null
+  },
+  "creation_provenance": {
+    "schema_version": "creation-provenance/1.0",
+    "provenance": "native-v2",
+    "source_workspace_id": null,
+    "source_session_id": null,
+    "source_run_id": null,
+    "imported_artifact_hashes": []
+  },
+  "transition": null,
+  "schema_version": "command-run/1.3",
+  "input": {
+    "args": [
+      "profile release memory 34.5 MiB to <10 MiB; repair Locked transition, pinned overflow, unsnapped work-area clamp; one bounded optimization attempt, fallback acceptance <40 MiB if optimization cannot meet 10 MiB"
+    ],
+    "consumes": [
+      "ART-001-001",
+      "ART-001-002",
+      "ART-002-004"
+    ],
+    "context_identity_revision": 2,
+    "reuse_assessments": [
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REUSE",
+        "reason_codes": [
+          "REUSE_ELIGIBLE"
+        ],
+        "consumer": {
+          "kind": "findings",
+          "alias": "current-analysis",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-001-analyze",
+          "producer_run_hash": "sha256:0e6376c8a98e34c7743036d86f7f7d8c6d1c8496e6356adb476b6f740c75b2e1",
+          "producer_status": "sealed",
+          "artifact_id": "ART-001-001",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:cda9ec8ca64739f5cc6fb670dd9ba52ca6000884245d5ded6de63502b222975d",
+          "observed_artifact_hash": "sha256:cda9ec8ca64739f5cc6fb670dd9ba52ca6000884245d5ded6de63502b222975d",
+          "artifact_schema": "findings/1.0",
+          "artifact_registry_revision": 6,
+          "producer_contract_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+        },
+        "assessment_hash": "sha256:47f05d20f1d302a91edbeedfdac6cda91aa75fa7a810f553bf241325a890c4c3"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REVIEW",
+        "reason_codes": [
+          "QUALITY_MEDIUM"
+        ],
+        "consumer": {
+          "kind": "plan",
+          "alias": "current-plan",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-002-plan",
+          "producer_run_hash": "sha256:e79170dad7557c6fe35f6697c229ab4ef632c6838eefec78168fd2a1ae1a7b2d",
+          "producer_status": "sealed",
+          "artifact_id": "ART-002-004",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "observed_artifact_hash": "sha256:9f450513c18fa72f662d70b5a379a1e44ff82c5f85a4182748fe46e1b8538c1c",
+          "artifact_schema": "plan/1.0",
+          "artifact_registry_revision": 6,
+          "producer_contract_hash": "sha256:20aaddf346484e4b40df4fed19985bd76f29aaf48fb36cf0cf967f8e02931b41"
+        },
+        "assessment_hash": "sha256:e195e43818a93054586856ec328cee4afdf0241fc980dd66e2bb282c5603f025"
+      },
+      {
+        "schema_version": "reuse-assessment/1.0",
+        "decision": "REUSE",
+        "reason_codes": [
+          "REUSE_ELIGIBLE"
+        ],
+        "consumer": {
+          "kind": "priors",
+          "alias": "session-priors",
+          "schema": null,
+          "role": null
+        },
+        "source_fence": {
+          "schema_version": "reuse-source-fence/1.0",
+          "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+          "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+          "producer_run_id": "20260727-001-analyze",
+          "producer_run_hash": "sha256:0e6376c8a98e34c7743036d86f7f7d8c6d1c8496e6356adb476b6f740c75b2e1",
+          "producer_status": "sealed",
+          "artifact_id": "ART-001-002",
+          "artifact_role": "evidence",
+          "artifact_status": "sealed",
+          "artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "observed_artifact_hash": "sha256:8b1c2a4218ed5e9652beae7a194fb88b31fc4eb53cf8ecb7c2eb0d24dde1a53d",
+          "artifact_schema": "priors/1.0",
+          "artifact_registry_revision": 6,
+          "producer_contract_hash": "sha256:522844e66c2df350a5b3a1698c773ae7b3f57a54c33809b692f9178c64a5e1fa"
+        },
+        "assessment_hash": "sha256:823e913b065f4de5258fd13d108531bc50e1452179c729d81e8965358a7ee4d4"
+      }
+    ]
+  }
+}

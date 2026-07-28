@@ -1,0 +1,27 @@
+{
+  "schema_version": "acceptance/1.0",
+  "target": "xhm-desktop",
+  "generated_at": "2026-07-28T10:15:04+08:00",
+  "verdict": "pass",
+  "evidence_source": "current-execution+latest-review+latest-debug+direct-test-execution",
+  "criteria": [
+    {
+      "id": "AC-001",
+      "criterion": "cargo test -p xhm-desktop passes",
+      "status": "pass",
+      "evidence": "Command completed with 128 passed and 0 failed"
+    },
+    {
+      "id": "AC-002",
+      "criterion": "No product source changes are made by this test Run",
+      "status": "pass",
+      "evidence": "Only files under the Run output directory were written"
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  }
+}

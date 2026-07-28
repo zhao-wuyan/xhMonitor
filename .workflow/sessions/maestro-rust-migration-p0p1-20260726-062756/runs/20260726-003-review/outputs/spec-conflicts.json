@@ -1,0 +1,9 @@
+{
+  "_meta": {
+    "kind": "spec-conflicts",
+    "schema": "spec-conflicts/1.0",
+    "role": "evidence"
+  },
+  "conflicts": [],
+  "note": "No active code-versus-spec contradiction remains after the focused remediation review."
+}

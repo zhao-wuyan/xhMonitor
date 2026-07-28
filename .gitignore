@@ -95,3 +95,18 @@ xhmonitor.db
 !tools/PawnIO/
 !tools/PawnIO/PawnIO_setup.exe
 !tools/PawnIO/VERSION.txt
+
+# Rust
+/target/
+target/
+
+## Maestro generated indexes and local caches
+/.workflow/.backups/
+/.workflow/**/.backups/
+/.workflow/embedding-index.bin
+/.workflow/embedding.zvec/
+/.workflow/kg/
+/.workflow/search-cache.json
+/.workflow/wiki-index.json
+/.workflow/specs/.hit-log.jsonl
+/check012*.json

@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-009"
+  },
+  "id": "TASK-009",
+  "title": "验证并固化 winit-software 有机动画组件",
+  "description": "在首个 G3 wave 用真实软件渲染做 go/no-go，并产出 G3 所有、G4 只读复用的 OrganicShell 组件与独立 harness。",
+  "type": "spike",
+  "status": "pending",
+  "goal_ref": "G3",
+  "execute_step_id": "step-005-execute",
+  "wave_id": "WAVE-009",
+  "estimated_minutes": 45,
+  "requirement_refs": [
+    "P2-C07",
+    "P2-C08",
+    "P2-C09",
+    "P2-C11",
+    "G3-DONE",
+    "GUIDE-P2-DONE-SOFTWARE-UI",
+    "BOUNDARY-SOFTWARE-RENDERER"
+  ],
+  "deps": [
+    "TASK-008"
+  ],
+  "files": [
+    "xhm-desktop/ui/components/organic_shell.slint",
+    "xhm-desktop/examples/organic_animation_spike.rs",
+    "xhm-desktop/build.rs",
+    "xhm-desktop/ui/shell.slint"
+  ],
+  "read_first": [
+    "docs/【设计稿】有机吸附矩阵-Organic-Dock.html:33-181,202-277",
+    "docs/【设计搞】柱状条有机吸附矩阵-Percentage.html:33-118,136-260",
+    "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:235-520",
+    "XhMonitor.Desktop/FloatingWindow.xaml.cs:575-755,810-933",
+    "docs/rust-migration-feasibility.md:342-368",
+    "TASK-001/TASK-008 实际 Slint 编译根和导出"
+  ],
+  "action": "在 ui/components/organic_shell.slint 实现可复用 OrganicShell，以 examples/organic_animation_spike.rs 独立演示 Floating/Dragging/DockTop/DockBottom/DockLeft/DockRight 和 G3 三条动画时间线。",
+  "implementation_steps": [
+    "组件参数逐字使用 floating radius=6、transition=0.3s cubic-bezier(0.19,1,0.22,1)、horizontal gap=12、vertical gap=8、SNAP_MARGIN=80；harness 只模拟状态，不重做 G2 geometry。",
+    "Top/Bottom 使用 cyan 2px 接触边与非接触侧 8px radius；Left/Right 使用 amber 2px 接触边与非接触侧 8px radius。",
+    "同时演示长按 2s 从 1.0→0.90、取消 200ms→1.0；click 0.92@50ms→1.0@150ms；Kill 1s、arc circumference 43.98。",
+    "build.rs/shell.slint 只做组件编译导出；生产 G4 taskbar 文件不在本任务创建。",
+    "GO 后组件成为 G3-owned 复用件；NO-GO 阻断 TASK-010 之后任务并单独决策，不自动切 renderer。"
+  ],
+  "convergence_criteria": [
+    "[UI-observable] 手工：winit-software 下六状态窗口非空、无裁切/闪白，四边 radius/glow/gap 与设计稿一致。",
+    "[UI-observable] 手工：长按、取消、click、Kill 时间线可重复且鼠标取消回稳定状态。",
+    "CLI：release harness 明确记录 winit-software。",
+    "Read：G4 生产文件未写，Reusable component 路径精确为 ui/components/organic_shell.slint。"
+  ],
+  "verify": {
+    "commands": [
+      "$env:SLINT_BACKEND='winit-software'; cargo run -p xhm-desktop --example organic_animation_spike --release"
+    ],
+    "manual_scenarios": [
+      "100%/150%/200% DPI 录制六状态与三时间线。"
+    ],
+    "expected": "得到明确 GO/NO-GO；GO 组件可被 G3/G4 导入。"
+  },
+  "acceptance_evidence": [
+    "六状态截图/录屏",
+    "三时间线录屏",
+    "backend 日志",
+    "GO/NO-GO 与视觉偏差记录"
+  ],
+  "rollback": {
+    "steps": [
+      "回退 harness、OrganicShell export 和 build root 变更"
+    ],
+    "preserves": [
+      "G2 shell",
+      "winit-software 决策"
+    ]
+  }
+}

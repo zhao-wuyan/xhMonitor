@@ -1,0 +1,200 @@
+export struct TaskbarMetricData {
+    id: string,
+    label: string,
+    value: string,
+    detail: string,
+    ratio: float,
+    accent: color,
+    is-bar-metric: bool,
+}
+
+component TextMetricHorizontal inherits Rectangle {
+    in property <TaskbarMetricData> metric;
+    width: 54px;
+    height: 24px;
+    background: transparent;
+
+    Text {
+        x: 0px;
+        y: 5px;
+        width: 22px;
+        text: root.metric.label;
+        color: root.metric.accent;
+        font-size: 9px;
+        font-weight: 700;
+        overflow: elide;
+    }
+    Text {
+        x: 23px;
+        y: 5px;
+        width: 31px;
+        text: root.metric.value;
+        color: #ffffffe6;
+        font-size: 9px;
+        font-weight: 700;
+        horizontal-alignment: right;
+        overflow: elide;
+    }
+}
+
+component TextMetricVertical inherits Rectangle {
+    in property <TaskbarMetricData> metric;
+    width: 30px;
+    height: 36px;
+    background: transparent;
+
+    Text {
+        x: 1px;
+        y: 2px;
+        width: 28px;
+        text: root.metric.value;
+        color: #ffffffe6;
+        font-size: 8px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    Text {
+        x: 1px;
+        y: 18px;
+        width: 28px;
+        text: root.metric.label;
+        color: root.metric.accent;
+        font-size: 8px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+component BarMetricHorizontal inherits Rectangle {
+    in property <TaskbarMetricData> metric;
+    width: 58px;
+    height: 24px;
+    background: transparent;
+
+    Text {
+        x: 0px;
+        y: 2px;
+        width: 58px;
+        text: root.metric.label;
+        color: root.metric.accent;
+        font-size: 8px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    Rectangle {
+        x: 2px;
+        y: 13px;
+        width: 54px;
+        height: 4px;
+        background: #ffffff26;
+        border-radius: 2px;
+        Rectangle {
+            width: parent.width * max(0.0, min(1.0, root.metric.ratio));
+            height: parent.height;
+            background: root.metric.accent;
+            border-radius: 2px;
+            animate width { duration: 160ms; easing: ease-out; }
+        }
+    }
+    Text {
+        x: 0px;
+        y: 17px;
+        width: 58px;
+        text: root.metric.detail;
+        color: #ffffffa6;
+        font-size: 7px;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+component BarMetricVertical inherits Rectangle {
+    in property <TaskbarMetricData> metric;
+    width: 30px;
+    height: 42px;
+    background: transparent;
+
+    Rectangle {
+        x: 10px;
+        y: 2px;
+        width: 10px;
+        height: 20px;
+        background: #ffffff26;
+        border-radius: 2px;
+        Rectangle {
+            y: parent.height * (1.0 - max(0.0, min(1.0, root.metric.ratio)));
+            width: parent.width;
+            height: parent.height * max(0.0, min(1.0, root.metric.ratio));
+            background: root.metric.accent;
+            border-radius: 2px;
+            animate y { duration: 160ms; easing: ease-out; }
+            animate height { duration: 160ms; easing: ease-out; }
+        }
+    }
+    Text {
+        x: 1px;
+        y: 24px;
+        width: 28px;
+        text: root.metric.value;
+        color: #ffffffe6;
+        font-size: 8px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    Text {
+        x: 1px;
+        y: 34px;
+        width: 28px;
+        text: root.metric.label;
+        color: root.metric.accent;
+        font-size: 8px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+export component TaskbarMetricStrip inherits Rectangle {
+    in property <[TaskbarMetricData]> metrics;
+    in property <bool> vertical: false;
+    in property <bool> bar-visual: true;
+    in property <length> gap: 4px;
+    background: transparent;
+
+    if !root.vertical && !root.bar-visual : HorizontalLayout {
+        x: 6px;
+        y: 4px;
+        width: parent.width - 12px;
+        height: parent.height - 8px;
+        spacing: root.gap;
+        for metric in root.metrics : TextMetricHorizontal { metric: metric; }
+    }
+    if root.vertical && !root.bar-visual : VerticalLayout {
+        x: 5px;
+        y: 6px;
+        width: parent.width - 10px;
+        height: parent.height - 12px;
+        spacing: root.gap;
+        for metric in root.metrics : TextMetricVertical { metric: metric; }
+    }
+    if !root.vertical && root.bar-visual : HorizontalLayout {
+        x: 6px;
+        y: 3px;
+        width: parent.width - 12px;
+        height: parent.height - 6px;
+        spacing: root.gap;
+        for metric in root.metrics : BarMetricHorizontal { metric: metric; }
+    }
+    if root.vertical && root.bar-visual : VerticalLayout {
+        x: 5px;
+        y: 6px;
+        width: parent.width - 10px;
+        height: parent.height - 12px;
+        spacing: root.gap;
+        for metric in root.metrics : BarMetricVertical { metric: metric; }
+    }
+}

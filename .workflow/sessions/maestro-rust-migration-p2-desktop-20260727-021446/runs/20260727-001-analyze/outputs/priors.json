@@ -1,0 +1,166 @@
+{
+  "_meta": {
+    "kind": "priors",
+    "schema": "priors/1.0",
+    "role": "evidence",
+    "alias": "session-priors"
+  },
+  "specs": [
+    {
+      "id": "spec:project:architecture-constraints-003",
+      "title": "xhm-service bridge 内存行为门禁",
+      "category": "arch",
+      "relevance": "P2 不得回归：combined release Private Bytes <30 MiB（xhm-service + lhm-bridge）；xhm-desktop 额外 <10 MiB",
+      "source_ref": ".workflow/specs/architecture-constraints.md",
+      "load_command": "maestro spec load --category arch"
+    },
+    {
+      "id": "spec:project:architecture-constraints-004",
+      "title": "Runtime Boundaries",
+      "category": "arch",
+      "relevance": "xhm-core owns shared models；P2 必须复用 wire.rs PushEvent，禁止自创事件协议",
+      "source_ref": ".workflow/specs/architecture-constraints.md",
+      "load_command": "maestro spec load --category arch"
+    },
+    {
+      "id": "spec:project:coding-conventions-001",
+      "title": "xhMonitor Rust 迁移：.NET 时间格式三分法",
+      "category": "coding",
+      "relevance": "SSE 事件 timestamp 为本地时间+偏移（DateTime.Now），Rust 侧需用 chrono Local + crate::time::serde_wire_local",
+      "source_ref": ".workflow/specs/coding-conventions.md"
+    },
+    {
+      "id": "spec:project:test-conventions-002",
+      "title": "测试隔离边界",
+      "category": "test",
+      "relevance": "Win32/HTTP/SSE/SQLite/时钟均需 trait 注入或 cfg(test) stub；CI 无管理员/无硬件全绿",
+      "source_ref": ".workflow/specs/test-conventions.md"
+    }
+  ],
+  "doc_index": [
+    {
+      "path": "docs/rust-migration-guide.md",
+      "lines": "238-308",
+      "role": "P2 主契约（Win32 集成 + UI 对等清单 + Service 发现 + Done 条件）",
+      "must_preserve": [
+        "4.6: POC 已验证 ✅ HWND/置顶/任务栏贴近，⚠️ 点击穿透待手动验证，❌ 全局热键不迁移",
+        "4.7: P2-核心 12 项 + P2-扩展 3 项",
+        "4.8: service-endpoints.json 相对 exe 目录 + 默认回退不 panic",
+        "Done: 软件渲染 Private Bytes <10 MiB；4K 任务栏定位；cargo test -p xhm-desktop 全绿"
+      ]
+    },
+    {
+      "path": "docs/rust-migration-guide.md",
+      "lines": "46-103",
+      "role": "Cargo workspace 结构（xhm-desktop 待加入 members）"
+    },
+    {
+      "path": "docs/rust-migration-guide.md",
+      "lines": "332-389",
+      "role": "测试策略 + 关键风险（Slint 动画还原度 / 软件渲染 CPU）"
+    },
+    {
+      "path": "docs/rust-migration-feasibility.md",
+      "lines": "296-383",
+      "role": "POC 实测证据：软件渲染 3.8 MiB、Win32 宿主能力矩阵、待用户验证项"
+    },
+    {
+      "path": "docs/rust-service-build-test-package.md",
+      "lines": "300-331",
+      "role": "combined Private Bytes 采样脚本与 30 MiB 门禁（P2 验收方法学参考）"
+    },
+    {
+      "path": "XhMonitor.Desktop/CLAUDE.md",
+      "lines": "全文",
+      "role": "C# Desktop 现有架构与 ServiceDiscovery/TrayIcon/TaskbarPlacement 行为说明（P2 端口参考）"
+    },
+    {
+      "path": "docs/【设计稿】有机吸附矩阵-Organic-Dock.html",
+      "role": "有机吸附矩阵视觉契约（G3 验收基准）"
+    },
+    {
+      "path": "docs/桌面悬浮窗交互设计稿.md",
+      "role": "悬浮窗交互细节（长按/点击/拖拽/吸附）"
+    },
+    {
+      "path": "docs/widget-click-config.md",
+      "role": "Widget 点击配置（P2 widgetconfig REST 消费参考）"
+    }
+  ],
+  "wiki": [
+    {
+      "id": "session-maestro-rust-migration-p0p1-20260726-062756",
+      "type": "knowhow",
+      "title": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P0+P1",
+      "verdict": "review PASS",
+      "reuse": "P1 已 sealed SSE/REST/PushEvent 契约；P2 直接消费，禁止回归",
+      "load_command": "maestro load --type knowhow --id session-maestro-rust-migration-p0p1-20260726-062756"
+    },
+    {
+      "id": "session-run-maestro-rust-migration-p0p1-20260726-062756-20260726-003-review",
+      "type": "knowhow",
+      "title": "review 20260726-003-review",
+      "verdict": "PASS",
+      "reuse": "spec_compliance：35181 并行服务、20 REST 契约、SSE+SignalR WS、cargo test 158 通过、combined 28.79 MiB max、WS cadence ≤1081ms"
+    },
+    {
+      "id": "kg-code-c-projectdev-project-xinghe-xhmonitor-poc-slint-desktop-src-main-rs-win32",
+      "type": "knowhow",
+      "title": "poc/slint-desktop win32 模块",
+      "reuse": "G2 起点：find_own_hwnd/set_topmost/set_click_through/position_near_taskbar 已验证，可直接提升到 xhm-desktop/src/win32.rs"
+    },
+    {
+      "id": "kg-code-c-projectdev-project-xinghe-xhmonitor-xhmonitor-desktop-services-servicediscovery-cs-servicediscovery",
+      "type": "knowhow",
+      "title": "C# ServiceDiscovery",
+      "reuse": "config.rs 端口参考：BaseDirectory 读取 + 健康探测 preferredPort..+10 + 默认回退"
+    },
+    {
+      "id": "kg-code-c-projectdev-project-xinghe-xhmonitor-xhmonitor-desktop-windows-settingswindow-xaml-cs-settingswindow",
+      "type": "knowhow",
+      "title": "C# SettingsWindow",
+      "reuse": "G4 设置页端口参考（注意 Deferred 的 AdminMode/Startup/LAN/防火墙）"
+    },
+    {
+      "id": "issue-DSC-20260119-150946-006",
+      "type": "issue",
+      "title": "Desktop 硬编码端口 35179",
+      "reuse": "P2 必须修复（service-endpoints.json 动态发现 + 35181 默认）",
+      "status": "in-flight（P2 内关闭）"
+    },
+    {
+      "id": "issue-ISS-1769239097521-19",
+      "type": "issue",
+      "title": "Desktop should discover Service endpoint dynamically",
+      "reuse": "与 DSC-20260119-150946-006 同源；P2 ServiceEndpoints::load 即修复"
+    }
+  ],
+  "cargo_workspace_state": {
+    "root_members": ["xhm-core", "xhm-service"],
+    "xhm-desktop_present": false,
+    "workspace_dependencies_reusable_for_p2": [
+      "tokio (full)", "serde", "serde_json", "anyhow", "thiserror", "tracing", "tracing-subscriber",
+      "chrono (serde)", "axum (macros, ws)", "tower-http", "tokio-stream", "futures", "uuid"
+    ],
+    "p2_new_dependencies_to_introduce": [
+      "slint = 1.x (+ slint-build build-dependency)",
+      "windows = 0.58+ (Win32 高级包装，与 workspace windows-sys 共存)",
+      "reqwest = 0.12 (SSE/REST 客户端)",
+      "tray-icon (托盘，待 spike)",
+      "maybe: eventsource-stream (SSE 分帧，free 决策)"
+    ]
+  },
+  "p1_sealed_contracts": {
+    "push_events": [
+      "ReceiveHardwareLimits (HardwareLimitsPayload)",
+      "ReceiveSystemUsage (SystemUsagePayload)",
+      "ReceiveProcessMetrics (ProcessSnapshotPayload, Full 组)",
+      "ReceiveProcessMetricsLite (ProcessSnapshotPayload, 逐连接)",
+      "ReceiveProcessMetadata (ProcessMetadataPayload)"
+    ],
+    "sse_endpoint": "GET {service_url}/api/v1/events?mode=full|lite&pinned=1,2,3",
+    "sse_keepalive": "15s + comment ping",
+    "default_service_port": 35181,
+    "rest_surface": "/api/v1/config/* + /api/v1/metrics/* + /api/v1/power/* + /api/v1/widgetconfig/*"
+  }
+}

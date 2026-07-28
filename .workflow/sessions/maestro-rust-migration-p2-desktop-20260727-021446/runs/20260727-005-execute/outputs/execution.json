@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "kind": "execution",
+    "schema": "execution/1.0",
+    "role": "primary",
+    "alias": "current-execution"
+  },
+  "schema_version": "execution/1.0",
+  "run_id": "20260727-005-execute",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "command": "execute",
+  "goal_ref": "G3",
+  "status": "completed",
+  "task_ids": ["TASK-009", "TASK-010", "TASK-011"],
+  "method": "inline",
+  "executor": "G3Execute",
+  "upstream_plan": {
+    "artifact_id": "ART-002-004",
+    "path": "sessions/maestro-rust-migration-p2-desktop-20260727-021446/runs/20260727-002-plan/outputs/plan.json"
+  },
+  "summary": "G3 completed the winit-software organic animation GO spike, the Slint floating metrics/process UI and deterministic interaction bindings, and real TouchArea logical-to-physical drag/snap production wiring through snap_floating_window and SetWindowPos.",
+  "evidence": {
+    "cargo_build_and_test": "3 consecutive final rounds: cargo build -p xhm-desktop --all-targets passed; cargo test -p xhm-desktop passed with 111 tests and 0 failures in every round",
+    "cargo_clippy": "cargo clippy -p xhm-desktop --all-targets -- -D warnings: clean",
+    "organic_spike": "release example logged ORGANIC_SPIKE backend=winit-software states=6 timelines=3; Orca observed all six states and three timing labels at scale factors 1.0, 1.5, and 2.0 with window sizes 716x539, 1066x789, and 1416x1039",
+    "metrics_smoke": "Orca accessibility tree observed NET 18.2/74.6, CPU 37%, RAM 21.5 GB, GPU 86%, VRAM 9.2 GB, POWER 118 W, two pinned cards, 36-process ListView fixture, three per-disk rows, threshold colors, 3px bars, and Toast overlay",
+    "drag_snap_smoke": "real TouchArea drag moved the HWND from x=100 into the 24px boundary; post-release window x=0; log recorded edge=Left, snap_distance_px=24, set_window_pos=true",
+    "long_press_smoke": "native pointer-down was held for 2150ms on CPU; production timer logged elapsed_ms=2000 and returned through the 200ms recovery path",
+    "click_feedback_smoke": "production log recorded metric=cpu, down_ms=50, recover_ms=150; click toggled the panel between locked and collapsed/expanded",
+    "kill_smoke": "safe cmd.exe fixture received two clicks 300ms apart; logs recorded 1s/43.98 confirmation, exactly one dispatch, KillOutcome::Success, and the row disappeared from the Slint model",
+    "anti_pattern": "no TODO/FIXME/unimplemented/todo!/allow suppressions or global-hotkey patterns in G3 files; RegisterHotKey|WM_HOTKEY|Ctrl+Alt+Shift+X returned zero matches in xhm-desktop",
+    "run_check": "maestro run check 20260727-005-execute --session maestro-rust-migration-p2-desktop-20260727-021446 is the final unsealed gate command"
+  },
+  "artifacts": {
+    "execution": "outputs/execution.json",
+    "task_results": "outputs/task-results.json",
+    "self_check": "outputs/self-check.json",
+    "change_manifest": "outputs/change-manifest.json",
+    "report": "outputs/report.md"
+  }
+}

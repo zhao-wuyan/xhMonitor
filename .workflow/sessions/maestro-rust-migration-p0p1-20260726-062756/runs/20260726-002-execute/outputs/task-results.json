@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "kind": "task-results",
+    "schema": "task-results/1.0",
+    "role": "evidence"
+  },
+  "results": [
+    { "task_id": "foundation", "status": "passed", "evidence": "xhm-service builds and AppState exposes injected store/clock/LHM/RyzenAdj/realtime dependencies" },
+    { "task_id": "sqlite", "status": "passed", "evidence": "in-memory and filesystem SQLite tests cover migration, raw/latest/history/process/aggregation/retention/config/widget behavior" },
+    { "task_id": "rest", "status": "passed", "evidence": "20/20 endpoint smoke returned expected 200/204/404 status codes and JSON payloads" },
+    { "task_id": "power", "status": "passed", "evidence": "mock tests cover supported/unsupported/disabled/provider-error branches and exact scheme response payloads" },
+    { "task_id": "realtime", "status": "passed", "evidence": "SignalR negotiate returned WebSockets transport; WS handshake/subscription completion and SSE named event were received" },
+    { "task_id": "worker", "status": "passed", "evidence": "workspace tests cover routing, pinned subsets, persistence, metrics units, hardware fallback and shutdown" },
+    { "task_id": "lifecycle", "status": "passed", "evidence": "release server listened on 35181; stopping service removed bridge child PID 59296" },
+    { "task_id": "memory", "status": "passed", "evidence": "26 samples over two consecutive 60-second windows were all below 30 MiB; observed maxima 27.57 and 28.43 MiB" }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "blocked": 0
+  }
+}

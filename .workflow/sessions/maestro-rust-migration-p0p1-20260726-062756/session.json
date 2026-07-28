@@ -1,0 +1,988 @@
+{
+  "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+  "intent": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P0+P1",
+  "status": "sealed",
+  "identity_revision": 3,
+  "activity_revision": 10,
+  "active_run_id": null,
+  "latest_completed_run_id": "20260726-003-review",
+  "boundary_contract": {
+    "in_scope": [
+      "Cargo workspace 根 Cargo.toml（members: xhm-core / xhm-service / xhm-desktop 占位）",
+      "xhm-core crate：共享模型、trait、error",
+      "lhm-bridge 从 poc/ 提升为正式目录，补管理员权限校验 + cpu_temp_label + 优雅退出",
+      "xhm-service crate：20 个 REST 端点、SQLite 层、LHM bridge 子进程管理、RyzenAdj native+CLI 回退、实时推送（SSE + SignalR WS 双适配器）",
+      "单元测试：mock LHM / mock RyzenAdj / 内存 SQLite / axum 测试实例"
+    ],
+    "out_of_scope": [
+      "xhm-desktop（P2）",
+      "删除 C# 项目与切换正式端口（P3）",
+      "修改 xhmonitor-web 前端代码",
+      "修改 SQLite schema",
+      "全局热键迁移（用户已决策不迁移）"
+    ],
+    "constraints": [
+      "前端零改动：Web 侧保留 SignalR over WebSocket 文本协议兼容",
+      "Desktop 侧走 SSE",
+      "所有路径基于 current_exe().parent()，禁止依赖 current_dir()",
+      "cargo test --workspace 必须在无管理员权限、无真实硬件下通过",
+      "cargo clippy --workspace -- -D warnings 零警告",
+      "并行端口 35181 运行，不占用 35179"
+    ],
+    "definition_of_done": "cargo build --workspace 通过；cargo test --workspace 全绿；xhm-service 在 35181 启动并通过 REST 端点冒烟测试；lhm-bridge 正式目录可构建并输出含 cpu_temp_label 的 JSON Lines"
+  },
+  "orchestration": {
+    "engine": "coordinator",
+    "quality_mode": "standard",
+    "auto_mode": false,
+    "chain": [
+      {
+        "step_id": "step-000-execute",
+        "command": "execute",
+        "status": "sealed",
+        "run_id": "20260726-001-execute",
+        "inserted_by": "build",
+        "decision_ref": null,
+        "args": "--session {session}",
+        "stage": "execute",
+        "goal_ref": "G1",
+        "retry": {
+          "count": 0,
+          "max": 2
+        }
+      },
+      {
+        "step_id": "step-001-post-execute",
+        "command": "post-execute",
+        "status": "sealed",
+        "run_id": null,
+        "inserted_by": "maestro-orchestrator",
+        "decision_ref": "post-execute",
+        "stage": "execute"
+      },
+      {
+        "step_id": "step-001-execute",
+        "command": "execute",
+        "status": "sealed",
+        "run_id": "20260726-002-execute",
+        "inserted_by": "build",
+        "decision_ref": null,
+        "args": "--session {session}",
+        "stage": "execute",
+        "goal_ref": "G2",
+        "retry": {
+          "count": 0,
+          "max": 2
+        }
+      },
+      {
+        "step_id": "step-002-review",
+        "command": "review",
+        "status": "sealed",
+        "run_id": "20260726-003-review",
+        "inserted_by": "build",
+        "decision_ref": null,
+        "args": "--session {session}",
+        "stage": "review",
+        "retry": {
+          "count": 0,
+          "max": 1
+        }
+      }
+    ],
+    "decision_points": [
+      {
+        "point_id": "post-execute",
+        "after_step_id": "step-000-execute",
+        "status": "passed",
+        "retry_count": 1,
+        "max_retries": 2,
+        "evidence_ref": ".workflow/sessions/maestro-rust-migration-p0p1-20260726-062756/repair-evidence/post-execute-retry-1/lhm-bridge-elevated.stdout.jsonl"
+      }
+    ],
+    "position": null,
+    "decomposition": {
+      "execution_criteria": [
+        "每个 crate 独立 cargo test 通过",
+        "外部边界（LHM/RyzenAdj/SQLite/HTTP/时钟）全部经 trait 隔离并有 mock",
+        "REST 响应 JSON 键名与 C# 版本逐字段一致"
+      ],
+      "goals": [
+        {
+          "id": "G1",
+          "goal": "P0 基础层：Cargo workspace + xhm-core crate + 正式 lhm-bridge",
+          "boundary": "不触碰 xhm-service 业务逻辑与 Desktop",
+          "done_when": "cargo test -p xhm-core 全绿；lhm-bridge/ 正式目录 dotnet build 成功且输出含 cpu_temp + cpu_temp_label；Ctrl+C 后退出码 0",
+          "evidence": "cargo test 输出、dotnet build 输出、lhm-bridge JSON Lines 样本",
+          "lifecycle": [
+            "execute"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "G2",
+          "goal": "P1 Service 迁移：xhm-service 与 C# Service API 功能对等，可在 35181 并行运行",
+          "boundary": "不改 SQLite schema，不改前端",
+          "done_when": "20 个 REST 端点全部实现并冒烟通过；SSE + SignalR WS 双适配器可推送；cargo test -p xhm-service 全绿（LHM/RyzenAdj 全 mock）",
+          "evidence": "cargo test 输出、curl 冒烟结果、进程实测内存",
+          "lifecycle": [
+            "execute",
+            "review"
+          ],
+          "status": "pending"
+        }
+      ],
+      "changelog": []
+    },
+    "lease": null,
+    "executor": null
+  },
+  "lifecycle": {
+    "sealed_at": "2026-07-26T22:33:25+08:00",
+    "seal_summary": "Sealed with 3 Run(s)",
+    "promoted_spec_ids": [],
+    "promoted_knowhow_ids": [],
+    "forked_from": null
+  },
+  "refs": {
+    "gates": "gates.json",
+    "artifacts": "artifacts.json",
+    "evidence": "evidence.json"
+  },
+  "intent_identity": {
+    "schema_version": "intent-identity/1.0",
+    "normalization": "NFKC+unicode-lower+whitespace-collapse/1",
+    "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+    "command": "session",
+    "verbatim": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P0+P1",
+    "normalized": "按 docs/rust-migration-guide.md 实现 rust 迁移 p0+p1",
+    "normalized_length": 47,
+    "normalized_hash": "sha256:21e7cdf59dda258d1d2109235f73b1b636522a363cf0c4f56f45100fa2280add",
+    "revision": 1,
+    "source": "persisted",
+    "backfill_status": "native",
+    "empty": false
+  },
+  "provenance": {
+    "source": "native",
+    "forked_from": null,
+    "imported_from": [],
+    "created_by": "session-store"
+  },
+  "requests": [
+    {
+      "request_id": "req_408219f1-363d-47c8-bb83-2e510f80b61a",
+      "type": "transition",
+      "status": "applied",
+      "payload": {
+        "schema_version": "transition-request/1.0",
+        "request_id": "req_408219f1-363d-47c8-bb83-2e510f80b61a",
+        "operation": "chain-insert",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": null,
+          "chain_step_id": null
+        },
+        "normalized_request_hash": "sha256:815a09468d209047093951f79d954cef6bb84558071c1d380eced291299d4022",
+        "requested_at": "2026-07-26T06:28:15.374Z",
+        "preconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 1,
+          "active_run_id": "20260726-001-execute",
+          "run_hash": null,
+          "artifact_registry_revision": 0
+        },
+        "payload": {
+          "after": "step-000-execute",
+          "command": "post-execute",
+          "args": null,
+          "stage": "execute",
+          "goal_ref": null,
+          "inserted_by": "maestro-orchestrator",
+          "decision_ref": "post-execute",
+          "expected_identity_revision": 2,
+          "expected_activity_revision": 1,
+          "lease": {}
+        }
+      },
+      "claimed_by_run_id": null,
+      "outcome": {
+        "schema_version": "transition-outcome/1.0",
+        "transition_id": "tr_1798e62e-555a-4011-9b84-7cabca0cad9e",
+        "request_id": "req_408219f1-363d-47c8-bb83-2e510f80b61a",
+        "request_hash": "sha256:815a09468d209047093951f79d954cef6bb84558071c1d380eced291299d4022",
+        "operation": "chain-insert",
+        "status": "applied",
+        "applied_at": "2026-07-26T06:28:15.386Z",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": null,
+          "chain_step_id": null
+        },
+        "postconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 2,
+          "active_run_id": "20260726-001-execute",
+          "run_hash": null,
+          "artifact_registry_revision": 0
+        },
+        "exit_code": 0,
+        "error_code": null,
+        "result_hash": "sha256:0fd0f9a30dbf477e7b5f9e7511a326a38799e32e5e1bd2dd71e73832301e4ca1",
+        "result": {
+          "value": {
+            "step_id": "step-001-post-execute",
+            "command": "post-execute",
+            "status": "pending",
+            "run_id": null,
+            "inserted_by": "maestro-orchestrator",
+            "decision_ref": "post-execute",
+            "stage": "execute"
+          }
+        }
+      }
+    },
+    {
+      "request_id": "req_bdea7d16-31df-42e2-bdfe-4cea06a7e2f6",
+      "type": "transition",
+      "status": "applied",
+      "payload": {
+        "schema_version": "transition-request/1.0",
+        "request_id": "req_bdea7d16-31df-42e2-bdfe-4cea06a7e2f6",
+        "operation": "complete",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": "20260726-001-execute",
+          "chain_step_id": "step-000-execute"
+        },
+        "normalized_request_hash": "sha256:3b0bc23b46d288f7c9f36f0b9aa6dfc5626d710cf8ce874d4d022cae6463a11b",
+        "requested_at": "2026-07-26T06:48:42.560Z",
+        "preconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 2,
+          "active_run_id": "20260726-001-execute",
+          "run_hash": "sha256:caafefb9b4b27d53505d9c8c110fa7ef1bd1cd7271edfbd9005b22032ad6abdc",
+          "artifact_registry_revision": 0
+        },
+        "payload": {
+          "run_id": "20260726-001-execute",
+          "notes": [
+            "C-P0-1 medium: lhm-bridge 提权路径未验证，当前环境非管理员，cpu_temp/cpu_temp_label 无证据；降级路径已验证正确",
+            "C-P0-2 low: docs/rust-migration-guide.md 的 Controller 行号引用已过期，实现按实际源码对齐"
+          ],
+          "extra_artifacts": [
+            "outputs/self-check.json",
+            "outputs/change-manifest.json"
+          ],
+          "summary_fallback": "建立 Cargo workspace 与 xhm-core 共享层（52 tests green、clippy 零警告），lhm-bridge 提升为正式目录并修正权限检测与优雅退出",
+          "decisions": [
+            "持久化只接受 DateTime<Utc>，不复刻 C# SpecifyKind 假转换，llama 历史行时区偏移不做读取端补偿",
+            "推送层 transport-agnostic：一份 PushEvent + SignalR WS(Web 零改动) / SSE(Desktop) 双适配器",
+            "MetricStore 同步签名 + spawn_blocking，避免 async-trait 装箱"
+          ],
+          "chain_verdict": "done-with-concerns",
+          "chain_proposal": null,
+          "completion_input_snapshot": {
+            "schema_version": "complete-input-snapshot/1.0",
+            "files": [
+              {
+                "path": "outputs/change-manifest.json",
+                "content_hash": "sha256:99404e6fff17f33f078aaa81d073614ef96d6a4cdaf203a0f04ec24b19c8a5ce"
+              },
+              {
+                "path": "outputs/execution.json",
+                "content_hash": "sha256:3b45dcbbb36ff18e1206fd0bcd2e98555cd42882f2a48a8d3330fa4adbea8919"
+              },
+              {
+                "path": "outputs/self-check.json",
+                "content_hash": "sha256:e6aad13954b7c01e0aa731651c24de8608801bfca5ae014a6a5921ac9e13db49"
+              },
+              {
+                "path": "outputs/task-results.json",
+                "content_hash": null
+              },
+              {
+                "path": "report.md",
+                "content_hash": "sha256:54c40a2b8c17fad98d85696d6653e46a2c7c5e93e1938361c7732dd99c18c1e8"
+              }
+            ],
+            "snapshot_hash": "sha256:b6d6308313f6629e9451187bebb113651acb3d8e5ee989d43d61af0e58f51b56"
+          },
+          "expected_identity_revision": 2,
+          "expected_activity_revision": 2,
+          "lease": {}
+        }
+      },
+      "claimed_by_run_id": "20260726-001-execute",
+      "outcome": {
+        "schema_version": "transition-outcome/1.0",
+        "transition_id": "tr_d437868b-c171-4079-b8bd-15b0a0fb9a8e",
+        "request_id": "req_bdea7d16-31df-42e2-bdfe-4cea06a7e2f6",
+        "request_hash": "sha256:3b0bc23b46d288f7c9f36f0b9aa6dfc5626d710cf8ce874d4d022cae6463a11b",
+        "operation": "complete",
+        "status": "applied",
+        "applied_at": "2026-07-26T06:48:42.572Z",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": "20260726-001-execute",
+          "chain_step_id": "step-000-execute"
+        },
+        "postconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 3,
+          "active_run_id": null,
+          "run_hash": "sha256:26d2f1d9189872df35c140e1938e0a5d04b6af7ae0f6715fcd651aca226a19b9",
+          "artifact_registry_revision": 1
+        },
+        "exit_code": 0,
+        "error_code": null,
+        "result_hash": "sha256:b7a1f1101bb659370d4240427f9e89fb9f9d43cffa4c27714faaa88d0f522f11",
+        "result": {
+          "value": {
+            "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+            "run_id": "20260726-001-execute",
+            "status": "sealed",
+            "gates": {
+              "passed": [
+                "GATE-001-06",
+                "GATE-001-08",
+                "GATE-001-09"
+              ],
+              "failed": [],
+              "skipped": [
+                "GATE-001-01",
+                "GATE-001-02",
+                "GATE-001-03",
+                "GATE-001-04",
+                "GATE-001-05",
+                "GATE-001-07",
+                "GATE-001-10",
+                "GATE-001-11"
+              ],
+              "blocking": []
+            },
+            "artifacts": [
+              {
+                "path": "runs/20260726-001-execute/outputs/change-manifest.json",
+                "kind": "change-manifest",
+                "role": "evidence"
+              },
+              {
+                "path": "runs/20260726-001-execute/outputs/execution.json",
+                "kind": "execution",
+                "role": "primary",
+                "alias": "current-execution"
+              },
+              {
+                "path": "runs/20260726-001-execute/outputs/self-check.json",
+                "kind": "self-check",
+                "role": "evidence"
+              }
+            ],
+            "warnings": [
+              "Expected outputs/task-results.json was not produced"
+            ],
+            "errors": [],
+            "upstream": {},
+            "reuse_assessments": [],
+            "sealed": true,
+            "primary_artifact_id": "ART-001-002",
+            "artifact_ids": [
+              "ART-001-001",
+              "ART-001-002",
+              "ART-001-003",
+              "ART-001-003",
+              "ART-001-001"
+            ],
+            "next_action": {
+              "suggest_only": true,
+              "action": "dispatch_next",
+              "command": "maestro run next --session maestro-rust-migration-p0p1-20260726-062756",
+              "reason": "more pending steps — advance the chain",
+              "preconditions": [
+                "session_status=running",
+                "active_run_id=null",
+                "no earlier pending decision"
+              ]
+            },
+            "chain_transition": {
+              "step_id": "step-000-execute",
+              "index": 0,
+              "step_status": "sealed",
+              "retry": null
+            },
+            "chain_proposal": null
+          }
+        }
+      }
+    },
+    {
+      "request_id": "req_91a5777b-2e6d-423e-99d9-c9864ac638f5",
+      "type": "transition",
+      "status": "applied",
+      "payload": {
+        "schema_version": "transition-request/1.0",
+        "request_id": "req_91a5777b-2e6d-423e-99d9-c9864ac638f5",
+        "operation": "decide",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": null,
+          "chain_step_id": null
+        },
+        "normalized_request_hash": "sha256:68e22f4fbfe79fc9b41cff86112037be03f57d11ee35dac6eba7609d9bc98e6e",
+        "requested_at": "2026-07-26T09:40:10.877Z",
+        "preconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 3,
+          "active_run_id": null,
+          "run_hash": null,
+          "artifact_registry_revision": 1
+        },
+        "payload": {
+          "point_id": "post-execute",
+          "verdict": "fix",
+          "confidence": "high",
+          "summary": "P0 code parity is fixed, but elevated lhm-bridge output with cpu_temp and cpu_temp_label remains unverified",
+          "evidence": ".workflow/sessions/maestro-rust-migration-p0p1-20260726-062756/runs/20260726-001-execute/outputs/self-check.json",
+          "expected_identity_revision": 2,
+          "expected_activity_revision": 3,
+          "lease": {}
+        }
+      },
+      "claimed_by_run_id": null,
+      "outcome": {
+        "schema_version": "transition-outcome/1.0",
+        "transition_id": "tr_428fef9c-c2b2-4220-9469-8e3b71bbbcb9",
+        "request_id": "req_91a5777b-2e6d-423e-99d9-c9864ac638f5",
+        "request_hash": "sha256:68e22f4fbfe79fc9b41cff86112037be03f57d11ee35dac6eba7609d9bc98e6e",
+        "operation": "decide",
+        "status": "applied",
+        "applied_at": "2026-07-26T17:40:10+08:00",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": null,
+          "chain_step_id": null
+        },
+        "postconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 4,
+          "active_run_id": null,
+          "run_hash": null,
+          "artifact_registry_revision": 1
+        },
+        "exit_code": 0,
+        "error_code": null,
+        "result_hash": "sha256:cd8369c7c362edc4ab84f5ab3d3a4d32942997540521a5c65869ba0460faf8ab",
+        "result": {
+          "decision": {
+            "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+            "point_id": "post-execute",
+            "verdict": "fix",
+            "confidence": "high",
+            "point_status": "pending",
+            "retry": {
+              "count": 1,
+              "max": 2,
+              "exhausted": false
+            },
+            "chain": {
+              "step_id": "step-001-post-execute",
+              "index": 1,
+              "step_status": "pending"
+            },
+            "session_status": "running",
+            "next": {
+              "suggest_only": true,
+              "action": "insert_fix",
+              "command": null,
+              "reason": "fix verdict — a repair Skill must emit a typed chain proposal before the decision can advance",
+              "preconditions": [
+                "fix scope is approved",
+                "proposal changes only the pending tail"
+              ]
+            }
+          },
+          "decision_projection": {
+            "transition_id": "tr_428fef9c-c2b2-4220-9469-8e3b71bbbcb9",
+            "type": "decide",
+            "point_id": "post-execute",
+            "verdict": "fix",
+            "confidence": "high",
+            "summary": "P0 code parity is fixed, but elevated lhm-bridge output with cpu_temp and cpu_temp_label remains unverified",
+            "evidence_ref": ".workflow/sessions/maestro-rust-migration-p0p1-20260726-062756/runs/20260726-001-execute/outputs/self-check.json",
+            "retry_count": 1,
+            "timestamp": "2026-07-26T17:40:10+08:00"
+          }
+        }
+      }
+    },
+    {
+      "request_id": "req_8ac4a119-808c-481a-80db-de62c13e42c3",
+      "type": "transition",
+      "status": "applied",
+      "payload": {
+        "schema_version": "transition-request/1.0",
+        "request_id": "req_8ac4a119-808c-481a-80db-de62c13e42c3",
+        "operation": "decide",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": null,
+          "chain_step_id": null
+        },
+        "normalized_request_hash": "sha256:93a7beed2c2d2b422283c50e5a6bedadefccc3e94744f2e76d8290dad6bcfafe",
+        "requested_at": "2026-07-26T09:48:29.424Z",
+        "preconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 4,
+          "active_run_id": null,
+          "run_hash": null,
+          "artifact_registry_revision": 1
+        },
+        "payload": {
+          "point_id": "post-execute",
+          "verdict": "proceed",
+          "confidence": "high",
+          "summary": "G1 tests, build, elevated CPU temperature fields, process cleanup, and graceful Ctrl+C evidence now satisfy P0",
+          "evidence": ".workflow/sessions/maestro-rust-migration-p0p1-20260726-062756/repair-evidence/post-execute-retry-1/lhm-bridge-elevated.stdout.jsonl",
+          "expected_identity_revision": 2,
+          "expected_activity_revision": 4,
+          "lease": {}
+        }
+      },
+      "claimed_by_run_id": null,
+      "outcome": {
+        "schema_version": "transition-outcome/1.0",
+        "transition_id": "tr_ebbf9d9b-59ef-41ff-a3ff-8d821485757d",
+        "request_id": "req_8ac4a119-808c-481a-80db-de62c13e42c3",
+        "request_hash": "sha256:93a7beed2c2d2b422283c50e5a6bedadefccc3e94744f2e76d8290dad6bcfafe",
+        "operation": "decide",
+        "status": "applied",
+        "applied_at": "2026-07-26T17:48:29+08:00",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": null,
+          "chain_step_id": null
+        },
+        "postconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 5,
+          "active_run_id": null,
+          "run_hash": null,
+          "artifact_registry_revision": 1
+        },
+        "exit_code": 0,
+        "error_code": null,
+        "result_hash": "sha256:24b0db96f15619910033b4b1252a9a3623b434d41c92326f749cb82c93ac4602",
+        "result": {
+          "decision": {
+            "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+            "point_id": "post-execute",
+            "verdict": "proceed",
+            "confidence": "high",
+            "point_status": "passed",
+            "retry": null,
+            "chain": {
+              "step_id": "step-001-post-execute",
+              "index": 1,
+              "step_status": "sealed"
+            },
+            "session_status": "running",
+            "next": {
+              "suggest_only": true,
+              "action": "dispatch_next",
+              "command": "maestro run next --session maestro-rust-migration-p0p1-20260726-062756",
+              "reason": "decision passed — advance the chain",
+              "preconditions": [
+                "session_status=running",
+                "decision point remains passed"
+              ]
+            }
+          },
+          "decision_projection": {
+            "transition_id": "tr_ebbf9d9b-59ef-41ff-a3ff-8d821485757d",
+            "type": "decide",
+            "point_id": "post-execute",
+            "verdict": "proceed",
+            "confidence": "high",
+            "summary": "G1 tests, build, elevated CPU temperature fields, process cleanup, and graceful Ctrl+C evidence now satisfy P0",
+            "evidence_ref": ".workflow/sessions/maestro-rust-migration-p0p1-20260726-062756/repair-evidence/post-execute-retry-1/lhm-bridge-elevated.stdout.jsonl",
+            "retry_count": null,
+            "timestamp": "2026-07-26T17:48:29+08:00"
+          }
+        }
+      }
+    },
+    {
+      "request_id": "req_55220019-58e9-4dce-afbf-0333c3b16ad9",
+      "type": "transition",
+      "status": "applied",
+      "payload": {
+        "schema_version": "transition-request/1.0",
+        "request_id": "req_55220019-58e9-4dce-afbf-0333c3b16ad9",
+        "operation": "complete",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": "20260726-002-execute",
+          "chain_step_id": "step-001-execute"
+        },
+        "normalized_request_hash": "sha256:9cf39cb090fa17e8270840edd290a2b61cff767f9af3605773a41665e7866f7b",
+        "requested_at": "2026-07-26T12:20:23.336Z",
+        "preconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 6,
+          "active_run_id": "20260726-002-execute",
+          "run_hash": "sha256:c39678a29a0d2609732974bcaed0a2e858be0f85a6529f793637ad24b3f07b1b",
+          "artifact_registry_revision": 1
+        },
+        "payload": {
+          "run_id": "20260726-002-execute",
+          "notes": [],
+          "extra_artifacts": [],
+          "summary_fallback": null,
+          "decisions": [],
+          "chain_verdict": "done",
+          "chain_proposal": null,
+          "completion_input_snapshot": {
+            "schema_version": "complete-input-snapshot/1.0",
+            "files": [
+              {
+                "path": "outputs/change-manifest.json",
+                "content_hash": "sha256:c465ce7914882084b43fa7e118199589c6c98999159264b9f79cc2d328f81262"
+              },
+              {
+                "path": "outputs/execution.json",
+                "content_hash": "sha256:1727e9d839dca1f31081ccd778e57d5275af8b5254c845aebe8cae4f3536a071"
+              },
+              {
+                "path": "outputs/self-check.json",
+                "content_hash": "sha256:bcc27d16bacb449c1f9d6a43266110f1bc3f7444f592646b1e73ba6985cb1dc4"
+              },
+              {
+                "path": "outputs/task-results.json",
+                "content_hash": "sha256:bfeb48786a323d6230f911bd9dd49b163095aee39cf0577b9aede7932c42e82f"
+              },
+              {
+                "path": "report.md",
+                "content_hash": "sha256:bbab59f3005b802f5284155c1a874f5aad855082d339d04438973912e264cbab"
+              }
+            ],
+            "snapshot_hash": "sha256:b0c4b06f7b521fd7c16b7d26eb9bfa3a9b61a41fac33c37fec5446432191cdf2"
+          },
+          "expected_identity_revision": 2,
+          "expected_activity_revision": 6,
+          "lease": {}
+        }
+      },
+      "claimed_by_run_id": "20260726-002-execute",
+      "outcome": {
+        "schema_version": "transition-outcome/1.0",
+        "transition_id": "tr_aaee6d17-6b2c-49b4-8b44-37f990def06d",
+        "request_id": "req_55220019-58e9-4dce-afbf-0333c3b16ad9",
+        "request_hash": "sha256:9cf39cb090fa17e8270840edd290a2b61cff767f9af3605773a41665e7866f7b",
+        "operation": "complete",
+        "status": "applied",
+        "applied_at": "2026-07-26T12:20:23.350Z",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": "20260726-002-execute",
+          "chain_step_id": "step-001-execute"
+        },
+        "postconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 7,
+          "active_run_id": null,
+          "run_hash": "sha256:2b6766fc368a89607ea221b2851037a61481bb6feee56e16437573fa2c6b56db",
+          "artifact_registry_revision": 2
+        },
+        "exit_code": 0,
+        "error_code": null,
+        "result_hash": "sha256:42e83fc26c437106620d22703ede83e658d007a4d52150265b6f81b9fb5a4eb4",
+        "result": {
+          "value": {
+            "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+            "run_id": "20260726-002-execute",
+            "status": "sealed",
+            "gates": {
+              "passed": [
+                "GATE-002-06",
+                "GATE-002-07",
+                "GATE-002-08",
+                "GATE-002-09"
+              ],
+              "failed": [],
+              "skipped": [
+                "GATE-002-01",
+                "GATE-002-02",
+                "GATE-002-03",
+                "GATE-002-04",
+                "GATE-002-05",
+                "GATE-002-10",
+                "GATE-002-11"
+              ],
+              "blocking": []
+            },
+            "artifacts": [
+              {
+                "path": "runs/20260726-002-execute/outputs/change-manifest.json",
+                "kind": "change-manifest",
+                "role": "evidence"
+              },
+              {
+                "path": "runs/20260726-002-execute/outputs/execution.json",
+                "kind": "execution",
+                "role": "primary",
+                "alias": "current-execution"
+              },
+              {
+                "path": "runs/20260726-002-execute/outputs/self-check.json",
+                "kind": "self-check",
+                "role": "evidence"
+              },
+              {
+                "path": "runs/20260726-002-execute/outputs/task-results.json",
+                "kind": "task-results",
+                "role": "evidence"
+              }
+            ],
+            "warnings": [],
+            "errors": [],
+            "upstream": {},
+            "reuse_assessments": [],
+            "sealed": true,
+            "primary_artifact_id": "ART-002-002",
+            "artifact_ids": [
+              "ART-002-001",
+              "ART-002-002",
+              "ART-002-003",
+              "ART-002-004"
+            ],
+            "next_action": {
+              "suggest_only": true,
+              "action": "dispatch_next",
+              "command": "maestro run next --session maestro-rust-migration-p0p1-20260726-062756",
+              "reason": "more pending steps — advance the chain",
+              "preconditions": [
+                "session_status=running",
+                "active_run_id=null",
+                "no earlier pending decision"
+              ]
+            },
+            "chain_transition": {
+              "step_id": "step-001-execute",
+              "index": 2,
+              "step_status": "sealed",
+              "retry": null
+            },
+            "chain_proposal": null
+          }
+        }
+      }
+    },
+    {
+      "request_id": "req_d61c5cf2-8c0f-4a70-bd63-0ef6d304c511",
+      "type": "transition",
+      "status": "applied",
+      "payload": {
+        "schema_version": "transition-request/1.0",
+        "request_id": "req_d61c5cf2-8c0f-4a70-bd63-0ef6d304c511",
+        "operation": "complete",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": "20260726-003-review",
+          "chain_step_id": "step-002-review"
+        },
+        "normalized_request_hash": "sha256:671a442465ffdda857e6fedadd4ee121d43e2035b1fec70b8462a9f01bb65ae6",
+        "requested_at": "2026-07-26T14:33:09.670Z",
+        "preconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 8,
+          "active_run_id": "20260726-003-review",
+          "run_hash": "sha256:527934c9f0196214510b29b9a0d1abb124dfda613727a110d234eb5d67b8f5d0",
+          "artifact_registry_revision": 2
+        },
+        "payload": {
+          "run_id": "20260726-003-review",
+          "notes": [
+            "completed with concerns"
+          ],
+          "extra_artifacts": [],
+          "summary_fallback": null,
+          "decisions": [],
+          "chain_verdict": "done-with-concerns",
+          "chain_proposal": null,
+          "completion_input_snapshot": {
+            "schema_version": "complete-input-snapshot/1.0",
+            "files": [
+              {
+                "path": "outputs/issue-candidates.json",
+                "content_hash": "sha256:07e961376d6b89a7b4f4d346fd189ae7d6ec9629af31ac39eb82a133c97b7111"
+              },
+              {
+                "path": "outputs/review-findings.json",
+                "content_hash": "sha256:f86b973f1c0085cb9810e6ffa301719e193448412f79835c9959369ca1b1ecf6"
+              },
+              {
+                "path": "outputs/spec-conflicts.json",
+                "content_hash": "sha256:aeff45bdcbef045a9985d2b70f548f02236070b26b4b9a2c09946469ad629018"
+              },
+              {
+                "path": "report.md",
+                "content_hash": "sha256:72b69e2a5c7c1783d1c64b8ee845fb9fa90a93b5e1461303ca1c873cc71b90d7"
+              }
+            ],
+            "snapshot_hash": "sha256:d407ba6dd4ef1fc8815bcb3ad754f4e98bec2ca46cf59800bf886356ab415fe6"
+          },
+          "expected_identity_revision": 2,
+          "expected_activity_revision": 8,
+          "lease": {}
+        }
+      },
+      "claimed_by_run_id": "20260726-003-review",
+      "outcome": {
+        "schema_version": "transition-outcome/1.0",
+        "transition_id": "tr_25ca189c-ec62-44b0-9e39-e66a3060f0b2",
+        "request_id": "req_d61c5cf2-8c0f-4a70-bd63-0ef6d304c511",
+        "request_hash": "sha256:671a442465ffdda857e6fedadd4ee121d43e2035b1fec70b8462a9f01bb65ae6",
+        "operation": "complete",
+        "status": "applied",
+        "applied_at": "2026-07-26T14:33:09.691Z",
+        "subject": {
+          "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+          "run_id": "20260726-003-review",
+          "chain_step_id": "step-002-review"
+        },
+        "postconditions": {
+          "session_identity_revision": 2,
+          "session_activity_revision": 9,
+          "active_run_id": null,
+          "run_hash": "sha256:bd5cde266151fb3292ccd44df4526d0bae162ec5ccaec33e09a117cac5ffb8ff",
+          "artifact_registry_revision": 3
+        },
+        "exit_code": 0,
+        "error_code": null,
+        "result_hash": "sha256:366c35fe0757834c481874c65289d14b21ce8f955ab8e66217d510f52a29db87",
+        "result": {
+          "value": {
+            "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+            "run_id": "20260726-003-review",
+            "status": "sealed",
+            "gates": {
+              "passed": [
+                "GATE-003-01",
+                "GATE-003-04",
+                "GATE-003-05",
+                "GATE-003-06"
+              ],
+              "failed": [],
+              "skipped": [
+                "GATE-003-02",
+                "GATE-003-03",
+                "GATE-003-07",
+                "GATE-003-08"
+              ],
+              "blocking": []
+            },
+            "artifacts": [
+              {
+                "path": "runs/20260726-003-review/outputs/issue-candidates.json",
+                "kind": "issue-candidates",
+                "role": "evidence"
+              },
+              {
+                "path": "runs/20260726-003-review/outputs/review-findings.json",
+                "kind": "review-findings",
+                "role": "primary",
+                "alias": "latest-review"
+              },
+              {
+                "path": "runs/20260726-003-review/outputs/spec-conflicts.json",
+                "kind": "spec-conflicts",
+                "role": "evidence"
+              }
+            ],
+            "warnings": [],
+            "errors": [],
+            "upstream": {
+              "current-execution": {
+                "artifact_id": "ART-002-002",
+                "path": "sessions/maestro-rust-migration-p0p1-20260726-062756/runs/20260726-002-execute/outputs/execution.json",
+                "kind": "execution",
+                "status": "sealed"
+              }
+            },
+            "reuse_assessments": [
+              {
+                "schema_version": "reuse-assessment/1.0",
+                "decision": "REUSE",
+                "reason_codes": [
+                  "REUSE_ELIGIBLE"
+                ],
+                "consumer": {
+                  "kind": "execution",
+                  "alias": "current-execution",
+                  "schema": null,
+                  "role": null
+                },
+                "source_fence": {
+                  "schema_version": "reuse-source-fence/1.0",
+                  "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+                  "session_id": "maestro-rust-migration-p0p1-20260726-062756",
+                  "producer_run_id": "20260726-002-execute",
+                  "producer_run_hash": "sha256:2b6766fc368a89607ea221b2851037a61481bb6feee56e16437573fa2c6b56db",
+                  "producer_status": "sealed",
+                  "artifact_id": "ART-002-002",
+                  "artifact_role": "primary",
+                  "artifact_status": "sealed",
+                  "artifact_hash": "sha256:1727e9d839dca1f31081ccd778e57d5275af8b5254c845aebe8cae4f3536a071",
+                  "observed_artifact_hash": "sha256:1727e9d839dca1f31081ccd778e57d5275af8b5254c845aebe8cae4f3536a071",
+                  "artifact_schema": "execution/1.0",
+                  "artifact_registry_revision": 2,
+                  "producer_contract_hash": "sha256:2436a526e336e4e19317d15a7083360566ebe6d59467957d3d78d26cc19f298e"
+                },
+                "assessment_hash": "sha256:54bd0f55f193a0b46edaba5317651bce9ea65d0adcdd093d4f35dcc9238a100a"
+              }
+            ],
+            "sealed": true,
+            "primary_artifact_id": "ART-003-002",
+            "artifact_ids": [
+              "ART-003-001",
+              "ART-003-002",
+              "ART-003-003"
+            ],
+            "next_action": {
+              "suggest_only": true,
+              "action": "seal_session",
+              "command": "maestro run seal-session maestro-rust-migration-p0p1-20260726-062756",
+              "reason": "all steps complete — seal the session",
+              "preconditions": [
+                "all Runs are sealed",
+                "all chain steps are terminal"
+              ]
+            },
+            "chain_transition": {
+              "step_id": "step-002-review",
+              "index": 3,
+              "step_status": "sealed",
+              "retry": null
+            },
+            "chain_proposal": null
+          }
+        }
+      }
+    }
+  ],
+  "ralph_authority": null,
+  "schema_version": "session/1.3",
+  "topic_identity": {
+    "schema_version": "topic-identity/1.0",
+    "normalization": "NFKC+unicode-lower+whitespace-collapse/1",
+    "workspace_id": "sha256:d7a9da423c6a13a759b1f8d5335c4a0be607b83bd91cef28e97875f94d313d51",
+    "source": "explicit",
+    "verbatim": "按 docs/rust-migration-guide.md 实现 Rust 迁移 P0+P1",
+    "normalized": "按 docs/rust-migration-guide.md 实现 rust 迁移 p0+p1",
+    "normalized_length": 47,
+    "normalized_hash": "sha256:36bc5ffd70d553bba855f118034a2ff377ee832a5dbac40c01292d4206eab32f",
+    "identity_hash": "sha256:f3a492cfbaed24c2eb43d8b283f597c3acbac74ad37907ef0b7f4db15dd11066",
+    "revision": 1
+  }
+}

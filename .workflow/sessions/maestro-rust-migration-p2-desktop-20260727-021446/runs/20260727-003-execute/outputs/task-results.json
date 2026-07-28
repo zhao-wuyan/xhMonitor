@@ -1,0 +1,152 @@
+{
+  "_meta": {
+    "kind": "task-results",
+    "schema": "task-results/1.0",
+    "role": "attachment"
+  },
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260727-003-execute",
+  "plan_ref": "ART-002-004",
+  "execution_method": "agent",
+  "results": [
+    {
+      "task_id": "TASK-001",
+      "wave_id": "WAVE-001",
+      "goal_ref": "G1",
+      "status": "completed",
+      "executor": "agent:G1Repair",
+      "attempt": 3,
+      "files_changed": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "xhm-desktop/Cargo.toml",
+        "xhm-desktop/build.rs",
+        "xhm-desktop/src/lib.rs",
+        "xhm-desktop/src/main.rs",
+        "xhm-desktop/ui/shell.slint"
+      ],
+      "commands": [
+        {
+          "command": "cargo metadata --no-deps --format-version 1",
+          "status": "passed",
+          "evidence": "workspace_members contains xhm-core, xhm-service, xhm-desktop; xhm-desktop targets are lib, bin, custom-build"
+        },
+        {
+          "command": "cargo check -p xhm-desktop",
+          "status": "passed",
+          "evidence": "Finished dev profile, 0 errors"
+        },
+        {
+          "command": "cargo test -p xhm-desktop (x3)",
+          "status": "passed",
+          "evidence": "Three consecutive default-parallel runs: 54 passed across 3 suites each"
+        }
+      ],
+      "criteria": [
+        {"criterion": "cargo metadata recognizes xhm-desktop and preserves original members", "status": "verified", "evidence": "xhm-core, xhm-service, xhm-desktop all present"},
+        {"criterion": "cargo check compiles bin/lib/build script/single Slint root", "status": "verified", "evidence": "cargo check -p xhm-desktop passed"},
+        {"criterion": "default startup uses winit-software and shows non-empty closable window", "status": "verified", "evidence": "Slint winit-software shell 260x72 observed via Orca; bootstrap log confirms winit-software backend"},
+        {"criterion": "main.rs only calls bootstrap; no G2-G4 logic in entrypoint", "status": "verified", "evidence": "main.rs contains only fn main -> xhm_desktop::bootstrap()"}
+      ],
+      "summary_path": "outputs/summaries/TASK-001.md",
+      "commit_hash": null
+    },
+    {
+      "task_id": "TASK-002",
+      "wave_id": "WAVE-002",
+      "goal_ref": "G1",
+      "status": "completed",
+      "executor": "agent:G1Repair",
+      "attempt": 3,
+      "files_changed": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "xhm-desktop/Cargo.toml",
+        "xhm-desktop/src/tray/mod.rs",
+        "xhm-desktop/src/tray/event_bridge.rs",
+        "xhm-desktop/src/tray/native.rs",
+        "xhm-desktop/src/lib.rs",
+        "xhm-desktop/ui/shell.slint"
+      ],
+      "commands": [
+        {
+          "command": "cargo test -p xhm-desktop tray",
+          "status": "passed",
+          "evidence": "8 passed (event_bridge 4 + native 2 + mod 2)"
+        },
+        {
+          "command": "cargo run -p xhm-desktop with XHM_DESKTOP_TRAY_MATRIX=1",
+          "status": "passed",
+          "evidence": "Shell_NotifyIconW NIM_ADD succeeded; balloon notification shown; PostMessageW to native WndProc exercised 7 menu + double-click + notification-click + show/hide + exit"
+        }
+      ],
+      "criteria": [
+        {"criterion": "Cargo.lock resolves tray-icon 0.24.1 and official APIs are used", "status": "verified", "evidence": "Cargo.lock tray-icon 0.24.1; tray-icon 0.24.1 evaluated first but lacks balloon/notification-click; Shell_NotifyIconW fallback implemented as sole active path"},
+        {"criterion": "event bridge only forwards commands to active-loop/UI queue", "status": "verified", "evidence": "WndProc forwards to std::sync::mpsc; Slint Timer dispatches; no direct Slint writes in callbacks"},
+        {"criterion": "seven command ids and double-click show_hide mapping", "status": "verified", "evidence": "7 native menu IDs (1001-1007) + double-click WM_LBUTTONDBLCLK → ShowHide; command_from_native_id covers all 7"},
+        {"criterion": "real Windows menu/checked/double-click/notification/exit matrix", "status": "verified", "evidence": "PostMessageW to WndProc: OpenWeb→applied, ClickThrough→checked=true, AdminMode→applied, Settings→applied, About→applied, double-click→show-hide-applied, notification-click→About applied, ShowHide→show-hide-applied visible=false, Exit→exit-applied; process exited cleanly, no residual icon"}
+      ],
+      "decision": "GO for Shell_NotifyIconW native tray implementation: 7-item menu, checked toggle, double-click, balloon notification with click, show/hide, and exit all observed in real Windows active Slint loop. tray-icon 0.24.1 evaluated first but rejected (no balloon/notification-click API); mutually exclusive fallback is the sole active path.",
+      "summary_path": "outputs/summaries/TASK-002.md",
+      "commit_hash": null
+    },
+    {
+      "task_id": "TASK-003",
+      "wave_id": "WAVE-003",
+      "goal_ref": "G1",
+      "status": "completed",
+      "executor": "agent:G1Repair",
+      "attempt": 3,
+      "files_changed": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "xhm-desktop/Cargo.toml",
+        "xhm-desktop/src/config.rs",
+        "xhm-desktop/src/service_client/mod.rs",
+        "xhm-desktop/src/service_client/rest.rs",
+        "xhm-desktop/src/lib.rs"
+      ],
+      "commands": [
+        {"command": "cargo test -p xhm-desktop config", "status": "passed", "evidence": "12 passed including injected reader/probe, Url origin, preferred+2, permission-denied, isolated all-failed"},
+        {"command": "cargo test -p xhm-desktop rest", "status": "passed", "evidence": "10 passed; wiremock captures method/path/body shape"}
+      ],
+      "criteria": [
+        {"criterion": "missing/bad JSON/missing wrapper/bad URL fall back to 35181 without panic", "status": "verified", "evidence": "bad_json_missing_wrapper_and_bad_url_fall_back table-driven test covers all 4 invalid inputs; missing_file and permission_denied separate tests"},
+        {"criterion": "preferred, preferred+2, all-failed health probe behavior; default port exact 35181", "status": "verified", "evidence": "real_http_probe_discovers_preferred_plus_two uses isolated TcpListeners at preferred+2; all_failed_probe_uses_isolated_configured_port injects StaticProbe (no host-global port dependency); default_is_exact_35181_and_signalr_never_drives_sse"},
+        {"criterion": "mock HTTP captures method/path/body with service shape", "status": "verified", "evidence": "rest filter 10 passed; wiremock covers config health/settings/admin-status, power warmup/next, widgetconfig/metric paths and body"},
+        {"criterion": "SignalRUrl not used as realtime URL, no new API", "status": "verified", "evidence": "config.rs ignores SignalRUrl; sse_url derived from api_base + DEFAULT_SSE_PATH via Url API (not string concat)"}
+      ],
+      "summary_path": "outputs/summaries/TASK-003.md",
+      "commit_hash": null
+    },
+    {
+      "task_id": "TASK-004",
+      "wave_id": "WAVE-004",
+      "goal_ref": "G1",
+      "status": "completed",
+      "executor": "agent:G1Repair",
+      "attempt": 3,
+      "files_changed": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "xhm-desktop/Cargo.toml",
+        "xhm-desktop/src/service_client/mod.rs",
+        "xhm-desktop/src/service_client/sse.rs",
+        "xhm-desktop/src/desktop_state.rs",
+        "xhm-desktop/src/lib.rs"
+      ],
+      "commands": [
+        {"command": "cargo test -p xhm-desktop sse", "status": "passed", "evidence": "12 passed: framer, lifecycle, resubscribe, paused-time retry reset, connect/send cancellation, schema error"},
+        {"command": "cargo test -p xhm-desktop desktop_state", "status": "passed", "evidence": "14 passed: lifecycle, Lite stale, PID reuse, maxima preserve, pin/unpin, top5"}
+      ],
+      "criteria": [
+        {"criterion": "five events exactly generate corresponding PushEvent/state; unknown/comment/bad JSON no state update", "status": "verified", "evidence": "framer_decodes_exactly_five_frozen_events; known_event_syntax_and_schema_errors_are_bad_json distinguishes known-event schema errors from UnknownEvent; unknown_and_bad_json_do_not_change_state"},
+        {"criterion": "full/lite URL, [7,3,7,-1]→3,7, paused-time reconnect, cancel stops request", "status": "verified", "evidence": "default_subscription_is_lite_and_urls_normalize_pins asserts [7,3,7,-1]→3,7; ten_consecutive_failures_use_nine_exact_two_second_delays uses start_paused=true + tokio::time::advance; established_connection_resets_budget_and_service_restart_recovers; cancellation_interrupts_peer_that_never_sends_headers; cancellation_interrupts_bounded_channel_backpressure"},
+        {"criterion": "panel, metadata-before-metrics, process disappearance, pin, PID restart deterministic snapshot", "status": "verified", "evidence": "default_panel_is_collapsed_lite; metadata_before_metrics_is_preserved_when_has_meta_is_true; full_snapshot_removes_disappeared_rows; lite_snapshot_removes_stale_rows_and_pins; pid_reuse_clears_old_metadata; metadata_pid_reuse_clears_old_metrics; pin_unpin_and_normalization_are_deterministic"},
+        {"criterion": "network/sleep not in Slint UI thread, reducer no I/O", "status": "verified", "evidence": "sse.rs has no Slint import; supervise/run_connection_loop/connect_and_drain in tokio::spawn; desktop_state.rs reducer is synchronous data transform, no I/O"}
+      ],
+      "summary_path": "outputs/summaries/TASK-004.md",
+      "commit_hash": null
+    }
+  ]
+}

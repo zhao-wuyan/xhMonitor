@@ -1,0 +1,119 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-014"
+  },
+  "id": "TASK-014",
+  "title": "完成确定性回归与真实 Windows P2 验收",
+  "description": "补齐可观察契约测试并收集软件渲染、五事件 SSE、tray、双窗口、四边、4K、多 DPI 和 60 秒内存证据。",
+  "type": "verification",
+  "status": "pending",
+  "goal_ref": "G4",
+  "execute_step_id": "step-006-execute",
+  "wave_id": "WAVE-014",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "GUIDE-P2-DONE-SOFTWARE-UI",
+    "GUIDE-P2-DONE-MEMORY",
+    "GUIDE-P2-DONE-4K",
+    "GUIDE-P2-DONE-DESKTOP-TEST",
+    "G1-DONE",
+    "G2-DONE",
+    "G3-DONE",
+    "G4-DONE",
+    "SESSION-EC-01",
+    "SESSION-EC-02",
+    "SESSION-EC-03",
+    "SESSION-EC-04",
+    "SESSION-EC-05",
+    "SESSION-EC-06",
+    "SESSION-EC-07",
+    "SESSION-EC-08",
+    "BOUNDARY-SOFTWARE-RENDERER",
+    "BOUNDARY-FROZEN-SSE",
+    "BOUNDARY-NO-HOTKEY",
+    "BOUNDARY-NO-INSTALLER",
+    "BOUNDARY-NO-P3",
+    "BOUNDARY-NO-CSHARP-CUTOVER",
+    "BOUNDARY-NO-WEB-WRITES",
+    "BOUNDARY-NO-SERVICE-CORE-WRITES",
+    "BOUNDARY-SYSTEM-SETTINGS-READONLY",
+    "P0P1-NO-REGRESSION"
+  ],
+  "deps": [
+    "TASK-013"
+  ],
+  "files": [
+    "xhm-desktop/tests/service_boundaries.rs",
+    "xhm-desktop/tests/win32_boundaries.rs",
+    "xhm-desktop/tests/floating_ui_state.rs",
+    "xhm-desktop/tests/floating_interactions.rs",
+    "xhm-desktop/tests/taskbar_ui_state.rs",
+    "xhm-desktop/tests/settings_update.rs"
+  ],
+  "read_first": [
+    "docs/rust-migration-guide.md:238-308,332-363,380-405",
+    "docs/rust-migration-feasibility.md:342-368",
+    "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs:23-301",
+    "XhMonitor.Desktop.Tests/FloatingWindowViewModelThrottleTests.cs:13-43",
+    "XhMonitor.Desktop.Tests/TaskbarMetricsViewModelColumnRebuildTests.cs:20-210",
+    "XhMonitor.Desktop.Tests/TaskbarMetricsWindowCoordinateTransformTests.cs:10-34",
+    "XhMonitor.Desktop.Tests/TaskbarMetricsWindowDragAnchorTests.cs:9-74",
+    "XhMonitor.Desktop.Tests/SettingsViewModelTests.cs:44-104",
+    "XhMonitor.Desktop.Tests/GitHubAppUpdateServiceTests.cs:14-181,296-320",
+    "TASK-001..TASK-013 acceptance evidence"
+  ],
+  "action": "添加只防守可观察契约的集成测试，然后以 release+winit-software 在真实 Windows 运行完整 P2 矩阵；所有失败回到责任 task 修根因，不在验收 task 加 production 特例。",
+  "implementation_steps": [
+    "确定性测试覆盖 Win32 fake/geometry、HTTP method/path/body、SSE 分帧/五事件/reconnect/cancel、临时 filesystem、paused/injected clock、UI state/timing、settings/update 0-side-effect。",
+    "执行 cargo test -p xhm-desktop、cargo test --workspace、cargo clippy --workspace --all-targets -- -D warnings。",
+    "真实 Windows 启动 P1 Service/bridge 与 release xhm-desktop：确认 winit-software、精确五事件、自动重连、两个窗口/两个 SSE、七项 tray/double-click/notification、click-through 恢复、G3 交互、设置/About/update。",
+    "Bottom/Top/Left/Right 逐边验证 Text/Bar，3840x2160 原生 4K 与 100%/150%/200% 多 DPI/负坐标显示器记录 screen/taskbar/tray/task-list/window RECT，无裁切越界。",
+    "稳态且动画/双窗/SSE 全开后采 60 个一秒间隔 Private Bytes：每个 xhm-desktop 样本 <10 MiB；每秒同时计算 P0/P1 xhm-service+lhm-bridge 合计并要求每个样本 <30 MiB。保存 60 行原始字节、MiB、PID、时间和条件。",
+    "no-scope 守卫确认热键 regex 0 命中；update 无下载/installer launch；计划所有 files[] 在 xhmonitor-web/、XhMonitor.Desktop/、xhm-service/、xhm-core/ 下写目标为 0。"
+  ],
+  "convergence_criteria": [
+    "Test/CLI：三个 cargo 命令全绿，确定性边界测试覆盖 Win32/HTTP/SSE/filesystem/clock。",
+    "[UI-observable] 手工：真实 Windows 软件渲染、五事件 SSE、tray/double-click、双窗口、四边 dock/float 与 G3/G4 操作矩阵全部通过。",
+    "[UI-observable] 手工：4K 和 100%/150%/200% 多 DPI 四边无裁切/越界，8 个生产组合有截图和 RECT。",
+    "CLI：60/60 xhm-desktop Private Bytes <10 MiB，60/60 service+bridge 合计 <30 MiB。",
+    "CLI/Read：热键 0 命中、无 installer 下载/启动路径、四个受限目录写目标为 0，system settings 只读。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop",
+      "cargo test --workspace",
+      "cargo clippy --workspace --all-targets -- -D warnings",
+      "$env:SLINT_BACKEND='winit-software'; cargo run -p xhm-desktop --release",
+      "rg -n \"RegisterHotKey|WM_HOTKEY|Ctrl\\+Alt\\+Shift\\+X\" xhm-desktop",
+      "rg -n \"Downloading|Downloaded|download_installer|launch_installer|Command::new|ShellExecute\" xhm-desktop/src/ui/update_check.rs"
+    ],
+    "manual_scenarios": [
+      "真实 Service SSE/reconnect、tray/double-click/notification、双窗口、click-through、G3 interaction、settings/About/update。",
+      "四边任务栏、4K 与 100%/150%/200% 多 DPI。",
+      "PowerShell 60 次、每次 Start-Sleep -Seconds 1 的 PrivateMemorySize64 采样，并逐行断言 desktop <10 MiB、service+bridge <30 MiB。",
+      "结构化读取本计划 14 个 task files 的 files[]，断言受限目录前缀计数为 0。"
+    ],
+    "expected": "P2 全部功能、性能、兼容与边界门禁有可复核证据。"
+  },
+  "acceptance_evidence": [
+    "六个测试文件覆盖矩阵",
+    "三个 cargo 命令完整输出",
+    "Windows 操作日志/截图/录屏",
+    "4K/多 DPI 四边 RECT 与 8 组合截图",
+    "60 行内存原始样本和逐样本断言",
+    "热键/installer/受限写目标零结果"
+  ],
+  "rollback": {
+    "steps": [
+      "测试与证据不回滚；失败回到责任 TASK-001..TASK-013 修根因"
+    ],
+    "preserves": [
+      "既有门禁阈值",
+      "renderer 与冻结契约",
+      "所有 no-scope guards"
+    ]
+  }
+}

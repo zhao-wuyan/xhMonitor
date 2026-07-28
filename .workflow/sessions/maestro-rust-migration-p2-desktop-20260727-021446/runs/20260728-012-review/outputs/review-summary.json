@@ -1,0 +1,64 @@
+{
+  "schema_version": "review-summary/1.0",
+  "run_id": "20260728-012-review",
+  "session_id": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "verdict": "WARN",
+  "scope": "xhm-desktop Run 010 post-execute repair: 5 changed files + 3 G3 parity fixes + bounded Tokio memory optimization",
+  "level": "standard",
+  "files_reviewed": 5,
+  "dimensions_covered": 6,
+  "severity_distribution": {
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 1,
+    "info": 4,
+    "total": 6
+  },
+  "findings_count": 6,
+  "issue_candidate_count": 1,
+  "spec_conflict_count": 1,
+  "antipattern_status": "clean",
+  "antipattern_exit_code": 0,
+  "backward_compat_breaks": false,
+  "g3_parity_verified": {
+    "locked_toggle": {
+      "status": "PASS",
+      "evidence": "panel_after_click floating_window.rs:92-101 matches C# FloatingWindowViewModel.cs:258-270; test at floating_window.rs:1113-1121"
+    },
+    "pinned_overflow": {
+      "status": "PASS",
+      "evidence": "floating_window.slint:202-203 max-visible-pinned=3, pinned-area-height capped, ListView scrollable"
+    },
+    "unsnapped_clamp": {
+      "status": "PASS",
+      "evidence": "clamp_rect_to_work_area floating_interactions.rs:419-432; finish_drag floating_window.rs:857-885; 2 deterministic tests"
+    }
+  },
+  "memory_gate_amendment": {
+    "amendment_id": "amend-g4-memory-threshold-chg001",
+    "status": "applied",
+    "original_threshold": "< 10 MiB",
+    "amended_threshold": "< 40 MiB",
+    "original_gate_result": "FAIL",
+    "amended_gate_result": "PASS",
+    "honest": true,
+    "suppressed_thresholds": false,
+    "fabricated_evidence": false,
+    "concern": "Spec doc (docs/rust-migration-guide.md:305) not superseded or conflict-marked after amendment — code/spec contradiction routed as COR-001 spec conflict"
+  },
+  "top_findings": [
+    {
+      "id": "COR-001",
+      "severity": "medium",
+      "title": "Memory gate spec-doc contradiction: docs <10 MiB vs amended goal <40 MiB",
+      "location": "docs/rust-migration-guide.md:305"
+    },
+    {
+      "id": "PRF-001",
+      "severity": "low",
+      "title": "Bounded Tokio current-thread optimization did not reduce memory (+2.5 MiB unexplained delta)",
+      "location": "xhm-desktop/src/lib.rs:400"
+    }
+  ]
+}

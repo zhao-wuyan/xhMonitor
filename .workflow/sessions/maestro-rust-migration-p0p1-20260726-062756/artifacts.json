@@ -1,0 +1,146 @@
+{
+  "schema_version": "artifacts/1.0",
+  "revision": 3,
+  "artifacts": {
+    "ART-001-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260726-001-execute",
+      "relative_path": "runs/20260726-001-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "99404e6fff17f33f078aaa81d073614ef96d6a4cdaf203a0f04ec24b19c8a5ce",
+      "size": 1777,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-001-002": {
+      "kind": "execution",
+      "role": "primary",
+      "producer_run_id": "20260726-001-execute",
+      "relative_path": "runs/20260726-001-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "3b45dcbbb36ff18e1206fd0bcd2e98555cd42882f2a48a8d3330fa4adbea8919",
+      "size": 7055,
+      "status": "superseded",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-001-003": {
+      "kind": "self-check",
+      "role": "evidence",
+      "producer_run_id": "20260726-001-execute",
+      "relative_path": "runs/20260726-001-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "e6aad13954b7c01e0aa731651c24de8608801bfca5ae014a6a5921ac9e13db49",
+      "size": 2400,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-002-001": {
+      "kind": "change-manifest",
+      "role": "evidence",
+      "producer_run_id": "20260726-002-execute",
+      "relative_path": "runs/20260726-002-execute/outputs/change-manifest.json",
+      "media_type": "application/json",
+      "schema_version": "change-manifest/1.0",
+      "content_hash": "c465ce7914882084b43fa7e118199589c6c98999159264b9f79cc2d328f81262",
+      "size": 2907,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-002-002": {
+      "kind": "execution",
+      "role": "primary",
+      "producer_run_id": "20260726-002-execute",
+      "relative_path": "runs/20260726-002-execute/outputs/execution.json",
+      "media_type": "application/json",
+      "schema_version": "execution/1.0",
+      "content_hash": "1727e9d839dca1f31081ccd778e57d5275af8b5254c845aebe8cae4f3536a071",
+      "size": 2843,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": "ART-001-002"
+    },
+    "ART-002-003": {
+      "kind": "self-check",
+      "role": "evidence",
+      "producer_run_id": "20260726-002-execute",
+      "relative_path": "runs/20260726-002-execute/outputs/self-check.json",
+      "media_type": "application/json",
+      "schema_version": "self-check/1.0",
+      "content_hash": "bcc27d16bacb449c1f9d6a43266110f1bc3f7444f592646b1e73ba6985cb1dc4",
+      "size": 2309,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-002-004": {
+      "kind": "task-results",
+      "role": "evidence",
+      "producer_run_id": "20260726-002-execute",
+      "relative_path": "runs/20260726-002-execute/outputs/task-results.json",
+      "media_type": "application/json",
+      "schema_version": "task-results/1.0",
+      "content_hash": "bfeb48786a323d6230f911bd9dd49b163095aee39cf0577b9aede7932c42e82f",
+      "size": 1543,
+      "status": "sealed",
+      "derived_from": [],
+      "replaces": null
+    },
+    "ART-003-001": {
+      "kind": "issue-candidates",
+      "role": "evidence",
+      "producer_run_id": "20260726-003-review",
+      "relative_path": "runs/20260726-003-review/outputs/issue-candidates.json",
+      "media_type": "application/json",
+      "schema_version": "issue-candidates/1.0",
+      "content_hash": "07e961376d6b89a7b4f4d346fd189ae7d6ec9629af31ac39eb82a133c97b7111",
+      "size": 220,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-002"
+      ],
+      "replaces": null
+    },
+    "ART-003-002": {
+      "kind": "review-findings",
+      "role": "primary",
+      "producer_run_id": "20260726-003-review",
+      "relative_path": "runs/20260726-003-review/outputs/review-findings.json",
+      "media_type": "application/json",
+      "schema_version": "review-findings/1.0",
+      "content_hash": "f86b973f1c0085cb9810e6ffa301719e193448412f79835c9959369ca1b1ecf6",
+      "size": 2967,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-002"
+      ],
+      "replaces": null
+    },
+    "ART-003-003": {
+      "kind": "spec-conflicts",
+      "role": "evidence",
+      "producer_run_id": "20260726-003-review",
+      "relative_path": "runs/20260726-003-review/outputs/spec-conflicts.json",
+      "media_type": "application/json",
+      "schema_version": "spec-conflicts/1.0",
+      "content_hash": "aeff45bdcbef045a9985d2b70f548f02236070b26b4b9a2c09946469ad629018",
+      "size": 229,
+      "status": "sealed",
+      "derived_from": [
+        "ART-002-002"
+      ],
+      "replaces": null
+    }
+  },
+  "aliases": {
+    "current-execution": "ART-002-002",
+    "latest-review": "ART-003-002"
+  }
+}

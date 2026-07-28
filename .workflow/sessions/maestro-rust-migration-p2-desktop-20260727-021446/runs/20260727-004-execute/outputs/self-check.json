@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "kind": "self-check",
+    "schema": "self-check/1.0",
+    "role": "evidence"
+  },
+  "schema_version": "self-check/1.0",
+  "run_id": "20260727-004-execute",
+  "goal_ref": "G2",
+  "check_items": [
+    {"id": "SC-01", "check": "cargo build and cargo test -p xhm-desktop green x3 consecutive", "status": "pass", "evidence": "Round 1: build pass, 100 tests pass; Round 2: build pass, 100 tests pass; Round 3: build pass, 100 tests pass; 0 failures"},
+    {"id": "SC-02", "check": "cargo clippy -p xhm-desktop --all-targets -- -D warnings clean", "status": "pass", "evidence": "0 errors; 0 warnings"},
+    {"id": "SC-03", "check": "Focused Win32, placement, persistence, process, and shell behavior remains green", "status": "pass", "evidence": "Full xhm-desktop suite: 100 passed"},
+    {"id": "SC-04", "check": "Real Windows dual-window Bottom-edge smoke; four-edge coverage is pure-function only", "status": "pass", "evidence": "pid=38076: HWND resolution after 2 retries; floating=52890544, taskbar=31196916, distinct; DPI=96/96; Bottom placement origin=(1086,1040). Orca observed floating window and remaining taskbar window during orderly close. Process exit=0 and log recorded dual SSE runtime stopped. Top/Left/Right were not smoke-tested."},
+    {"id": "SC-05", "check": "No global-hotkey feature added", "status": "pass", "evidence": "Repair changed only compilation, process enumeration mapping, resource ownership, and removal of broken drag wiring"},
+    {"id": "SC-06", "check": "Scope remains xhm-desktop plus current Run artifacts", "status": "pass", "evidence": "No xhmonitor-web, XhMonitor.*, xhm-core, or xhm-service implementation was edited by stabilization"},
+    {"id": "SC-07", "check": "Run artifacts parse and run check has no blocking gate", "status": "pass", "evidence": "maestro run check 20260727-004-execute reported failed=[] and blocking=[]"},
+    {"id": "SC-08", "check": "Rust-specific mutex name does not collide with C#", "status": "pass", "evidence": "Local\\XhMonitor_xhm-desktop_SingleInstance differs from XhMonitor_Desktop_SingleInstance"},
+    {"id": "SC-09", "check": "Rust-specific persistence path does not collide with C#", "status": "pass", "evidence": "Path ends with XhMonitor/xhm-desktop/window.json"},
+    {"id": "SC-10", "check": "Four-edge placement table matches C# formulas", "status": "pass", "evidence": "geometry::tests::four_edge_table_matches_csharp_formulas covers Bottom, Top, Left, and Right; only Bottom was observed in real smoke"},
+    {"id": "SC-11", "check": "Process32NextW error mapping is not silently successful", "status": "pass", "evidence": "On FALSE, GetLastError is read immediately. ERROR_NO_MORE_FILES ends enumeration; every other error closes the snapshot and returns KillOutcome::Other."},
+    {"id": "SC-12", "check": "5px drag threshold remains strict greater-than", "status": "pass", "evidence": "Pure geometry uses dx^2+dy^2 > 25; exactly 5px remains a click"},
+    {"id": "SC-13", "check": "Controller, single-instance guard, timer, and SSE runtime have deterministic ownership", "status": "pass", "evidence": "TrayRuntime owns Rc controller/guard/resource cells and the wire timer; RuntimeResources owns the save timer and SSE JoinHandle; Drop cancels controller tokens and joins the SSE thread"},
+    {"id": "SC-14", "check": "Tray ShowHide and ClickThrough remain wired through ShellController", "status": "pass", "evidence": "ShowHide uses Slint show/hide plus topmost/save; ClickThrough uses NativeWindowOps; Exit saves, shuts down, and quits"},
+    {"id": "SC-15", "check": "Persistence and dual SSE lifecycle are active without leaked timers or runtime", "status": "pass", "evidence": "5s save timer is owned and dropped; dual streams use an owned runtime thread that is cancelled and joined; smoke logged dual SSE runtime stopped"},
+    {"id": "SC-16", "check": "HWND resolution remains bounded at 20x50ms", "status": "pass", "evidence": "Repeated timer with attempt counter; current smoke resolved after 2 attempts; timeout retains guard"},
+    {"id": "SC-17", "check": "Drag/snap production boundary is honest", "status": "pass", "evidence": "drag/snap production wiring deferred to G3. The broken TouchArea callback used window-local logical coordinates, supplied the window RECT as work area, and ignored the snapped position; that stub was removed. G2 pure geometry remains tested."}
+  ],
+  "overall": "pass",
+  "blocking_issues": [],
+  "deferred_items": ["drag/snap production wiring deferred to G3"]
+}

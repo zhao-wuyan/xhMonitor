@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-012"
+  },
+  "id": "TASK-012",
+  "title": "完成任务栏指标第二窗口与四种呈现",
+  "description": "在 G2 双窗/geometry 和 G1 独立 SSE 上实现 Text/Bar × Horizontal/Vertical，并只读复用 G3 OrganicShell。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G4",
+  "execute_step_id": "step-006-execute",
+  "wave_id": "WAVE-012",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "GUIDE-P2-WIN-SECOND-WINDOW",
+    "P2-C11",
+    "G4-DONE",
+    "SESSION-EC-05",
+    "SESSION-EC-08",
+    "BOUNDARY-SOFTWARE-RENDERER"
+  ],
+  "deps": [
+    "TASK-011",
+    "TASK-008",
+    "TASK-009"
+  ],
+  "files": [
+    "xhm-desktop/ui/taskbar_metrics.slint",
+    "xhm-desktop/src/ui/taskbar_metrics.rs",
+    "xhm-desktop/src/ui/mod.rs",
+    "xhm-desktop/ui/shell.slint"
+  ],
+  "read_first": [
+    "xhm-desktop/ui/components/organic_shell.slint",
+    "TASK-009 approved component/evidence",
+    "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml:1-260",
+    "XhMonitor.Desktop/Windows/TaskbarMetricsWindow.xaml.cs:23-70,235-520,588-652",
+    "XhMonitor.Desktop/ViewModels/TaskbarMetricsViewModel.cs:96-325,552-670,1230-1259",
+    "XhMonitor.Desktop/Models/TaskbarDisplaySettings.cs:5-71",
+    "XhMonitor.Desktop/Models/EdgeDockSide.cs:3-9",
+    "XhMonitor.Desktop.Tests/TaskbarMetricsViewModelColumnRebuildTests.cs:20-210",
+    "XhMonitor.Desktop.Tests/TaskbarMetricsWindowDragAnchorTests.cs:9-74",
+    "TASK-004 SSE factory 与 TASK-006 geometry 实际导出"
+  ],
+  "action": "实现第二个 Slint Window 和独立 SSE lifecycle；内部支持 TextHorizontal/TextVertical/BarHorizontal/BarVertical，生产按 Top/Bottom→horizontal、Left/Right→vertical 与 DockVisualStyle Text/Bar 选择。",
+  "implementation_steps": [
+    "只读 import xhm-desktop/ui/components/organic_shell.slint，不把该 G3 文件列为写目标。",
+    "使用独立 G1 SSE connection 消费 SystemUsage+HardwareLimits；窗口关闭释放连接，断线/重连不影响主窗。",
+    "复制 N-up/N-down/CPU/RAM/GPU/VRAM/Power 列、compact units、温度 trailing text；只在 layout token/visible columns/style/orientation 变化时 rebuild，值变化原地更新。",
+    "纯逻辑覆盖 4 presentation variants×4 edges 的 16-cell normalization/render geometry；真实生产验证 2 styles×4 edges 的 8 组合，不新增 orientation setting。",
+    "drag、80px snap、半窗越界、anchor/DPI/position 全委托 TASK-006；UI 只发 pointer intent 并显示 floating/dragging/docked state。"
+  ],
+  "convergence_criteria": [
+    "Test：16-cell 矩阵全覆盖，value-only 不 rebuild，unit/columns/style/orientation 变化才 rebuild。",
+    "Test：第二 SSE 断开/重连/close teardown 不影响主连接。",
+    "[UI-observable] 手工：Text/Bar 在四边 8 个生产组合均无裁切，Top/Bottom 横、Left/Right 竖。",
+    "[UI-observable] 手工：dock→drag floating 保持 cursor anchor，释放可回四边，OrganicShell 状态同步。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop taskbar_metrics"
+    ],
+    "manual_scenarios": [
+      "逐边拖放并为 Text/Bar 每边截图；观察两个 connection id 生命周期。"
+    ],
+    "expected": "任务栏第二窗四种呈现与四边交互通过。"
+  },
+  "acceptance_evidence": [
+    "16-cell 测试",
+    "8 张生产组合截图",
+    "双 SSE lifecycle 日志",
+    "dock/undock 录屏"
+  ],
+  "rollback": {
+    "steps": [
+      "回退 taskbar module 与 shell export"
+    ],
+    "preserves": [
+      "G3 OrganicShell",
+      "G2 geometry/双窗壳"
+    ]
+  }
+}

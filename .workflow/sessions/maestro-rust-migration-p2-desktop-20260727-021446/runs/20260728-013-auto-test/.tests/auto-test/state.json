@@ -1,0 +1,29 @@
+{
+  "schema_version": "auto-test-state/1.0",
+  "session_id": "auto-test-20260728-013",
+  "session_ref": "maestro-rust-migration-p2-desktop-20260727-021446",
+  "run_id": "20260728-013-auto-test",
+  "phase": "test-gen",
+  "phase_dir": ".tests/auto-test",
+  "source_route": "gap",
+  "status": "single_pass",
+  "flags": { "max_iter": 1, "single_pass": true },
+  "iteration": 1,
+  "strategy": "conservative",
+  "strategy_history": ["conservative"],
+  "threshold": 95,
+  "current_layer": "L2",
+  "layer_state": {
+    "L0": { "inner_iter": 1, "status": "passed", "pass_rate": 100.0, "total": 128, "passed": 128, "failed": 0, "blocked": 0 },
+    "L1": { "inner_iter": 1, "status": "passed", "pass_rate": 100.0, "total": 2, "passed": 2, "failed": 0, "blocked": 0, "note": "review findings covered; no new tests" },
+    "L2": { "inner_iter": 1, "status": "passed", "pass_rate": 100.0, "total": 2, "passed": 2, "failed": 0, "blocked": 0, "note": "diagnosis gaps assessed without false tests" },
+    "L3": { "inner_iter": 0, "status": "skipped", "pass_rate": 0, "total": 0, "passed": 0, "failed": 0, "blocked": 0 }
+  },
+  "pass_rate_history": [100.0],
+  "scenario_count": 5,
+  "generated_test_count": 0,
+  "infrastructure": { "framework": "cargo", "package": "xhm-desktop", "run_command": "cargo test -p xhm-desktop" },
+  "started_at": "2026-07-28T10:04:12+08:00",
+  "updated_at": "2026-07-28T10:04:12+08:00",
+  "convergence": { "status": "single_pass", "iterations": 1, "final_pass_rate": 100.0, "threshold": 95, "reason": "128/128 baseline passed; review findings covered; no generated tests needed" }
+}

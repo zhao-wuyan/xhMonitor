@@ -1,0 +1,570 @@
+﻿{
+    "schema_version":  "desktop-memory-action-profile/1.0",
+    "executable":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\target\\release\\xhm-desktop.exe",
+    "process_id":  53736,
+    "stages":  [
+                   {
+                       "name":  "normal_main_taskbar_hidden_aux_tray_dual_sse",
+                       "captured_at":  "2026-07-27T23:20:27.6996367+08:00",
+                       "private_min_bytes":  35344384,
+                       "private_max_bytes":  35356672,
+                       "private_mean_bytes":  35348685,
+                       "private_mean_mib":  33.711133,
+                       "working_set_mean_mib":  51.590039,
+                       "thread_range":  [
+                                            17,
+                                            17
+                                        ],
+                       "handle_range":  [
+                                            312,
+                                            317
+                                        ],
+                       "gdi_range":  [
+                                         25,
+                                         25
+                                     ],
+                       "user_range":  [
+                                          30,
+                                          30
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  34932016,
+                                           "title":  "",
+                                           "class":  "xhmonitor_shell_notify_53736",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   },
+                   {
+                       "name":  "settings_visible",
+                       "captured_at":  "2026-07-27T23:20:35.9428359+08:00",
+                       "private_min_bytes":  40222720,
+                       "private_max_bytes":  40222720,
+                       "private_mean_bytes":  40222720,
+                       "private_mean_mib":  38.359375,
+                       "working_set_mean_mib":  56.273438,
+                       "thread_range":  [
+                                            17,
+                                            17
+                                        ],
+                       "handle_range":  [
+                                            312,
+                                            317
+                                        ],
+                       "gdi_range":  [
+                                         27,
+                                         27
+                                     ],
+                       "user_range":  [
+                                          30,
+                                          30
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  34932016,
+                                           "title":  "",
+                                           "class":  "xhmonitor_shell_notify_53736",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   },
+                   {
+                       "name":  "settings_about_visible",
+                       "captured_at":  "2026-07-27T23:20:44.1761308+08:00",
+                       "private_min_bytes":  41914368,
+                       "private_max_bytes":  41922560,
+                       "private_mean_bytes":  41922150,
+                       "private_mean_mib":  39.980078,
+                       "working_set_mean_mib":  57.900391,
+                       "thread_range":  [
+                                            17,
+                                            17
+                                        ],
+                       "handle_range":  [
+                                            312,
+                                            318
+                                        ],
+                       "gdi_range":  [
+                                         29,
+                                         29
+                                     ],
+                       "user_range":  [
+                                          30,
+                                          30
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  34932016,
+                                           "title":  "",
+                                           "class":  "xhmonitor_shell_notify_53736",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   },
+                   {
+                       "name":  "aux_close_requested",
+                       "captured_at":  "2026-07-27T23:20:52.3331630+08:00",
+                       "private_min_bytes":  41922560,
+                       "private_max_bytes":  41926656,
+                       "private_mean_bytes":  41926042,
+                       "private_mean_mib":  39.983789,
+                       "working_set_mean_mib":  57.90957,
+                       "thread_range":  [
+                                            17,
+                                            17
+                                        ],
+                       "handle_range":  [
+                                            313,
+                                            318
+                                        ],
+                       "gdi_range":  [
+                                         29,
+                                         29
+                                     ],
+                       "user_range":  [
+                                          30,
+                                          30
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  34932016,
+                                           "title":  "",
+                                           "class":  "xhmonitor_shell_notify_53736",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   },
+                   {
+                       "name":  "floating_hidden",
+                       "captured_at":  "2026-07-27T23:21:00.5639081+08:00",
+                       "private_min_bytes":  41926656,
+                       "private_max_bytes":  41926656,
+                       "private_mean_bytes":  41926656,
+                       "private_mean_mib":  39.984375,
+                       "working_set_mean_mib":  57.910156,
+                       "thread_range":  [
+                                            17,
+                                            17
+                                        ],
+                       "handle_range":  [
+                                            313,
+                                            313
+                                        ],
+                       "gdi_range":  [
+                                         29,
+                                         29
+                                     ],
+                       "user_range":  [
+                                          30,
+                                          30
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  34932016,
+                                           "title":  "",
+                                           "class":  "xhmonitor_shell_notify_53736",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   },
+                   {
+                       "name":  "taskbar_close_requested",
+                       "captured_at":  "2026-07-27T23:21:08.6828385+08:00",
+                       "private_min_bytes":  41816064,
+                       "private_max_bytes":  41816064,
+                       "private_mean_bytes":  41816064,
+                       "private_mean_mib":  39.878906,
+                       "working_set_mean_mib":  57.867188,
+                       "thread_range":  [
+                                            15,
+                                            15
+                                        ],
+                       "handle_range":  [
+                                            308,
+                                            308
+                                        ],
+                       "gdi_range":  [
+                                         29,
+                                         29
+                                     ],
+                       "user_range":  [
+                                          30,
+                                          30
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  34932016,
+                                           "title":  "",
+                                           "class":  "xhmonitor_shell_notify_53736",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   },
+                   {
+                       "name":  "tray_close_requested",
+                       "captured_at":  "2026-07-27T23:21:16.8339966+08:00",
+                       "private_min_bytes":  41664512,
+                       "private_max_bytes":  41816064,
+                       "private_mean_bytes":  41689907,
+                       "private_mean_mib":  39.758594,
+                       "working_set_mean_mib":  57.798438,
+                       "thread_range":  [
+                                            11,
+                                            15
+                                        ],
+                       "handle_range":  [
+                                            301,
+                                            308
+                                        ],
+                       "gdi_range":  [
+                                         26,
+                                         26
+                                     ],
+                       "user_range":  [
+                                          26,
+                                          27
+                                      ],
+                       "windows":  [
+                                       {
+                                           "hwnd":  16257724,
+                                           "title":  "xhm-desktop",
+                                           "class":  "Window Class",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  29428606,
+                                           "title":  "xhm-desktop-taskbar",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  4983096,
+                                           "title":  "About XhMonitor",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  1575808,
+                                           "title":  "xhMonitor Settings",
+                                           "class":  "Window Class",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  66259588,
+                                           "title":  "",
+                                           "class":  "Winit Thread Event Target",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  28249090,
+                                           "title":  "",
+                                           "class":  "PseudoConsoleWindow",
+                                           "visible":  true
+                                       },
+                                       {
+                                           "hwnd":  121901518,
+                                           "title":  "MSCTFIME UI",
+                                           "class":  "MSCTFIME UI",
+                                           "visible":  false
+                                       },
+                                       {
+                                           "hwnd":  72093548,
+                                           "title":  "Default IME",
+                                           "class":  "IME",
+                                           "visible":  false
+                                       }
+                                   ]
+                   }
+               ],
+    "stdout_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\sessions\\maestro-rust-migration-p2-desktop-20260727-021446\\runs\\20260727-009-debug\\work\\runtime-actions.stdout.log",
+    "stderr_log":  "C:\\ProjectDev\\project\\xinghe\\xhMonitor\\.workflow\\sessions\\maestro-rust-migration-p2-desktop-20260727-021446\\runs\\20260727-009-debug\\work\\runtime-actions.stderr.log"
+}

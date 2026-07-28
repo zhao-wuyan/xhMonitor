@@ -1,0 +1,16 @@
+{
+  "schema_version": "coverage/1.0",
+  "target": "xhm-desktop",
+  "generated_at": "2026-07-28T10:15:04+08:00",
+  "requirements_covered": [
+    "P2 xhm-desktop regression baseline",
+    "latest-review",
+    "latest-debug"
+  ],
+  "requirements_uncovered": [],
+  "coverage_percentage": 100.0,
+  "scenario_coverage_percentage": 100.0,
+  "tests_executed": 128,
+  "tests_passed": 128,
+  "tests_failed": 0
+}

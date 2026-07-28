@@ -1,0 +1,85 @@
+{
+  "_meta": {
+    "kind": "plan-task",
+    "schema": "plan-task/1.0",
+    "role": "attachment",
+    "alias": "TASK-010"
+  },
+  "id": "TASK-010",
+  "title": "实现主悬浮窗指标、Pinned/ListView 与 Toast 呈现",
+  "description": "把 G1 DesktopState 投影为 Slint 主窗核心视觉，不创建第二套 SSE 或 state reducer。",
+  "type": "implementation",
+  "status": "pending",
+  "goal_ref": "G3",
+  "execute_step_id": "step-005-execute",
+  "wave_id": "WAVE-010",
+  "estimated_minutes": 60,
+  "requirement_refs": [
+    "P2-C01",
+    "P2-C02",
+    "P2-C03",
+    "P2-C04",
+    "P2-C05",
+    "P2-C15",
+    "G3-DONE",
+    "SESSION-EC-04",
+    "BOUNDARY-FROZEN-SSE"
+  ],
+  "deps": [
+    "TASK-009",
+    "TASK-004",
+    "TASK-008"
+  ],
+  "files": [
+    "xhm-desktop/ui/floating_window.slint",
+    "xhm-desktop/src/ui/mod.rs",
+    "xhm-desktop/src/ui/floating_window.rs",
+    "xhm-desktop/ui/shell.slint"
+  ],
+  "read_first": [
+    "XhMonitor.Desktop/FloatingWindow.xaml:1-180,285-559,603-717",
+    "XhMonitor.Desktop/ViewModels/FloatingWindowViewModel.cs:14-303,307-385,436-706",
+    "XhMonitor.Desktop/Converters/MetricValueColorConverter.cs:8-39",
+    "XhMonitor.Desktop/Converters/MemoryPercentageColorConverter.cs:8-45",
+    "XhMonitor.Desktop/Converters/ProgressWidthConverter.cs:6-22",
+    "XhMonitor.Desktop.Tests/FloatingWindowViewModelCollapsedRefreshTests.cs:23-301",
+    "xhm-core/src/wire.rs:73-204",
+    "TASK-004 DesktopState 实际导出"
+  ],
+  "action": "用 feature-local projection 绑定 TASK-004 state，复制 #990A0A0A、8px radius、shadow、阈值、3px bar、PinnedStack、Slint ListView、per-disk 行与 3s Toast。",
+  "implementation_steps": [
+    "保留 PanelState hover 展开/离开收起/点击锁定；collapsed/lite 只刷新 pinned，full 刷新虚拟列表；PID 消失解除固定，重启 PID 不自动重绑，late metadata 合并。",
+    "主条显示 CPU/GPU/RAM/VRAM/NET/Power；SystemUsagePayload.disks 按 name/read_speed/write_speed 逐盘显示，不发明 disk aggregate。",
+    "CPU/GPU <50 #4ade80、<80 #facc15、else #f87171；RAM/VRAM 用 current/max，max<=0 green；NET/Disk 无证据阈值时不套百分比色。",
+    "ThinProgressBar 高 3px 且 ratio clamp 0..1；PinnedStack 用 model；进程列表用 Slint ListView，数据增长不改变窗口结构。",
+    "Toast 是 3s 可复用 overlay，供 power/kill/update 结果调用；不伪造第六个 SSE threshold event。"
+  ],
+  "convergence_criteria": [
+    "Test：50/80 边界、max<=0、progress clamp、pin/metadata/PID restart 与 full/lite 投影确定。",
+    "[UI-observable] 手工：背景/radius/shadow、指标色、3px bar、PinnedStack、长列表滚动、Disk 行与 Toast 均可见且不重排壳。",
+    "Read：UI 模块不创建 SSE client/reducer，worker 线程不直接写 Slint property。"
+  ],
+  "verify": {
+    "commands": [
+      "cargo test -p xhm-desktop floating_window"
+    ],
+    "manual_scenarios": [
+      "fixture 流覆盖 green/yellow/red、collapsed/full、pinned、metadata-late、disk 和 Toast。"
+    ],
+    "expected": "G3 数据呈现与 Toast 可操作。"
+  },
+  "acceptance_evidence": [
+    "状态测试输出",
+    "指标/列表/disk/toast 截图",
+    "UI-thread dispatch 日志"
+  ],
+  "rollback": {
+    "steps": [
+      "回退 floating_window files 与 shell import"
+    ],
+    "preserves": [
+      "G1 state/SSE",
+      "G2 shell"
+    ]
+  }
+}
