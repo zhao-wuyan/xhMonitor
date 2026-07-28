@@ -768,15 +768,13 @@ fn install_tray_runtime(
                         }
                         return;
                     }
-                    tray::TrayCommand::OpenWeb => {
-                        match open_web_dashboard() {
-                            Ok(()) => tracing::info!(
-                                endpoint = "http://127.0.0.1:35180",
-                                "tray Web command opened existing dashboard"
-                            ),
-                            Err(error) => tracing::error!(%error, "tray Web command failed"),
-                        }
-                    }
+                    tray::TrayCommand::OpenWeb => match open_web_dashboard() {
+                        Ok(()) => tracing::info!(
+                            endpoint = "http://127.0.0.1:35180",
+                            "tray Web command opened existing dashboard"
+                        ),
+                        Err(error) => tracing::error!(%error, "tray Web command failed"),
+                    },
                     tray::TrayCommand::AdminMode => {
                         tracing::info!("tray Admin Mode remains deferred to P3");
                     }

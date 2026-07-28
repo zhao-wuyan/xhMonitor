@@ -17,25 +17,49 @@ echo                           停止所有服务 (Stop Services)
 echo     =========================================================================
 echo.
 
-echo   [1/3] 正在停止后台服务...
+echo   [1/5] 正在停止 Rust Service...
+taskkill /F /IM xhm-service.exe > nul 2>&1
+if %errorlevel% equ 0 (
+    echo         [OK] xhm-service.exe 已停止
+) else (
+    echo         [-] xhm-service.exe 未运行
+)
+echo.
+
+echo   [2/5] 正在停止 Rust Desktop...
+taskkill /F /IM xhm-desktop.exe > nul 2>&1
+if %errorlevel% equ 0 (
+    echo         [OK] xhm-desktop.exe 已停止
+) else (
+    echo         [-] xhm-desktop.exe 未运行
+)
+echo.
+
+echo   [3/5] 正在停止硬件采集 bridge...
+taskkill /F /IM lhm-bridge.exe > nul 2>&1
+if %errorlevel% equ 0 (
+    echo         [OK] lhm-bridge.exe 已停止
+) else (
+    echo         [-] lhm-bridge.exe 未运行
+)
+echo.
+
+echo   [4/5] 正在停止旧版 .NET 进程（升级兼容）...
 taskkill /F /IM XhMonitor.Service.exe > nul 2>&1
 if %errorlevel% equ 0 (
-    echo         [OK] 后台服务已停止
+    echo         [OK] XhMonitor.Service.exe 已停止
 ) else (
-    echo         [-] 后台服务未运行
+    echo         [-] XhMonitor.Service.exe 未运行
 )
-echo.
-
-echo   [2/3] 正在停止桌面客户端...
 taskkill /F /IM XhMonitor.Desktop.exe > nul 2>&1
 if %errorlevel% equ 0 (
-    echo         [OK] 桌面客户端已停止
+    echo         [OK] XhMonitor.Desktop.exe 已停止
 ) else (
-    echo         [-] 桌面客户端未运行
+    echo         [-] XhMonitor.Desktop.exe 未运行
 )
 echo.
 
-echo   [3/3] 正在停止 WinRing0 驱动...
+echo   [5/5] 正在停止 WinRing0 驱动...
 sc stop WinRing0_1_2_0 > nul 2>&1
 if %errorlevel% equ 0 (
     echo         [OK] WinRing0 驱动已停止

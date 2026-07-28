@@ -299,7 +299,12 @@ impl Default for KillMachine {
 }
 
 impl KillMachine {
-    pub fn click(&mut self, pid: u32, name: impl Into<String>, now_ms: u64) -> Option<KillDecision> {
+    pub fn click(
+        &mut self,
+        pid: u32,
+        name: impl Into<String>,
+        now_ms: u64,
+    ) -> Option<KillDecision> {
         let name = name.into();
         match &self.phase {
             KillPhase::Confirming {
@@ -340,16 +345,13 @@ impl KillMachine {
 
     pub fn confirming(&self, now_ms: u64) -> Option<(u32, f32)> {
         let KillPhase::Confirming {
-            pid,
-            started_at_ms,
-            ..
+            pid, started_at_ms, ..
         } = self.phase
         else {
             return None;
         };
         let elapsed = now_ms.saturating_sub(started_at_ms);
-        (elapsed < KILL_CONFIRM_MS)
-            .then_some((pid, elapsed as f32 / KILL_CONFIRM_MS as f32))
+        (elapsed < KILL_CONFIRM_MS).then_some((pid, elapsed as f32 / KILL_CONFIRM_MS as f32))
     }
 
     pub fn complete(&mut self, pid: u32) {
@@ -374,8 +376,12 @@ pub fn logical_pointer_to_physical(
 ) -> PhysicalPoint {
     let scale = dpi.max(1) as f64 / 96.0;
     PhysicalPoint::new(
-        window_rect.left.saturating_add(round_i32(f64::from(logical_x) * scale)),
-        window_rect.top.saturating_add(round_i32(f64::from(logical_y) * scale)),
+        window_rect
+            .left
+            .saturating_add(round_i32(f64::from(logical_x) * scale)),
+        window_rect
+            .top
+            .saturating_add(round_i32(f64::from(logical_y) * scale)),
     )
 }
 
@@ -386,10 +392,7 @@ pub fn drag_origin(cursor: PhysicalPoint, anchor: PhysicalPoint) -> PhysicalPoin
     )
 }
 
-pub fn occupied_taskbar_edge(
-    bounds: PhysicalRect,
-    work_area: PhysicalRect,
-) -> Option<TaskbarEdge> {
+pub fn occupied_taskbar_edge(bounds: PhysicalRect, work_area: PhysicalRect) -> Option<TaskbarEdge> {
     if !bounds.is_valid() || !work_area.is_valid() {
         return None;
     }
@@ -397,7 +400,10 @@ pub fn occupied_taskbar_edge(
         (TaskbarEdge::Left, (work_area.left - bounds.left).max(0)),
         (TaskbarEdge::Right, (bounds.right - work_area.right).max(0)),
         (TaskbarEdge::Top, (work_area.top - bounds.top).max(0)),
-        (TaskbarEdge::Bottom, (bounds.bottom - work_area.bottom).max(0)),
+        (
+            TaskbarEdge::Bottom,
+            (bounds.bottom - work_area.bottom).max(0),
+        ),
     ];
     gaps.into_iter()
         .filter(|(_, gap)| *gap > 0)
@@ -409,11 +415,7 @@ pub fn snapped_release_rect(
     window: PhysicalRect,
     monitor: MonitorGeometry,
 ) -> Option<(PhysicalRect, TaskbarEdge)> {
-    snap_floating_window(
-        window,
-        monitor.work_area,
-        monitor.occupied_taskbar_edge,
-    )
+    snap_floating_window(window, monitor.work_area, monitor.occupied_taskbar_edge)
 }
 
 /// 将未吸附拖放的窗口矩形 clamp 到显示器工作区，保证窗口完全可见。
@@ -428,7 +430,12 @@ pub fn clamp_rect_to_work_area(window: PhysicalRect, work_area: PhysicalRect) ->
     let max_top = work_area.bottom.saturating_sub(height).max(work_area.top);
     let left = window.left.clamp(work_area.left, max_left);
     let top = window.top.clamp(work_area.top, max_top);
-    PhysicalRect::new(left, top, left.saturating_add(width), top.saturating_add(height))
+    PhysicalRect::new(
+        left,
+        top,
+        left.saturating_add(width),
+        top.saturating_add(height),
+    )
 }
 
 fn round_i32(value: f64) -> i32 {
@@ -603,7 +610,10 @@ mod tests {
     fn monitor_taskbar_edge_comes_from_work_area_gap() {
         let bounds = PhysicalRect::new(-1920, 0, 0, 1080);
         let work = PhysicalRect::new(-1920, 0, 0, 1040);
-        assert_eq!(occupied_taskbar_edge(bounds, work), Some(TaskbarEdge::Bottom));
+        assert_eq!(
+            occupied_taskbar_edge(bounds, work),
+            Some(TaskbarEdge::Bottom)
+        );
         assert_eq!(KILL_ARC_CIRCUMFERENCE, 43.98);
         assert_eq!(ManualClock(50).now_ms(), 50);
     }

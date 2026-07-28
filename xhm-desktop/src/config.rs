@@ -3,7 +3,7 @@
 //! The production reader resolves `service-endpoints.json` beside the executable,
 //! parses the existing PascalCase wrapper, normalizes `ApiBaseUrl` to an origin,
 //! and probes the preferred port through preferred + 10. Missing/unreadable/invalid
-//! configuration falls back to port 35181 without panicking.
+//! configuration falls back to port 35179 without panicking.
 
 use std::future::Future;
 use std::path::Path;
@@ -13,8 +13,8 @@ use futures::future::BoxFuture;
 use serde::Deserialize;
 use url::Url;
 
-/// P1 frozen service port (`xhm-service/src/state.rs:14`).
-pub const DEFAULT_SERVICE_PORT: u16 = 35_181;
+/// Production service port (`xhm-service/src/state.rs:14`).
+pub const DEFAULT_SERVICE_PORT: u16 = 35_179;
 /// P1 frozen SSE path (`xhm-service/src/state.rs:16`).
 pub const DEFAULT_SSE_PATH: &str = "/api/v1/events";
 
@@ -222,7 +222,7 @@ fn fallback_after_load_error(dir: &Path, error: ConfigLoadError) -> Config {
     tracing::warn!(
         path = %dir.join(CONFIG_FILE_NAME).display(),
         %error,
-        "service endpoints config fallback to default 35181"
+        "service endpoints config fallback to default 35179"
     );
     Config::default()
 }
@@ -454,10 +454,10 @@ mod tests {
     }
 
     #[test]
-    fn default_is_exact_35181_and_signalr_never_drives_sse() {
+    fn default_is_exact_35179_and_signalr_never_drives_sse() {
         let config = Config::default();
-        assert_eq!(config.api_base, "http://localhost:35181");
-        assert_eq!(config.sse_url, "http://localhost:35181/api/v1/events");
+        assert_eq!(config.api_base, "http://localhost:35179");
+        assert_eq!(config.sse_url, "http://localhost:35179/api/v1/events");
     }
 
     #[tokio::test]

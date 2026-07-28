@@ -2,7 +2,8 @@
 
 > 高性能的 Windows 进程资源监控系统，支持 CPU、内存、GPU、显存、功耗、网络等指标的实时采集、聚合分析和可视化展示
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
+[![Rust](https://img.shields.io/badge/Rust-1.82-000000)](https://www.rust-lang.org/)
+[![.NET bridge](https://img.shields.io/badge/.NET_bridge-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -13,8 +14,8 @@
 - ✅ **分层聚合** - 自动生成分钟/小时/天级别统计数据
 - ✅ **实时推送** - SignalR 实时推送最新指标，延迟 < 100ms
 - ✅ **Web 可视化** - React + TailwindCSS 现代化界面，ECharts 动态图表
-- ✅ **桌面悬浮窗** - WPF 桌面应用，支持进程固定、拖拽、置顶
-- ✅ **插件化架构** - IMetricProvider 接口支持自定义指标扩展
+- ✅ **桌面悬浮窗** - Rust + Slint 桌面应用，支持进程固定、拖拽、置顶
+- ✅ **模块化架构** - `xhm-core` trait 与 Service 模块支持指标能力扩展
 - ✅ **配置驱动** - 零前端代码修改，动态扩展指标
 - ✅ **国际化支持** - 中英文切换，易于扩展多语言
 - ✅ **功耗管理** - RyzenAdj 集成，支持 AMD 平台功耗监控与调节
@@ -25,18 +26,29 @@
 
 ### Prerequisites
 
-**后端**：
-- Windows 10/11 (1709+)
-- .NET 8 SDK
-- Visual Studio 2022 或 VS Code
+**Rust Service/Desktop 开发**：
 
-**前端**：
-- Node.js 18+
-- npm 或 pnpm
+- Windows 10/11 x64。
+- Rust 1.82 或更高版本，使用 MSVC toolchain。
+- Visual Studio 2022 Build Tools，包含 C++ 桌面生成工具。
+- Windows PowerShell 5.1 或 PowerShell 7。
+- .NET 8 SDK，仅用于构建 `lhm-bridge`；C# Service/Desktop 不是默认开发或生产入口。
+
+**Web 前端**：
+
+- Node.js 18+。
+- npm 或 pnpm。
+
+**发行版运行时**：
+
+- Full 绿色版/安装器的 `lhm-bridge` self-contained，不要求目标机安装 .NET Runtime。
+- Lite 绿色版/安装器需要 Microsoft.NETCore.App 8（Windows x64）。
+- LiteNet8 安装器只内置 Microsoft.NETCore.App 8 runtime。
 
 **权限要求**：
-- **推荐**：管理员权限（可监控功耗模式和切换功耗，AI MAX 395适配）
-- **最低**：普通用户权限（无法进行功耗监控和切换）
+
+- **推荐**：管理员权限（可监控功耗模式和切换功耗，适配 AI MAX 395）。
+- **最低**：普通用户权限（无法进行部分功耗监控和切换）。
 
 ### Install
 
@@ -47,85 +59,83 @@ git clone <repository-url>
 cd xhMonitor
 ```
 
-**2. 后端服务**
+**2. 启动 Rust Service**
 
-```bash
-# 还原依赖
-dotnet restore
+```powershell
+# 构建 Rust workspace
+cargo build --workspace
 
-# 应用数据库迁移
-cd XhMonitor.Service
-dotnet ef database update
-
-# 启动后端服务
-dotnet run --project XhMonitor.Service
+# 启动 Rust Service
+cargo run -p xhm-service
 ```
 
-服务将在 `http://localhost:35179` 启动。
+Service 默认在 `http://localhost:35179` 启动。
 
-**3. 前端界面**
+**3. 启动 Rust Desktop**
 
-```bash
-# 进入前端目录
+在另一个 PowerShell 中执行：
+
+```powershell
+$env:SLINT_BACKEND = "winit-software"
+cargo run -p xhm-desktop
+```
+
+Desktop 缺少同级 `service-endpoints.json` 时会回退到 `http://localhost:35179`。
+
+**4. 启动 Web 前端**
+
+```powershell
 cd xhmonitor-web
-
-# 安装依赖
 npm install
-
-# 启动开发服务器
 npm run dev
 ```
 
-前端将在 `http://localhost:35180` 启动。
+前端将在 `http://localhost:35180` 启动，并继续使用现有 REST/SignalR 兼容 API。
 
-**4. 桌面应用**
+**5. 构建并启动完整绿色版**
 
-```bash
-# 启动桌面应用
-dotnet run --project XhMonitor.Desktop
+```powershell
+.\publish.ps1 -Version "1.0.0"
+& ".\release\XhMonitor-v1.0.0\启动服务.bat"
 ```
 
-或使用启动脚本：
+根目录 batch 会先启动 Rust Service，等待 health gate 通过，再启动 Rust Desktop；端口 `35179` 被占用时会失败退出。构建安装器使用：
 
-```bash
-# Windows
-.\start.bat
+```powershell
+.\build-installer.ps1 -Version "1.0.0" -BuildType LiteNet8
 ```
 
 ## Usage
 
 ### Quick Start
 
-**1. 配置监控关键词**
+**1. 启动 Rust Service**
 
-编辑 `XhMonitor.Service/appsettings.json`：
-
-```json
-{
-  "Monitor": {
-    "IntervalSeconds": 3,
-    "Keywords": ["python", "node", "docker", "chrome"]
-  }
-}
+```powershell
+cargo run -p xhm-service
 ```
 
-**2. 启动服务**
+**2. 启动 Rust Desktop**
 
-```bash
-dotnet run --project XhMonitor.Service
+```powershell
+$env:SLINT_BACKEND = "winit-software"
+cargo run -p xhm-desktop
 ```
+
+Desktop 支持：
+
+- 进程固定（Pin）。
+- 拖拽移动与窗口置顶。
+- 任务栏指标窗口。
+- 功耗调节（需管理员权限、受支持的 AMD 平台与完整 RyzenAdj 工具链）。
 
 **3. 访问 Web 界面**
 
-打开浏览器访问 `http://localhost:35180`，即可查看实时监控数据。
+在 `xhmonitor-web/` 运行 `npm run dev` 后，打开 `http://localhost:35180` 查看实时监控数据。
 
-**4. 使用桌面悬浮窗**
+**4. 配置发布包**
 
-运行 `XhMonitor.Desktop` 或执行 `start.bat`，桌面将显示悬浮窗，支持：
-- 进程固定（Pin）
-- 拖拽移动
-- 窗口置顶
-- 功耗调节（需管理员权限 + AMD 平台）
+`XhMonitor.Service/appsettings.json` 是 `publish.ps1` 使用的 Service 配置模板。绿色版生成后，运行时配置位于 `release/XhMonitor-v<version>/Service/appsettings.json`；Desktop 端点配置位于同一发布根目录的 `Desktop/service-endpoints.json`。
 
 ### Examples
 
@@ -342,40 +352,34 @@ GET /config/health
 
 ### 系统架构
 
-XhMonitor 采用分层架构设计：
+XhMonitor 当前生产路径由 Rust Service、Rust Desktop 和独立的 .NET 8 硬件采集 bridge 组成：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  采集层 (Collection Layer)                                   │
-│  ├─ PerformanceMonitor (协调器)                              │
-│  ├─ ProcessScanner (进程扫描)                                │
-│  └─ MetricProviders (指标采集器)                             │
-│     ├─ CpuMetricProvider                                     │
-│     ├─ MemoryMetricProvider                                  │
-│     ├─ GpuMetricProvider                                     │
-│     ├─ VramMetricProvider                                    │
-│     ├─ DiskMetricProvider                                    │
-│     ├─ PowerMetricProvider (RyzenAdj)                        │
-│     └─ NetworkMetricProvider                                 │
+│  ├─ xhm-service 进程/系统指标采集                            │
+│  ├─ lhm-bridge (.NET 8, JSON Lines IPC)                     │
+│  └─ RyzenAdj native DLL / CLI                               │
 └─────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  存储层 (Storage Layer)                                      │
-│  ├─ SQLite Database (EF Core 8)                             │
+│  ├─ SQLite + rusqlite                                       │
 │  ├─ ProcessMetricRecords (原始数据)                          │
 │  └─ AggregatedMetricRecords (分层聚合)                       │
 └─────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  服务层 (Service Layer)                                      │
-│  ├─ REST API (MetricsController, ConfigController)          │
-│  └─ SignalR Hub (实时推送)                                   │
+│  ├─ xhm-service (Tokio + Axum REST API)                     │
+│  ├─ SSE (Rust Desktop)                                      │
+│  └─ SignalR 兼容端点 (Web 前端)                              │
 └─────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  展示层 (Presentation Layer)                                 │
 │  ├─ Web 前端 (React 19 + TypeScript)                        │
-│  └─ 桌面应用 (WPF + MVVM)                                    │
+│  └─ Rust Desktop (Slint + winit software renderer)          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -383,51 +387,58 @@ XhMonitor 采用分层架构设计：
 
 | 类别 | 技术 |
 |------|------|
-| 后端框架 | .NET 8 + ASP.NET Core |
-| 前端框架 | React 19 + TypeScript + Vite 7 |
-| 桌面应用 | WPF + MVVM |
-| 数据库 | SQLite + EF Core 8 |
-| 实时通信 | SignalR |
+| 共享核心 | Rust 1.82 + `xhm-core` |
+| 后端服务 | Rust + Tokio + Axum |
+| 桌面应用 | Rust + Slint 1.12.1 + winit software renderer |
+| 硬件采集 bridge | C# .NET 8 + LibreHardwareMonitor（独立子进程） |
+| Web 前端 | React 19 + TypeScript + Vite 7 |
+| 数据库 | SQLite + rusqlite |
+| 实时通信 | SSE（Desktop）+ SignalR 兼容端点（Web） |
 | 可视化 | ECharts 6 |
 | 样式 | TailwindCSS v4 (Glassmorphism) |
-| 性能监控 | LibreHardwareMonitor + PerformanceCounter API |
-| 功耗管理 | RyzenAdj |
-| 日志 | Serilog |
+| 进程/系统指标 | sysinfo + Windows API + lhm-bridge |
+| 功耗管理 | RyzenAdj native DLL / CLI |
+| Rust 日志 | tracing |
 
 ### 项目结构
 
 ```
 xhMonitor/
-├── XhMonitor.Core/              # 核心库
-│   ├── Entities/                # EF Core 实体
-│   ├── Enums/                   # 枚举定义
-│   ├── Interfaces/              # 接口定义
-│   ├── Models/                  # 数据模型
-│   └── Providers/               # 内置指标提供者
-├── XhMonitor.Service/           # 后端服务
-│   ├── Controllers/             # API 控制器
-│   ├── Core/                    # 核心业务逻辑
-│   ├── Data/                    # 数据访问层
-│   ├── Hubs/                    # SignalR Hub
-│   ├── Workers/                 # 后台任务
-│   └── appsettings.json         # 配置文件
-├── XhMonitor.Desktop/           # WPF 桌面应用
-│   ├── ViewModels/              # MVVM ViewModels
-│   ├── Views/                   # XAML 视图
-│   └── Services/                # 服务层
-├── xhmonitor-web/               # React 前端
-│   ├── src/
-│   │   ├── components/          # React 组件
-│   │   ├── hooks/               # 自定义 Hooks
-│   │   └── i18n.ts              # 国际化配置
-│   └── vite.config.ts           # Vite 配置
-└── tools/                       # 工具集
-    └── RyzenAdj/                # RyzenAdj 功耗管理工具
+├── Cargo.toml                    # Rust workspace
+├── xhm-core/                     # 共享模型、wire 类型与 trait
+├── xhm-service/                  # Rust Axum Service
+│   └── src/
+│       ├── api/                  # REST 路由
+│       ├── db/                   # SQLite 数据层
+│       ├── lhm/                  # lhm-bridge 生命周期
+│       ├── power/                # RyzenAdj 与设备校验
+│       └── realtime/             # SSE / SignalR 兼容层
+├── xhm-desktop/                  # Rust Slint Desktop
+│   └── src/
+│       ├── service_client/       # REST / SSE 客户端
+│       ├── tray/                 # 原生 Windows 托盘
+│       └── ui/                   # 悬浮窗、任务栏窗与设置
+├── lhm-bridge/                   # 保留的 .NET 8 IPC bridge
+├── xhmonitor-web/                # React 前端
+├── tools/RyzenAdj/               # RyzenAdj 功耗管理工具
+├── scripts/                      # Rust release 启动/停止 batch
+├── publish.ps1                   # Full/Lite 绿色版发布
+├── build-installer.ps1           # Lite/LiteNet8/Full 安装器
+├── installer/XhMonitor.iss       # Inno Setup 定义
+├── XhMonitor.Core/               # C# reference implementation
+├── XhMonitor.Service/            # C# reference + 发布配置模板
+├── XhMonitor.Desktop/            # C# reference + 端点/图标资源
+├── XhMonitor.Tests/              # 保留的 C# 回归参考
+└── xhMonitor.sln                 # 保留的 C# solution
 ```
+
+C# Core/Service/Desktop/Tests 与 `xhMonitor.sln` 按用户决定保留，供后续 bug 对照；正式启动和发布使用 Rust `xhm-service`、Rust `xhm-desktop` 与 `lhm-bridge`。`publish.ps1` 不会把 C# Service/Desktop/Core 二进制放入 Rust release。
 
 ## Development
 
-### 添加自定义指标
+### C# 参考实现中的自定义指标
+
+以下示例保留用于理解既有 C# 指标契约和排查兼容问题，不是当前 Rust 生产实现的开发入口。Rust 共享契约位于 `xhm-core/`，Service 实现位于 `xhm-service/`。
 
 **1. 实现 IMetricProvider 接口**
 
@@ -480,25 +491,35 @@ export const i18n = {
 
 ### 运行测试
 
-```bash
-# 单元测试
-dotnet test
+```powershell
+# Rust workspace 确定性门禁
+cargo fmt --check
+cargo test --workspace -- --test-threads=1
+cargo clippy --workspace --all-targets -- -D warnings
 
-# 集成测试
-dotnet test --filter Category=Integration
+# 仅在回归 lhm-bridge 或对照 legacy C# 行为时运行
+dotnet test XhMonitor.Tests\XhMonitor.Tests.csproj
 ```
+
+当前 Rust 单线程 workspace 基线为 286 passed。默认并行测试曾出现非确定性挂起，因此使用 `-- --test-threads=1`。
 
 ### 构建发布
 
-```bash
-# 发布为单文件可执行程序
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+```powershell
+# Full 绿色版：Rust Service/Desktop + self-contained lhm-bridge
+.\publish.ps1 -Version "1.0.0"
 
-# 输出目录
-# XhMonitor.Service/bin/Release/net8.0/win-x64/publish/
+# Lite 绿色版：bridge framework-dependent
+.\publish.ps1 -Version "1.0.0" -Lite
+
+# 默认 LiteNet8 安装器
+.\build-installer.ps1 -Version "1.0.0" -BuildType LiteNet8
+
+# Full 安装器
+.\build-installer.ps1 -Version "1.0.0" -BuildType Full
 ```
 
-详细发布指南参考：[PUBLISH_GUIDE.md](PUBLISH_GUIDE.md)
+绿色版输出到 `release/XhMonitor-v<version>/` 及同名 ZIP；安装器输出到 `release/XhMonitor-v<version>-<type>-Setup.exe`。详细 contract layout、模式差异和验收步骤见：[Rust Service/Desktop 手动测试与打包](docs/rust-service-build-test-package.md)。
 
 ## Performance
 
@@ -524,7 +545,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - ✅ 数据持久化与聚合
 - ✅ Web API + SignalR
 - ✅ Web 前端开发
-- ✅ WPF 桌面悬浮窗
+- ✅ Rust + Slint 桌面悬浮窗
 - ✅ 功耗监控（RyzenAdj）
 - ✅ 网络监控
 - ✅ 进程管理（强制结束）
@@ -549,7 +570,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 ### 代码规范
 
-- 遵循 C# Coding Conventions
+- Rust 代码遵循现有 workspace 约定；C# 约定仅适用于 `lhm-bridge` 和保留的 reference implementation
 - 使用有意义的变量和方法名
 - 添加必要的注释（非必要不添加）
 - 保持代码简洁高效

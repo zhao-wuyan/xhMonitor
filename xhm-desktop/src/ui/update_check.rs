@@ -67,7 +67,10 @@ pub async fn check_at(client: &reqwest::Client, url: &str, current_version: &str
         return UpdateStatus::SourceUnavailable;
     }
     if !response.status().is_success() {
-        return UpdateStatus::Error(format!("release source returned HTTP {}", response.status()));
+        return UpdateStatus::Error(format!(
+            "release source returned HTTP {}",
+            response.status()
+        ));
     }
     let release = match response.json::<ReleaseResponse>().await {
         Ok(release) if !release.tag_name.trim().is_empty() => release,

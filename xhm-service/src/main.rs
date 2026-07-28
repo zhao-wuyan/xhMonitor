@@ -1,4 +1,4 @@
-//! xhm-service 可执行入口：组装路由、初始化生产组件、在 35181 并行运行。
+//! xhm-service 可执行入口：组装路由、初始化生产组件、在 35179 并行运行。
 //!
 //! 对齐 C# `Program.cs`：路径基于 `current_exe().parent()`、graceful shutdown、
 //! 管理员检测，以及采集 worker 与 LHM bridge 的确定性回收。
@@ -145,6 +145,6 @@ mod tests {
 
         assert!(address.ip().is_loopback());
         assert_eq!(address.ip().to_string(), "127.0.0.1");
-        assert_eq!(address.port(), 35_181);
+        assert_eq!(address.port(), 35_179);
     }
 }

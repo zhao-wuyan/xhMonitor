@@ -23,7 +23,9 @@ pub enum SettingsError {
     Rest(#[from] RestError),
 }
 
-pub fn settings_from_groups(groups: &BTreeMap<String, BTreeMap<String, String>>) -> TaskbarSettings {
+pub fn settings_from_groups(
+    groups: &BTreeMap<String, BTreeMap<String, String>>,
+) -> TaskbarSettings {
     let mut settings = TaskbarSettings::default();
     settings.apply_allowed_groups(groups);
     settings
@@ -47,7 +49,10 @@ pub fn allowed_subset(
     monitoring.insert("MonitorGpu".into(), settings.monitor_gpu.to_string());
     monitoring.insert("MonitorVram".into(), settings.monitor_vram.to_string());
     monitoring.insert("MonitorPower".into(), settings.monitor_power.to_string());
-    monitoring.insert("MonitorNetwork".into(), settings.monitor_network.to_string());
+    monitoring.insert(
+        "MonitorNetwork".into(),
+        settings.monitor_network.to_string(),
+    );
     monitoring.insert(
         "EnableFloatingMode".into(),
         settings.enable_floating_mode.to_string(),
@@ -81,7 +86,10 @@ pub async fn load_settings(client: &RestClient) -> Result<TaskbarSettings, Setti
     Ok(settings_from_groups(&groups))
 }
 
-pub async fn save_settings(client: &RestClient, settings: &TaskbarSettings) -> Result<(), SettingsError> {
+pub async fn save_settings(
+    client: &RestClient,
+    settings: &TaskbarSettings,
+) -> Result<(), SettingsError> {
     let body = allowed_subset(settings)?;
     client.put_settings(&body).await?;
     Ok(())
@@ -157,7 +165,10 @@ pub fn apply_to_window(app: &SettingsWindow, settings: &TaskbarSettings) {
     app.set_dock_upload_label(settings.dock_upload_label.into());
     app.set_dock_download_label(settings.dock_download_label.into());
     app.set_dock_column_gap(settings.dock_column_gap.to_string().into());
-    app.set_bar_visual(matches!(settings.dock_visual_style, TaskbarVisualStyle::Bar));
+    app.set_bar_visual(matches!(
+        settings.dock_visual_style,
+        TaskbarVisualStyle::Bar
+    ));
 }
 
 #[cfg(windows)]
@@ -172,7 +183,10 @@ pub struct SettingsUiRuntime {
 }
 
 #[cfg(windows)]
-pub fn install_runtime(app: &SettingsWindow, taskbar_settings: SharedTaskbarSettings) -> SettingsUiRuntime {
+pub fn install_runtime(
+    app: &SettingsWindow,
+    taskbar_settings: SharedTaskbarSettings,
+) -> SettingsUiRuntime {
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -240,7 +254,9 @@ pub fn install_runtime(app: &SettingsWindow, taskbar_settings: SharedTaskbarSett
                 match result {
                     SettingsAsyncResult::Loaded(Ok(settings)) => {
                         apply_to_window(&app, &settings);
-                        app.set_status_text("Settings loaded. System controls remain P3-only.".into());
+                        app.set_status_text(
+                            "Settings loaded. System controls remain P3-only.".into(),
+                        );
                         *taskbar_settings
                             .lock()
                             .unwrap_or_else(std::sync::PoisonError::into_inner) = settings;
@@ -287,7 +303,10 @@ fn request_result_kind(request: &SettingsRequest) -> SettingsRequestKind {
 }
 
 #[cfg(windows)]
-fn spawn_settings_request(sender: std::sync::mpsc::Sender<SettingsAsyncResult>, request: SettingsRequest) {
+fn spawn_settings_request(
+    sender: std::sync::mpsc::Sender<SettingsAsyncResult>,
+    request: SettingsRequest,
+) {
     let _ = std::thread::Builder::new()
         .name("xhm-settings".into())
         .spawn(move || {
@@ -299,7 +318,8 @@ fn spawn_settings_request(sender: std::sync::mpsc::Sender<SettingsAsyncResult>, 
                 .and_then(|runtime| {
                     runtime.block_on(async move {
                         let config = crate::config::Config::load().await;
-                        let client = RestClient::new(&config).map_err(|error: RestError| error.to_string())?;
+                        let client = RestClient::new(&config)
+                            .map_err(|error: RestError| error.to_string())?;
                         match request {
                             SettingsRequest::Load => load_settings(&client)
                                 .await
@@ -315,9 +335,7 @@ fn spawn_settings_request(sender: std::sync::mpsc::Sender<SettingsAsyncResult>, 
             let result = match (fallback, result) {
                 (_, Ok(result)) => result,
                 (SettingsRequestKind::Load, Err(error)) => SettingsAsyncResult::Loaded(Err(error)),
-                (SettingsRequestKind::Save, Err(error)) => {
-                    SettingsAsyncResult::Saved(Err(error))
-                }
+                (SettingsRequestKind::Save, Err(error)) => SettingsAsyncResult::Saved(Err(error)),
             };
             let _ = sender.send(result);
         });

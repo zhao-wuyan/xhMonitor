@@ -17,7 +17,9 @@ pub fn apply_update_status(app: &AboutWindow, status: UpdateStatus) {
         }
         UpdateStatus::UpdateAvailable(release) => {
             app.set_update_state("UpdateAvailable".into());
-            app.set_update_message("A newer release is available. Review its details on Gitee.".into());
+            app.set_update_message(
+                "A newer release is available. Review its details on Gitee.".into(),
+            );
             app.set_release_summary(release_summary(&release).into());
         }
         UpdateStatus::Error(error) => {

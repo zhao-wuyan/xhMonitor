@@ -11,7 +11,7 @@ use xhm_core::{
     wire::{normalize_pinned_ids, SubscriptionMode},
 };
 
-pub const DEFAULT_SERVICE_PORT: u16 = 35_181;
+pub const DEFAULT_SERVICE_PORT: u16 = 35_179;
 pub const DEFAULT_HUB_PATH: &str = "/hubs/metrics";
 pub const DEFAULT_SSE_PATH: &str = "/api/v1/events";
 pub const DEFAULT_ALLOWED_ORIGINS: [&str; 4] = [
@@ -272,7 +272,7 @@ mod tests {
         assert_eq!(config.interval_seconds, 1);
         assert!(config.process_keywords.is_empty());
         assert_eq!(config.plugin_directory, PathBuf::from("plugins"));
-        assert_eq!(config.port, 35_181);
+        assert_eq!(config.port, 35_179);
         assert_eq!(config.hub_path, "/hubs/metrics");
         assert_eq!(config.sse_path, "/api/v1/events");
         assert_eq!(

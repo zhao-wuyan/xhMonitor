@@ -12,74 +12,123 @@ echo      / /\ __  /  / /  / / /_/ / / / / / /_/ /_/ / /
 echo     /_/\_\ /_/  /_/  /_/\____/_/ /_/_/\__/\____/_/
 echo.
 echo     ==================================================================================
-echo              玲珑星核系统监控（第三方）  ^|  v0.1.0  ^|  .NET 8.0   ^|  by 诏无言
+echo              玲珑星核系统监控（第三方）  ^|  Rust Edition  ^|  by 诏无言
 echo     ==================================================================================
 echo.
 
 endlocal
 setlocal EnableDelayedExpansion
 
-echo   [1/2] 正在查找桌面客户端...
+echo   [1/3] 正在定位 Rust 发布程序...
+echo.
 
 set "ROOT_DIR=%~dp0"
-set "DESKTOP_DIR=%ROOT_DIR%Desktop"
+set "SERVICE_DIR=!ROOT_DIR!Service"
+set "DESKTOP_DIR=!ROOT_DIR!Desktop"
+set "SERVICE_EXE=!SERVICE_DIR!\xhm-service.exe"
+set "DESKTOP_EXE=!DESKTOP_DIR!\xhm-desktop.exe"
+set "HAVE_SERVICE=0"
+set "HAVE_DESKTOP=0"
 
-:: 1. 检查当前目录下的 Desktop
-if exist "%DESKTOP_DIR%\XhMonitor.Desktop.exe" goto :__FOUND_DESKTOP
+if exist "!SERVICE_EXE!" set "HAVE_SERVICE=1"
+if exist "!DESKTOP_EXE!" set "HAVE_DESKTOP=1"
+if exist "!SERVICE_EXE!" if exist "!DESKTOP_EXE!" goto :__FOUND_RELEASE
 
-:: 2. 检查上级目录的 release (源码结构: scripts/../release)
-set "POTENTIAL_ROOT=%~dp0..\"
-if exist "%POTENTIAL_ROOT%release" (
-    set "ROOT_DIR=%POTENTIAL_ROOT%"
-    set "DESKTOP_DIR=!ROOT_DIR!Desktop"
-)
-if exist "!DESKTOP_DIR!\XhMonitor.Desktop.exe" goto :__FOUND_DESKTOP
-
-:: 3. 检查项目根目录下的 release/<Version>/Desktop
-set "PROJECT_ROOT=%~dp0..\"
-if exist "!PROJECT_ROOT!release" (
-    for /f "delims=" %%D in ('dir /b /ad /o-d "!PROJECT_ROOT!release" 2^>nul') do (
-        set "CHECK_PATH=!PROJECT_ROOT!release\%%D\Desktop\XhMonitor.Desktop.exe"
-        if exist "!CHECK_PATH!" (
-            set "ROOT_DIR=!PROJECT_ROOT!release\%%D\"
-            set "DESKTOP_DIR=!ROOT_DIR!Desktop"
-            goto :__FOUND_DESKTOP
+set "RELEASE_DIR=%~dp0..\release"
+if exist "!RELEASE_DIR!\" (
+    for /f "delims=" %%D in ('dir /b /ad /o-d "!RELEASE_DIR!" 2^>nul') do (
+        set "CANDIDATE_ROOT=!RELEASE_DIR!\%%D"
+        if exist "!CANDIDATE_ROOT!\Service\xhm-service.exe" set "HAVE_SERVICE=1"
+        if exist "!CANDIDATE_ROOT!\Desktop\xhm-desktop.exe" set "HAVE_DESKTOP=1"
+        if exist "!CANDIDATE_ROOT!\Service\xhm-service.exe" if exist "!CANDIDATE_ROOT!\Desktop\xhm-desktop.exe" (
+            set "ROOT_DIR=!CANDIDATE_ROOT!"
+            set "SERVICE_DIR=!ROOT_DIR!\Service"
+            set "DESKTOP_DIR=!ROOT_DIR!\Desktop"
+            set "SERVICE_EXE=!SERVICE_DIR!\xhm-service.exe"
+            set "DESKTOP_EXE=!DESKTOP_DIR!\xhm-desktop.exe"
+            goto :__FOUND_RELEASE
         )
     )
 )
 
-:: 未找到
-goto :__ERROR_NOT_FOUND
+echo         [Error] 未找到完整的 Rust 发布程序
+if "!HAVE_SERVICE!"=="0" echo         [Error] 未找到 Service\xhm-service.exe
+if "!HAVE_DESKTOP!"=="0" echo         [Error] 未找到 Desktop\xhm-desktop.exe
+if "!HAVE_SERVICE!"=="1" if "!HAVE_DESKTOP!"=="1" echo         [Error] 两个程序不在同一发布根目录
+echo.
+echo         请先生成 release\XhMonitor-v版本号 发布包，
+echo         或从包含 Service 和 Desktop 目录的发布根目录运行本脚本。
+echo.
+endlocal
+exit /b 1
 
-:__FOUND_DESKTOP
-echo         找到: !DESKTOP_DIR!\XhMonitor.Desktop.exe
+:__FOUND_RELEASE
+echo         Service: !SERVICE_EXE!
+echo         Desktop: !DESKTOP_EXE!
 echo.
 
-echo   [2/2] 正在启动桌面客户端（将自动拉起后台服务）...
-start "" "!DESKTOP_DIR!\XhMonitor.Desktop.exe"
-echo         [OK] 桌面客户端已启动
-echo.
-goto :__DONE
+set "RUST_LOG=info"
+set "SLINT_BACKEND=winit-software"
 
-:__ERROR_NOT_FOUND
-echo         [Error] 未找到 XhMonitor.Desktop.exe
-echo         解决方案:
-echo           1^) 先在项目根目录运行 publish.ps1 / publish.bat 生成 release 包
-echo           2^) 或进入 release\XhMonitor-v* 目录运行 启动服务.bat
-echo           3^) 开发调试请运行 start-all.ps1（dotnet run）
-echo.
-goto :eof
+echo         正在清理已运行的监控进程...
+taskkill /F /IM xhm-service.exe > nul 2>&1
+taskkill /F /IM xhm-desktop.exe > nul 2>&1
+taskkill /F /IM lhm-bridge.exe > nul 2>&1
+taskkill /F /IM XhMonitor.Service.exe > nul 2>&1
+taskkill /F /IM XhMonitor.Desktop.exe > nul 2>&1
+timeout /t 1 /nobreak > nul
+powershell.exe -NoLogo -NoProfile -NonInteractive -Command "if (Get-NetTCPConnection -LocalPort 35179 -State Listen -ErrorAction SilentlyContinue) { exit 1 } else { exit 0 }" > nul 2>&1
+if errorlevel 1 goto :__PORT_OCCUPIED
+goto :__PORT_FREE
 
-:__DONE
+:__PORT_OCCUPIED
+echo.
+echo         [Error] 端口 35179 仍处于 Listen 状态
+echo         [Error] Port 35179 is occupied. Stop the elevated or other process first.
+echo         [Error] 未启动 Rust Service 和 Rust Desktop
+echo.
+endlocal
+exit /b 1
+
+:__PORT_FREE
+echo.
+
+echo   [2/3] 正在启动 Rust Service...
+start "" /D "!SERVICE_DIR!" "!SERVICE_EXE!"
+for /l %%I in (1,1,10) do (
+    powershell.exe -NoLogo -NoProfile -NonInteractive -Command "try { $response = Invoke-RestMethod -Uri 'http://127.0.0.1:35179/api/v1/config/health' -TimeoutSec 1; if ($response.status -eq 'Healthy') { exit 0 }; exit 1 } catch { exit 1 }" > nul 2>&1
+    if !errorlevel! equ 0 goto :__SERVICE_HEALTHY
+    if %%I lss 10 timeout /t 1 /nobreak > nul
+)
+
+echo         [Error] Rust Service 未在约 10 秒内报告 Healthy
+echo         [Error] 未启动 Rust Desktop，请检查 Service 配置与端口占用
+taskkill /F /IM xhm-service.exe > nul 2>&1
+taskkill /F /IM lhm-bridge.exe > nul 2>&1
+echo.
+endlocal
+exit /b 1
+
+:__SERVICE_HEALTHY
+echo         [OK] Rust Service 已启动，健康状态: Healthy
+echo.
+
+echo   [3/3] 正在启动 Rust Desktop...
+start "" /D "!DESKTOP_DIR!" "!DESKTOP_EXE!"
+echo         [OK] Rust Desktop 已启动
+echo.
+
 echo     ==================================================================================
 echo                                  启动完成
 echo.
-echo         Desktop 会自动启动 Service，无需手动启动
-echo         SignalR 端口: 35179 (默认)  ^|  Web 端口: 35180 (默认)
-echo         端口由 service-endpoints.json 管理，若被占用会自动顺延
-echo         日志目录: Service\logs
+echo         发布目录: !ROOT_DIR!
+echo         Service 工作目录: !SERVICE_DIR!
+echo         Service 地址: http://127.0.0.1:35179
+echo         日志级别: info (RUST_LOG)
+echo         Desktop 渲染后端: winit-software
 echo     ==================================================================================
 echo.
 
 echo   窗口将在 3 秒后关闭...
 timeout /t 3 /nobreak > nul
+endlocal

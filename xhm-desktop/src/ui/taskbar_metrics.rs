@@ -229,7 +229,10 @@ impl TaskbarSettings {
             replace_string(&mut self.dock_vram_label, group.get("DockVramLabel"));
             replace_string(&mut self.dock_power_label, group.get("DockPowerLabel"));
             replace_string(&mut self.dock_upload_label, group.get("DockUploadLabel"));
-            replace_string(&mut self.dock_download_label, group.get("DockDownloadLabel"));
+            replace_string(
+                &mut self.dock_download_label,
+                group.get("DockDownloadLabel"),
+            );
             if let Some(value) = group.get("DockColumnGap") {
                 self.dock_column_gap = parse_u8_clamped(value, 0, 24, self.dock_column_gap);
             }
@@ -536,7 +539,9 @@ fn metric(
 ) -> TaskbarMetricView {
     let unit = value
         .chars()
-        .skip_while(|character| character.is_ascii_digit() || *character == '.' || *character == '-')
+        .skip_while(|character| {
+            character.is_ascii_digit() || *character == '.' || *character == '-'
+        })
         .collect();
     TaskbarMetricView {
         id: id.into(),
@@ -636,7 +641,10 @@ pub fn apply_projection(app: &TaskbarWindow, projection: TaskbarProjection) {
         projection.presentation.orientation(),
         TaskbarOrientation::Vertical
     ));
-    app.set_bar_visual(matches!(projection.presentation.style(), TaskbarVisualStyle::Bar));
+    app.set_bar_visual(matches!(
+        projection.presentation.style(),
+        TaskbarVisualStyle::Bar
+    ));
     app.set_gap(i32::from(projection.gap));
     app.set_docked(projection.docked);
     app.set_dragging(projection.dragging);
@@ -756,7 +764,11 @@ pub fn install_runtime(
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .clone();
                 let projection = project_state(&state, &settings, *display);
-                let origin = crate::win32::origin_for_anchor(cursor, projection.geometry().physical_size(), anchor);
+                let origin = crate::win32::origin_for_anchor(
+                    cursor,
+                    projection.geometry().physical_size(),
+                    anchor,
+                );
                 (projection, origin)
             };
             runtime.borrow_mut().drag_anchor = Some(anchor);
@@ -854,7 +866,8 @@ fn native_pointer(
     let positioner = NativeWindowPositionOps;
     let rect = positioner.window_rect(handle)?;
     let dpi = crate::win32::dpi::dpi_for_window(Some(&NativeDpiQuery), handle);
-    let cursor = super::floating_interactions::logical_pointer_to_physical(rect, logical_x, logical_y, dpi);
+    let cursor =
+        super::floating_interactions::logical_pointer_to_physical(rect, logical_x, logical_y, dpi);
     let anchor = crate::win32::drag_anchor(cursor, rect)?;
     Some((cursor, anchor))
 }
@@ -913,9 +926,17 @@ fn finish_drag(
     };
     if let Some((snap_rect, _)) = snapped {
         move_to(handle, snap_rect.left, snap_rect.top);
-        tracing::info!(x = snap_rect.left, y = snap_rect.top, "taskbar drag snapped through G2 geometry");
+        tracing::info!(
+            x = snap_rect.left,
+            y = snap_rect.top,
+            "taskbar drag snapped through G2 geometry"
+        );
     } else {
-        tracing::info!(x = rect.left, y = rect.top, "taskbar drag released as floating");
+        tracing::info!(
+            x = rect.left,
+            y = rect.top,
+            "taskbar drag released as floating"
+        );
     }
     if let Some(app) = weak.upgrade() {
         apply_projection(&app, projection);

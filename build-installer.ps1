@@ -2,15 +2,15 @@
 # 用法: .\build-installer.ps1 [-Version "0.2.1"] [-SkipPublish] [-BuildType <Lite|LiteNet8|Full>] [-Help]
 #
 # 构建类型：
-#   - Lite      : Lite 不带 .NET（最精简，约 2MB，需要系统预装 .NET 8）
-#   - LiteNet8  : Lite 带 .NET 安装包（中等，约 60MB，可自动安装运行时）
-#   - Full      : 全量 self-contained（最大，约 100MB，无需额外运行时）
+#   - Lite      : Rust 应用 + framework-dependent bridge（需系统预装 .NET Runtime 8）
+#   - LiteNet8  : 同 Lite，安装器内置 .NET Runtime 8（Microsoft.NETCore.App）
+#   - Full      : Rust 应用 + self-contained single-file bridge（无需额外运行时）
 
 param(
     [string]$Version,  # 版本号参数（字符串类型）
     [switch]$SkipPublish,        # 跳过发布步骤，直接编译安装程序
     [ValidateSet("Lite", "LiteNet8", "Full")]
-    [string]$BuildType = "LiteNet8",  # 构建类型：Lite（不带运行时）/ LiteNet8（带运行时安装包）/ Full（全量）
+    [string]$BuildType = "LiteNet8",  # Lite/LiteNet8 使用 framework-dependent bridge；Full 使用 self-contained bridge
     [Alias("h")]
     [switch]$Help
 )
@@ -48,9 +48,9 @@ if ($Help) {
     Write-Host "                       需要已有发布文件 (release\XhMonitor-v<版本号>\)" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  -BuildType <类型>    构建类型 (默认: LiteNet8)" -ForegroundColor White
-    Write-Host "                       Lite     - Lite 不带 .NET（最精简，需系统预装 .NET 8）" -ForegroundColor Gray
-    Write-Host "                       LiteNet8 - Lite 带 .NET 安装包（可自动安装运行时）" -ForegroundColor Gray
-    Write-Host "                       Full     - 全量 self-contained（无需额外运行时）" -ForegroundColor Gray
+    Write-Host "                       Lite     - bridge framework-dependent，需 .NET Runtime 8" -ForegroundColor Gray
+    Write-Host "                       LiteNet8 - 同 Lite，并内置 Microsoft.NETCore.App 8 安装包" -ForegroundColor Gray
+    Write-Host "                       Full     - bridge self-contained single-file，无需额外运行时" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  -Help, -h            显示此帮助信息" -ForegroundColor White
     Write-Host ""
@@ -64,16 +64,16 @@ if ($Help) {
     Write-Host ""
     Write-Host "示例:" -ForegroundColor Yellow
     Write-Host "  .\build-installer.ps1" -ForegroundColor White
-    Write-Host "    默认构建：LiteNet8 版本（带 .NET 安装包）" -ForegroundColor Gray
+    Write-Host "    默认构建 LiteNet8：framework-dependent bridge + 内置 .NET Runtime 8" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  .\build-installer.ps1 -BuildType Lite" -ForegroundColor White
-    Write-Host "    构建 Lite 版本（最精简，需系统预装 .NET 8）" -ForegroundColor Gray
+    Write-Host "    构建 Lite：目标系统需预装 Microsoft.NETCore.App 8" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  .\build-installer.ps1 -BuildType Full -Version `"1.0.0`"" -ForegroundColor White
-    Write-Host "    构建 v1.0.0 全量版本（包含完整运行时）" -ForegroundColor Gray
+    Write-Host "    构建 v1.0.0 Full：bridge self-contained single-file" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  .\build-installer.ps1 -SkipPublish -BuildType LiteNet8" -ForegroundColor White
-    Write-Host "    跳过发布，仅编译安装程序（需要已有发布文件）" -ForegroundColor Gray
+    Write-Host "    跳过发布，仅编译安装程序（需要已有 Lite 发布文件）" -ForegroundColor Gray
     Write-Host ""
     Write-Host "安装程序功能:" -ForegroundColor Yellow
     Write-Host "  - 软件名称: 星核监视器 (XhMonitor)" -ForegroundColor White
@@ -218,23 +218,20 @@ if ($BuildType -eq "LiteNet8") {
     }
 
     try {
-        $dotnetRuntime = Get-RuntimePackageFile -RuntimeDir $runtimeDir -Pattern "dotnet-runtime-8.*-win-x64.exe" -DisplayName ".NET Runtime"
-        $aspNetCoreRuntime = Get-RuntimePackageFile -RuntimeDir $runtimeDir -Pattern "aspnetcore-runtime-8.*-win-x64.exe" -DisplayName "ASP.NET Core Runtime"
-        $windowsDesktopRuntime = Get-RuntimePackageFile -RuntimeDir $runtimeDir -Pattern "windowsdesktop-runtime-8.*-win-x64.exe" -DisplayName ".NET Desktop Runtime"
+        $dotnetRuntime = Get-RuntimePackageFile `
+            -RuntimeDir $runtimeDir `
+            -Pattern "dotnet-runtime-8.*-win-x64.exe" `
+            -DisplayName ".NET Runtime"
     }
     catch {
         Write-Host "错误: $_" -ForegroundColor Red
         exit 1
     }
 
-    Write-Host "✓ 检测到运行时安装包：" -ForegroundColor Green
+    Write-Host "✓ 检测到 lhm-bridge 所需运行时安装包：" -ForegroundColor Green
     Write-Host "  - $($dotnetRuntime.Name)" -ForegroundColor White
-    Write-Host "  - $($aspNetCoreRuntime.Name)" -ForegroundColor White
-    Write-Host "  - $($windowsDesktopRuntime.Name)" -ForegroundColor White
 
     $isccDefines += "/DDotNetRuntimeInstallerFileName=$($dotnetRuntime.Name)"
-    $isccDefines += "/DAspNetCoreRuntimeInstallerFileName=$($aspNetCoreRuntime.Name)"
-    $isccDefines += "/DDotNetDesktopRuntimeInstallerFileName=$($windowsDesktopRuntime.Name)"
 }
 
 try {
@@ -284,7 +281,7 @@ if (Test-Path $setupFile) {
     Write-Host "  - 开机自启动（可选）" -ForegroundColor White
     Write-Host "  - 完整卸载支持" -ForegroundColor White
     if ($BuildType -eq "LiteNet8") {
-        Write-Host "  - 自动安装 .NET 运行时（可选）" -ForegroundColor White
+        Write-Host "  - 自动安装 lhm-bridge 所需 .NET Runtime 8（可选）" -ForegroundColor White
     }
     Write-Host ""
 } else {

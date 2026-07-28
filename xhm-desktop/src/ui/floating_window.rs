@@ -408,10 +408,9 @@ fn to_metric_data(metric: MetricView) -> MetricData {
         value: metric.value.into(),
         detail: metric.detail.into(),
         ratio: metric.ratio.clamp(0.0, 1.0),
-        accent: metric
-            .tone
-            .map(tone_color)
-            .unwrap_or_else(|| Color::from_rgb_u8(metric.accent.0, metric.accent.1, metric.accent.2)),
+        accent: metric.tone.map(tone_color).unwrap_or_else(|| {
+            Color::from_rgb_u8(metric.accent.0, metric.accent.1, metric.accent.2)
+        }),
     }
 }
 
@@ -459,7 +458,6 @@ fn format_speed(prefix: &str, speed: Option<f64>) -> String {
         None => format!("{prefix} -- MB/s"),
     }
 }
-
 
 #[cfg(windows)]
 enum AsyncUiResult {
@@ -549,8 +547,7 @@ pub fn install_runtime(
         let runtime = Rc::clone(&runtime);
         let weak = weak.clone();
         app.on_pointer_move(move |logical_x, logical_y| {
-            let Some((point, _)) =
-                native_pointer_point(handle, logical_x + 12.0, logical_y + 12.0)
+            let Some((point, _)) = native_pointer_point(handle, logical_x + 12.0, logical_y + 12.0)
             else {
                 return;
             };
@@ -654,7 +651,13 @@ pub fn install_runtime(
             };
             match decision {
                 Some(KillDecision::Confirm { pid, name }) => {
-                    tracing::info!(pid, process = name, timeout_ms = 1_000, arc = 43.98, "G3 kill confirm started");
+                    tracing::info!(
+                        pid,
+                        process = name,
+                        timeout_ms = 1_000,
+                        arc = 43.98,
+                        "G3 kill confirm started"
+                    );
                     if let Some(app) = weak.upgrade() {
                         app.set_kill_confirm_pid(pid as i32);
                         app.set_kill_confirm_progress(0.0);
@@ -662,7 +665,11 @@ pub fn install_runtime(
                     }
                 }
                 Some(KillDecision::Execute { pid, name }) => {
-                    tracing::info!(pid, process = name, "G3 kill execute dispatched exactly once");
+                    tracing::info!(
+                        pid,
+                        process = name,
+                        "G3 kill execute dispatched exactly once"
+                    );
                     spawn_kill(runtime.borrow().async_tx.clone(), pid, name);
                     if let Some(app) = weak.upgrade() {
                         app.set_toast_message("Closing process...".into());
@@ -795,9 +802,8 @@ fn native_pointer_point(
     let positioner = NativeWindowPositionOps;
     let rect = positioner.window_rect(handle)?;
     let dpi = crate::win32::dpi::dpi_for_window(Some(&NativeDpiQuery), handle);
-    let point = super::floating_interactions::logical_pointer_to_physical(
-        rect, logical_x, logical_y, dpi,
-    );
+    let point =
+        super::floating_interactions::logical_pointer_to_physical(rect, logical_x, logical_y, dpi);
     let anchor = crate::win32::PhysicalPoint::new(point.x - rect.left, point.y - rect.top);
     Some((point, anchor))
 }
@@ -817,7 +823,11 @@ fn move_dragged_window(
     let origin = super::floating_interactions::drag_origin(cursor, anchor);
     let positioner = NativeWindowPositionOps;
     if !positioner.move_topmost(handle, origin.x, origin.y) {
-        tracing::warn!(x = origin.x, y = origin.y, "SetWindowPos failed during floating drag");
+        tracing::warn!(
+            x = origin.x,
+            y = origin.y,
+            "SetWindowPos failed during floating drag"
+        );
     }
 }
 
@@ -831,8 +841,8 @@ fn finish_drag(handle: crate::win32::WindowHandle, weak: &slint::Weak<Shell>) {
         return;
     };
     let monitor = super::floating_interactions::native::monitor_geometry(handle);
-    let snapped = monitor
-        .and_then(|m| super::floating_interactions::snapped_release_rect(current, m));
+    let snapped =
+        monitor.and_then(|m| super::floating_interactions::snapped_release_rect(current, m));
     if let Some((rect, edge)) = snapped {
         let moved = positioner.move_topmost(handle, rect.left, rect.top);
         if let Some(app) = weak.upgrade() {
@@ -857,10 +867,8 @@ fn finish_drag(handle: crate::win32::WindowHandle, weak: &slint::Weak<Shell>) {
     } else {
         // 未吸附：clamp 到显示器工作区，越界时通过 SetWindowPos 拉回。
         if let Some(monitor) = monitor {
-            let clamped = super::floating_interactions::clamp_rect_to_work_area(
-                current,
-                monitor.work_area,
-            );
+            let clamped =
+                super::floating_interactions::clamp_rect_to_work_area(current, monitor.work_area);
             if clamped.left != current.left || clamped.top != current.top {
                 let moved = positioner.move_topmost(handle, clamped.left, clamped.top);
                 tracing::info!(
@@ -910,11 +918,7 @@ fn show_toast(
 }
 
 #[cfg(windows)]
-fn spawn_kill(
-    sender: std::sync::mpsc::Sender<AsyncUiResult>,
-    pid: u32,
-    name: String,
-) {
+fn spawn_kill(sender: std::sync::mpsc::Sender<AsyncUiResult>, pid: u32, name: String) {
     std::thread::spawn(move || {
         use crate::win32::process::native::WindowsProcessManager;
 
@@ -972,7 +976,9 @@ fn apply_async_result(
                 crate::win32::KillOutcome::NotFound => format!("{name} no longer exists"),
                 crate::win32::KillOutcome::AlreadyExited => format!("{name} already exited"),
                 crate::win32::KillOutcome::AccessDenied => format!("Access denied closing {name}"),
-                crate::win32::KillOutcome::Other(error) => format!("Failed to close {name}: {error}"),
+                crate::win32::KillOutcome::Other(error) => {
+                    format!("Failed to close {name}: {error}")
+                }
             };
             if remove_row {
                 let projection = {
@@ -1061,7 +1067,10 @@ mod tests {
         assert_eq!(full.processes.len(), 3);
         assert_eq!(full.processes[0].pid, 2);
         assert_eq!(panel_after_click(state.panel), PanelState::Locked);
-        assert_eq!(panel_after_hover(PanelState::Expanded, false), PanelState::Collapsed);
+        assert_eq!(
+            panel_after_hover(PanelState::Expanded, false),
+            PanelState::Collapsed
+        );
     }
 
     #[test]
@@ -1083,7 +1092,10 @@ mod tests {
                 display_name: "Old Display".into(),
             }],
         }));
-        assert_eq!(state.processes[&44].display_name.as_deref(), Some("Old Display"));
+        assert_eq!(
+            state.processes[&44].display_name.as_deref(),
+            Some("Old Display")
+        );
 
         state.apply_event(&PushEvent::ProcessMetrics(ProcessSnapshotPayload {
             timestamp: Local::now(),
@@ -1105,9 +1117,18 @@ mod tests {
         assert_eq!(projection.processes.len(), 36);
         assert_eq!(projection.pinned.len(), 2);
         assert_eq!(projection.disks.len(), 3);
-        assert!(projection.metrics.iter().any(|metric| metric.tone == Some(ThresholdTone::Green)));
-        assert!(projection.metrics.iter().any(|metric| metric.tone == Some(ThresholdTone::Yellow)));
-        assert!(projection.metrics.iter().any(|metric| metric.tone == Some(ThresholdTone::Red)));
+        assert!(projection
+            .metrics
+            .iter()
+            .any(|metric| metric.tone == Some(ThresholdTone::Green)));
+        assert!(projection
+            .metrics
+            .iter()
+            .any(|metric| metric.tone == Some(ThresholdTone::Yellow)));
+        assert!(projection
+            .metrics
+            .iter()
+            .any(|metric| metric.tone == Some(ThresholdTone::Red)));
     }
 
     #[test]
@@ -1116,7 +1137,13 @@ mod tests {
         // Collapsed 不响应点击，Clickthrough 透传。
         assert_eq!(panel_after_click(PanelState::Expanded), PanelState::Locked);
         assert_eq!(panel_after_click(PanelState::Locked), PanelState::Expanded);
-        assert_eq!(panel_after_click(PanelState::Collapsed), PanelState::Collapsed);
-        assert_eq!(panel_after_click(PanelState::Clickthrough), PanelState::Clickthrough);
+        assert_eq!(
+            panel_after_click(PanelState::Collapsed),
+            PanelState::Collapsed
+        );
+        assert_eq!(
+            panel_after_click(PanelState::Clickthrough),
+            PanelState::Clickthrough
+        );
     }
 }

@@ -1,10 +1,10 @@
 # xhMonitor Rust 迁移指南
 
-**分支**：`analysis/rust-migration-feasibility`  
-**日期**：2026-07-26  
-**状态**：历史设计文档与分阶段路线图；当前构建、测试和打包命令以操作指南为准
+**起始分支**：`analysis/rust-migration-feasibility`
+**更新日期**：2026-07-28
+**状态**：P3 生产切换已完成；C# reference implementation 与 solution 按用户决定保留，不进入 Rust release
 
-**操作指南**：[Rust Service 手动测试与打包](rust-service-build-test-package.md)
+**操作指南**：[Rust Service/Desktop 手动测试与打包](rust-service-build-test-package.md)
 
 ---
 
@@ -23,67 +23,75 @@
 
 ## 2. 总体迁移范围
 
-### 保留不变
-- **Web 前端**（`xhmonitor-web/`，React/TypeScript）——仅需 API 契约对齐，不改一行前端代码。
-- **SQLite 数据库 schema**——Rust 侧完全沿用；新增字段用迁移脚本追加。
-- **RyzenAdj 工具链**（`tools/RyzenAdj/`）——保留 exe + DLL；Rust 通过 `std::process::Command` 调用。
+### 生产路径继续保留
 
-### 删除
-- `System.Management`（WMI）监控路径
-- `System.Diagnostics.PerformanceCounter` 路径
-- LibreHardwareMonitor 直接引用（改为 LHM bridge 子进程 IPC）
+- **Web 前端**（`xhmonitor-web/`，React/TypeScript）：继续消费现有 REST 与 SignalR 兼容 API。
+- **SQLite 数据库 schema**：Rust Service 沿用既有 schema。
+- **RyzenAdj 工具链**（`tools/RyzenAdj/`）：由 Rust Service 通过 native DLL / CLI 使用。
+- **LHM bridge**（`lhm-bridge/`）：继续使用 C# .NET 8，以 JSON Lines IPC 向 Rust Service 提供硬件数据。
+- **C# reference implementation**：`XhMonitor.Core/`、`XhMonitor.Service/`、`XhMonitor.Desktop/`、`XhMonitor.Tests/` 和 `xhMonitor.sln` 按用户决定保留，供后续 bug 对照。
 
-### 迁移
-| 原模块 | 新模块 | 语言/框架 |
-|--------|--------|-----------|
-| `XhMonitor.Core` | `xhm-core` crate | Rust |
-| `XhMonitor.Service` | `xhm-service` crate | Rust + axum |
-| `XhMonitor.Desktop` | `xhm-desktop` crate | Rust + Slint |
-| LHM 传感器读取 | `lhm-bridge` .NET 子进程 | C# .NET 8（保留为 IPC 桥） |
+### Rust 生产路径不再使用
 
----
+- `System.Management`（WMI）监控路径。
+- `System.Diagnostics.PerformanceCounter` 路径。
+- Service 进程内直接引用 LibreHardwareMonitor 的路径。
+- C# Service/Desktop/Core 的发布二进制和启动入口。
+
+源码保留与生产切换是两个独立边界：C# 项目仍在仓库中，但正式发布只组装 Rust Service、Rust Desktop、`lhm-bridge`、配置与工具依赖。
+
+### 迁移结果
+
+| 原模块 | 当前生产模块 | 语言/框架 | 原源码状态 |
+|--------|--------------|-----------|------------|
+| `XhMonitor.Core` | `xhm-core` crate | Rust | 保留作参考 |
+| `XhMonitor.Service` | `xhm-service` crate | Rust + axum | 保留作参考及 `appsettings.json` 发布模板 |
+| `XhMonitor.Desktop` | `xhm-desktop` crate | Rust + Slint | 保留作参考及端点/图标资源来源 |
+| LHM 传感器读取 | `lhm-bridge` 子进程 | C# .NET 8 | 当前生产 bridge |
 
 ## 3. Cargo Workspace 结构
 
-```
+```text
 xhMonitor/
 ├── Cargo.toml                  # workspace root
-├── xhm-core/                   # 共享类型、trait、模型
-│   ├── Cargo.toml
+├── xhm-core/
 │   └── src/
-│       ├── lib.rs
-│       ├── models.rs           # MetricSnapshot, ProcessRecord, AlertRule …
-│       ├── traits.rs           # MetricSource, MetricStore, RyzenAdjClient
+│       ├── models.rs
+│       ├── traits.rs
+│       ├── wire.rs
+│       ├── time.rs
 │       └── error.rs
-├── xhm-service/                # axum web 服务
-│   ├── Cargo.toml
+├── xhm-service/
 │   └── src/
-│       ├── main.rs
 │       ├── api/                # REST 路由
-│       ├── sse/                # SSE 推送（替代 SignalR）
-│       ├── db/                 # rusqlite 层
-│       ├── lhm/                # LHM bridge 子进程管理
-│       ├── process/            # 进程指标采集
-│       ├── ryzenadj/           # RyzenAdj CLI 封装
-│       └── config.rs
-├── xhm-desktop/                # Slint 悬浮窗应用
-│   ├── Cargo.toml
+│       ├── db/                 # rusqlite 数据层
+│       ├── lhm/                # bridge 子进程管理
+│       ├── power/              # RyzenAdj 与设备规则
+│       ├── realtime/           # SSE / SignalR 兼容层
+│       ├── state.rs
+│       └── worker.rs
+├── xhm-desktop/
 │   └── src/
-│       ├── main.rs
-│       ├── win32.rs            # HWND / topmost / click-through（POC 已验证）
-│       ├── service_client.rs   # SSE 订阅 + REST 调用
-│       ├── config.rs           # service-endpoints.json 读取
-│       └── ui/
-│           └── app.slint       # 悬浮窗 UI 定义
-├── lhm-bridge/                 # .NET 8 子进程（保留 C#）
-│   ├── lhm-bridge.csproj
-│   └── Program.cs              # 已在 POC 中实现，输出 JSON Lines
-├── tools/
-│   └── RyzenAdj/               # 原样保留
-└── xhmonitor-web/              # 原样保留（React/TS 前端）
+│       ├── service_client/     # REST / SSE
+│       ├── tray/               # 原生 Windows 托盘
+│       ├── ui/                 # 悬浮窗、任务栏窗与设置
+│       ├── config.rs
+│       ├── shell.rs
+│       └── persistence.rs
+├── lhm-bridge/                 # .NET 8 JSON Lines bridge
+├── publish.ps1                 # Full/Lite 绿色版
+├── build-installer.ps1         # Lite/LiteNet8/Full 安装器
+├── installer/XhMonitor.iss
+├── tools/RyzenAdj/
+├── xhmonitor-web/
+├── XhMonitor.Core/             # C# reference
+├── XhMonitor.Service/          # C# reference + 配置模板
+├── XhMonitor.Desktop/          # C# reference + 发布资源
+├── XhMonitor.Tests/            # C# 回归参考
+└── xhMonitor.sln               # 保留的 C# solution
 ```
 
-### workspace Cargo.toml 示例
+### workspace Cargo.toml 关键节选
 
 ```toml
 [workspace]
@@ -94,21 +102,18 @@ members = [
 ]
 resolver = "2"
 
-[workspace.dependencies]
-tokio       = { version = "1", features = ["full"] }
-serde       = { version = "1", features = ["derive"] }
-serde_json  = "1"
-anyhow      = "1"
-tracing     = "0.1"
+[workspace.package]
+edition = "2021"
+rust-version = "1.82"
 ```
 
----
+`lhm-bridge` 不是 Cargo member，由发布脚本使用 `dotnet publish` 单独构建。保留的 C# Core/Service/Desktop/Tests 与 solution 也不属于 Rust workspace。
 
 ## 4. 分阶段路线图
 
-### P0 — 基础层（xhm-core + lhm-bridge 完善）
+### P0 — 基础层（xhm-core + lhm-bridge 完善，已完成）
 
-**目标**：建立 Rust 共享类型层和经验证的 LHM bridge，后续阶段均依赖此基础。
+**结果**：Rust 共享类型层和正式 `lhm-bridge` 已进入生产组合，P1/P2/P3 均基于这一边界。
 
 | 任务 | 验收条件 |
 |------|----------|
@@ -116,13 +121,13 @@ tracing     = "0.1"
 | 完善 `lhm-bridge`（从 poc/ 提升）：管理员权限验证、`cpu_temp_label` 字段、优雅退出 | 提权运行后输出包含 `cpu_temp` + `cpu_temp_label`；SIGTERM/Ctrl+C 后进程退出码为 0 |
 | `LhmReader` trait + 内存 mock 实现用于测试 | `xhm-service` 单元测试可在无 LHM bridge 下运行 |
 
-**Done 条件**：`xhm-core` crate 发布到 workspace；`lhm-bridge` 从 poc/ 移出进入正式目录并通过管理员权限测试。
+**Done 状态**：`xhm-core` 已是 workspace member；`lhm-bridge` 位于正式目录并由 `publish.ps1` 发布到 `Service\`。
 
 ---
 
-### P1 — Service 迁移（xhm-service）
+### P1 — Service 迁移（xhm-service，已完成）
 
-**目标**：Rust Service 达到与 C# Service 的 API 功能对等，可并行运行（双端口）。
+**结果**：Rust Service 已切换为当前生产 Service，默认监听正式端口 `35179`。
 
 #### 4.1 REST API 契约（源自 Controllers/，共 20 端点）
 
@@ -180,14 +185,14 @@ tracing     = "0.1"
 | `ReceiveProcessMetricsLite` | 组 `metrics.processes.lite` | 同上（Top-N + Pinned 子集） |
 | `ReceiveProcessMetadata` | Caller（连接时） | Timestamp, ProcessCount, Processes[{ProcessId, ProcessName, CommandLine, DisplayName}] |
 
-**迁移策略**：Web 前端使用 SignalR JS 客户端，不可修改。xhm-service 必须实现完整 SignalR over WebSocket 文本协议（negotiate + subscribe + 上述5个事件推送）。Desktop（Slint）改用 SSE 直连，不走 SignalR。
+**实现结果**：Rust Service 在 `axum` 上提供 SignalR 兼容端点（negotiate + WebSocket 文本推送），Web 前端继续使用既有 SignalR JS 客户端；Rust Desktop 改用 SSE 直连 `/api/v1/events`，不走 SignalR。
 
-> ⚠️ **决策点**：SignalR 文本协议兼容实现建议使用 `axum` + WebSocket 手写（参考 ASP.NET Core SignalR 文本协议规范），或寻找现有 Rust SignalR 服务端 crate。复杂度中等，需在 P1 开始时评估。
+> 上述事件契约与字段仍来自 `MetricsHub.cs` / `IMetricsClient.cs`，保留作 Rust 实现的对等参考；Rust 侧的实际路由与 SSE 实现以 `xhm-service/src/realtime/` 为准。
 
 #### 4.3 SQLite 层
 
-- 使用 `rusqlite`（同步）或 `sqlx`（异步，推荐与 tokio 配合）。
-- Schema 完全沿用现有迁移文件（`Migrations/` 目录）；Rust 侧用 `refinery` 或内嵌 SQL 文件执行迁移。
+- 选用 `rusqlite`（同步、bundled）。
+- Schema 沿用既有迁移结构；Rust 侧通过内嵌 SQL 文件执行迁移。
 - **关键约束（debug-notes-001）**：数据库路径必须相对于可执行文件目录，不得依赖 `std::env::current_dir()`：
   ```rust
   let exe_dir = std::env::current_exe()?.parent().unwrap().to_path_buf();
@@ -202,8 +207,8 @@ pub trait LhmReader: Send + Sync {
     fn snapshot(&self) -> Option<LhmSnapshot>;
 }
 
-pub struct LhmBridgeProcess { /* child process + stdout reader */ }
-pub struct MockLhmReader { snapshot: Option<LhmSnapshot> }  // 测试用
+pub struct LhmBridgeManager { /* child process + stdout reader + supervisor */ }
+// 实际测试 mock 见 xhm-service/src/lhm/mod.rs 与 xhm-core traits
 ```
 
 子进程管理要点：
@@ -226,18 +231,18 @@ pub struct MockLhmReader { snapshot: Option<LhmSnapshot> }  // 测试用
 - Fallback：`std::process::Command` 调用 `ryzenadj.exe`，参数完全对应 C# CLI 路径
 - `RyzenAdjFallbackClient` → Rust 结构体持有 `primary: Option<NativeClient>` + `cli: CliClient`；primary 失败后设 `primary = None` 并永久走 CLI
 
-**P1 Done 条件**：
-- `xhm-service` 在端口 35179（或新端口 35181 并行）运行
-- 全部 REST 端点 curl 测试通过
-- SSE 推送 Desktop 可接收
-- `cargo test -p xhm-service` 全绿（LHM/RyzenAdj 均 mock）
-- Private Bytes < 30 MiB（稳态，含 lhm-bridge 子进程）
+**P1 Done 状态**：
+
+- `xhm-service` 默认使用正式端口 `35179`。
+- 既有 REST API、Desktop 使用的 SSE 与 Web 使用的 SignalR 兼容端点均由 Rust Service 提供。
+- `lhm-bridge` 由 Rust Service 作为独立子进程管理。
+- 当前确定性 workspace 测试基线包含 Service 测试，见第 5.3 节。
 
 ---
 
-### P2 — Desktop 迁移（xhm-desktop）
+### P2 — Desktop 迁移（xhm-desktop，已完成）
 
-**目标**：Slint 悬浮窗完全复原原版功能，并行运行验证后替换 WPF 版本。
+**结果**：Rust + Slint Desktop 已成为当前生产 Desktop，并通过 `service-endpoints.json` 连接 Rust Service。
 
 #### 4.6 Win32 集成（POC 已验证基础层）
 
@@ -277,55 +282,52 @@ pub struct MockLhmReader { snapshot: Option<LhmSnapshot> }  // 测试用
 | 关于窗口 + 更新检查 | AboutWindow.xaml | Slint 关于页 | P2-扩展 |
 | Toast 通知（阈值告警） | FloatingWindow.xaml | Slint Popup/Overlay | P2-扩展 |
 
-#### 4.8 Service 发现（修复 issue-DSC-20260119）
+#### 4.8 Service 发现（issue-DSC-20260119，已实现）
 
-原版 Desktop 硬编码 `localhost:35179`。迁移时同步修复：
+Rust Desktop 从可执行文件同级读取 `service-endpoints.json`。发布脚本将 `XhMonitor.Desktop/service-endpoints.json` 复制到 `Desktop\`，当前配置为：
 
-```rust
-// xhm-desktop/src/config.rs
-#[derive(Deserialize)]
-pub struct ServiceEndpoints {
-    pub service_url: String,       // "http://localhost:35179"
-    pub sse_path: String,          // "/api/events"
-}
-
-impl ServiceEndpoints {
-    pub fn load() -> anyhow::Result<Self> {
-        let exe_dir = std::env::current_exe()?.parent().unwrap().to_path_buf();
-        let path = exe_dir.join("service-endpoints.json");
-        // 回退到默认值，不 panic
-        Ok(serde_json::from_reader(File::open(path)?)
-            .unwrap_or_default())
-    }
+```json
+{
+  "ServiceEndpoints": {
+    "ApiBaseUrl": "http://localhost:35179",
+    "SignalRUrl": "http://localhost:35179/hubs/metrics"
+  }
 }
 ```
 
-**P2 Done 条件**：
-- 悬浮窗在软件渲染模式下运行，UI 功能对等清单核心项全部通过
-- Private Bytes < 40 MiB（软件渲染；原 <10 MiB 门槛经 CHG-001 审计修订，bounded 优化未降内存，P3 用更底层渲染方案重做）
-- 任务栏贴近定位在 4K 显示器验证通过
-- `cargo test -p xhm-desktop` 全绿（Win32 调用 mock）
+配置缺失、不可读或无效时，Desktop 回退到生产默认端口 `35179`，不会因配置加载失败 panic。Desktop 生产数据通路使用 REST + SSE；`SignalRUrl` 作为既有兼容配置保留。
+
+**P2 Done 状态**：
+
+- `xhm-desktop` 已加入 Rust workspace，并由 `publish.ps1` 生成 release 二进制。
+- 生产发布固定包含 `Desktop\xhm-desktop.exe`、`Desktop\service-endpoints.json` 和 `Desktop\Assets\icon.ico`。
+- 启动 batch 只在 Rust Service health gate 通过后启动 Rust Desktop。
+- 当前确定性 workspace 测试基线包含 Desktop 测试，见第 5.3 节。
 
 ---
 
-### P3 — 切换与废弃
+### P3 — 生产切换（已完成，源码清理例外已确认）
 
-**目标**：完全切换到 Rust 实现，删除 C# Service / Desktop 代码，保留 lhm-bridge。
+**结果**：正式端口、绿色版、安装器和生命周期脚本均已切换到 Rust Service/Desktop。C# reference implementation 与 solution 的删除按用户决定延期并保留，不构成 P3 生产切换阻塞项。
 
-| 步骤 | 操作 |
-|------|------|
-| 3.1 | Rust Service 切换到正式端口 35179（停止 C# Service） |
-| 3.2 | 更新 `publish.ps1`、`build-installer.ps1` 指向 Rust 二进制 |
-| 3.3 | 删除 `XhMonitor.Service/`、`XhMonitor.Desktop/`、`XhMonitor.Core/` |
-| 3.4 | 更新 `.sln` / `slnx`（保留 `XhMonitor.Tests` 中仍有价值的集成测试，迁移为 Rust 测试） |
-| 3.5 | 更新安装包脚本；`lhm-bridge.exe` 打包进 `tools/` |
-| 3.6 | 更新 `README` 和 `CLAUDE.md` |
+| 步骤 | 状态 | 当前结果 |
+|------|------|----------|
+| 3.1 | 已完成 | Rust Service 使用正式端口 `35179`；组合启动不再启动 C# Service |
+| 3.2 | 已完成 | `publish.ps1` 构建并组装 Rust `xhm-service.exe`、Rust `xhm-desktop.exe` 与 `lhm-bridge` |
+| 3.3 | 用户决定延期/保留 | 不删除 `XhMonitor.Service/`、`XhMonitor.Desktop/`、`XhMonitor.Core/`，留作后续 bug 对照；不进入 Rust release |
+| 3.4 | 用户决定延期/保留 | 不删除 `XhMonitor.Tests/` 与 `xhMonitor.sln`；它们是 C# 回归参考，不是当前生产构建入口 |
+| 3.5 | 已完成 | `build-installer.ps1` 支持 Lite、LiteNet8、Full；安装器使用与绿色版相同的 `Service\` / `Desktop\` contract layout |
+| 3.6 | 已完成 | README、操作指南与本迁移指南同步到 P3 生产入口和发布命令 |
 
-**P3 Done 条件**：
-- 仓库中无 `XhMonitor.Service/`、`XhMonitor.Desktop/`、`XhMonitor.Core/` 目录
-- `cargo build --release` 一条命令产出两个可执行文件（`xhm-service.exe`、`xhm-desktop.exe`）
-- 现有集成测试套件（迁移后）全绿
-- 安装包大小 ≤ 原版（含 lhm-bridge.exe + Slint 软件渲染无额外 DLL）
+**P3 Done 条件与证据**：
+
+- 生产默认端口为 `35179`；`Desktop\service-endpoints.json` 与启动 health gate 使用同一端口。
+- `启动服务.bat` 先启动 Rust Service，health 返回 Healthy 后再启动 Rust Desktop；端口占用时失败退出。
+- `publish.ps1` 产出 `Service\{xhm-service.exe, lhm-bridge publish 依赖, appsettings.json, tools\RyzenAdj}`、`Desktop\{xhm-desktop.exe, service-endpoints.json, Assets\icon.ico}` 和根目录 batch/`README.txt`。
+- Rust release 不包含 C# Service/Desktop/Core 二进制；保留源码和 solution 是用户批准的明确例外。
+- `cargo fmt --check` 通过；`cargo test --workspace -- --test-threads=1` 为 286 passed；`cargo clippy --workspace --all-targets -- -D warnings` 零警告。
+- 已观测 Full 绿色版 76.88 MiB、Full 安装器 29.89 MiB、Lite 绿色版 12.67 MiB、LiteNet8 安装器 35.88 MiB。
+- Inno Setup 6.7 已成功编译安装器。
 
 ---
 
@@ -358,9 +360,9 @@ xhm-desktop/tests/
 
 ### 5.3 CI 约束
 
-- `cargo test --workspace` 必须在**无管理员权限、无真实硬件**的 CI 环境下通过。
-- 依赖真实 LHM/RyzenAdj 的测试用 `#[ignore]` 标记，手动在开发机上运行。
-- `cargo clippy --workspace -- -D warnings` 零警告。
+- `cargo test --workspace -- --test-threads=1` 是确定性 workspace 门禁，当前基线为 286 passed。
+- 第一次默认并行 workspace 测试曾非确定性挂起，因此文档和发布基线不使用默认并行命令。
+- `cargo clippy --workspace --all-targets -- -D warnings` 零警告。
 
 ---
 
@@ -377,15 +379,16 @@ xhm-desktop/tests/
 
 ---
 
-## 7. 关键风险与缓解
+## 7. 已知运行边界
 
-| 风险 | 可能性 | 缓解方案 |
-|------|--------|---------|
-| Slint 有机矩阵动画视觉还原度不足 | 中 | P2 早期出原型让用户确认；不达标时考虑 Skia canvas |
-| SSE 替代 SignalR：Web 前端兼容 | 中 | P1 早期确认 polyfill 方案；最坏情况：xhm-service 内嵌最小 WS 兼容层 |
-| LHM bridge 管理员权限 + 反病毒拦截 | 低-中 | 已在 POC 观察到；安装包签名；测试 Windows Defender 白名单行为 |
-| RyzenAdj FFI / CLI 解析变更 | 低 | 固定 RyzenAdj 版本；CLI stdout 解析加容错 |
-| Slint 软件渲染 CPU 占用 | 待测 | P2 前测量稳态 CPU（10s 间隔刷新时）；若不可接受回退 GPU 渲染并 profile 根因 |
+| 边界 | 当前处理 |
+|------|----------|
+| Rust Desktop 渲染 | 发布和启动 batch 设置 `SLINT_BACKEND=winit-software` |
+| LHM 管理员权限与硬件可用性 | `lhm-bridge` 独立运行；缺失权限或硬件时 Service 继续提供其余可用能力 |
+| Lite bridge 运行时 | 目标机需要 Microsoft.NETCore.App 8 |
+| LiteNet8 runtime | 安装器只内置 Microsoft.NETCore.App 8，不包含其他 .NET runtime 或 SDK |
+| 端口冲突 | `启动服务.bat` 检查 `35179`；占用时失败且不启动 Rust Service/Desktop |
+| C# reference 源码 | 留作 bug 对照，不得误接回正式发布或启动路径 |
 
 ---
 
@@ -394,57 +397,65 @@ xhm-desktop/tests/
 ### 开发期
 
 ```powershell
-# 构建全部
+# 构建 Rust workspace
 cargo build --workspace
 
-# 运行 Service（开发）
+# 启动 Rust Service（默认端口 35179）
 cargo run -p xhm-service
 
-# 运行 Desktop（软件渲染）
-$env:SLINT_BACKEND = "winit-software"; cargo run -p xhm-desktop
-
-# 全量测试
-cargo test --workspace
-```
-
-### 发布包（替代 publish.ps1）
-
-```powershell
-# Service（self-contained，无 .NET 运行时依赖）
-cargo build -p xhm-service --release
-
-# Desktop（软件渲染，无 GPU 驱动依赖）
-cargo build -p xhm-desktop --release
-
-# 打包：两个 exe + lhm-bridge.exe + tools/RyzenAdj/ + wwwroot/
-# 预计总体积：~20–25 MiB（对比当前 ~70 MiB self-contained）
-```
-
-### 启动脚本（替代现有 scripts/）
-
-```powershell
-# start-service.ps1
-$env:RUST_LOG = "info"
-Start-Process -FilePath ".\xhm-service.exe" -WorkingDirectory $PSScriptRoot
-
-# start-desktop.ps1
+# 在另一个 PowerShell 启动 Rust Desktop
 $env:SLINT_BACKEND = "winit-software"
-Start-Process -FilePath ".\xhm-desktop.exe" -WorkingDirectory $PSScriptRoot
+cargo run -p xhm-desktop
+
+# 确定性 workspace 测试
+cargo test --workspace -- --test-threads=1
 ```
+
+`.NET 8` 开发命令只用于 `lhm-bridge` 或保留的 C# reference tests，不用于启动正式 Service/Desktop。
+
+### 绿色版
+
+```powershell
+# Full：self-contained bridge
+.\publish.ps1 -Version "1.0.0"
+
+# Lite：framework-dependent bridge
+.\publish.ps1 -Version "1.0.0" -Lite
+```
+
+两种模式都构建同一 Rust workspace，并输出 `release\XhMonitor-v1.0.0\` 与同名 ZIP。Full 的 bridge self-contained；Lite 需要目标机安装 Microsoft.NETCore.App 8。
+
+### 安装器
+
+```powershell
+.\build-installer.ps1 -Version "1.0.0" -BuildType Lite
+.\build-installer.ps1 -Version "1.0.0" -BuildType LiteNet8
+.\build-installer.ps1 -Version "1.0.0" -BuildType Full
+```
+
+LiteNet8 使用与 Lite 相同的 framework-dependent bridge，只额外内置 Microsoft.NETCore.App 8 runtime 安装包；Full 使用 self-contained bridge。安装器沿用绿色版的 `Service\`、`Desktop\`、根 batch 和 `README.txt` 布局。
+
+### 启动脚本
+
+```powershell
+& ".\release\XhMonitor-v1.0.0\启动服务.bat"
+```
+
+脚本在端口 `35179` 空闲时启动 Rust Service，等待 `/api/v1/config/health` 返回 Healthy，再启动 Rust Desktop；端口占用或 health gate 失败时退出，不继续启动 Desktop。详细命令和 contract layout 以操作指南为准。
 
 ---
 
-## 9. 已知协议偏离说明
+## 9. C# 保留例外
 
-`maestro session` 创建过程遇到 CLI 版本与 `run-mode.md` 协议不符：
+用户已明确决定保留以下内容：
 
-| 协议文档要求 | 实际 CLI 行为 |
-|-------------|-------------|
-| `session create --no-dispatch` | `--no-dispatch` 不是有效 flag；`session create` 默认不分发（`session start` 才分发） |
-| chain-file `decisions` 顶层键 | Runtime 拒绝："Unrecognized key: decisions" |
-| decision step `{ decision_ref }` | Runtime 要求 `command` 字段；D1 定义位置未知 |
+- `XhMonitor.Core/`
+- `XhMonitor.Service/`
+- `XhMonitor.Desktop/`
+- `XhMonitor.Tests/`
+- `xhMonitor.sln`
 
-决策：用户选择绕过 maestro session，直接产出本文档。D1 范围决策点由工程师在 P1 开始前人工评审本文档后决定。
+保留目的仅为后续 bug 对照、旧行为定位和 bridge/契约回归参考。P3 不删除这些源码，也不把它们的 Service/Desktop/Core 构建产物装入绿色版或安装器。正式发布和启动入口始终是 Rust `xhm-service`、Rust `xhm-desktop` 与 .NET 8 `lhm-bridge`。
 
 ---
 
@@ -452,9 +463,8 @@ Start-Process -FilePath ".\xhm-desktop.exe" -WorkingDirectory $PSScriptRoot
 
 | 优先级 | 行动 |
 |--------|------|
-| **立即** | 评审本文档；确认 SignalR → SSE Web 前端兼容方案（第4.2节决策点） |
-| **P0** | 创建 `xhm-core` crate；将 `poc/lhm-bridge` 提升为正式 `lhm-bridge/` |
-| **P0** | 验证 lhm-bridge 管理员权限运行（cpu_temp + cpu_temp_label 输出正确） |
-| **P1** | 实现 `xhm-service`（axum）；并行端口 35181 运行；curl 验证全 API |
-| **P2** | 实现 `xhm-desktop` Slint 完整 UI；矩阵动画原型确认 |
-| **P3** | 切换正式端口；删除 C# 项目；更新发布脚本 |
+| **发布** | 使用 `publish.ps1` 构建 Full/Lite 绿色版，使用 `build-installer.ps1 -BuildType Lite|LiteNet8|Full` 构建安装器 |
+| **回归** | 使用 `cargo test --workspace -- --test-threads=1` 维持 286 passed 的确定性基线 |
+| **运行** | 通过 release 根目录 `启动服务.bat` 执行 Service health gate 后启动 Desktop |
+| **C# 参考** | 保留 C# 项目、Tests 与 solution；仅在 bug 对照时使用，不作为正式启动或发布入口 |
+| **文档** | 发布 contract 或脚本参数变化时，同步 README、操作指南和本节 |
