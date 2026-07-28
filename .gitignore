@@ -107,6 +107,7 @@ target/
 /.workflow/embedding.zvec/
 /.workflow/kg/
 /.workflow/search-cache.json
+/.workflow/search-daemon.json
 /.workflow/wiki-index.json
 /.workflow/specs/.hit-log.jsonl
 /check012*.json
