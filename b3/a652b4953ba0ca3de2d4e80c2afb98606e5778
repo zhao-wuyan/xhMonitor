@@ -1,0 +1,104 @@
+.workflow/spec-analytics.jsonl
+  s_8b73ce7ff26b5f::t_eb92e3a7da6ebe 143-148
+  s_8b73ce7ff26b5f::t_624a6a996e8f2c 161-162
+  s_8b73ce7ff26b5f::t_1e624b8ca6d701 163-164
+  s_8b73ce7ff26b5f::t_349db31826abc1 136-138
+  s_8b73ce7ff26b5f::t_9d33a37a1bdc32 116-119
+  s_8b73ce7ff26b5f::t_966f3218295cea 134-135
+  s_cb7ced854ca4c2::t_af5cb640a70935 85
+  s_8b73ce7ff26b5f::t_48c0e4dc3588e9 224-225
+  s_8b73ce7ff26b5f::t_324f1b0f00df40 128
+  s_8b73ce7ff26b5f::t_12915f227c9d36 131
+  s_8b73ce7ff26b5f::t_1864dd051abbca 115
+  s_cb7ced854ca4c2::t_164625ce2134d6 87
+  s_8b73ce7ff26b5f::t_ca870ed45e9346 110-111
+  s_8b73ce7ff26b5f::t_acbd63557e8a5e 132
+  s_cb7ced854ca4c2::t_31da3fe64f0a22 81
+  s_cb7ced854ca4c2::t_f00493b3abd5da 82-83
+  s_cb7ced854ca4c2::t_4e7cbf0bd1aebe 78-80
+  s_cb7ced854ca4c2::t_13b4d36b1d4781 84
+  s_cb7ced854ca4c2::t_ea754fb482bc3e 86
+  s_8b73ce7ff26b5f::t_b06c716eb0d14b 112-114
+  s_8b73ce7ff26b5f::t_2a84983f28d3a8 120-122,125-127
+  s_8b73ce7ff26b5f::t_d29acd95b46a28 129-130
+  s_8b73ce7ff26b5f::t_eb6036fcb13a04 133
+  s_8b73ce7ff26b5f::t_cae61e3eba37b0 139-142
+  s_8b73ce7ff26b5f::t_0870fc24c690d9 149-151,158-160
+  s_8b73ce7ff26b5f::t_804368014c860b 165-167,221-223
+  s_8b73ce7ff26b5f::t_bead4613d89516 226-228
+.claude/settings.json
+  s_cb7ced854ca4c2::t_2cdebe83d2090e 2-3
+xhm-core/src/wire.rs
+  s_9f8e7b926554ee::t_2be4582efd72cb 298-357,430,433-434,437-438,446-447,455,466-468
+  s_9f8e7b926554ee::t_ff843e9e4b619b 9-244,256-272,283,291-292,361,365,370,374,378,382,386,389-420,456,471,499
+  s_9f8e7b926554ee::t_020552e00b21d9 254-255,367-368
+  s_9f8e7b926554ee::t_bfa8257c207dea 6-8
+  s_9f8e7b926554ee::t_368ea0fbead116 245-247,251-253
+  s_9f8e7b926554ee::t_8bb9db1428beb4 273-275,280-282
+  s_9f8e7b926554ee::t_ee3ac1955b3c6f 284-286,288-290
+  s_9f8e7b926554ee::t_bb6face39ebec4 293-297
+  s_9f8e7b926554ee::t_78cefb776b0f47 358-360
+  s_9f8e7b926554ee::t_b79d37a42ee73e 362-364
+  s_9f8e7b926554ee::t_a9e515d7bc1101 366
+  s_9f8e7b926554ee::t_142d770d431634 369
+  s_9f8e7b926554ee::t_d9b0ef1e598cd9 371-373
+  s_9f8e7b926554ee::t_6676a7838d35c4 375-377
+  s_9f8e7b926554ee::t_ca4c5692a112cf 379-381
+  s_9f8e7b926554ee::t_94edb9da6fc4c8 383-385
+  s_9f8e7b926554ee::t_eb25ef047dd33f 387-388
+  s_9f8e7b926554ee::t_5f75a46aac9d01 421-423,427-429
+  s_9f8e7b926554ee::t_5bfa313036ee4b 431-432
+  s_9f8e7b926554ee::t_f494c1e5142a23 435-436
+  s_9f8e7b926554ee::t_1ec489116682c4 439-441,443-445
+  s_9f8e7b926554ee::t_e461f580828d5b 448-450,452-454
+  s_9f8e7b926554ee::t_0fbfb31e198f1b 457-459,463-465
+  s_9f8e7b926554ee::t_09ae8f8e2094e5 469-470
+  s_9f8e7b926554ee::t_dffdd7168bc0a1 472-474,496-498
+  s_9f8e7b926554ee::t_40ca52ce93fe70 500-502
+.maestroignore
+  s_9f8e7b926554ee::t_bddc3630b705db 1-10
+.workflow/specs/review-standards.md
+  s_484a36b78c89e7::t_95096f7fe83f15 1-16
+.workflow/specs/ui-conventions.md
+  s_484a36b78c89e7::t_5944cd7d020aec 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b3a652b4953ba0ca3de2d4e80c2afb98606e5778",
+  "prompts": {},
+  "sessions": {
+    "s_484a36b78c89e7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9c08-4d6c-7d03-aef6-613be0019523",
+        "model": "unknown"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    },
+    "s_8b73ce7ff26b5f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9c66-bfc9-7d92-aa24-86ced5e01a07",
+        "model": "gpt-5.5"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    },
+    "s_9f8e7b926554ee": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9da3-3d01-7420-93fd-8205746bb91a",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    },
+    "s_cb7ced854ca4c2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7eb97fbf-25be-4ef4-a6d8-81340b220302",
+        "model": "GLM-5.1"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
