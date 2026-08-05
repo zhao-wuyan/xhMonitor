@@ -13,12 +13,15 @@
 //   退出码 — 0 优雅退出 / 1 LHM 初始化失败 / 2 --require-admin 且非管理员
 
 using System.Net.NetworkInformation;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LibreHardwareMonitor.Hardware;
+using Microsoft.Win32;
 
 [assembly: InternalsVisibleTo("XhMonitor.Tests")]
 
@@ -84,6 +87,7 @@ catch (Exception ex)
 }
 
 var physicalAdapterSignatures = GetPhysicalAdapterSignatures();
+var processVramCollector = new ProcessVramCollector();
 
 using var cts = new CancellationTokenSource();
 
@@ -122,7 +126,7 @@ while (!cts.IsCancellationRequested)
     try
     {
         computer.Accept(visitor);
-        var snapshot = BuildSnapshot(computer, physicalAdapterSignatures);
+        var snapshot = BuildSnapshot(computer, physicalAdapterSignatures, processVramCollector);
         Console.WriteLine(JsonSerializer.Serialize(snapshot, options));
         Console.Out.Flush();
         collectionFailures.RecordSuccess();
@@ -185,11 +189,14 @@ static bool IsRunningAsAdministrator()
 
 static LhmSnapshot BuildSnapshot(
     Computer computer,
-    IReadOnlyCollection<string> physicalAdapterSignatures)
+    IReadOnlyCollection<string> physicalAdapterSignatures,
+    ProcessVramCollector processVramCollector)
 {
     var cpuTemperatureSensors = new List<LhmSensorReading>();
     var gpuTemperatureSensors = new List<LhmSensorReading>();
     var gpuLoadSensors = new List<LhmSensorReading>();
+    var gpuMemoryUsedSensors = new List<LhmSensorReading>();
+    var gpuMemoryTotalSensors = new List<LhmSensorReading>();
     var networkSensors = new List<LhmSensorReading>();
     var disks = new List<LhmDiskSnapshot>();
     double diskRead = 0, diskWrite = 0;
@@ -227,6 +234,28 @@ static LhmSnapshot BuildSnapshot(
                             gpuLoadSensors.Add(reading);
                         }
                     }
+                    else if (sensor.SensorType == SensorType.SmallData || sensor.SensorType == SensorType.Data)
+                    {
+                        // LHM 的 SmallData 为 MB，Data 为 GB；进入选择器前统一成 MB。
+                        var name = sensor.Name;
+                        var memoryMb = LhmSelection.NormalizeGpuMemoryMb(
+                            sensor.SensorType,
+                            sensor.Value);
+                        if (name.Contains("Used", StringComparison.OrdinalIgnoreCase) &&
+                            (name.Contains("Memory", StringComparison.OrdinalIgnoreCase) || name.Contains("VRAM", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            gpuMemoryUsedSensors.Add(new LhmSensorReading(
+                                hw.Name, name, SensorType.SmallData, memoryMb));
+                        }
+                        else if ((name.Contains("Total", StringComparison.OrdinalIgnoreCase) ||
+                                  name.Contains("Available", StringComparison.OrdinalIgnoreCase) ||
+                                  name.Contains("Free", StringComparison.OrdinalIgnoreCase)) &&
+                                 (name.Contains("Memory", StringComparison.OrdinalIgnoreCase) || name.Contains("VRAM", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            gpuMemoryTotalSensors.Add(new LhmSensorReading(
+                                hw.Name, name, SensorType.SmallData, memoryMb));
+                        }
+                    }
                 }
                 break;
 
@@ -255,23 +284,40 @@ static LhmSnapshot BuildSnapshot(
         }
     }
 
+    var gpuMemoryUsed = LhmSelection.SelectGpuMemoryValue(gpuMemoryUsedSensors);
+    var gpuMemoryTotal = LhmSelection.SelectGpuMemoryTotal(
+        gpuMemoryTotalSensors,
+        gpuMemoryUsedSensors);
+    if (!gpuMemoryUsed.HasValue || !gpuMemoryTotal.HasValue)
+    {
+        var counterUsedMb = processVramCollector.CaptureSystemUsageMb();
+        if (counterUsedMb.HasValue && processVramCollector.SystemCapacityMb.HasValue)
+        {
+            gpuMemoryUsed = counterUsedMb;
+            gpuMemoryTotal = processVramCollector.SystemCapacityMb;
+        }
+    }
     var (cpuTemp, cpuTempLabel) = LhmSelection.SelectTemperatureWithLabel(cpuTemperatureSensors);
     var (gpuTemp, _) = LhmSelection.SelectTemperatureWithLabel(gpuTemperatureSensors);
     var gpuLoad = LhmSelection.SelectGpuLoad(gpuLoadSensors);
     var (netUp, netDown) = LhmSelection.SelectNetworkThroughput(
         networkSensors,
         physicalAdapterSignatures);
+    var processVramMb = processVramCollector.CaptureUsageMb();
 
     return new LhmSnapshot(
         Timestamp:       DateTime.UtcNow,
         CpuTemp:         cpuTemp.HasValue ? Math.Round(cpuTemp.Value, 1) : null,
         CpuTempLabel:    cpuTempLabel,
         GpuTemp:         gpuTemp.HasValue ? Math.Round(gpuTemp.Value, 1) : null,
+        GpuMemoryUsedMb:  gpuMemoryUsed.HasValue ? Math.Round(gpuMemoryUsed.Value, 1) : null,
+        GpuMemoryTotalMb: gpuMemoryTotal.HasValue ? Math.Round(gpuMemoryTotal.Value, 1) : null,
         GpuLoad:         gpuLoad.HasValue ? Math.Round(gpuLoad.Value,  1) : null,
         NetUploadMbps:   LhmSelection.BytesPerSecondToMbps(netUp),
         NetDownloadMbps: LhmSelection.BytesPerSecondToMbps(netDown),
         DiskReadMbps:    Math.Round(diskRead,  3),
         DiskWriteMbps:   Math.Round(diskWrite, 3),
+        ProcessVramMb:   processVramMb,
         Disks:           disks
     );
 }
@@ -399,6 +445,222 @@ static IReadOnlyCollection<string> GetPhysicalAdapterSignatures()
     }
 
     return signatures;
+}
+
+internal sealed class ProcessVramCollector
+{
+    private const double BytesPerMegabyte = 1024.0 * 1024.0;
+    private const string GpuClassRegistryPath =
+        @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
+    private readonly bool _processCountersSupported;
+    private readonly bool _adapterCountersSupported;
+
+    internal ProcessVramCollector()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        _processCountersSupported = CategoryExists("GPU Process Memory");
+        _adapterCountersSupported = CategoryExists("GPU Adapter Memory");
+        SystemCapacityMb = CaptureRegistryCapacityMb();
+    }
+
+    internal double? SystemCapacityMb { get; }
+
+    internal IReadOnlyDictionary<int, double> CaptureUsageMb()
+    {
+        var usageByProcessId = new Dictionary<int, long>();
+        if (!OperatingSystem.IsWindows() || !_processCountersSupported)
+        {
+            return new Dictionary<int, double>();
+        }
+
+        string[] instanceNames;
+        try
+        {
+            instanceNames = new PerformanceCounterCategory("GPU Process Memory").GetInstanceNames();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return new Dictionary<int, double>();
+        }
+        catch (InvalidOperationException)
+        {
+            return new Dictionary<int, double>();
+        }
+
+        foreach (var instanceName in instanceNames)
+        {
+            if (!TryExtractProcessId(instanceName, out var processId))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var counter = new PerformanceCounter(
+                    "GPU Process Memory",
+                    "Dedicated Usage",
+                    instanceName,
+                    readOnly: true);
+                var bytes = counter.RawValue;
+                if (bytes <= 0)
+                {
+                    continue;
+                }
+
+                usageByProcessId.TryGetValue(processId, out var current);
+                usageByProcessId[processId] = checked(current + bytes);
+            }
+            catch (InvalidOperationException)
+            {
+                // 进程退出会使对应 counter instance 在枚举后失效。
+            }
+        }
+
+        return usageByProcessId.ToDictionary(
+            pair => pair.Key,
+            pair => Math.Round(pair.Value / BytesPerMegabyte, 1));
+    }
+
+    internal double? CaptureSystemUsageMb()
+    {
+        if (!OperatingSystem.IsWindows() || !_adapterCountersSupported)
+        {
+            return null;
+        }
+
+        try
+        {
+            long totalBytes = 0;
+            var category = new PerformanceCounterCategory("GPU Adapter Memory");
+            foreach (var instanceName in category.GetInstanceNames())
+            {
+                try
+                {
+                    using var counter = new PerformanceCounter(
+                        "GPU Adapter Memory",
+                        "Dedicated Usage",
+                        instanceName,
+                        readOnly: true);
+                    var bytes = counter.RawValue;
+                    if (bytes > 0)
+                    {
+                        totalBytes = checked(totalBytes + bytes);
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // Adapter counter instance 可能在枚举后失效。
+                }
+            }
+
+            return Math.Round(totalBytes / BytesPerMegabyte, 1);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool CategoryExists(string categoryName)
+    {
+        try
+        {
+            return PerformanceCounterCategory.Exists(categoryName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static double? CaptureRegistryCapacityMb()
+    {
+        try
+        {
+            using var baseKey = RegistryKey.OpenBaseKey(
+                RegistryHive.LocalMachine,
+                RegistryView.Registry64);
+            using var classKey = baseKey.OpenSubKey(GpuClassRegistryPath);
+            if (classKey == null)
+            {
+                return null;
+            }
+
+            long totalBytes = 0;
+            foreach (var subKeyName in classKey.GetSubKeyNames())
+            {
+                using var adapterKey = classKey.OpenSubKey(subKeyName);
+                var bytes = ParseRegistryMemoryBytes(
+                    adapterKey?.GetValue("HardwareInformation.qwMemorySize"));
+                if (bytes > 0)
+                {
+                    totalBytes = checked(totalBytes + bytes);
+                }
+            }
+
+            return totalBytes > 0
+                ? Math.Round(totalBytes / BytesPerMegabyte, 1)
+                : null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (System.Security.SecurityException)
+        {
+            return null;
+        }
+        catch (OverflowException)
+        {
+            return null;
+        }
+    }
+
+    internal static long ParseRegistryMemoryBytes(object? value)
+    {
+        return value switch
+        {
+            long bytes when bytes > 0 => bytes,
+            int bytes when bytes > 0 => bytes,
+            byte[] bytes when bytes.Length >= sizeof(long) =>
+                Math.Max(0, BitConverter.ToInt64(bytes, 0)),
+            _ => 0,
+        };
+    }
+
+    internal static bool TryExtractProcessId(string instanceName, out int processId)
+    {
+        processId = 0;
+        const string marker = "pid_";
+        var start = instanceName.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (start < 0)
+        {
+            return false;
+        }
+
+        start += marker.Length;
+        var end = instanceName.IndexOf('_', start);
+        if (end < 0)
+        {
+            end = instanceName.Length;
+        }
+
+        return int.TryParse(instanceName[start..end], out processId);
+    }
 }
 
 internal static class BridgeComputerConfiguration
@@ -617,6 +879,108 @@ internal static class LhmSelection
         return TryGetPositive(maxAny, out var fallbackLoad) ? fallbackLoad : null;
     }
 
+    /// <summary>
+    /// 把 LHM GPU memory 传感器统一转换成 MB。
+    /// </summary>
+    internal static float? NormalizeGpuMemoryMb(SensorType sensorType, float? value)
+    {
+        if (value is not float present || !float.IsFinite(present) || present < 0)
+        {
+            return null;
+        }
+
+        return sensorType == SensorType.Data ? present * 1024.0f : present;
+    }
+
+    /// <summary>
+    /// 按 hardware 选择最大的有效 used 值后求和，避免重复传感器导致重复计数。
+    /// </summary>
+    internal static double? SelectGpuMemoryValue(IEnumerable<LhmSensorReading> sensors)
+    {
+        var maximumByHardware = MaxByHardware(sensors, static _ => true, allowZero: false);
+        return maximumByHardware.Count == 0
+            ? null
+            : maximumByHardware.Values.Sum();
+    }
+
+    /// <summary>
+    /// 选择 GPU 总显存（MB）。每个 hardware 优先取显式 Total；
+    /// 否则只用同一 hardware 的 Used + Available/Free 估算。
+    /// </summary>
+    internal static double? SelectGpuMemoryTotal(
+        IEnumerable<LhmSensorReading> totalSensors,
+        IEnumerable<LhmSensorReading> usedSensors)
+    {
+        var totalCandidates = totalSensors.ToArray();
+        var explicitTotalByHardware = MaxByHardware(
+            totalCandidates,
+            static sensor => sensor.Name.Contains("Total", StringComparison.OrdinalIgnoreCase),
+            allowZero: false);
+        var availableByHardware = MaxByHardware(
+            totalCandidates,
+            static sensor => !sensor.Name.Contains("Total", StringComparison.OrdinalIgnoreCase),
+            allowZero: true);
+        var usedByHardware = MaxByHardware(
+            usedSensors,
+            static _ => true,
+            allowZero: false);
+
+        foreach (var hardware in usedByHardware.Keys)
+        {
+            if (!explicitTotalByHardware.ContainsKey(hardware) &&
+                !availableByHardware.ContainsKey(hardware))
+            {
+                return null;
+            }
+        }
+
+        var totalMb = explicitTotalByHardware.Values.Sum();
+        var hasCapacity = explicitTotalByHardware.Count > 0;
+        foreach (var (hardware, availableMb) in availableByHardware)
+        {
+            if (explicitTotalByHardware.ContainsKey(hardware))
+            {
+                continue;
+            }
+            if (!usedByHardware.TryGetValue(hardware, out var usedMb))
+            {
+                return null;
+            }
+
+            totalMb += usedMb + availableMb;
+            hasCapacity = true;
+        }
+
+        return hasCapacity && totalMb > 0 ? totalMb : null;
+    }
+
+    private static Dictionary<string, double> MaxByHardware(
+        IEnumerable<LhmSensorReading> sensors,
+        Func<LhmSensorReading, bool> include,
+        bool allowZero)
+    {
+        var maximumByHardware = new Dictionary<string, double>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var sensor in sensors)
+        {
+            if (!include(sensor) ||
+                sensor.Value is not float value ||
+                !float.IsFinite(value) ||
+                (allowZero ? value < 0 : value <= 0))
+            {
+                continue;
+            }
+
+            if (!maximumByHardware.TryGetValue(sensor.HardwareName, out var current) ||
+                value > current)
+            {
+                maximumByHardware[sensor.HardwareName] = value;
+            }
+        }
+
+        return maximumByHardware;
+    }
+
     internal static (double UploadBytesPerSecond, double DownloadBytesPerSecond)
         SelectNetworkThroughput(
             IEnumerable<LhmSensorReading> sensors,
@@ -796,11 +1160,14 @@ record LhmSnapshot(
     [property: JsonPropertyName("cpu_temp")]          double?   CpuTemp,
     [property: JsonPropertyName("cpu_temp_label")]    string?   CpuTempLabel,
     [property: JsonPropertyName("gpu_temp")]          double?   GpuTemp,
+    [property: JsonPropertyName("gpu_memory_used_mb")]  double?   GpuMemoryUsedMb,
+    [property: JsonPropertyName("gpu_memory_total_mb")] double?   GpuMemoryTotalMb,
     [property: JsonPropertyName("gpu_load")]          double?   GpuLoad,
     [property: JsonPropertyName("net_up_mbps")]       double    NetUploadMbps,
     [property: JsonPropertyName("net_down_mbps")]     double    NetDownloadMbps,
     [property: JsonPropertyName("disk_read_mbps")]    double                    DiskReadMbps,
     [property: JsonPropertyName("disk_write_mbps")]   double                    DiskWriteMbps,
+    [property: JsonPropertyName("process_vram_mb")]    IReadOnlyDictionary<int, double> ProcessVramMb,
     [property: JsonPropertyName("disks")]             IReadOnlyList<LhmDiskSnapshot> Disks
 );
 

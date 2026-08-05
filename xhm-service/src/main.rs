@@ -6,6 +6,7 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use tokio::net::TcpListener;
+use tokio_util::sync::CancellationToken;
 use tracing_subscriber::EnvFilter;
 use xhm_core::traits::{Clock, LhmReader, MetricStore, RyzenAdjClient, SystemClock};
 use xhm_service::{
@@ -13,6 +14,7 @@ use xhm_service::{
     lhm::LhmBridgeManager,
     power::{is_supported_power_platform, ProductionRyzenAdjClient},
     state::{RuntimeConfig, ServicePaths},
+    web::{web_app, SecurityConfig, DEFAULT_WEB_PORT},
     AppState, ServiceWorker,
 };
 
@@ -54,24 +56,106 @@ async fn main() -> anyhow::Result<()> {
         ..RuntimeConfig::default()
     };
     let port = runtime.port;
+    let security_config = match SecurityConfig::load(store.as_ref()) {
+        Ok(config) => config,
+        Err(error) => {
+            tracing::error!(%error, "security settings unavailable; web listener restricted to loopback");
+            SecurityConfig::default()
+        }
+    };
 
     let state = AppState::new(store, clock, lhm, ryzenadj, paths, runtime);
     let mut worker = ServiceWorker::start(state.clone());
-    let app = xhm_service::app(state);
-
-    let addr = listen_addr(port);
-    tracing::info!("listening on {addr}");
-    let server_result = match TcpListener::bind(addr).await {
-        Ok(listener) => {
-            axum::serve(listener, app)
-                .with_graceful_shutdown(shutdown_signal())
-                .await
+    let internal_app = xhm_service::app(state.clone());
+    let requested_lan = security_config.enable_lan_access;
+    let (web_app, enable_lan) = match web_app(
+        state.clone(),
+        security_config,
+        &state.paths.wwwroot_path,
+    ) {
+        Ok(app) => (app, requested_lan),
+        Err(error) => {
+            tracing::error!(%error, "unsafe web security configuration; web listener restricted to loopback");
+            (
+                web_app(
+                    state.clone(),
+                    SecurityConfig::default(),
+                    &state.paths.wwwroot_path,
+                )
+                .expect("default loopback security configuration must be valid"),
+                false,
+            )
         }
-        Err(error) => Err(error),
+    };
+    if !state.paths.wwwroot_path.join("index.html").is_file() {
+        tracing::warn!(
+            path = %state.paths.wwwroot_path.display(),
+            "web assets unavailable; API and hub remain available on the web listener"
+        );
+    }
+
+    let internal_addr = listen_addr(port);
+    let internal_listener = TcpListener::bind(internal_addr).await?;
+    tracing::info!("internal service listening on {internal_addr}");
+
+    let web_addr = web_listen_addr(DEFAULT_WEB_PORT, enable_lan);
+    let web_listener = match TcpListener::bind(web_addr).await {
+        Ok(listener) => {
+            tracing::info!(lan = enable_lan, "web gateway listening on {web_addr}");
+            Some(listener)
+        }
+        Err(error) => {
+            tracing::error!(%error, "web gateway could not bind {web_addr}");
+            None
+        }
     };
 
+    let cancellation = CancellationToken::new();
+    let internal_cancellation = cancellation.clone();
+    let mut internal_task = tokio::spawn(async move {
+        axum::serve(
+            internal_listener,
+            internal_app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(internal_cancellation.cancelled_owned())
+        .await
+    });
+    let web_cancellation = cancellation.clone();
+    let mut web_task = tokio::spawn(async move {
+        if let Some(listener) = web_listener {
+            axum::serve(
+                listener,
+                web_app.into_make_service_with_connect_info::<SocketAddr>(),
+            )
+            .with_graceful_shutdown(web_cancellation.cancelled_owned())
+            .await
+        } else {
+            web_cancellation.cancelled_owned().await;
+            Ok(())
+        }
+    });
+
+    let mut server_result = tokio::select! {
+        _ = shutdown_signal() => Ok(()),
+        result = &mut internal_task => flatten_server_result(result),
+        result = &mut web_task => flatten_server_result(result),
+    };
+    cancellation.cancel();
+
+    if !internal_task.is_finished() {
+        let result = flatten_server_result(internal_task.await);
+        if server_result.is_ok() {
+            server_result = result;
+        }
+    }
+    if !web_task.is_finished() {
+        let result = flatten_server_result(web_task.await);
+        if server_result.is_ok() {
+            server_result = result;
+        }
+    }
+
     worker.shutdown().await;
-    // 优雅回收 bridge 子进程：等待 500ms 后强杀（由 manager.shutdown 内部处理）。
     if let Some(manager) = bridge_manager.as_mut() {
         manager.shutdown().await;
     }
@@ -109,6 +193,20 @@ fn load_process_keywords(store: &dyn MetricStore) -> Vec<String> {
 fn listen_addr(port: u16) -> SocketAddr {
     SocketAddr::from(([127, 0, 0, 1], port))
 }
+fn web_listen_addr(port: u16, enable_lan: bool) -> SocketAddr {
+    if enable_lan {
+        SocketAddr::from(([0, 0, 0, 0], port))
+    } else {
+        SocketAddr::from(([127, 0, 0, 1], port))
+    }
+}
+
+fn flatten_server_result(
+    result: Result<std::io::Result<()>, tokio::task::JoinError>,
+) -> anyhow::Result<()> {
+    result??;
+    Ok(())
+}
 
 async fn shutdown_signal() {
     let ctrl_c = async {
@@ -137,7 +235,7 @@ async fn shutdown_signal() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use xhm_service::DEFAULT_SERVICE_PORT;
+    use xhm_service::{web::DEFAULT_WEB_PORT, DEFAULT_SERVICE_PORT};
 
     #[test]
     fn service_listener_is_loopback_only_on_fixed_port() {
@@ -146,5 +244,16 @@ mod tests {
         assert!(address.ip().is_loopback());
         assert_eq!(address.ip().to_string(), "127.0.0.1");
         assert_eq!(address.port(), 35_179);
+    }
+
+    #[test]
+    fn web_listener_switches_between_loopback_and_all_interfaces() {
+        let local = web_listen_addr(DEFAULT_WEB_PORT, false);
+        let lan = web_listen_addr(DEFAULT_WEB_PORT, true);
+
+        assert!(local.ip().is_loopback());
+        assert_eq!(local.port(), 35_180);
+        assert!(lan.ip().is_unspecified());
+        assert_eq!(lan.port(), 35_180);
     }
 }

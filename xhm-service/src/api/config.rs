@@ -593,6 +593,10 @@ mod tests {
         assert!(body["DataCollection"]["ProcessKeywords"].is_string());
         assert_eq!(body["Monitoring"]["MonitorCpu"], "true");
         assert_eq!(body["System"]["StartWithWindows"], "false");
+        assert_eq!(body["System"]["EnableLanAccess"], "false");
+        assert_eq!(body["System"]["EnableAccessKey"], "false");
+        assert_eq!(body["System"]["AccessKey"], "");
+        assert_eq!(body["System"]["IpWhitelist"], "");
     }
 
     #[tokio::test]

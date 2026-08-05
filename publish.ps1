@@ -193,6 +193,28 @@ if ($SkipService -and $SkipDesktop) {
     Write-Host "✓ Rust $rustBuildTarget 构建成功" -ForegroundColor Green
 }
 
+if (-not $SkipService) {
+    $webDirectory = Join-Path $RootDir "xhmonitor-web"
+    $webNodeModules = Join-Path $webDirectory "node_modules"
+    Push-Location $webDirectory
+    try {
+        if (-not (Test-Path -LiteralPath $webNodeModules -PathType Container)) {
+            Write-Host "  安装 Web 依赖..." -ForegroundColor Gray
+            & npm ci
+            if ($LASTEXITCODE -ne 0) {
+                throw "Web 依赖安装失败"
+            }
+        }
+        Write-Host "  构建 Web 前端..." -ForegroundColor Gray
+        & npm run build
+        if ($LASTEXITCODE -ne 0) {
+            throw "Web 前端构建失败"
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 # 发布 lhm-bridge
 Write-Host ""
 if (-not $SkipService) {
@@ -277,7 +299,12 @@ if (-not $SkipService) {
         -Destination (Join-Path $ServiceDir "tools\RyzenAdj") `
         -DisplayName "RyzenAdj 工具目录"
 
-    Write-Host "✓ Service 已包含 Rust 二进制、bridge 依赖、配置和 RyzenAdj" -ForegroundColor Green
+    Copy-RequiredDirectory `
+        -Source (Join-Path $RootDir "xhmonitor-web\dist") `
+        -Destination (Join-Path $ServiceDir "wwwroot") `
+        -DisplayName "Web 前端资源"
+
+    Write-Host "✓ Service 已包含 Rust 二进制、bridge 依赖、Web 资源、配置和 RyzenAdj" -ForegroundColor Green
 } else {
     Write-Host "  跳过 Service 文件组装" -ForegroundColor Gray
 }
@@ -357,6 +384,7 @@ XhMonitor-v$Version/
 │  ├─ xhm-service.exe
 │  ├─ lhm-bridge.exe        # 以及 bridge publish 的全部运行依赖
 │  ├─ appsettings.json
+│  ├─ wwwroot/              # Web 前端静态资源
 │  ├─ logs/                 # 日志目录（自动创建）
 │  ├─ xhmonitor.db          # 数据库文件（自动创建）
 │  └─ tools/

@@ -12,12 +12,12 @@ use windows_sys::Win32::UI::Shell::{
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CheckMenuItem, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon,
-    DestroyMenu, DestroyWindow, GetCursorPos, LoadImageW, PostMessageW, RegisterClassW,
-    SetForegroundWindow, TrackPopupMenu, CREATESTRUCTW, CS_DBLCLKS, GWLP_USERDATA, HICON,
-    IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, MF_BYCOMMAND, MF_CHECKED, MF_GRAYED, MF_SEPARATOR,
-    MF_STRING, MF_UNCHECKED, TPM_RIGHTBUTTON, WM_APP, WM_COMMAND, WM_LBUTTONDBLCLK, WM_NCCREATE,
-    WM_NCDESTROY, WM_NULL, WM_RBUTTONUP, WNDCLASSW, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
-    WS_OVERLAPPED,
+    DestroyMenu, DestroyWindow, EnableMenuItem, GetCursorPos, LoadImageW, PostMessageW,
+    RegisterClassW, SetForegroundWindow, TrackPopupMenu, CREATESTRUCTW, CS_DBLCLKS, GWLP_USERDATA,
+    HICON, IMAGE_ICON, LR_DEFAULTSIZE, LR_LOADFROMFILE, MF_BYCOMMAND, MF_CHECKED, MF_ENABLED,
+    MF_SEPARATOR, MF_STRING, MF_UNCHECKED, TPM_RIGHTBUTTON, WM_APP, WM_COMMAND, WM_LBUTTONDBLCLK,
+    WM_NCCREATE, WM_NCDESTROY, WM_NULL, WM_RBUTTONUP, WNDCLASSW, WS_EX_NOACTIVATE,
+    WS_EX_TOOLWINDOW, WS_OVERLAPPED,
 };
 
 use super::{TrayCommand, TrayCommandSender};
@@ -241,6 +241,9 @@ unsafe extern "system" fn window_proc(
 }
 
 unsafe fn show_menu(hwnd: HWND, menu: windows_sys::Win32::UI::WindowsAndMessaging::HMENU) {
+    if let Err(error) = refresh_admin_mode_item(menu) {
+        tracing::warn!(%error, "failed to refresh tray Admin Mode item");
+    }
     let mut cursor = POINT { x: 0, y: 0 };
     if GetCursorPos(&mut cursor) == 0 {
         return;
@@ -277,6 +280,22 @@ fn command_from_native_id(id: u32) -> Option<TrayCommand> {
         _ => None,
     }
 }
+fn admin_mode_check_flags(enabled: bool) -> u32 {
+    MF_BYCOMMAND | if enabled { MF_CHECKED } else { MF_UNCHECKED }
+}
+
+unsafe fn refresh_admin_mode_item(
+    menu: windows_sys::Win32::UI::WindowsAndMessaging::HMENU,
+) -> io::Result<()> {
+    if EnableMenuItem(menu, MENU_ADMIN_MODE, MF_BYCOMMAND | MF_ENABLED) == -1 {
+        return Err(io::Error::last_os_error());
+    }
+    let flags = admin_mode_check_flags(crate::system_controls::is_admin_mode_enabled());
+    if CheckMenuItem(menu, MENU_ADMIN_MODE, flags) == u32::MAX {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
 
 unsafe fn build_menu() -> io::Result<windows_sys::Win32::UI::WindowsAndMessaging::HMENU> {
     let menu = CreatePopupMenu();
@@ -288,12 +307,7 @@ unsafe fn build_menu() -> io::Result<windows_sys::Win32::UI::WindowsAndMessaging
         append_text(menu, MF_STRING, MENU_SHOW_HIDE, "显示/隐藏")?;
         append_text(menu, MF_STRING, MENU_OPEN_WEB, "打开 Web 界面")?;
         append_text(menu, MF_STRING, MENU_CLICK_THROUGH, "点击穿透")?;
-        append_text(
-            menu,
-            MF_STRING | MF_GRAYED,
-            MENU_ADMIN_MODE,
-            "管理员模式（P3 启用）",
-        )?;
+        append_text(menu, MF_STRING, MENU_ADMIN_MODE, "管理员模式")?;
         append_separator(menu)?;
         append_text(menu, MF_STRING, MENU_SETTINGS, "设置")?;
         append_text(menu, MF_STRING, MENU_ABOUT, "关于")?;
@@ -394,6 +408,9 @@ unsafe fn set_window_data(hwnd: HWND, value: isize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        GetMenuState, GetMenuStringW, MF_DISABLED, MF_GRAYED,
+    };
 
     #[test]
     fn native_menu_ids_cover_exactly_seven_commands() {
@@ -414,6 +431,35 @@ mod tests {
         assert_eq!(commands[0], TrayCommand::ShowHide);
         assert_eq!(commands[6], TrayCommand::Exit);
         assert!(command_from_native_id(999).is_none());
+    }
+    #[test]
+    fn admin_mode_menu_check_state_reflects_current_mode() {
+        assert_eq!(admin_mode_check_flags(false), MF_BYCOMMAND | MF_UNCHECKED);
+        assert_eq!(admin_mode_check_flags(true), MF_BYCOMMAND | MF_CHECKED);
+    }
+    #[test]
+    fn native_admin_mode_menu_item_is_enabled_and_has_final_label() {
+        let (state, label) = unsafe {
+            let menu = build_menu().unwrap();
+            let state = GetMenuState(menu, MENU_ADMIN_MODE, MF_BYCOMMAND);
+            let mut label = [0_u16; 32];
+            let length = GetMenuStringW(
+                menu,
+                MENU_ADMIN_MODE,
+                label.as_mut_ptr(),
+                label.len() as i32,
+                MF_BYCOMMAND,
+            );
+            DestroyMenu(menu);
+            (
+                state,
+                String::from_utf16_lossy(&label[..length.max(0) as usize]),
+            )
+        };
+
+        assert_ne!(state, u32::MAX);
+        assert_eq!(state & (MF_DISABLED | MF_GRAYED), 0);
+        assert_eq!(label, "管理员模式");
     }
 
     #[test]

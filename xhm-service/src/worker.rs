@@ -78,6 +78,7 @@ impl Drop for ServiceWorker {
 async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
     let mut system = System::new();
     let mut max_memory = 0.0;
+    let mut max_vram = 0.0;
     let mut next_hardware_refresh = Instant::now();
     let mut next_collection = Instant::now();
 
@@ -90,13 +91,23 @@ async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
         if now >= next_hardware_refresh {
             system.refresh_memory();
             max_memory = round_one(bytes_to_mb(system.total_memory()));
+
+            // VRAM capacity from LHM bridge snapshot (if available)
+            if let Some(snapshot) = state.lhm.snapshot().as_ref() {
+                if let Some(total) = snapshot.gpu_memory_total_mb {
+                    if total.is_finite() && total > 0.0 {
+                        max_vram = round_one(total);
+                    }
+                }
+            }
+
             send_event(
                 &state,
                 PushTarget::All,
                 PushEvent::HardwareLimits(HardwareLimitsPayload {
                     timestamp: state.clock.now_local(),
                     max_memory,
-                    max_vram: 0.0,
+                    max_vram,
                 }),
             );
             next_hardware_refresh = Instant::now() + HARDWARE_REFRESH_INTERVAL;
@@ -192,6 +203,11 @@ async fn collect_cycle(
             );
             continue;
         };
+        let vram_mb = lhm
+            .as_ref()
+            .and_then(|snapshot| snapshot.process_vram_mb.get(&process_id))
+            .copied()
+            .unwrap_or(0.0);
 
         match build_process_sample(
             process_id,
@@ -199,6 +215,7 @@ async fn collect_cycle(
             command_line,
             f64::from(process.cpu_usage()),
             process.memory(),
+            vram_mb,
             timestamp,
         ) {
             Ok(sample) => {
@@ -286,6 +303,7 @@ fn build_process_sample(
     command_line: String,
     cpu_usage: f64,
     memory_bytes: u64,
+    vram_mb: f64,
     timestamp: chrono::DateTime<chrono::Utc>,
 ) -> Result<ProcessSample, serde_json::Error> {
     let cpu_usage = round_one(nonnegative(cpu_usage));
@@ -302,6 +320,13 @@ fn build_process_sample(
         "memory".to_owned(),
         MetricValue {
             value: memory_mb,
+            unit: Some("MB".to_owned()),
+        },
+    );
+    metrics.insert(
+        "vram".to_owned(),
+        MetricValue {
+            value: round_one(nonnegative(vram_mb)),
             unit: Some("MB".to_owned()),
         },
     );
@@ -352,32 +377,44 @@ fn build_system_usage(
     lhm: Option<&LhmSnapshot>,
     power: Option<PowerStatus>,
 ) -> SystemUsagePayload {
-    let (total_gpu, cpu_temperature, gpu_temperature, upload_speed, download_speed, disks) =
-        match lhm {
-            Some(snapshot) => {
-                let disks = snapshot
-                    .disks
-                    .iter()
-                    .map(|disk| DiskUsagePayload {
-                        name: disk.name.clone(),
-                        total_bytes: disk.total_bytes,
-                        used_bytes: disk.used_bytes,
-                        read_speed: optional_nonnegative(disk.read_mbps),
-                        write_speed: optional_nonnegative(disk.write_mbps),
-                    })
-                    .collect();
+    let (
+        total_gpu,
+        cpu_temperature,
+        gpu_temperature,
+        upload_speed,
+        download_speed,
+        disks,
+        vram_used,
+        vram_total,
+    ) = match lhm {
+        Some(snapshot) => {
+            let disks = snapshot
+                .disks
+                .iter()
+                .map(|disk| DiskUsagePayload {
+                    name: disk.name.clone(),
+                    total_bytes: disk.total_bytes,
+                    used_bytes: disk.used_bytes,
+                    read_speed: optional_nonnegative(disk.read_mbps),
+                    write_speed: optional_nonnegative(disk.write_mbps),
+                })
+                .collect();
 
-                (
-                    round_one(nonnegative(snapshot.gpu_load.unwrap_or(0.0))),
-                    finite(snapshot.cpu_temp),
-                    finite(snapshot.gpu_temp),
-                    nonnegative(snapshot.net_up_mbps),
-                    nonnegative(snapshot.net_down_mbps),
-                    disks,
-                )
-            }
-            None => (0.0, None, None, 0.0, 0.0, Vec::new()),
-        };
+            (
+                round_one(nonnegative(snapshot.gpu_load.unwrap_or(0.0))),
+                finite(snapshot.cpu_temp),
+                finite(snapshot.gpu_temp),
+                nonnegative(snapshot.net_up_mbps),
+                nonnegative(snapshot.net_down_mbps),
+                disks,
+                finite(snapshot.gpu_memory_used_mb).unwrap_or(0.0),
+                finite(snapshot.gpu_memory_total_mb).unwrap_or(0.0),
+            )
+        }
+        None => (0.0, None, None, 0.0, 0.0, Vec::new(), 0.0, 0.0),
+    };
+    let total_vram = round_one(nonnegative(vram_used));
+    let max_vram = round_one(nonnegative(vram_total));
 
     let power_available = power.is_some();
     let (total_power, max_power, power_scheme_index) = match power {
@@ -396,11 +433,11 @@ fn build_system_usage(
         cpu_temperature: cpu_temperature.map(round_one),
         gpu_temperature: gpu_temperature.map(round_one),
         total_memory: round_one(bytes_to_mb(used_memory_bytes)),
-        total_vram: 0.0,
+        total_vram,
         upload_speed,
         download_speed,
         max_memory,
-        max_vram: 0.0,
+        max_vram,
         disks,
         power_available,
         total_power,
@@ -556,6 +593,7 @@ mod tests {
             "alpha.exe --serve".to_owned(),
             12.34,
             10 * 1024 * 1024,
+            512.34,
             fixed_time(),
         )
         .unwrap();
@@ -575,8 +613,16 @@ mod tests {
                 unit: Some("MB".to_owned()),
             })
         );
+        assert_eq!(
+            metrics.get("vram"),
+            Some(&MetricValue {
+                value: 512.3,
+                unit: Some("MB".to_owned()),
+            })
+        );
         assert_eq!(sample.snapshot.metrics.get("cpu"), Some(&12.3));
         assert_eq!(sample.snapshot.metrics.get("memory"), Some(&10.0));
+        assert_eq!(sample.snapshot.metrics.get("vram"), Some(&512.3));
         assert_eq!(sample.record.timestamp, fixed_time());
     }
 
@@ -609,7 +655,10 @@ mod tests {
             cpu_temp: Some(60.04),
             cpu_temp_label: Some("CPU Package".to_owned()),
             gpu_temp: Some(50.06),
+            gpu_memory_used_mb: None,
+            gpu_memory_total_mb: None,
             gpu_load: Some(25.04),
+            process_vram_mb: Default::default(),
             net_up_mbps: 1.25,
             net_down_mbps: 2.5,
             disk_read_mbps: 99.0,
@@ -660,6 +709,7 @@ mod tests {
                 format!("process-{process_id}.exe"),
                 f64::from(100 - process_id),
                 process_id as u64 * 1024 * 1024,
+                0.0,
                 fixed_time(),
             )
             .unwrap();

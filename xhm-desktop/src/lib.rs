@@ -19,9 +19,10 @@ pub mod persistence;
 pub mod service_client;
 #[cfg(windows)]
 pub mod shell;
+#[cfg(windows)]
+pub mod system_controls;
 pub mod tray;
 pub mod ui;
-#[cfg(windows)]
 pub mod win32;
 
 /// 进程事件 channel 深度（SSE 后台任务 → UI / 测试）。
@@ -46,6 +47,16 @@ pub fn bootstrap() -> anyhow::Result<()> {
 
     #[cfg(windows)]
     let single_instance_guard = acquire_single_instance()?;
+    #[cfg(windows)]
+    {
+        match crate::system_controls::ensure_service_running() {
+            Ok(true) => tracing::info!("xhm-service started by desktop"),
+            Ok(false) => {}
+            Err(error) => {
+                tracing::warn!(%error, "desktop could not ensure xhm-service is running")
+            }
+        }
+    }
 
     // Create all P2 windows before the active loop. Settings and About remain
     // hidden until tray commands request them.
@@ -776,7 +787,22 @@ fn install_tray_runtime(
                         Err(error) => tracing::error!(%error, "tray Web command failed"),
                     },
                     tray::TrayCommand::AdminMode => {
-                        tracing::info!("tray Admin Mode remains deferred to P3");
+                        #[cfg(windows)]
+                        {
+                            let enabled = !crate::system_controls::is_admin_mode_enabled();
+                            std::thread::spawn(move || {
+                                match crate::system_controls::apply_admin_mode(enabled) {
+                                    Ok(()) => tracing::info!(enabled, "tray Admin Mode applied"),
+                                    Err(error) => {
+                                        tracing::error!(%error, enabled, "tray Admin Mode failed")
+                                    }
+                                }
+                            });
+                        }
+                        #[cfg(not(windows))]
+                        {
+                            tracing::info!("tray Admin Mode is Windows-only");
+                        }
                     }
                     tray::TrayCommand::Settings => {
                         if let Some(settings) = settings_weak.upgrade() {

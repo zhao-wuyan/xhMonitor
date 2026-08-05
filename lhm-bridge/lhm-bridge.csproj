@@ -16,6 +16,7 @@
   <ItemGroup>
     <!-- 与 XhMonitor.Core 使用相同版本约束 -->
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.*" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
     <PackageReference Include="System.Text.Json" Version="8.*" />
   </ItemGroup>
 </Project>

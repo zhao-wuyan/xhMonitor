@@ -216,7 +216,7 @@ export component Shell inherits Window {
         if x < 298px { return "ram"; }
         if x < 392px { return "gpu"; }
         if x < 486px { return "vram"; }
-        return "power";
+        return root.metrics.length > 5 ? "power" : "";
     }
 
     OrganicShell {

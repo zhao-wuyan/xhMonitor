@@ -55,6 +55,7 @@ pub struct ServicePaths {
     pub db_path: PathBuf,
     pub widget_config_path: PathBuf,
     pub lhm_bridge_path: PathBuf,
+    pub wwwroot_path: PathBuf,
     pub ryzenadj_dll_path: PathBuf,
     pub ryzenadj_exe_path: PathBuf,
 }
@@ -69,7 +70,53 @@ impl ServicePaths {
             )
         })?;
 
-        Ok(Self::for_exe_dir(exe_dir))
+        let mut paths = Self::for_exe_dir(exe_dir);
+        let web_root_configured = if let Some(configured) = std::env::var_os("XHM_WEB_ROOT") {
+            paths.wwwroot_path = PathBuf::from(configured);
+            true
+        } else {
+            false
+        };
+
+        if let Ok(project_root) = std::env::current_dir() {
+            let is_source_checkout = project_root.join("Cargo.toml").is_file()
+                && project_root.join("lhm-bridge/lhm-bridge.csproj").is_file();
+            if is_source_checkout {
+                if !web_root_configured {
+                    let development_web_root = project_root.join("xhmonitor-web").join("dist");
+                    if development_web_root.join("index.html").is_file() {
+                        paths.wwwroot_path = development_web_root;
+                    }
+                }
+
+                let preferred_configurations = if exe_dir
+                    .file_name()
+                    .is_some_and(|name| name.eq_ignore_ascii_case("release"))
+                {
+                    ["Release", "Debug"]
+                } else {
+                    ["Debug", "Release"]
+                };
+                for configuration in preferred_configurations {
+                    let candidate = project_root
+                        .join("lhm-bridge")
+                        .join("bin")
+                        .join(configuration)
+                        .join("net8.0")
+                        .join("win-x64")
+                        .join("lhm-bridge.exe");
+                    if candidate.is_file() {
+                        paths.lhm_bridge_path = candidate;
+                        break;
+                    }
+                }
+
+                let development_ryzenadj = project_root.join("tools").join("RyzenAdj");
+                paths.ryzenadj_dll_path = development_ryzenadj.join("libryzenadj.dll");
+                paths.ryzenadj_exe_path = development_ryzenadj.join("ryzenadj.exe");
+            }
+        }
+        Ok(paths)
     }
 
     pub fn for_exe_dir(exe_dir: impl AsRef<Path>) -> Self {
@@ -80,6 +127,7 @@ impl ServicePaths {
             db_path: exe_dir.join("xhmonitor.db"),
             widget_config_path: exe_dir.join("data").join("widget-settings.json"),
             lhm_bridge_path: exe_dir.join("lhm-bridge.exe"),
+            wwwroot_path: exe_dir.join("wwwroot"),
             ryzenadj_dll_path: ryzenadj_dir.join("libryzenadj.dll"),
             ryzenadj_exe_path: ryzenadj_dir.join("ryzenadj.exe"),
             exe_dir,
@@ -298,6 +346,7 @@ mod tests {
             exe_dir.join("data").join("widget-settings.json")
         );
         assert_eq!(paths.lhm_bridge_path, exe_dir.join("lhm-bridge.exe"));
+        assert_eq!(paths.wwwroot_path, exe_dir.join("wwwroot"));
         assert_eq!(
             paths.ryzenadj_dll_path,
             exe_dir
@@ -314,6 +363,7 @@ mod tests {
             &paths.db_path,
             &paths.widget_config_path,
             &paths.lhm_bridge_path,
+            &paths.wwwroot_path,
             &paths.ryzenadj_dll_path,
             &paths.ryzenadj_exe_path,
         ] {

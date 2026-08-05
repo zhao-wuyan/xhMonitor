@@ -117,6 +117,15 @@ VALUES
     (14, 'Monitoring', 'MonitorNetwork', 'true', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
     (15, 'Monitoring', 'AdminMode', 'false', '2024-01-01 00:00:00', '2024-01-01 00:00:00');
 "#;
+const SECURITY_SETTINGS_SEED_SQL: &str = r#"
+INSERT OR IGNORE INTO "ApplicationSettings"
+    ("Category", "Key", "Value", "CreatedAt", "UpdatedAt")
+VALUES
+    ('System', 'EnableLanAccess', 'false', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+    ('System', 'EnableAccessKey', 'false', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+    ('System', 'AccessKey', '', '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+    ('System', 'IpWhitelist', '', '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+"#;
 
 /// SQLite-backed implementation of the synchronous persistence boundary.
 pub struct SqliteMetricStore {
@@ -239,6 +248,12 @@ fn initialize_schema(connection: &mut Connection) -> Result<()> {
         "20260126161829_AddMonitoringSettings",
         "8.0.23",
         MONITORING_SETTINGS_SEED_SQL,
+    )?;
+    apply_migration(
+        &transaction,
+        "20260804000000_AddSecuritySettings",
+        "8.0.23",
+        SECURITY_SETTINGS_SEED_SQL,
     )?;
     transaction
         .commit()
@@ -1321,7 +1336,7 @@ mod tests {
         assert_eq!(generated.updated_at, at(10));
 
         let initial_settings = store.list_settings().unwrap();
-        assert_eq!(initial_settings.len(), 13);
+        assert_eq!(initial_settings.len(), 17);
         assert!(initial_settings.windows(2).all(|pair| {
             (&pair[0].category, &pair[0].key) <= (&pair[1].category, &pair[1].key)
         }));
@@ -1454,11 +1469,21 @@ mod tests {
             assert_eq!(legacy[0].display_name, None);
 
             let settings = store.list_settings().unwrap();
-            assert_eq!(settings.len(), 13);
+            assert_eq!(settings.len(), 17);
             assert!(!settings.iter().any(|setting| setting.key == "WebPort"));
             assert!(settings.iter().any(|setting| {
                 setting.category == "Monitoring" && setting.key == "MonitorCpu"
             }));
+            for key in [
+                "EnableLanAccess",
+                "EnableAccessKey",
+                "AccessKey",
+                "IpWhitelist",
+            ] {
+                assert!(settings
+                    .iter()
+                    .any(|setting| setting.category == "System" && setting.key == key));
+            }
 
             let connection = store.connection().unwrap();
             let has_display_name = connection
@@ -1504,7 +1529,7 @@ mod tests {
                     |row| row.get::<_, i64>(0),
                 )
                 .unwrap();
-            assert_eq!(migration_count, 7);
+            assert_eq!(migration_count, 8);
             drop(index_statement);
             drop(connection);
             assert!(store.delete_alert(1).unwrap());

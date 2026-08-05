@@ -104,6 +104,93 @@ public class LhmBridgeSelectionTests
     }
 
     [Fact]
+    public void GpuMemorySelection_NormalizesUnitsAndAggregatesPerHardware()
+    {
+        global::LhmSelection.NormalizeGpuMemoryMb(SensorType.Data, 8)
+            .Should().Be(8192);
+        global::LhmSelection.NormalizeGpuMemoryMb(SensorType.SmallData, 512)
+            .Should().Be(512);
+
+        global::LhmSensorReading[] usedSensors =
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Used", SensorType.SmallData, 100),
+            new global::LhmSensorReading("GPU 0", "GPU Memory Used", SensorType.SmallData, 120),
+            new global::LhmSensorReading("GPU 1", "Memory Used", SensorType.SmallData, 50),
+        ];
+        var used = global::LhmSelection.SelectGpuMemoryValue(usedSensors);
+        var total = global::LhmSelection.SelectGpuMemoryTotal(
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Total", SensorType.SmallData, 8192),
+            new global::LhmSensorReading("GPU 0", "GPU Memory Total", SensorType.SmallData, 8000),
+            new global::LhmSensorReading("GPU 1", "Memory Total", SensorType.SmallData, 4096),
+        ],
+        usedSensors);
+
+        used.Should().Be(170);
+        total.Should().Be(12288);
+    }
+
+    [Fact]
+    public void GpuMemorySelection_EstimatesTotalFromUsedAndAvailable()
+    {
+        var total = global::LhmSelection.SelectGpuMemoryTotal(
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Available", SensorType.SmallData, 7000),
+            new global::LhmSensorReading("GPU 0", "Memory Free", SensorType.SmallData, 6900),
+            new global::LhmSensorReading("GPU 1", "Memory Available", SensorType.SmallData, 3000),
+        ],
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Used", SensorType.SmallData, 100),
+            new global::LhmSensorReading("GPU 1", "Memory Used", SensorType.SmallData, 70),
+        ]);
+
+        total.Should().Be(10170);
+    }
+
+    [Fact]
+    public void GpuMemorySelection_CombinesExplicitAndEstimatedGpuCapacity()
+    {
+        var total = global::LhmSelection.SelectGpuMemoryTotal(
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Total", SensorType.SmallData, 8192),
+            new global::LhmSensorReading("GPU 1", "Memory Available", SensorType.SmallData, 3000),
+        ],
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Used", SensorType.SmallData, 120),
+            new global::LhmSensorReading("GPU 1", "Memory Used", SensorType.SmallData, 50),
+        ]);
+
+        total.Should().Be(11242);
+    }
+
+    [Fact]
+    public void GpuMemorySelection_DoesNotUnderreportWhenCapacityCannotBePaired()
+    {
+        var total = global::LhmSelection.SelectGpuMemoryTotal(
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Total", SensorType.SmallData, 8192),
+            new global::LhmSensorReading("GPU 1", "Memory Available", SensorType.SmallData, 3000),
+        ],
+        [
+            new global::LhmSensorReading("GPU 0", "Memory Used", SensorType.SmallData, 120),
+        ]);
+
+        total.Should().BeNull();
+    }
+
+    [Fact]
+    public void ProcessVramCollector_ParsesRegistryCapacityRepresentations()
+    {
+        global::ProcessVramCollector.ParseRegistryMemoryBytes(8L * 1024 * 1024)
+            .Should().Be(8L * 1024 * 1024);
+        global::ProcessVramCollector.ParseRegistryMemoryBytes(
+                BitConverter.GetBytes(16L * 1024 * 1024))
+            .Should().Be(16L * 1024 * 1024);
+        global::ProcessVramCollector.ParseRegistryMemoryBytes(null)
+            .Should().Be(0);
+    }
+
+    [Fact]
     public void ConsecutiveFailureBudget_RetainsTransientFailuresAndExhaustsAtBound()
     {
         var budget = new global::ConsecutiveFailureBudget(3);
@@ -125,6 +212,27 @@ public class LhmBridgeSelectionTests
         computer.IsMemoryEnabled.Should().BeFalse();
         computer.IsCpuEnabled.Should().BeTrue();
         computer.IsGpuEnabled.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("pid_1234_luid_0x00000000", 1234)]
+    [InlineData("PID_42_phys_0", 42)]
+    public void ProcessVramCollector_ExtractsPidFromCounterInstance(
+        string instanceName,
+        int expectedProcessId)
+    {
+        global::ProcessVramCollector.TryExtractProcessId(instanceName, out var processId)
+            .Should().BeTrue();
+        processId.Should().Be(expectedProcessId);
+    }
+
+    [Theory]
+    [InlineData("engine_1234")]
+    [InlineData("pid_not-a-number_luid_0")]
+    public void ProcessVramCollector_RejectsMalformedCounterInstance(string instanceName)
+    {
+        global::ProcessVramCollector.TryExtractProcessId(instanceName, out _)
+            .Should().BeFalse();
     }
 
 }

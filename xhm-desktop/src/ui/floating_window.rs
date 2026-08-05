@@ -117,10 +117,8 @@ pub fn project_state(state: &DesktopState) -> FloatingProjection {
     let vram = usage.map(|value| value.total_vram).unwrap_or(0.0);
     let upload = usage.map(|value| value.upload_speed).unwrap_or(0.0);
     let download = usage.map(|value| value.download_speed).unwrap_or(0.0);
-    let power = usage.map(|value| value.total_power).unwrap_or(0.0);
-    let max_power = usage.map(|value| value.max_power).unwrap_or(0.0);
 
-    let metrics = vec![
+    let mut metrics = vec![
         MetricView {
             id: "net".into(),
             label: "NET".into(),
@@ -172,20 +170,20 @@ pub fn project_state(state: &DesktopState) -> FloatingProjection {
             tone: Some(memory_tone(vram, max_vram)),
             accent: (0, 0, 0),
         },
-        MetricView {
+    ];
+    if let Some(usage) = usage.filter(|value| value.power_available) {
+        let power = usage.total_power;
+        let max_power = usage.max_power;
+        metrics.push(MetricView {
             id: "power".into(),
             label: "POWER".into(),
             value: format!("{power:.0} W"),
-            detail: if usage.is_some_and(|value| value.power_available) {
-                format!("max {max_power:.0} W")
-            } else {
-                "unavailable".into()
-            },
+            detail: format!("max {max_power:.0} W"),
             ratio: clamped_ratio(power, max_power),
             tone: Some(memory_tone(power, max_power)),
             accent: (0, 0, 0),
-        },
-    ];
+        });
+    }
 
     let mut all_rows: Vec<&ProcessRow> = state.processes.values().collect();
     all_rows.sort_by(|left, right| {
@@ -458,15 +456,27 @@ fn format_speed(prefix: &str, speed: Option<f64>) -> String {
         None => format!("{prefix} -- MB/s"),
     }
 }
+fn is_power_metric(metric: &str) -> bool {
+    metric.eq_ignore_ascii_case("power")
+}
+
+fn should_switch_power(action: Option<&super::floating_interactions::PointerAction>) -> bool {
+    matches!(
+        action,
+        Some(super::floating_interactions::PointerAction::LongPress(metric))
+            if is_power_metric(metric)
+    )
+}
 
 #[cfg(windows)]
 enum AsyncUiResult {
-    KillFinished {
+    Kill {
         pid: u32,
         name: String,
         outcome: crate::win32::KillOutcome,
     },
-    PowerFinished(Result<String, String>),
+    PowerWarmup(Result<(), String>),
+    PowerSwitch(Result<String, String>),
 }
 
 #[cfg(windows)]
@@ -481,6 +491,7 @@ struct FloatingRuntimeState {
     async_tx: std::sync::mpsc::Sender<AsyncUiResult>,
     async_rx: std::sync::mpsc::Receiver<AsyncUiResult>,
     toast_until_ms: Option<u64>,
+    power_warmup_inflight: bool,
     power_inflight: bool,
 }
 
@@ -518,6 +529,7 @@ pub fn install_runtime(
         async_tx,
         async_rx,
         toast_until_ms: None,
+        power_warmup_inflight: false,
         power_inflight: false,
     }));
     let weak = app.as_weak();
@@ -532,10 +544,23 @@ pub fn install_runtime(
                 tracing::warn!("floating pointer-down could not resolve physical coordinates");
                 return;
             };
-            let mut runtime = runtime.borrow_mut();
-            let now = runtime.clock.now_ms();
-            runtime.pointer.press(point, metric.to_string(), now);
-            runtime.drag_anchor = Some(anchor);
+            let metric_id = metric.to_string();
+            let warmup_sender = {
+                let mut runtime = runtime.borrow_mut();
+                let now = runtime.clock.now_ms();
+                let should_warmup = is_power_metric(&metric_id) && !runtime.power_warmup_inflight;
+                runtime.pointer.press(point, metric_id, now);
+                runtime.drag_anchor = Some(anchor);
+                if should_warmup {
+                    runtime.power_warmup_inflight = true;
+                    Some(runtime.async_tx.clone())
+                } else {
+                    None
+                }
+            };
+            if let Some(sender) = warmup_sender {
+                spawn_power_warmup(sender);
+            }
             if let Some(app) = weak.upgrade() {
                 app.set_active_metric_id(metric);
                 app.set_active_metric_scale(1.0);
@@ -691,10 +716,10 @@ pub fn install_runtime(
             move || {
                 let now = runtime.borrow().clock.now_ms();
                 let long_press_action = runtime.borrow_mut().pointer.tick(now);
+                if should_switch_power(long_press_action.as_ref()) {
+                    dispatch_power_switch(&runtime);
+                }
                 if let Some(PointerAction::LongPress(metric)) = long_press_action {
-                    if let Some(app) = weak.upgrade() {
-                        show_toast(&app, &runtime, format!("{metric} long press"));
-                    }
                     tracing::info!(metric, elapsed_ms = 2_000, "G3 long-press triggered");
                 }
 
@@ -753,6 +778,9 @@ fn handle_pointer_release(
     handle: crate::win32::WindowHandle,
 ) {
     use super::floating_interactions::PointerAction;
+    if should_switch_power(action.as_ref()) {
+        dispatch_power_switch(runtime);
+    }
 
     match action {
         Some(PointerAction::EndDrag) => finish_drag(handle, weak),
@@ -770,23 +798,31 @@ fn handle_pointer_release(
             if let Some(app) = weak.upgrade() {
                 apply_projection(&app, projection);
             }
-            if metric == "power" {
-                let mut runtime_ref = runtime.borrow_mut();
-                if !runtime_ref.power_inflight {
-                    runtime_ref.power_inflight = true;
-                    spawn_power(runtime_ref.async_tx.clone());
-                }
-            }
+            // C# parity: short clicks only toggle panel state; Power changes require 2s hold.
             tracing::info!(metric, down_ms = 50, recover_ms = 150, "G3 click feedback");
         }
         Some(PointerAction::LongPress(metric)) => {
-            if let Some(app) = weak.upgrade() {
-                show_toast(&app, runtime, format!("{metric} long press"));
-            }
+            tracing::info!(metric, elapsed_ms = 2_000, "G3 long-press released");
         }
         _ => {}
     }
     runtime.borrow_mut().drag_anchor = None;
+}
+#[cfg(windows)]
+fn dispatch_power_switch(runtime: &std::rc::Rc<std::cell::RefCell<FloatingRuntimeState>>) {
+    let sender = {
+        let mut runtime = runtime.borrow_mut();
+        if runtime.power_inflight {
+            None
+        } else {
+            runtime.power_inflight = true;
+            Some(runtime.async_tx.clone())
+        }
+    };
+    if let Some(sender) = sender {
+        tracing::info!("Power scheme switch dispatched after 2s long press");
+        spawn_power(sender);
+    }
 }
 
 #[cfg(windows)]
@@ -924,7 +960,30 @@ fn spawn_kill(sender: std::sync::mpsc::Sender<AsyncUiResult>, pid: u32, name: St
 
         let guard = crate::win32::KillOnce::new(WindowsProcessManager);
         let outcome = guard.kill_process_tree(pid);
-        let _ = sender.send(AsyncUiResult::KillFinished { pid, name, outcome });
+        let _ = sender.send(AsyncUiResult::Kill { pid, name, outcome });
+    });
+}
+
+#[cfg(windows)]
+fn spawn_power_warmup(sender: std::sync::mpsc::Sender<AsyncUiResult>) {
+    std::thread::spawn(move || {
+        let result = (|| -> Result<(), String> {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())?;
+            runtime.block_on(async {
+                let config = crate::config::Config::load().await;
+                let client = crate::service_client::rest::RestClient::new(&config)
+                    .map_err(|error| error.to_string())?;
+                client
+                    .warmup()
+                    .await
+                    .map(|_| ())
+                    .map_err(|error| error.to_string())
+            })
+        })();
+        let _ = sender.send(AsyncUiResult::PowerWarmup(result));
     });
 }
 
@@ -951,7 +1010,7 @@ fn spawn_power(sender: std::sync::mpsc::Sender<AsyncUiResult>) {
                 ))
             })
         })();
-        let _ = sender.send(AsyncUiResult::PowerFinished(result));
+        let _ = sender.send(AsyncUiResult::PowerSwitch(result));
     });
 }
 
@@ -962,7 +1021,7 @@ fn apply_async_result(
     result: AsyncUiResult,
 ) {
     match result {
-        AsyncUiResult::KillFinished { pid, name, outcome } => {
+        AsyncUiResult::Kill { pid, name, outcome } => {
             runtime.borrow_mut().kill.complete(pid);
             tracing::info!(pid, process = name, ?outcome, "G3 kill completed");
             let remove_row = matches!(
@@ -995,7 +1054,14 @@ fn apply_async_result(
             }
             show_toast(app, runtime, message);
         }
-        AsyncUiResult::PowerFinished(result) => {
+        AsyncUiResult::PowerWarmup(result) => {
+            runtime.borrow_mut().power_warmup_inflight = false;
+            match result {
+                Ok(()) => tracing::debug!("Power device verification warmup completed"),
+                Err(error) => tracing::warn!(%error, "Power device verification warmup failed"),
+            }
+        }
+        AsyncUiResult::PowerSwitch(result) => {
             runtime.borrow_mut().power_inflight = false;
             show_toast(
                 app,
@@ -1043,6 +1109,25 @@ mod tests {
         assert_eq!(clamped_ratio(-1.0, 100.0), 0.0);
         assert_eq!(clamped_ratio(25.0, 100.0), 0.25);
         assert_eq!(clamped_ratio(150.0, 100.0), 1.0);
+    }
+    #[test]
+    fn power_metric_visibility_follows_service_availability() {
+        let mut state = smoke_state(1_234);
+        state.usage.as_mut().unwrap().power_available = false;
+        let unavailable = project_state(&state);
+        assert_eq!(
+            unavailable
+                .metrics
+                .iter()
+                .map(|metric| metric.id.as_str())
+                .collect::<Vec<_>>(),
+            ["net", "cpu", "ram", "gpu", "vram"]
+        );
+
+        state.usage.as_mut().unwrap().power_available = true;
+        let available = project_state(&state);
+        assert_eq!(available.metrics.last().unwrap().id, "power");
+        assert_eq!(available.metrics.len(), 6);
     }
 
     #[test]
@@ -1129,6 +1214,22 @@ mod tests {
             .metrics
             .iter()
             .any(|metric| metric.tone == Some(ThresholdTone::Red)));
+    }
+
+    #[test]
+    fn only_power_long_press_requests_scheme_switch() {
+        use super::super::floating_interactions::PointerAction;
+
+        assert!(!should_switch_power(Some(&PointerAction::Click(
+            "power".into()
+        ))));
+        assert!(should_switch_power(Some(&PointerAction::LongPress(
+            "power".into()
+        ))));
+        assert!(!should_switch_power(Some(&PointerAction::LongPress(
+            "cpu".into()
+        ))));
+        assert!(!should_switch_power(None));
     }
 
     #[test]

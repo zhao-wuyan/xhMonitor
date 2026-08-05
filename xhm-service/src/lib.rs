@@ -14,6 +14,7 @@ pub mod lhm;
 pub mod power;
 pub mod realtime;
 pub mod state;
+pub mod web;
 pub mod worker;
 
 pub use state::{
@@ -27,13 +28,22 @@ pub use worker::ServiceWorker;
 /// 从 `state.runtime` 的 `try_read` 读取 hub/sse path 和 allowed origins——
 /// 仅在启动时调用，不会 contended。
 pub fn app(state: AppState) -> Router {
+    let allowed_origins = state
+        .runtime
+        .try_read()
+        .expect("runtime lock not contended at startup")
+        .allowed_origins
+        .clone();
+    routes(state).layer(build_cors(&allowed_origins))
+}
+
+pub(crate) fn routes(state: AppState) -> Router {
     let runtime = state
         .runtime
         .try_read()
         .expect("runtime lock not contended at startup");
     let hub_path = runtime.hub_path.clone();
     let sse_path = runtime.sse_path.clone();
-    let cors = build_cors(&runtime.allowed_origins);
     drop(runtime);
 
     api::config::router()
@@ -41,7 +51,6 @@ pub fn app(state: AppState) -> Router {
         .merge(api::power::router())
         .merge(api::widget::router())
         .merge(realtime::router(&hub_path, &sse_path))
-        .layer(cors)
         .with_state(state)
 }
 

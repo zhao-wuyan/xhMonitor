@@ -93,16 +93,17 @@ exit /b 1
 :__PORT_FREE
 echo.
 
-echo   [2/3] 正在启动 Rust Service...
-start "" /D "!SERVICE_DIR!" "!SERVICE_EXE!"
-for /l %%I in (1,1,10) do (
+echo   [2/3] 正在启动 Rust Desktop 和受管 Service...
+start "" /D "!DESKTOP_DIR!" "!DESKTOP_EXE!"
+for /l %%I in (1,1,15) do (
     powershell.exe -NoLogo -NoProfile -NonInteractive -Command "try { $response = Invoke-RestMethod -Uri 'http://127.0.0.1:35179/api/v1/config/health' -TimeoutSec 1; if ($response.status -eq 'Healthy') { exit 0 }; exit 1 } catch { exit 1 }" > nul 2>&1
     if !errorlevel! equ 0 goto :__SERVICE_HEALTHY
-    if %%I lss 10 timeout /t 1 /nobreak > nul
+    if %%I lss 15 timeout /t 1 /nobreak > nul
 )
 
-echo         [Error] Rust Service 未在约 10 秒内报告 Healthy
-echo         [Error] 未启动 Rust Desktop，请检查 Service 配置与端口占用
+echo         [Error] Rust Service 未在约 15 秒内报告 Healthy
+echo         [Error] Desktop 未能按当前 Admin Mode 启动 Service
+taskkill /F /IM xhm-desktop.exe > nul 2>&1
 taskkill /F /IM xhm-service.exe > nul 2>&1
 taskkill /F /IM lhm-bridge.exe > nul 2>&1
 echo.
@@ -113,9 +114,8 @@ exit /b 1
 echo         [OK] Rust Service 已启动，健康状态: Healthy
 echo.
 
-echo   [3/3] 正在启动 Rust Desktop...
-start "" /D "!DESKTOP_DIR!" "!DESKTOP_EXE!"
-echo         [OK] Rust Desktop 已启动
+echo   [3/3] Rust Desktop 已启动
+echo         [OK] Service 权限由 Desktop Admin Mode 管理
 echo.
 
 echo     ==================================================================================

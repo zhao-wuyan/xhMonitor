@@ -1,9 +1,9 @@
-//! Settings page model and allowed-subset REST integration.
+//! Settings page model, REST integration, and Windows system controls.
 //!
-//! The desktop only writes the explicitly permitted configuration keys. Deferred
-//! system controls are intentionally absent from both the model and request body.
+//! Taskbar and System settings share one PUT so the Service restarts against a
+//! complete configuration snapshot.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, net::IpAddr};
 
 use crate::service_client::rest::{RestClient, RestError};
 use crate::ui::taskbar_metrics::{SharedTaskbarSettings, TaskbarSettings, TaskbarVisualStyle};
@@ -12,6 +12,7 @@ use crate::SettingsWindow;
 const APPEARANCE: &str = "Appearance";
 const DATA_COLLECTION: &str = "DataCollection";
 const MONITORING: &str = "Monitoring";
+const SYSTEM: &str = "System";
 
 #[derive(Debug, thiserror::Error)]
 pub enum SettingsError {
@@ -21,6 +22,66 @@ pub enum SettingsError {
     InvalidNumber { field: &'static str },
     #[error(transparent)]
     Rest(#[from] RestError),
+    #[error("LAN access requires a valid IP whitelist or an enabled access key")]
+    UnsafeLanConfiguration,
+    #[error("access key is enabled but no key was provided")]
+    MissingAccessKey,
+    #[error("invalid IP whitelist rule: {rule}")]
+    InvalidIpWhitelist { rule: String },
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SystemSettings {
+    pub admin_mode: bool,
+    pub start_with_windows: bool,
+    pub enable_lan_access: bool,
+    pub enable_access_key: bool,
+    pub access_key: String,
+    pub ip_whitelist: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SettingsDocument {
+    pub taskbar: TaskbarSettings,
+    pub system: SystemSettings,
+}
+
+pub fn settings_document_from_groups(
+    groups: &BTreeMap<String, BTreeMap<String, String>>,
+) -> SettingsDocument {
+    SettingsDocument {
+        taskbar: settings_from_groups(groups),
+        system: SystemSettings {
+            admin_mode: group_bool(groups, MONITORING, "AdminMode"),
+            start_with_windows: group_bool(groups, SYSTEM, "StartWithWindows"),
+            enable_lan_access: group_bool(groups, SYSTEM, "EnableLanAccess"),
+            enable_access_key: group_bool(groups, SYSTEM, "EnableAccessKey"),
+            access_key: group_value(groups, SYSTEM, "AccessKey"),
+            ip_whitelist: group_value(groups, SYSTEM, "IpWhitelist"),
+        },
+    }
+}
+
+fn group_bool(
+    groups: &BTreeMap<String, BTreeMap<String, String>>,
+    category: &str,
+    key: &str,
+) -> bool {
+    group_value(groups, category, key)
+        .trim()
+        .eq_ignore_ascii_case("true")
+}
+
+fn group_value(
+    groups: &BTreeMap<String, BTreeMap<String, String>>,
+    category: &str,
+    key: &str,
+) -> String {
+    groups
+        .get(category)
+        .and_then(|group| group.get(key))
+        .cloned()
+        .unwrap_or_default()
 }
 
 pub fn settings_from_groups(
@@ -81,16 +142,48 @@ pub fn allowed_subset(
     Ok(result)
 }
 
-pub async fn load_settings(client: &RestClient) -> Result<TaskbarSettings, SettingsError> {
+pub fn document_subset(
+    document: &SettingsDocument,
+) -> Result<BTreeMap<String, BTreeMap<String, String>>, SettingsError> {
+    validate_system_settings(&document.system)?;
+    let mut body = allowed_subset(&document.taskbar)?;
+    body.entry(MONITORING.to_string()).or_default().insert(
+        "AdminMode".to_string(),
+        document.system.admin_mode.to_string(),
+    );
+
+    let mut system = BTreeMap::new();
+    system.insert(
+        "StartWithWindows".to_string(),
+        document.system.start_with_windows.to_string(),
+    );
+    system.insert(
+        "EnableLanAccess".to_string(),
+        document.system.enable_lan_access.to_string(),
+    );
+    system.insert(
+        "EnableAccessKey".to_string(),
+        document.system.enable_access_key.to_string(),
+    );
+    system.insert("AccessKey".to_string(), document.system.access_key.clone());
+    system.insert(
+        "IpWhitelist".to_string(),
+        document.system.ip_whitelist.clone(),
+    );
+    body.insert(SYSTEM.to_string(), system);
+    Ok(body)
+}
+
+pub async fn load_settings(client: &RestClient) -> Result<SettingsDocument, SettingsError> {
     let groups = client.get_settings().await?;
-    Ok(settings_from_groups(&groups))
+    Ok(settings_document_from_groups(&groups))
 }
 
 pub async fn save_settings(
     client: &RestClient,
-    settings: &TaskbarSettings,
+    document: &SettingsDocument,
 ) -> Result<(), SettingsError> {
-    let body = allowed_subset(settings)?;
+    let body = document_subset(document)?;
     client.put_settings(&body).await?;
     Ok(())
 }
@@ -103,6 +196,52 @@ fn validate_process_keywords(value: &str) -> Result<(), SettingsError> {
     } else {
         Err(SettingsError::InvalidProcessKeywords)
     }
+}
+fn validate_system_settings(settings: &SystemSettings) -> Result<(), SettingsError> {
+    if settings.enable_access_key && settings.access_key.trim().is_empty() {
+        return Err(SettingsError::MissingAccessKey);
+    }
+    validate_ip_whitelist(&settings.ip_whitelist)?;
+    if settings.enable_lan_access
+        && settings.ip_whitelist.trim().is_empty()
+        && !settings.enable_access_key
+    {
+        return Err(SettingsError::UnsafeLanConfiguration);
+    }
+    Ok(())
+}
+
+fn validate_ip_whitelist(raw: &str) -> Result<(), SettingsError> {
+    for rule in raw
+        .split([',', '\n', '\r'])
+        .map(str::trim)
+        .filter(|rule| !rule.is_empty())
+    {
+        let (address, prefix) = match rule.split_once('/') {
+            Some((address, prefix)) => {
+                let prefix =
+                    prefix
+                        .parse::<u8>()
+                        .map_err(|_| SettingsError::InvalidIpWhitelist {
+                            rule: rule.to_string(),
+                        })?;
+                (address, Some(prefix))
+            }
+            None => (rule, None),
+        };
+        let address = address
+            .parse::<IpAddr>()
+            .map_err(|_| SettingsError::InvalidIpWhitelist {
+                rule: rule.to_string(),
+            })?;
+        let max_prefix = if address.is_ipv4() { 32 } else { 128 };
+        if prefix.is_some_and(|prefix| prefix > max_prefix) {
+            return Err(SettingsError::InvalidIpWhitelist {
+                rule: rule.to_string(),
+            });
+        }
+    }
+    Ok(())
 }
 
 fn parse_input(value: &str, field: &'static str, min: u8, max: u8) -> Result<u8, SettingsError> {
@@ -144,6 +283,23 @@ pub fn collect_from_window(app: &SettingsWindow) -> Result<TaskbarSettings, Sett
     settings.process_keywords = settings.process_keywords.trim().to_owned();
     Ok(settings)
 }
+pub fn collect_document_from_window(
+    app: &SettingsWindow,
+) -> Result<SettingsDocument, SettingsError> {
+    let document = SettingsDocument {
+        taskbar: collect_from_window(app)?,
+        system: SystemSettings {
+            admin_mode: app.get_admin_mode(),
+            start_with_windows: app.get_start_with_windows(),
+            enable_lan_access: app.get_enable_lan_access(),
+            enable_access_key: app.get_enable_access_key(),
+            access_key: app.get_access_key().to_string(),
+            ip_whitelist: app.get_ip_whitelist().to_string(),
+        },
+    };
+    validate_system_settings(&document.system)?;
+    Ok(document)
+}
 
 pub fn apply_to_window(app: &SettingsWindow, settings: &TaskbarSettings) {
     let settings = settings.clone().normalized();
@@ -170,11 +326,19 @@ pub fn apply_to_window(app: &SettingsWindow, settings: &TaskbarSettings) {
         TaskbarVisualStyle::Bar
     ));
 }
+pub fn apply_system_to_window(app: &SettingsWindow, settings: &SystemSettings) {
+    app.set_admin_mode(settings.admin_mode);
+    app.set_start_with_windows(settings.start_with_windows);
+    app.set_enable_lan_access(settings.enable_lan_access);
+    app.set_enable_access_key(settings.enable_access_key);
+    app.set_access_key(settings.access_key.clone().into());
+    app.set_ip_whitelist(settings.ip_whitelist.clone().into());
+}
 
 #[cfg(windows)]
 enum SettingsAsyncResult {
-    Loaded(Result<TaskbarSettings, String>),
-    Saved(Result<TaskbarSettings, String>),
+    Loaded(Result<SettingsDocument, String>),
+    Saved(Result<SettingsDocument, String>),
 }
 
 #[cfg(windows)]
@@ -194,6 +358,7 @@ pub fn install_runtime(
 
     let (sender, receiver) = std::sync::mpsc::channel();
     let receiver = Rc::new(RefCell::new(receiver));
+    let current_system = Rc::new(RefCell::new(SystemSettings::default()));
     let weak = app.as_weak();
 
     {
@@ -210,16 +375,20 @@ pub fn install_runtime(
     {
         let sender = sender.clone();
         let weak = weak.clone();
+        let current_system = Rc::clone(&current_system);
         app.on_save_settings(move || {
             let Some(app) = weak.upgrade() else {
                 return;
             };
-            match collect_from_window(&app) {
-                Ok(settings) => {
-                    app.set_status_text("Saving allowed settings...".into());
+            match collect_document_from_window(&app) {
+                Ok(document) => {
+                    app.set_status_text("Saving settings...".into());
                     spawn_settings_request(
                         sender.clone(),
-                        SettingsRequest::Save(Box::new(settings)),
+                        SettingsRequest::Save {
+                            document: Box::new(document),
+                            previous_system: current_system.borrow().clone(),
+                        },
                     );
                 }
                 Err(error) => app.set_status_text(format!("Save rejected: {error}").into()),
@@ -239,35 +408,39 @@ pub fn install_runtime(
     let timer = slint::Timer::default();
     {
         let receiver = Rc::clone(&receiver);
+        let current_system = Rc::clone(&current_system);
         let weak = weak.clone();
         timer.start(
             slint::TimerMode::Repeated,
             std::time::Duration::from_millis(100),
             move || loop {
-                let result = receiver.borrow().try_recv();
-                let Ok(result) = result else {
+                let Ok(result) = receiver.borrow().try_recv() else {
                     break;
                 };
                 let Some(app) = weak.upgrade() else {
                     continue;
                 };
                 match result {
-                    SettingsAsyncResult::Loaded(Ok(settings)) => {
-                        apply_to_window(&app, &settings);
-                        app.set_status_text(
-                            "Settings loaded. System controls remain P3-only.".into(),
-                        );
-                        *taskbar_settings
-                            .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner) = settings;
+                    SettingsAsyncResult::Loaded(Ok(mut document)) => {
+                        document.system.admin_mode =
+                            crate::system_controls::is_admin_mode_enabled();
+                        document.system.start_with_windows =
+                            crate::system_controls::is_startup_enabled();
+                        apply_to_window(&app, &document.taskbar);
+                        apply_system_to_window(&app, &document.system);
+                        app.set_local_ip(get_local_ip().into());
+                        *current_system.borrow_mut() = document.system;
+                        app.set_status_text("Settings loaded.".into());
                     }
                     SettingsAsyncResult::Loaded(Err(error)) => {
                         app.set_status_text(format!("Settings load failed: {error}").into());
                     }
-                    SettingsAsyncResult::Saved(Ok(settings)) => {
+                    SettingsAsyncResult::Saved(Ok(document)) => {
                         *taskbar_settings
                             .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner) = settings;
+                            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                            document.taskbar.clone();
+                        *current_system.borrow_mut() = document.system;
                         app.set_status_text("Settings saved.".into());
                     }
                     SettingsAsyncResult::Saved(Err(error)) => {
@@ -283,9 +456,66 @@ pub fn install_runtime(
 }
 
 #[cfg(windows)]
+fn apply_system_controls(
+    previous: &SystemSettings,
+    current: &SystemSettings,
+) -> Result<(), String> {
+    let admin_changed = crate::system_controls::is_admin_mode_enabled() != current.admin_mode;
+    if admin_changed {
+        crate::system_controls::apply_admin_mode(current.admin_mode)
+            .map_err(|error| error.to_string())?;
+    }
+
+    if crate::system_controls::is_startup_enabled() != current.start_with_windows {
+        crate::system_controls::set_startup(current.start_with_windows)
+            .map_err(|error| error.to_string())?;
+    }
+
+    let network_changed = previous.enable_lan_access != current.enable_lan_access
+        || previous.enable_access_key != current.enable_access_key
+        || previous.access_key != current.access_key
+        || previous.ip_whitelist != current.ip_whitelist;
+    if network_changed && !admin_changed {
+        crate::system_controls::restart_service_for_settings()
+            .map_err(|error| error.to_string())?;
+    }
+
+    if network_changed {
+        if current.enable_lan_access {
+            crate::system_controls::wait_for_web_gateway().map_err(|error| error.to_string())?;
+        }
+        crate::system_controls::configure_firewall(current.enable_lan_access, 35_180)
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn get_local_ip() -> String {
+    use std::process::Command;
+    Command::new("powershell")
+        .args([
+            "-NoProfile", "-NonInteractive", "-Command",
+            "(Get-NetIPAddress -AddressFamily IPv4 -Type Unicast | Where-Object { $_.PrefixOrigin -eq 'Dhcp' -or $_.PrefixOrigin -eq 'Manual' } | Where-Object { $_.IPAddress -notlike '169.254.*' -and $_.IPAddress -ne '127.0.0.1' } | Select-Object -First 1).IPAddress",
+        ])
+        .output()
+        .ok()
+        .and_then(|o| {
+            if o.status.success() {
+                let ip = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                if ip.is_empty() { None } else { Some(ip) }
+            } else { None }
+        })
+        .unwrap_or_else(|| "unavailable".to_string())
+}
+
+#[cfg(windows)]
 enum SettingsRequest {
     Load,
-    Save(Box<TaskbarSettings>),
+    Save {
+        document: Box<SettingsDocument>,
+        previous_system: SystemSettings,
+    },
 }
 
 #[cfg(windows)]
@@ -298,7 +528,7 @@ enum SettingsRequestKind {
 fn request_result_kind(request: &SettingsRequest) -> SettingsRequestKind {
     match request {
         SettingsRequest::Load => SettingsRequestKind::Load,
-        SettingsRequest::Save(_) => SettingsRequestKind::Save,
+        SettingsRequest::Save { .. } => SettingsRequestKind::Save,
     }
 }
 
@@ -325,10 +555,16 @@ fn spawn_settings_request(
                                 .await
                                 .map(|settings| SettingsAsyncResult::Loaded(Ok(settings)))
                                 .map_err(|error| error.to_string()),
-                            SettingsRequest::Save(settings) => save_settings(&client, &settings)
-                                .await
-                                .map(|()| SettingsAsyncResult::Saved(Ok(*settings)))
-                                .map_err(|error| error.to_string()),
+                            SettingsRequest::Save {
+                                document,
+                                previous_system,
+                            } => {
+                                save_settings(&client, &document)
+                                    .await
+                                    .map_err(|error| error.to_string())?;
+                                apply_system_controls(&previous_system, &document.system)?;
+                                Ok(SettingsAsyncResult::Saved(Ok(*document)))
+                            }
                         }
                     })
                 });
@@ -352,15 +588,12 @@ mod tests {
     }
 
     #[test]
-    fn allowed_subset_excludes_deferred_system_controls() {
+    fn taskbar_subset_does_not_invent_system_keys() {
         let body = allowed_subset(&TaskbarSettings::default()).unwrap();
-        let all_keys = body
-            .values()
-            .flat_map(|group| group.keys())
-            .collect::<Vec<_>>();
-        for forbidden in ["AdminMode", "Startup", "LAN", "Firewall", "System"] {
-            assert!(!all_keys.iter().any(|key| key.as_str() == forbidden));
-        }
+        assert!(!body.contains_key(SYSTEM));
+        assert!(!body
+            .get(MONITORING)
+            .is_some_and(|group| group.contains_key("AdminMode")));
     }
 
     #[test]
@@ -375,8 +608,35 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn unsafe_lan_and_invalid_whitelist_are_rejected() {
+        let unsafe_document = SettingsDocument {
+            taskbar: TaskbarSettings::default(),
+            system: SystemSettings {
+                enable_lan_access: true,
+                ..SystemSettings::default()
+            },
+        };
+        assert!(matches!(
+            document_subset(&unsafe_document),
+            Err(SettingsError::UnsafeLanConfiguration)
+        ));
+
+        let invalid_document = SettingsDocument {
+            taskbar: TaskbarSettings::default(),
+            system: SystemSettings {
+                ip_whitelist: "192.168.1.0/40".to_string(),
+                ..SystemSettings::default()
+            },
+        };
+        assert!(matches!(
+            document_subset(&invalid_document),
+            Err(SettingsError::InvalidIpWhitelist { .. })
+        ));
+    }
+
     #[tokio::test]
-    async fn settings_get_and_put_use_only_allowed_subset() {
+    async fn settings_get_and_put_include_validated_system_controls() {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/v1/config/settings"))
@@ -384,7 +644,13 @@ mod tests {
                 "Appearance": {"Opacity": "105", "Ignored": "yes"},
                 "DataCollection": {"ProcessKeywords": "[\"gpu\"]"},
                 "Monitoring": {"DockVisualStyle": "Text", "DockColumnGap": "29", "MonitorCpu": "false", "AdminMode": "true"},
-                "System": {"Firewall": "true"}
+                "System": {
+                    "StartWithWindows": "true",
+                    "EnableLanAccess": "true",
+                    "EnableAccessKey": "true",
+                    "AccessKey": "secret",
+                    "IpWhitelist": ""
+                }
             })))
             .mount(&server)
             .await;
@@ -393,18 +659,37 @@ mod tests {
             .and(body_partial_json(serde_json::json!({
                 "Appearance": {"Opacity": "100"},
                 "DataCollection": {"ProcessKeywords": "[\"gpu\"]"},
-                "Monitoring": {"DockVisualStyle": "Text", "DockColumnGap": "24", "MonitorCpu": "false"}
+                "Monitoring": {
+                    "DockVisualStyle": "Text",
+                    "DockColumnGap": "24",
+                    "MonitorCpu": "false",
+                    "AdminMode": "true"
+                },
+                "System": {
+                    "StartWithWindows": "true",
+                    "EnableLanAccess": "true",
+                    "EnableAccessKey": "true",
+                    "AccessKey": "secret",
+                    "IpWhitelist": ""
+                }
             })))
-            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"updatedCount": 1})))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"updatedCount": 1})),
+            )
             .mount(&server)
             .await;
 
         let client = client_for(&server);
-        let settings = load_settings(&client).await.unwrap();
-        assert_eq!(settings.opacity_percent, 100);
-        assert_eq!(settings.dock_column_gap, 24);
-        assert_eq!(settings.dock_visual_style, TaskbarVisualStyle::Text);
-        assert!(!settings.monitor_cpu);
-        save_settings(&client, &settings).await.unwrap();
+        let document = load_settings(&client).await.unwrap();
+        assert_eq!(document.taskbar.opacity_percent, 100);
+        assert_eq!(document.taskbar.dock_column_gap, 24);
+        assert_eq!(document.taskbar.dock_visual_style, TaskbarVisualStyle::Text);
+        assert!(!document.taskbar.monitor_cpu);
+        assert!(document.system.admin_mode);
+        assert!(document.system.start_with_windows);
+        assert!(document.system.enable_lan_access);
+        assert!(document.system.enable_access_key);
+        assert_eq!(document.system.access_key, "secret");
+        save_settings(&client, &document).await.unwrap();
     }
 }
