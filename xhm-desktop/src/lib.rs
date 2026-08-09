@@ -38,6 +38,11 @@ pub const EVENT_CHANNEL_CAPACITY: usize = 256;
 ///
 /// 顺序（current-plan TASK-008）：Rust mutex → winit-software → 两个 Slint
 /// Window → 延迟 HWND → topmost/DPI/placement → 唯一 tray → Slint loop。
+#[cfg(windows)]
+fn initial_taskbar_visible(ui_smoke: bool, g4_smoke: bool) -> bool {
+    ui_smoke || g4_smoke
+}
+
 pub fn bootstrap() -> anyhow::Result<()> {
     ensure_software_backend();
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
@@ -102,6 +107,10 @@ pub fn bootstrap() -> anyhow::Result<()> {
     #[cfg(windows)]
     {
         use slint::ComponentHandle;
+        let keep_taskbar_visible = initial_taskbar_visible(
+            std::env::var_os("XHM_DESKTOP_UI_SMOKE").is_some(),
+            std::env::var_os("XHM_DESKTOP_G4_SMOKE").is_some(),
+        );
         // HWND 解析使用 bounded retry：20x50ms = 最多 1s。
         // 超时后保持 mutex guard（在 guard_cell 中），但壳未接线——
         // 明确记录错误但不退出（让 tray exit 仍可用）。
@@ -145,6 +154,15 @@ pub fn bootstrap() -> anyhow::Result<()> {
                     std::sync::Arc::clone(&taskbar_display_clone),
                 ) {
                     Ok(controller) => {
+                        if !keep_taskbar_visible {
+                            if let Some(taskbar) = weak_taskbar.upgrade() {
+                                if let Err(error) = taskbar.hide() {
+                                    tracing::warn!(%error, "default taskbar hide failed");
+                                } else {
+                                    tracing::info!("taskbar hidden in default Floating mode");
+                                }
+                            }
+                        }
                         *controller_cell_clone.borrow_mut() = Some(controller);
                         wired_clone.set(true);
                         tracing::info!(attempts = n + 1, "dual-window wired after retries");
@@ -158,8 +176,9 @@ pub fn bootstrap() -> anyhow::Result<()> {
         // 保持 timer + guard 活跃到 run() 结束——由 TrayRuntime 持有引用。
         // tray-exit 时 controller/guard/timer 有序 drop，并释放 mutex。
 
-        // active_mode 初始 dispatch：G2 默认 Floating 模式，
-        // taskbar 窗在 EdgeDock 模式才显示（当前固定 show 供 smoke 观察）。
+        // Taskbar must be shown once so Slint creates its HWND for dual-window wiring.
+        // The retry callback hides it again in the default Floating mode; smoke modes
+        // keep it visible for explicit multi-window verification.
         taskbar.show()?;
     }
 
@@ -931,7 +950,15 @@ mod tests {
         }
     }
 
+    #[cfg(windows)]
     #[test]
+    fn taskbar_starts_hidden_outside_explicit_smoke_modes() {
+        assert!(!initial_taskbar_visible(false, false));
+        assert!(initial_taskbar_visible(true, false));
+        assert!(initial_taskbar_visible(false, true));
+    }
+    #[test]
+
     fn resolved_backend_defaults_to_winit_software() {
         let (_lock, _restore) = BackendEnvGuard::lock();
         // 未显式设置时回到默认软件渲染（不依赖 ensure_software_backend 已运行）。

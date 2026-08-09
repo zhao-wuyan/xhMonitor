@@ -173,7 +173,7 @@ impl Default for TaskbarSettings {
             monitor_power: true,
             monitor_network: true,
             enable_floating_mode: true,
-            enable_edge_dock_mode: true,
+            enable_edge_dock_mode: false,
             dock_cpu_label: "CPU".into(),
             dock_memory_label: "RAM".into(),
             dock_gpu_label: "GPU".into(),
@@ -1034,6 +1034,10 @@ mod tests {
         };
         assert_eq!(render.apply(&label_changed), RenderUpdate::Rebuilt);
         assert_eq!(render.rebuild_count(), 2);
+    }
+    #[test]
+    fn edge_dock_is_disabled_by_default() {
+        assert!(!TaskbarSettings::default().enable_edge_dock_mode);
     }
 
     #[test]
