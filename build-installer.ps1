@@ -218,20 +218,27 @@ if ($BuildType -eq "LiteNet8") {
     }
 
     try {
-        $dotnetRuntime = Get-RuntimePackageFile `
+        $aspNetCoreRuntime = Get-RuntimePackageFile `
             -RuntimeDir $runtimeDir `
-            -Pattern "dotnet-runtime-8.*-win-x64.exe" `
-            -DisplayName ".NET Runtime"
+            -Pattern "aspnetcore-runtime-8.*-win-x64.exe" `
+            -DisplayName "ASP.NET Core Runtime"
+
+        $desktopRuntime = Get-RuntimePackageFile `
+            -RuntimeDir $runtimeDir `
+            -Pattern "windowsdesktop-runtime-8.*-win-x64.exe" `
+            -DisplayName ".NET Desktop Runtime"
     }
     catch {
         Write-Host "错误: $_" -ForegroundColor Red
         exit 1
     }
 
-    Write-Host "✓ 检测到 lhm-bridge 所需运行时安装包：" -ForegroundColor Green
-    Write-Host "  - $($dotnetRuntime.Name)" -ForegroundColor White
+    Write-Host "✓ 检测到 C# Desktop 所需运行时安装包（均含基础运行时）：" -ForegroundColor Green
+    Write-Host "  - $($aspNetCoreRuntime.Name)" -ForegroundColor White
+    Write-Host "  - $($desktopRuntime.Name)" -ForegroundColor White
 
-    $isccDefines += "/DDotNetRuntimeInstallerFileName=$($dotnetRuntime.Name)"
+    $isccDefines += "/DAspNetCoreRuntimeInstallerFileName=$($aspNetCoreRuntime.Name)"
+    $isccDefines += "/DDotNetDesktopRuntimeInstallerFileName=$($desktopRuntime.Name)"
 }
 
 try {

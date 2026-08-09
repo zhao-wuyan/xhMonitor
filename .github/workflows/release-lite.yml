@@ -92,7 +92,6 @@ jobs:
 
             $issContent = Get-Content $IssPath -Raw
             $patterns = @{
-              DotNet = '#define DotNetRuntimeInstallerFileName "([^"]+)"'
               AspNetCore = '#define AspNetCoreRuntimeInstallerFileName "([^"]+)"'
               WindowsDesktop = '#define DotNetDesktopRuntimeInstallerFileName "([^"]+)"'
             }
@@ -180,11 +179,9 @@ jobs:
 
           $runtimeFiles = Get-ExpectedRuntimePackages -IssPath "installer\XhMonitor.iss"
 
-          Ensure-SingleRuntimePackage -RuntimeDir $runtimeDir -Pattern "dotnet-runtime-8.*-win-x64.exe" -ExpectedFile $runtimeFiles.DotNet -DisplayName ".NET Runtime"
           Ensure-SingleRuntimePackage -RuntimeDir $runtimeDir -Pattern "aspnetcore-runtime-8.*-win-x64.exe" -ExpectedFile $runtimeFiles.AspNetCore -DisplayName "ASP.NET Core Runtime"
           Ensure-SingleRuntimePackage -RuntimeDir $runtimeDir -Pattern "windowsdesktop-runtime-8.*-win-x64.exe" -ExpectedFile $runtimeFiles.WindowsDesktop -DisplayName ".NET Desktop Runtime"
 
-          Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.DotNet -DisplayName ".NET Runtime"
           Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.AspNetCore -DisplayName "ASP.NET Core Runtime"
           Ensure-RuntimePackage -RuntimeDir $runtimeDir -ExpectedFile $runtimeFiles.WindowsDesktop -DisplayName ".NET Desktop Runtime"
 

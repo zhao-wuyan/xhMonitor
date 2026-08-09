@@ -12,21 +12,21 @@ echo      / /\ __  /  / /  / / /_/ / / / / / /_/ /_/ / /
 echo     /_/\_\ /_/  /_/  /_/\____/_/ /_/_/\__/\____/_/
 echo.
 echo     ==================================================================================
-echo              玲珑星核系统监控（第三方）  ^|  Rust Edition  ^|  by 诏无言
+echo              玲珑星核系统监控（第三方）  ^|  Rust Service + C# Desktop  ^|  by 诏无言
 echo     ==================================================================================
 echo.
 
 endlocal
 setlocal EnableDelayedExpansion
 
-echo   [1/3] 正在定位 Rust 发布程序...
+echo   [1/3] 正在定位发布程序...
 echo.
 
 set "ROOT_DIR=%~dp0"
 set "SERVICE_DIR=!ROOT_DIR!Service"
 set "DESKTOP_DIR=!ROOT_DIR!Desktop"
 set "SERVICE_EXE=!SERVICE_DIR!\xhm-service.exe"
-set "DESKTOP_EXE=!DESKTOP_DIR!\xhm-desktop.exe"
+set "DESKTOP_EXE=!DESKTOP_DIR!\XhMonitor.Desktop.exe"
 set "HAVE_SERVICE=0"
 set "HAVE_DESKTOP=0"
 
@@ -39,21 +39,21 @@ if exist "!RELEASE_DIR!\" (
     for /f "delims=" %%D in ('dir /b /ad /o-d "!RELEASE_DIR!" 2^>nul') do (
         set "CANDIDATE_ROOT=!RELEASE_DIR!\%%D"
         if exist "!CANDIDATE_ROOT!\Service\xhm-service.exe" set "HAVE_SERVICE=1"
-        if exist "!CANDIDATE_ROOT!\Desktop\xhm-desktop.exe" set "HAVE_DESKTOP=1"
-        if exist "!CANDIDATE_ROOT!\Service\xhm-service.exe" if exist "!CANDIDATE_ROOT!\Desktop\xhm-desktop.exe" (
+        if exist "!CANDIDATE_ROOT!\Desktop\XhMonitor.Desktop.exe" set "HAVE_DESKTOP=1"
+        if exist "!CANDIDATE_ROOT!\Service\xhm-service.exe" if exist "!CANDIDATE_ROOT!\Desktop\XhMonitor.Desktop.exe" (
             set "ROOT_DIR=!CANDIDATE_ROOT!"
             set "SERVICE_DIR=!ROOT_DIR!\Service"
             set "DESKTOP_DIR=!ROOT_DIR!\Desktop"
             set "SERVICE_EXE=!SERVICE_DIR!\xhm-service.exe"
-            set "DESKTOP_EXE=!DESKTOP_DIR!\xhm-desktop.exe"
+            set "DESKTOP_EXE=!DESKTOP_DIR!\XhMonitor.Desktop.exe"
             goto :__FOUND_RELEASE
         )
     )
 )
 
-echo         [Error] 未找到完整的 Rust 发布程序
+echo         [Error] 未找到完整的发布程序
 if "!HAVE_SERVICE!"=="0" echo         [Error] 未找到 Service\xhm-service.exe
-if "!HAVE_DESKTOP!"=="0" echo         [Error] 未找到 Desktop\xhm-desktop.exe
+if "!HAVE_DESKTOP!"=="0" echo         [Error] 未找到 Desktop\XhMonitor.Desktop.exe
 if "!HAVE_SERVICE!"=="1" if "!HAVE_DESKTOP!"=="1" echo         [Error] 两个程序不在同一发布根目录
 echo.
 echo         请先生成 release\XhMonitor-v版本号 发布包，
@@ -68,7 +68,6 @@ echo         Desktop: !DESKTOP_EXE!
 echo.
 
 set "RUST_LOG=info"
-set "SLINT_BACKEND=winit-software"
 
 echo         正在清理已运行的监控进程...
 taskkill /F /IM xhm-service.exe > nul 2>&1
@@ -85,7 +84,7 @@ goto :__PORT_FREE
 echo.
 echo         [Error] 端口 35179 仍处于 Listen 状态
 echo         [Error] Port 35179 is occupied. Stop the elevated or other process first.
-echo         [Error] 未启动 Rust Service 和 Rust Desktop
+echo         [Error] 未启动 Rust Service 和 C# Desktop
 echo.
 endlocal
 exit /b 1
@@ -93,7 +92,7 @@ exit /b 1
 :__PORT_FREE
 echo.
 
-echo   [2/3] 正在启动 Rust Desktop 和受管 Service...
+echo   [2/3] 正在启动 C# Desktop 和受管 Rust Service...
 start "" /D "!DESKTOP_DIR!" "!DESKTOP_EXE!"
 for /l %%I in (1,1,15) do (
     powershell.exe -NoLogo -NoProfile -NonInteractive -Command "try { $response = Invoke-RestMethod -Uri 'http://127.0.0.1:35179/api/v1/config/health' -TimeoutSec 1; if ($response.status -eq 'Healthy') { exit 0 }; exit 1 } catch { exit 1 }" > nul 2>&1
@@ -103,7 +102,7 @@ for /l %%I in (1,1,15) do (
 
 echo         [Error] Rust Service 未在约 15 秒内报告 Healthy
 echo         [Error] Desktop 未能按当前 Admin Mode 启动 Service
-taskkill /F /IM xhm-desktop.exe > nul 2>&1
+taskkill /F /IM XhMonitor.Desktop.exe > nul 2>&1
 taskkill /F /IM xhm-service.exe > nul 2>&1
 taskkill /F /IM lhm-bridge.exe > nul 2>&1
 echo.
@@ -114,7 +113,7 @@ exit /b 1
 echo         [OK] Rust Service 已启动，健康状态: Healthy
 echo.
 
-echo   [3/3] Rust Desktop 已启动
+echo   [3/3] C# Desktop 已启动
 echo         [OK] Service 权限由 Desktop Admin Mode 管理
 echo.
 
@@ -125,7 +124,7 @@ echo         发布目录: !ROOT_DIR!
 echo         Service 工作目录: !SERVICE_DIR!
 echo         Service 地址: http://127.0.0.1:35179
 echo         日志级别: info (RUST_LOG)
-echo         Desktop 渲染后端: winit-software
+echo         Desktop 类型: C# WPF
 echo     ==================================================================================
 echo.
 

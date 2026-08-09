@@ -2,8 +2,8 @@
 
 Write-Host "正在启动 XhMonitor..." -ForegroundColor Green
 
-# 启动桌面悬浮窗（会自动拉起后端服务）
-Write-Host "启动桌面悬浮窗（将自动拉起后端服务）..." -ForegroundColor Yellow
+# 启动 C# 桌面悬浮窗（BackendServerService 会自动 cargo run -p xhm-service 拉起 Rust 后端）
+Write-Host "启动 C# 桌面悬浮窗（将自动拉起 Rust 后端服务）..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\XhMonitor.Desktop'; dotnet run"
 
 # 等待 3 秒让服务启动
@@ -24,5 +24,5 @@ Write-Host "  - Web 界面:   http://localhost:35180" -ForegroundColor Cyan
 Write-Host "  - SignalR Hub: http://localhost:35179/hubs/metrics" -ForegroundColor Cyan
 Write-Host "  - 桌面悬浮窗: 已显示在屏幕上" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "注意: Desktop 会自动启动 Service，无需手动启动" -ForegroundColor DarkGray
+Write-Host "注意: C# Desktop 会自动启动 Rust Service，无需手动启动" -ForegroundColor DarkGray
 Write-Host ""

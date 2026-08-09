@@ -26,12 +26,12 @@ if %errorlevel% equ 0 (
 )
 echo.
 
-echo   [2/5] 正在停止 Rust Desktop...
-taskkill /F /IM xhm-desktop.exe > nul 2>&1
+echo   [2/5] 正在停止 C# Desktop...
+taskkill /F /IM XhMonitor.Desktop.exe > nul 2>&1
 if %errorlevel% equ 0 (
-    echo         [OK] xhm-desktop.exe 已停止
+    echo         [OK] XhMonitor.Desktop.exe 已停止
 ) else (
-    echo         [-] xhm-desktop.exe 未运行
+    echo         [-] XhMonitor.Desktop.exe 未运行
 )
 echo.
 
@@ -44,18 +44,18 @@ if %errorlevel% equ 0 (
 )
 echo.
 
-echo   [4/5] 正在停止旧版 .NET 进程（升级兼容）...
+echo   [4/5] 正在停止旧版进程（升级兼容）...
 taskkill /F /IM XhMonitor.Service.exe > nul 2>&1
 if %errorlevel% equ 0 (
     echo         [OK] XhMonitor.Service.exe 已停止
 ) else (
     echo         [-] XhMonitor.Service.exe 未运行
 )
-taskkill /F /IM XhMonitor.Desktop.exe > nul 2>&1
+taskkill /F /IM xhm-desktop.exe > nul 2>&1
 if %errorlevel% equ 0 (
-    echo         [OK] XhMonitor.Desktop.exe 已停止
+    echo         [OK] xhm-desktop.exe（旧 Rust Desktop）已停止
 ) else (
-    echo         [-] XhMonitor.Desktop.exe 未运行
+    echo         [-] xhm-desktop.exe 未运行
 )
 echo.
 
