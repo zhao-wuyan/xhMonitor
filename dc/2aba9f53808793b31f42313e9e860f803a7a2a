@@ -1,0 +1,30 @@
+XhMonitor.Desktop/Services/BackendServerService.cs
+  h_cb0e2129f6578c 46,62-63,68,79-80,132,321,368,370
+XhMonitor.Desktop/appsettings.json
+  h_cb0e2129f6578c 2
+build-installer.ps1
+  h_cb0e2129f6578c 221,223-229,236-238,240-241
+installer/XhMonitor.iss
+  h_cb0e2129f6578c 5-7,26,28-34,110-111,122-123,156-159,177,195-196,320-328,330-331,336-354,540,543,545,547-562,565,567,572,607,609-614,620,622-627,655,659,666,669,688,692
+publish.bat
+  h_cb0e2129f6578c 3,5-8,13
+publish.ps1
+  h_cb0e2129f6578c 46,50-52,61,67,73,76-77,90,92,158-161,166,168-169,171,176,179,182,302,304-332,335-339,341-345,347,366-368,372-373,378,380,383,407-409,411
+scripts/停止服务.bat
+  h_cb0e2129f6578c 29-30,32,34,47,54,56,58
+scripts/启动服务.bat
+  h_cb0e2129f6578c 15,22,29,42-43,48,54,56,87,95,105,116,127
+start-all.ps1
+  h_cb0e2129f6578c 5-6,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "dc2aba9f53808793b31f42313e9e860f803a7a2a",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
