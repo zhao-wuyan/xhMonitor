@@ -68,7 +68,7 @@ xhMonitor/
 
 ## 关键配置
 
-- 后端配置：`XhMonitor.Service/appsettings.json`
+- 后端配置：`xhm-service/appsettings.json`
   - `Monitor.Keywords`：进程过滤关键词列表
   - `Monitor.ProcessNameRules`：进程名称规则（正则/直接映射）
   - `MetricProviders.PreferLibreHardwareMonitor`：是否优先使用 LHM（需管理员权限）

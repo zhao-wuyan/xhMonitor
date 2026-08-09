@@ -2,7 +2,7 @@
 
 本文档汇总项目中与 `appsettings*.json` 相关的主要配置项，按 Service 与 Desktop 分开说明。
 
-## 1. Service 配置（`XhMonitor.Service/appsettings.json`）
+## 1. Service 配置（`xhm-service/appsettings.json`）
 
 ### 1.1 `Serilog`
 

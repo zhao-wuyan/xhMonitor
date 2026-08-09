@@ -279,7 +279,7 @@ if (-not $SkipService) {
         Copy-Item -Destination $ServiceDir -Recurse -Force
 
     Copy-RequiredFile `
-        -Source (Join-Path $RootDir "XhMonitor.Service\appsettings.json") `
+        -Source (Join-Path $RootDir "xhm-service\appsettings.json") `
         -Destination (Join-Path $ServiceDir "appsettings.json") `
         -DisplayName "appsettings.json"
 

@@ -45,7 +45,7 @@
 | 原模块 | 当前生产模块 | 语言/框架 | 原源码状态 |
 |--------|--------------|-----------|------------|
 | `XhMonitor.Core` | `xhm-core` crate | Rust | 保留作参考 |
-| `XhMonitor.Service` | `xhm-service` crate | Rust + axum | 保留作参考及 `appsettings.json` 发布模板 |
+| `XhMonitor.Service` | `xhm-service` crate | Rust + axum | 保留作参考；生产配置模板已迁至 `xhm-service/appsettings.json` |
 | `XhMonitor.Desktop` | `xhm-desktop` crate | Rust + Slint | 保留作参考及端点/图标资源来源 |
 | LHM 传感器读取 | `lhm-bridge` 子进程 | C# .NET 8 | 当前生产 bridge |
 

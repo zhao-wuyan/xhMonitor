@@ -135,7 +135,7 @@ Desktop 支持：
 
 **4. 配置发布包**
 
-`XhMonitor.Service/appsettings.json` 是 `publish.ps1` 使用的 Service 配置模板。绿色版生成后，运行时配置位于 `release/XhMonitor-v<version>/Service/appsettings.json`；Desktop 端点配置位于同一发布根目录的 `Desktop/service-endpoints.json`。
+`xhm-service/appsettings.json` 是 Rust Service 的 canonical 配置模板，生产发布不再依赖保留参考的 `XhMonitor.Service/`。绿色版生成后，运行时配置位于 `release/XhMonitor-v<version>/Service/appsettings.json`；Desktop 端点配置位于同一发布根目录的 `Desktop/service-endpoints.json`。
 
 ### Examples
 

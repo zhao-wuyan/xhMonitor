@@ -33,7 +33,7 @@ xhm-service\
 xhm-desktop\
 lhm-bridge\
 tools\RyzenAdj\
-XhMonitor.Service\appsettings.json
+xhm-service\appsettings.json
 XhMonitor.Desktop\service-endpoints.json
 publish.ps1
 build-installer.ps1
