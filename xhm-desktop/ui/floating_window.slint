@@ -7,7 +7,9 @@ export struct MetricData {
     value: string,
     detail: string,
     ratio: float,
-    accent: color,
+    value-color: color,
+    bar-color: color,
+    has-bar: bool,
 }
 
 export struct ProcessData {
@@ -28,13 +30,7 @@ export struct ProcessData {
     pinned: bool,
 }
 
-export struct DiskData {
-    name: string,
-    read-text: string,
-    write-text: string,
-}
-
-component ThinProgressBar inherits Rectangle {
+component ThinBar inherits Rectangle {
     in property <float> ratio;
     in property <color> accent: #4ade80;
     height: 3px;
@@ -42,137 +38,277 @@ component ThinProgressBar inherits Rectangle {
     border-radius: 1.5px;
 
     Rectangle {
+        x: 0;
         width: parent.width * max(0.0, min(1.0, root.ratio));
-        height: 3px;
+        height: parent.height;
         background: root.accent;
         border-radius: 1.5px;
         animate width { duration: 160ms; easing: ease-out; }
     }
 }
 
+// One control-bar metric cell. Matches C# FloatingWindow.xaml column shapes:
+// NET → two stacked speed lines; RAM/VRAM → label+value over a full-width bar;
+// CPU/GPU/POWER → label+value over bar + trailing detail (temp / max).
 component MetricCell inherits Rectangle {
     in property <MetricData> metric;
     in property <float> interaction-scale: 1.0;
-    width: 88px;
-    height: 54px;
+    in property <bool> first: false;
+    in property <length> cell-width: 62px;
+    width: root.cell-width + (root.first ? 0px : 13px);
+    height: 46px;
     background: transparent;
 
-    Rectangle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2;
-        width: parent.width * root.interaction-scale;
-        height: parent.height * root.interaction-scale;
+    // Left divider (C# 1px separator, 6px gutter both sides).
+    if !root.first : Rectangle {
+        x: 6px;
+        y: (parent.height - 16px) / 2;
+        width: 1px;
+        height: 16px;
+        background: #ffffff14;
+    }
+
+    content := Rectangle {
+        x: root.first ? 0px : 13px;
+        width: root.cell-width;
+        height: parent.height;
         background: transparent;
 
-        Text {
-            x: 6px;
-            y: 6px;
-            text: root.metric.label;
-            color: #ffffff8f;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        Text {
-            x: 6px;
-            y: 5px;
-            width: parent.width - 12px;
-            text: root.metric.value;
-            color: root.metric.accent;
-            font-size: 13px;
-            font-weight: 700;
-            horizontal-alignment: right;
-        }
-        ThinProgressBar {
-            x: 6px;
-            y: 31px;
-            width: parent.width - 12px;
-            ratio: root.metric.ratio;
-            accent: root.metric.accent;
-        }
-        Text {
-            x: 6px;
-            y: 38px;
-            width: parent.width - 12px;
-            text: root.metric.detail;
-            color: #ffffff70;
-            font-size: 9px;
-            horizontal-alignment: right;
-            overflow: elide;
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width * root.interaction-scale;
+            height: parent.height * root.interaction-scale;
+            background: transparent;
+
+            // NET: two right-aligned speed lines (upload / download).
+            if root.metric.id == "net" : VerticalLayout {
+                y: (parent.height - 30px) / 2;
+                height: 30px;
+                spacing: 2px;
+                Text {
+                    text: root.metric.value;
+                    color: #ffffffe6;
+                    font-size: 11px;
+                    font-weight: 700;
+                    horizontal-alignment: right;
+                }
+                Text {
+                    text: root.metric.detail;
+                    color: #ffffffe6;
+                    font-size: 11px;
+                    font-weight: 700;
+                    horizontal-alignment: right;
+                }
+            }
+
+            // CPU / RAM / GPU / VRAM / POWER: label + value, then a bar row.
+            if root.metric.id != "net" : Rectangle {
+                background: transparent;
+                Text {
+                    x: 0;
+                    y: 3px;
+                    text: root.metric.label;
+                    color: #ffffff8f;
+                    font-size: 10px;
+                    font-weight: 700;
+                }
+                Text {
+                    x: 0;
+                    y: 2px;
+                    width: parent.width;
+                    text: root.metric.value;
+                    color: root.metric.value-color;
+                    font-size: 12px;
+                    font-weight: 700;
+                    horizontal-alignment: right;
+                }
+                ThinBar {
+                    x: 0;
+                    y: 22px;
+                    width: root.metric.detail == "" ? parent.width : parent.width - 26px;
+                    ratio: root.metric.ratio;
+                    accent: root.metric.bar-color;
+                    visible: root.metric.has-bar;
+                }
+                Text {
+                    x: parent.width - 24px;
+                    y: 20px;
+                    width: 24px;
+                    text: root.metric.detail;
+                    color: #ffffff8f;
+                    font-size: 9px;
+                    horizontal-alignment: right;
+                    visible: root.metric.detail != "";
+                }
+            }
         }
     }
 }
 
-component PinnedCard inherits Rectangle {
-    in property <ProcessData> process;
-    callback unpin(int);
-    width: 596px;
-    height: 34px;
-    background: #14141499;
-    border-radius: 5px;
-    border-color: #ffffff12;
-    border-width: 1px;
-
-    Text { x: 10px; y: 8px; width: 214px; text: root.process.name; color: white; font-size: 11px; overflow: elide; }
-    Text { x: 236px; y: 8px; width: 64px; text: root.process.cpu-text; color: root.process.cpu-color; font-size: 10px; horizontal-alignment: right; }
-    Text { x: 312px; y: 8px; width: 82px; text: root.process.memory-text; color: root.process.memory-color; font-size: 10px; horizontal-alignment: right; }
-    Text { x: 406px; y: 8px; width: 64px; text: root.process.gpu-text; color: root.process.gpu-color; font-size: 10px; horizontal-alignment: right; }
-    Rectangle {
-        x: 558px; y: 7px; width: 20px; height: 20px;
-        background: unpin-area.has-hover ? #f8717133 : #ffffff18;
-        border-radius: 4px;
-        Text { text: "X"; color: #ffffffd9; font-size: 10px; horizontal-alignment: center; vertical-alignment: center; }
-        unpin-area := TouchArea { mouse-cursor: pointer; clicked => { root.unpin(root.process.pid); } }
-    }
-}
-
+// Details-panel process row: name (+hover kill, right-click pin), PID, and
+// CPU / RAM / GPU / VRAM value+bar columns. Mirrors C# ProcessRowTemplate.
 component ProcessRow inherits Rectangle {
     in property <ProcessData> process;
     in property <int> confirm-pid: -1;
     in property <float> confirm-progress: 0.0;
     callback toggle-pin(int);
     callback kill(int, string);
-    width: 564px;
-    height: 36px;
+    width: 448px;
+    height: 30px;
     background: row-touch.has-hover ? #ffffff0d : transparent;
+    border-radius: 4px;
 
-    Text { x: 8px; y: 9px; width: 166px; text: root.process.name; color: white; font-size: 11px; overflow: elide; }
-    Text { x: 178px; y: 9px; width: 44px; text: root.process.pid; color: #ffffff7f; font-size: 10px; horizontal-alignment: right; }
-    Text { x: 230px; y: 9px; width: 50px; text: root.process.cpu-text; color: root.process.cpu-color; font-size: 10px; horizontal-alignment: right; }
-    Text { x: 290px; y: 9px; width: 74px; text: root.process.memory-text; color: root.process.memory-color; font-size: 10px; horizontal-alignment: right; }
-    Text { x: 374px; y: 9px; width: 48px; text: root.process.gpu-text; color: root.process.gpu-color; font-size: 10px; horizontal-alignment: right; }
+    property <bool> confirming: root.confirm-pid == root.process.pid;
 
-    Rectangle {
-        x: 438px; y: 8px; width: 30px; height: 20px;
-        background: pin-touch.has-hover ? #22d3ee33 : #ffffff14;
-        border-radius: 4px;
-        Text { text: root.process.pinned ? "ON" : "PIN"; color: root.process.pinned ? #4ade80 : #ffffff9f; font-size: 8px; horizontal-alignment: center; vertical-alignment: center; }
-        pin-touch := TouchArea { mouse-cursor: pointer; clicked => { root.toggle-pin(root.process.pid); } }
+    // Process name + pinned dot.
+    if root.process.pinned : Rectangle {
+        x: 0; y: 13px; width: 5px; height: 5px;
+        background: #4ade80;
+        border-radius: 2.5px;
+    }
+    Text {
+        x: root.process.pinned ? 10px : 0px;
+        y: 8px;
+        width: (root.process.pinned ? 148px : 158px) - 22px;
+        text: root.process.name;
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        overflow: elide;
+        vertical-alignment: center;
     }
 
-    Rectangle {
-        x: 520px - (root.confirm-pid == root.process.pid ? 2px : 0px);
-        y: 8px - (root.confirm-pid == root.process.pid ? 2px : 0px);
-        width: root.confirm-pid == root.process.pid ? 24px : 20px;
-        height: root.confirm-pid == root.process.pid ? 24px : 20px;
-        background: root.confirm-pid == root.process.pid ? #ff9999cc : kill-touch.has-hover ? #ffcccccc : #ffffffcc;
-        border-radius: 12px;
-        animate x { duration: 150ms; }
-        animate y { duration: 150ms; }
+    // Hover / confirm kill button (right of the name column).
+    if row-touch.has-hover || root.confirming : Rectangle {
+        x: 160px - (root.confirming ? 2px : 0px);
+        y: 7px - (root.confirming ? 2px : 0px);
+        width: root.confirming ? 20px : 16px;
+        height: root.confirming ? 20px : 16px;
+        background: root.confirming ? #ff9999cc : kill-touch.has-hover ? #ffccccff : #ffffffcc;
+        border-radius: 10px;
         animate width { duration: 150ms; }
         animate height { duration: 150ms; }
+        animate x { duration: 150ms; }
+        animate y { duration: 150ms; }
 
-        Text { text: "X"; color: #333333; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
-        if root.confirm-pid == root.process.pid : Rectangle {
-            x: 2px; y: 2px; width: 20px; height: 20px;
+        Text {
+            text: "X";
+            color: #333333;
+            font-size: 10px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+        // Countdown ring: fades as confirm window elapses (software-render safe).
+        if root.confirming : Rectangle {
+            x: 0; y: 0;
+            width: parent.width;
+            height: parent.height;
             background: transparent;
             border-color: #333333cc;
             border-width: 2px;
-            border-radius: 10px;
+            border-radius: parent.width / 2;
             opacity: 1.0 - root.confirm-progress;
         }
-        kill-touch := TouchArea { mouse-cursor: pointer; clicked => { root.kill(root.process.pid, root.process.name); } }
+        kill-touch := TouchArea {
+            mouse-cursor: pointer;
+            clicked => { root.kill(root.process.pid, root.process.name); }
+        }
     }
-    row-touch := TouchArea { enabled: false; }
+
+    // PID
+    Text {
+        x: 178px; y: 0; width: 40px; height: parent.height;
+        text: root.process.pid;
+        color: #ffffff7f;
+        font-size: 11px;
+        horizontal-alignment: right;
+        vertical-alignment: center;
+    }
+
+    // CPU
+    Text { x: 220px; y: 3px; width: 42px; text: root.process.cpu-text; color: root.process.cpu-color; font-size: 11px; horizontal-alignment: right; }
+    ThinBar { x: 220px; y: 20px; width: 42px; height: 2px; ratio: root.process.cpu-ratio; accent: root.process.cpu-color; }
+
+    // RAM
+    Text { x: 266px; y: 3px; width: 56px; text: root.process.memory-text; color: white; font-size: 11px; horizontal-alignment: right; }
+    ThinBar { x: 266px; y: 20px; width: 56px; height: 2px; ratio: root.process.memory-ratio; accent: root.process.memory-color; }
+
+    // GPU
+    Text { x: 326px; y: 3px; width: 40px; text: root.process.gpu-text; color: root.process.gpu-color; font-size: 11px; horizontal-alignment: right; }
+    ThinBar { x: 326px; y: 20px; width: 40px; height: 2px; ratio: root.process.gpu-ratio; accent: root.process.gpu-color; }
+
+    // VRAM
+    Text { x: 370px; y: 3px; width: 68px; text: root.process.vram-text; color: white; font-size: 11px; horizontal-alignment: right; }
+    ThinBar { x: 370px; y: 20px; width: 68px; height: 2px; ratio: root.process.vram-ratio; accent: root.process.vram-color; }
+
+    // Whole-row: hover + right-click-to-pin.
+    row-touch := TouchArea {
+        pointer-event(event) => {
+            if event.button == PointerEventButton.right && event.kind == PointerEventKind.up {
+                root.toggle-pin(root.process.pid);
+            }
+        }
+    }
+}
+
+// Pinned process card: green accent, unpin button, inline CPU/RAM/GPU/VRAM.
+component PinnedCard inherits Rectangle {
+    in property <ProcessData> process;
+    callback unpin(int);
+    width: 448px;
+    height: 32px;
+    background: #14141499;
+    border-radius: 4px;
+    border-color: #ffffff12;
+    border-width: 1px;
+
+    Rectangle { x: 0; y: 0; width: 3px; height: parent.height; background: #4ade80; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+
+    Text {
+        x: 13px; y: 0; width: 130px; height: parent.height;
+        text: root.process.name;
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        overflow: elide;
+        vertical-alignment: center;
+    }
+
+    HorizontalLayout {
+        x: 150px; y: 0; width: 268px; height: parent.height;
+        spacing: 12px;
+        alignment: start;
+        HorizontalLayout {
+            spacing: 3px;
+            Text { text: "CPU"; color: #ffffff8f; font-size: 10px; vertical-alignment: center; }
+            Text { text: root.process.cpu-text; color: root.process.cpu-color; font-size: 11px; font-weight: 700; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 3px;
+            Text { text: "RAM"; color: #ffffff8f; font-size: 10px; vertical-alignment: center; }
+            Text { text: root.process.memory-text; color: #22d3ee; font-size: 11px; font-weight: 700; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 3px;
+            Text { text: "GPU"; color: #ffffff8f; font-size: 10px; vertical-alignment: center; }
+            Text { text: root.process.gpu-text; color: root.process.gpu-color; font-size: 11px; font-weight: 700; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 3px;
+            Text { text: "VRAM"; color: #ffffff8f; font-size: 10px; vertical-alignment: center; }
+            Text { text: root.process.vram-text; color: #22d3ee; font-size: 11px; font-weight: 700; vertical-alignment: center; }
+        }
+    }
+
+    Rectangle {
+        x: parent.width - 22px; y: 8px; width: 16px; height: 16px;
+        background: unpin-area.has-hover ? #f8717155 : #ffffff26;
+        border-radius: 8px;
+        Text { text: "X"; color: #ffffffe6; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+        unpin-area := TouchArea { mouse-cursor: pointer; clicked => { root.unpin(root.process.pid); } }
+    }
 }
 
 export component Shell inherits Window {
@@ -180,8 +316,10 @@ export component Shell inherits Window {
     background: transparent;
     no-frame: true;
     always-on-top: true;
-    width: 620px;
-    height: root.details-visible ? 520px : min(218px, 96px + root.pinned-area-height);
+    width: 520px;
+    height: root.details-visible
+        ? 90px + root.pinned-block + 6px + 402px
+        : 82px + root.pinned-block;
 
     in-out property <string> status-text: "winit-software";
     in-out property <bool> connected: false;
@@ -191,7 +329,8 @@ export component Shell inherits Window {
     in-out property <[MetricData]> metrics;
     in-out property <[ProcessData]> pinned-processes;
     in-out property <[ProcessData]> processes;
-    in-out property <[DiskData]> disks;
+    in-out property <string> max-memory-text: "";
+    in-out property <string> max-vram-text: "";
     in-out property <string> active-metric-id: "";
     in-out property <float> active-metric-scale: 1.0;
     in-out property <int> kill-confirm-pid: -1;
@@ -200,7 +339,14 @@ export component Shell inherits Window {
     in-out property <bool> toast-visible: false;
     out property <float> kill-arc-circumference: 43.98;
     property <int> max-visible-pinned: 3;
-    property <length> pinned-area-height: min(root.pinned-processes.length, root.max-visible-pinned) * 40px;
+    property <length> pinned-area-height: min(root.pinned-processes.length, root.max-visible-pinned) * 36px;
+    property <length> pinned-block: root.pinned-processes.length > 0 ? 8px + root.pinned-area-height : 0px;
+
+    // Content-bar geometry (compact centered pill matching C#).
+    property <bool> has-power: root.metrics.length > 5;
+    property <length> content-width: root.has-power ? 459px : 380px;
+    property <length> bar-width: root.content-width + 28px;
+    property <length> bar-x: (root.width - root.bar-width) / 2;
 
     callback pointer-down(float, float, string);
     callback pointer-move(float, float);
@@ -210,42 +356,51 @@ export component Shell inherits Window {
     callback toggle-pin(int);
     callback kill-process(int, string);
 
+    // Maps a control-bar x (relative to the pill) to a metric id for long-press.
+    // Boundaries mirror the fixed cell widths (net/cpu/ram/gpu/vram[/power]).
     function metric-at(x: length) -> string {
-        if x < 110px { return "net"; }
-        if x < 204px { return "cpu"; }
-        if x < 298px { return "ram"; }
-        if x < 392px { return "gpu"; }
-        if x < 486px { return "vram"; }
-        return root.metrics.length > 5 ? "power" : "";
+        if x < 66px { return "net"; }
+        if x < 141px { return "cpu"; }
+        if x < 227px { return "ram"; }
+        if x < 302px { return "gpu"; }
+        if x < 393px { return "vram"; }
+        return root.has-power ? "power" : "";
     }
 
     OrganicShell {
-        x: 12px;
+        x: root.bar-x;
         y: 12px;
-        width: 596px;
-        height: 72px;
+        width: root.bar-width;
+        height: 58px;
         state: root.organic-state;
         floating-background: #0a0a0a99;
     }
 
     Rectangle {
-        x: 12px;
+        x: root.bar-x;
         y: 12px;
-        width: 596px;
-        height: 72px;
+        width: root.bar-width;
+        height: 58px;
         background: transparent;
         border-color: root.panel-locked ? #4ade80 : #ffffff14;
         border-width: 1px;
         border-radius: 8px;
 
         HorizontalLayout {
-            x: 16px;
-            y: 9px;
-            width: 564px;
-            height: 54px;
-            spacing: 6px;
-            for metric in root.metrics : MetricCell {
+            x: 14px;
+            y: 6px;
+            width: root.content-width;
+            height: 46px;
+            spacing: 0px;
+            alignment: start;
+            for metric[index] in root.metrics : MetricCell {
                 metric: metric;
+                first: index == 0;
+                cell-width: metric.id == "net" ? 52px
+                    : metric.id == "ram" ? 74px
+                    : metric.id == "vram" ? 78px
+                    : metric.id == "power" ? 66px
+                    : 62px;
                 interaction-scale: root.active-metric-id == metric.id ? root.active-metric-scale : 1.0;
             }
         }
@@ -254,7 +409,7 @@ export component Shell inherits Window {
             mouse-cursor: move;
             changed has-hover => { root.hover-changed(self.has-hover); }
             pointer-event(event) => {
-                if event.kind == PointerEventKind.down {
+                if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
                     root.pointer-down(self.mouse-x / 1px, self.mouse-y / 1px, root.metric-at(self.mouse-x));
                 } else if event.kind == PointerEventKind.move && self.pressed {
                     root.pointer-move(self.mouse-x / 1px, self.mouse-y / 1px);
@@ -273,10 +428,11 @@ export component Shell inherits Window {
         }
     }
 
+    // Pinned cards (centered below the control bar).
     pinned-list := ListView {
-        x: 12px;
-        y: 92px;
-        width: 596px;
+        x: (root.width - 448px) / 2;
+        y: 78px;
+        width: 448px;
         height: root.pinned-area-height;
         for process in root.pinned-processes : PinnedCard {
             process: process;
@@ -284,11 +440,12 @@ export component Shell inherits Window {
         }
     }
 
+    // Details panel (full process list) — mirrors C# details popup.
     if root.details-visible : Rectangle {
-        x: 12px;
-        y: 92px + root.pinned-area-height;
-        width: 596px;
-        height: 408px - root.pinned-area-height;
+        x: (root.width - 480px) / 2;
+        y: 86px + root.pinned-block;
+        width: 480px;
+        height: 402px;
         background: #141414f0;
         border-radius: 8px;
         border-color: #ffffff14;
@@ -297,15 +454,20 @@ export component Shell inherits Window {
         drop-shadow-blur: 24px;
         drop-shadow-offset-y: 8px;
 
-        Text { x: 16px; y: 12px; text: "PROCESSES"; color: #ffffff8f; font-size: 10px; font-weight: 700; }
-        Text { x: 448px; y: 12px; width: 124px; text: root.status-text; color: root.connected ? #4ade80 : #f87171; font-size: 9px; horizontal-alignment: right; overflow: elide; }
-        Rectangle { x: 16px; y: 34px; width: 564px; height: 1px; background: #ffffff14; }
+        // Header row.
+        Text { x: 16px; y: 12px; text: "PROCESS"; color: #ffffff8f; font-size: 9px; font-weight: 700; }
+        Text { x: 194px; y: 12px; width: 40px; text: "PID"; color: #ffffff8f; font-size: 9px; font-weight: 700; horizontal-alignment: right; }
+        Text { x: 236px; y: 12px; width: 42px; text: "CPU"; color: #ffffff8f; font-size: 9px; font-weight: 700; horizontal-alignment: right; }
+        Text { x: 282px; y: 12px; width: 56px; text: "RAM " + root.max-memory-text; color: #ffffff8f; font-size: 9px; font-weight: 700; horizontal-alignment: right; }
+        Text { x: 342px; y: 12px; width: 40px; text: "GPU"; color: #ffffff8f; font-size: 9px; font-weight: 700; horizontal-alignment: right; }
+        Text { x: 386px; y: 12px; width: 78px; text: "VRAM " + root.max-vram-text; color: #ffffff8f; font-size: 9px; font-weight: 700; horizontal-alignment: right; }
+        Rectangle { x: 16px; y: 32px; width: 448px; height: 1px; background: #ffffff14; }
 
         process-list := ListView {
             x: 16px;
-            y: 42px;
-            width: 564px;
-            height: max(118px, parent.height - 132px);
+            y: 40px;
+            width: 448px;
+            height: 350px;
             for process in root.processes : ProcessRow {
                 process: process;
                 confirm-pid: root.kill-confirm-pid;
@@ -314,30 +476,10 @@ export component Shell inherits Window {
                 kill(pid, name) => { root.kill-process(pid, name); }
             }
         }
-
-        Rectangle {
-            x: 16px;
-            y: parent.height - 80px;
-            width: 564px;
-            height: 64px;
-            background: #ffffff0a;
-            border-radius: 5px;
-            Text { x: 8px; y: 7px; text: "DISK I/O"; color: #ffffff8f; font-size: 9px; font-weight: 700; }
-            HorizontalLayout {
-                x: 76px; y: 4px; width: 480px; height: 56px; spacing: 8px;
-                for disk in root.disks : Rectangle {
-                    width: 112px;
-                    background: transparent;
-                    Text { y: 3px; width: parent.width; text: disk.name; color: white; font-size: 10px; overflow: elide; }
-                    Text { y: 21px; width: parent.width; text: disk.read-text; color: #22d3ee; font-size: 9px; }
-                    Text { y: 37px; width: parent.width; text: disk.write-text; color: #e69f00; font-size: 9px; }
-                }
-            }
-        }
     }
 
     if root.toast-visible : Rectangle {
-        x: 150px;
+        x: (root.width - 320px) / 2;
         y: 20px;
         width: 320px;
         height: 44px;

@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use xhm_core::wire::{
     DiskUsagePayload, HardwareLimitsPayload, ProcessMetadataPayload, ProcessMetricSnapshot,
-    ProcessSnapshotPayload, PushEvent, SubscriptionMode, SystemUsagePayload,
+    ProcessSnapshotPayload, PushEvent, SystemUsagePayload,
 };
 
 use crate::service_client::SseMessage;
@@ -22,14 +22,6 @@ pub enum PanelState {
 }
 
 impl PanelState {
-    /// C# parity: Expanded/Locked request Full; Collapsed/Clickthrough request Lite.
-    pub fn subscription_mode(self) -> SubscriptionMode {
-        match self {
-            Self::Expanded | Self::Locked => SubscriptionMode::Full,
-            Self::Collapsed | Self::Clickthrough => SubscriptionMode::Lite,
-        }
-    }
-
     pub fn is_details_visible(self) -> bool {
         matches!(self, Self::Expanded | Self::Locked)
     }
@@ -319,23 +311,13 @@ mod tests {
     }
 
     #[test]
-    fn default_panel_is_collapsed_lite() {
+    fn panel_details_visibility_matches_expanded_and_locked() {
         let state = DesktopState::new();
         assert_eq!(state.panel, PanelState::Collapsed);
-        assert_eq!(state.panel.subscription_mode(), SubscriptionMode::Lite);
         assert!(!state.panel.is_details_visible());
-        assert_eq!(
-            PanelState::Expanded.subscription_mode(),
-            SubscriptionMode::Full
-        );
-        assert_eq!(
-            PanelState::Locked.subscription_mode(),
-            SubscriptionMode::Full
-        );
-        assert_eq!(
-            PanelState::Clickthrough.subscription_mode(),
-            SubscriptionMode::Lite
-        );
+        assert!(PanelState::Expanded.is_details_visible());
+        assert!(PanelState::Locked.is_details_visible());
+        assert!(!PanelState::Clickthrough.is_details_visible());
     }
 
     #[test]

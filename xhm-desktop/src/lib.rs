@@ -364,8 +364,11 @@ fn wire_dual_window(
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // A-fix: floating holds a constant Full subscription (see
+        // notify_subscription). Starting Full avoids the first hover upgrade
+        // reconnect and matches the steady-state subscription.
         service_client::SseSubscription::new(
-            state.panel.subscription_mode(),
+            xhm_core::wire::SubscriptionMode::Full,
             state.normalized_pinned(),
         )
     };

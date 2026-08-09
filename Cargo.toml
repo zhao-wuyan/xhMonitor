@@ -47,7 +47,7 @@ http-body-util = "0.1"
 
 # xhm-desktop（G1+）消费的桌面 UI / HTTP / 托盘依赖。
 # 版本选择遵循 current-plan 的 locked_decisions：Slint winit-software、reqwest 0.12；托盘改为 Shell_NotifyIconW 原生实现（tray-icon 0.24 评估后弃用，见 G1 review）。
-slint = { version = "=1.12.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software", "accessibility"] }
+slint = { version = "=1.12.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software", "accessibility", "unstable-winit-030"] }
 slint-build = "=1.12.1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream"] }
 url = "2"

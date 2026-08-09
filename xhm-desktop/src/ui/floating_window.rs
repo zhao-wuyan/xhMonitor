@@ -2,10 +2,10 @@
 
 use std::cmp::Ordering;
 
-use slint::{Color, ModelRc, SharedString, VecModel};
+use slint::{Color, Model, ModelRc, SharedString, VecModel};
 
 use crate::desktop_state::{DesktopState, PanelState, ProcessRow};
-use crate::{DiskData, MetricData, ProcessData, Shell};
+use crate::{MetricData, ProcessData, Shell};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThresholdTone {
@@ -21,8 +21,10 @@ pub struct MetricView {
     pub value: String,
     pub detail: String,
     pub ratio: f32,
-    pub tone: Option<ThresholdTone>,
-    pub accent: (u8, u8, u8),
+    /// Value-text color. `None` renders as C# ColorTextMain (white).
+    pub value_tone: Option<ThresholdTone>,
+    /// Progress-bar fill tone. `None` hides the bar (NET column has no bar).
+    pub bar_tone: Option<ThresholdTone>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,13 +41,6 @@ pub struct ProcessView {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct DiskView {
-    pub name: String,
-    pub read_speed: Option<f64>,
-    pub write_speed: Option<f64>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub struct FloatingProjection {
     pub connected: bool,
     pub details_visible: bool,
@@ -53,7 +48,9 @@ pub struct FloatingProjection {
     pub metrics: Vec<MetricView>,
     pub pinned: Vec<ProcessView>,
     pub processes: Vec<ProcessView>,
-    pub disks: Vec<DiskView>,
+    /// C# details header shows `RAM (63.6 G)` / `VRAM (64.0 G)`.
+    pub max_memory_text: String,
+    pub max_vram_text: String,
 }
 
 pub fn threshold_tone(value: f64) -> ThresholdTone {
@@ -119,76 +116,77 @@ pub fn project_state(state: &DesktopState) -> FloatingProjection {
     let download = usage.map(|value| value.download_speed).unwrap_or(0.0);
 
     let mut metrics = vec![
+        // NET: value = upload line, detail = download line (C# stacks two
+        // arrow-suffixed speed lines; no bar). Text stays white.
         MetricView {
             id: "net".into(),
             label: "NET".into(),
-            value: format!("{upload:.1}/{download:.1}"),
-            detail: "up/down MB/s".into(),
+            value: format_speed(upload, "\u{2191}"),
+            detail: format_speed(download, "\u{2193}"),
             ratio: 0.0,
-            tone: None,
-            accent: (255, 255, 255),
+            value_tone: None,
+            bar_tone: None,
         },
+        // CPU: value white (F0, no %), bar tone-colored, detail = temp.
         MetricView {
             id: "cpu".into(),
             label: "CPU".into(),
-            value: format!("{cpu:.0}%"),
-            detail: usage
-                .and_then(|value| value.cpu_temperature)
-                .map(|value| format!("{value:.0} C"))
-                .unwrap_or_else(|| "-- C".into()),
+            value: format!("{cpu:.0}"),
+            detail: format_temperature(usage.and_then(|value| value.cpu_temperature)),
             ratio: clamped_ratio(cpu, 100.0),
-            tone: Some(threshold_tone(cpu)),
-            accent: (0, 0, 0),
+            value_tone: None,
+            bar_tone: Some(threshold_tone(cpu)),
         },
+        // RAM: value white, bar colored by usage ratio.
         MetricView {
             id: "ram".into(),
             label: "RAM".into(),
             value: format_memory(memory),
-            detail: format!("of {}", format_memory(max_memory)),
+            detail: String::new(),
             ratio: clamped_ratio(memory, max_memory),
-            tone: Some(memory_tone(memory, max_memory)),
-            accent: (0, 0, 0),
+            value_tone: None,
+            bar_tone: Some(memory_tone(memory, max_memory)),
         },
         MetricView {
             id: "gpu".into(),
             label: "GPU".into(),
-            value: format!("{gpu:.0}%"),
-            detail: usage
-                .and_then(|value| value.gpu_temperature)
-                .map(|value| format!("{value:.0} C"))
-                .unwrap_or_else(|| "-- C".into()),
+            value: format!("{gpu:.0}"),
+            detail: format_temperature(usage.and_then(|value| value.gpu_temperature)),
             ratio: clamped_ratio(gpu, 100.0),
-            tone: Some(threshold_tone(gpu)),
-            accent: (0, 0, 0),
+            value_tone: None,
+            bar_tone: Some(threshold_tone(gpu)),
         },
         MetricView {
             id: "vram".into(),
             label: "VRAM".into(),
             value: format_memory(vram),
-            detail: format!("of {}", format_memory(max_vram)),
+            detail: String::new(),
             ratio: clamped_ratio(vram, max_vram),
-            tone: Some(memory_tone(vram, max_vram)),
-            accent: (0, 0, 0),
+            value_tone: None,
+            bar_tone: Some(memory_tone(vram, max_vram)),
         },
     ];
+    // POWER: only when the backend reports power available (C# IsPowerVisible).
     if let Some(usage) = usage.filter(|value| value.power_available) {
         let power = usage.total_power;
         let max_power = usage.max_power;
         metrics.push(MetricView {
             id: "power".into(),
             label: "POWER".into(),
-            value: format!("{power:.0} W"),
-            detail: format!("max {max_power:.0} W"),
+            value: format_power(power),
+            detail: format_power(max_power),
             ratio: clamped_ratio(power, max_power),
-            tone: Some(memory_tone(power, max_power)),
-            accent: (0, 0, 0),
+            value_tone: None,
+            bar_tone: Some(memory_tone(power, max_power)),
         });
     }
 
+    // C# ApplyPendingProcessRefresh: order by (Memory + Vram) desc; pinned order
+    // follows pin sequence, not metrics.
     let mut all_rows: Vec<&ProcessRow> = state.processes.values().collect();
     all_rows.sort_by(|left, right| {
-        metric(right, "memory")
-            .partial_cmp(&metric(left, "memory"))
+        (metric(right, "memory") + metric(right, "vram"))
+            .partial_cmp(&(metric(left, "memory") + metric(left, "vram")))
             .unwrap_or(Ordering::Equal)
             .then_with(|| left.process_id.cmp(&right.process_id))
     });
@@ -209,15 +207,6 @@ pub fn project_state(state: &DesktopState) -> FloatingProjection {
             .map(|row| project_process(row, max_memory, max_vram))
             .collect()
     };
-    let disks = state
-        .disks()
-        .iter()
-        .map(|disk| DiskView {
-            name: disk.name.clone(),
-            read_speed: disk.read_speed,
-            write_speed: disk.write_speed,
-        })
-        .collect();
 
     FloatingProjection {
         connected: state.connected,
@@ -226,46 +215,72 @@ pub fn project_state(state: &DesktopState) -> FloatingProjection {
         metrics,
         pinned,
         processes,
-        disks,
+        max_memory_text: format!("({})", format_memory(max_memory)),
+        max_vram_text: format!("({})", format_memory(max_vram)),
     }
+}
+
+/// Reconcile an existing Slint model in place instead of swapping the whole
+/// `ModelRc`. Swapping forces the Repeater to destroy and rebuild every row
+/// (full re-layout + re-raster), which is expensive under the software
+/// renderer and fires on *every* SSE frame. Here we diff by index against the
+/// live `VecModel`: unchanged rows are untouched, only changed rows repaint,
+/// and the row count is adjusted by push/remove. Returns `Some(model)` only on
+/// first use (or if the backing model isn't a `VecModel`), when the caller must
+/// install a fresh `VecModel`.
+fn reconcile_model<T>(model: &ModelRc<T>, next: Vec<T>) -> Option<ModelRc<T>>
+where
+    T: Clone + PartialEq + 'static,
+{
+    let Some(vec_model) = model.as_any().downcast_ref::<VecModel<T>>() else {
+        return Some(ModelRc::new(VecModel::from(next)));
+    };
+    let old_len = vec_model.row_count();
+    let new_len = next.len();
+    for (index, item) in next.iter().enumerate().take(old_len.min(new_len)) {
+        if vec_model.row_data(index).as_ref() != Some(item) {
+            vec_model.set_row_data(index, item.clone());
+        }
+    }
+    for item in next.iter().skip(old_len) {
+        vec_model.push(item.clone());
+    }
+    for index in (new_len..old_len).rev() {
+        vec_model.remove(index);
+    }
+    None
 }
 
 pub fn apply_projection(app: &Shell, projection: FloatingProjection) {
     app.set_connected(projection.connected);
     app.set_details_visible(projection.details_visible);
     app.set_panel_locked(projection.panel_locked);
-    app.set_metrics(ModelRc::new(VecModel::from(
-        projection
-            .metrics
-            .into_iter()
-            .map(to_metric_data)
-            .collect::<Vec<_>>(),
-    )));
-    app.set_pinned_processes(ModelRc::new(VecModel::from(
-        projection
-            .pinned
-            .into_iter()
-            .map(to_process_data)
-            .collect::<Vec<_>>(),
-    )));
-    app.set_processes(ModelRc::new(VecModel::from(
-        projection
-            .processes
-            .into_iter()
-            .map(to_process_data)
-            .collect::<Vec<_>>(),
-    )));
-    app.set_disks(ModelRc::new(VecModel::from(
-        projection
-            .disks
-            .into_iter()
-            .map(|disk| DiskData {
-                name: disk.name.into(),
-                read_text: format_speed("R", disk.read_speed).into(),
-                write_text: format_speed("W", disk.write_speed).into(),
-            })
-            .collect::<Vec<_>>(),
-    )));
+    let metrics = projection
+        .metrics
+        .into_iter()
+        .map(to_metric_data)
+        .collect::<Vec<_>>();
+    if let Some(model) = reconcile_model(&app.get_metrics(), metrics) {
+        app.set_metrics(model);
+    }
+    let pinned = projection
+        .pinned
+        .into_iter()
+        .map(to_process_data)
+        .collect::<Vec<_>>();
+    if let Some(model) = reconcile_model(&app.get_pinned_processes(), pinned) {
+        app.set_pinned_processes(model);
+    }
+    let processes = projection
+        .processes
+        .into_iter()
+        .map(to_process_data)
+        .collect::<Vec<_>>();
+    if let Some(model) = reconcile_model(&app.get_processes(), processes) {
+        app.set_processes(model);
+    }
+    app.set_max_memory_text(projection.max_memory_text.into());
+    app.set_max_vram_text(projection.max_vram_text.into());
 }
 
 pub fn dispatch_projection(
@@ -406,9 +421,9 @@ fn to_metric_data(metric: MetricView) -> MetricData {
         value: metric.value.into(),
         detail: metric.detail.into(),
         ratio: metric.ratio.clamp(0.0, 1.0),
-        accent: metric.tone.map(tone_color).unwrap_or_else(|| {
-            Color::from_rgb_u8(metric.accent.0, metric.accent.1, metric.accent.2)
-        }),
+        value_color: value_color(metric.value_tone),
+        bar_color: metric.bar_tone.map(tone_color).unwrap_or(WHITE),
+        has_bar: metric.bar_tone.is_some(),
     }
 }
 
@@ -432,6 +447,12 @@ fn to_process_data(process: ProcessView) -> ProcessData {
     }
 }
 
+const WHITE: Color = Color::from_rgb_u8(0xff, 0xff, 0xff);
+
+fn value_color(tone: Option<ThresholdTone>) -> Color {
+    tone.map(tone_color).unwrap_or(WHITE)
+}
+
 fn tone_color(tone: ThresholdTone) -> Color {
     match tone {
         ThresholdTone::Green => Color::from_rgb_u8(0x4a, 0xde, 0x80),
@@ -440,20 +461,48 @@ fn tone_color(tone: ThresholdTone) -> Color {
     }
 }
 
+/// C# MemoryUnitConverter parity: MB in, ` M` under 1000, else `val/1024 :.1 G`.
+/// Note the 1000 (not 1024) switch threshold and single-letter suffix.
 fn format_memory(megabytes: f64) -> String {
     if !megabytes.is_finite() || megabytes <= 0.0 {
-        "0 MB".into()
-    } else if megabytes >= 1024.0 {
-        format!("{:.1} GB", megabytes / 1024.0)
+        "0 M".into()
+    } else if megabytes >= 1000.0 {
+        format!("{:.1} G", megabytes / 1024.0)
     } else {
-        format!("{megabytes:.0} MB")
+        format!("{megabytes:.0} M")
     }
 }
 
-fn format_speed(prefix: &str, speed: Option<f64>) -> String {
-    match speed.filter(|value| value.is_finite()) {
-        Some(value) => format!("{prefix} {value:.1} MB/s"),
-        None => format!("{prefix} -- MB/s"),
+/// C# NetworkSpeedConverter parity: MB/s in. Under 1 MB/s → integer `K/s`+arrow,
+/// else `0.0M/s`+arrow. No space before the unit; arrow suffix (↑/↓).
+fn format_speed(mb_per_second: f64, arrow: &str) -> String {
+    let value = if mb_per_second.is_finite() && mb_per_second > 0.0 {
+        mb_per_second
+    } else {
+        0.0
+    };
+    if value < 1.0 {
+        let kb = (value * 1024.0).round() as i64;
+        format!("{kb}K/s{arrow}")
+    } else {
+        format!("{value:.1}M/s{arrow}")
+    }
+}
+
+/// C# FormatTemperatureText parity: null/≤0/non-finite → `-°C`, else rounded `N°C`.
+fn format_temperature(celsius: Option<f64>) -> String {
+    match celsius.filter(|value| value.is_finite() && *value > 0.0) {
+        Some(value) => format!("{:.0}\u{00b0}C", value.round()),
+        None => "-\u{00b0}C".into(),
+    }
+}
+
+/// C# PowerValueConverter parity: ≤0/non-finite → `--`, else integer watts (no unit).
+fn format_power(watts: f64) -> String {
+    if watts.is_finite() && watts > 0.0 {
+        format!("{watts:.0}")
+    } else {
+        "--".into()
     }
 }
 fn is_power_metric(metric: &str) -> bool {
@@ -484,7 +533,6 @@ struct FloatingRuntimeState {
     clock: super::floating_interactions::SystemClock,
     pointer: super::floating_interactions::PointerMachine,
     kill: super::floating_interactions::KillMachine,
-    drag_anchor: Option<crate::win32::PhysicalPoint>,
     desktop_state: std::sync::Arc<std::sync::Mutex<DesktopState>>,
     subscription_tx:
         Option<tokio::sync::mpsc::UnboundedSender<crate::service_client::SseSubscription>>,
@@ -523,7 +571,6 @@ pub fn install_runtime(
         clock: SystemClock::new(),
         pointer: PointerMachine::default(),
         kill: super::floating_interactions::KillMachine::default(),
-        drag_anchor: None,
         desktop_state,
         subscription_tx,
         async_tx,
@@ -538,8 +585,7 @@ pub fn install_runtime(
         let runtime = Rc::clone(&runtime);
         let weak = weak.clone();
         app.on_pointer_down(move |logical_x, logical_y, metric| {
-            let Some((point, anchor)) =
-                native_pointer_point(handle, logical_x + 12.0, logical_y + 12.0)
+            let Some(point) = native_pointer_point(handle, logical_x + 12.0, logical_y + 12.0)
             else {
                 tracing::warn!("floating pointer-down could not resolve physical coordinates");
                 return;
@@ -550,7 +596,6 @@ pub fn install_runtime(
                 let now = runtime.clock.now_ms();
                 let should_warmup = is_power_metric(&metric_id) && !runtime.power_warmup_inflight;
                 runtime.pointer.press(point, metric_id, now);
-                runtime.drag_anchor = Some(anchor);
                 if should_warmup {
                     runtime.power_warmup_inflight = true;
                     Some(runtime.async_tx.clone())
@@ -572,7 +617,7 @@ pub fn install_runtime(
         let runtime = Rc::clone(&runtime);
         let weak = weak.clone();
         app.on_pointer_move(move |logical_x, logical_y| {
-            let Some((point, _)) = native_pointer_point(handle, logical_x + 12.0, logical_y + 12.0)
+            let Some(point) = native_pointer_point(handle, logical_x + 12.0, logical_y + 12.0)
             else {
                 return;
             };
@@ -581,12 +626,15 @@ pub fn install_runtime(
                 let now = runtime.clock.now_ms();
                 runtime.pointer.move_pointer(point, now)
             };
-            if matches!(action, Some(PointerAction::BeginDrag | PointerAction::Drag)) {
-                move_dragged_window(handle, point, runtime.borrow().drag_anchor);
+            // 越过 5px 阈值：交给原生 OS 模态移动循环（winit drag_window == WPF
+            // DragMove）。移交后 OS 全权驱动窗口移动，Slint pointer-move 直到释放
+            // 前不再触发；软件渲染下由此获得与 C# 一致的丝滑拖动。
+            if action == Some(PointerAction::BeginDrag) {
                 if let Some(app) = weak.upgrade() {
                     app.set_organic_state("dragging".into());
                     app.set_active_metric_id("".into());
                     app.set_active_metric_scale(1.0);
+                    begin_native_drag(&app);
                 }
             }
         });
@@ -617,7 +665,6 @@ pub fn install_runtime(
             if action == Some(PointerAction::EndDrag) {
                 finish_drag(handle, &weak);
             }
-            runtime.borrow_mut().drag_anchor = None;
         });
     }
 
@@ -627,6 +674,14 @@ pub fn install_runtime(
         app.on_hover_changed(move |inside| {
             let projection = {
                 let runtime = runtime.borrow();
+                // Drag hands the window to the OS move loop, which drags the
+                // window under the cursor and makes `has-hover` flap. Ignore
+                // hover-driven panel toggles while a gesture owns the bar so the
+                // panel (and therefore the SSE Lite/Full subscription) can't
+                // thrash mid-drag. C# parity: dragging never toggles the panel.
+                if runtime.pointer.is_active() {
+                    return;
+                }
                 let mut state = runtime
                     .desktop_state
                     .lock()
@@ -806,7 +861,6 @@ fn handle_pointer_release(
         }
         _ => {}
     }
-    runtime.borrow_mut().drag_anchor = None;
 }
 #[cfg(windows)]
 fn dispatch_power_switch(runtime: &std::rc::Rc<std::cell::RefCell<FloatingRuntimeState>>) {
@@ -830,7 +884,7 @@ fn native_pointer_point(
     handle: crate::win32::WindowHandle,
     logical_x: f32,
     logical_y: f32,
-) -> Option<(crate::win32::PhysicalPoint, crate::win32::PhysicalPoint)> {
+) -> Option<crate::win32::PhysicalPoint> {
     use crate::win32::dpi::native::NativeDpiQuery;
     use crate::win32::taskbar::native::NativeWindowPositionOps;
     use crate::win32::WindowPositionOps;
@@ -838,32 +892,26 @@ fn native_pointer_point(
     let positioner = NativeWindowPositionOps;
     let rect = positioner.window_rect(handle)?;
     let dpi = crate::win32::dpi::dpi_for_window(Some(&NativeDpiQuery), handle);
-    let point =
-        super::floating_interactions::logical_pointer_to_physical(rect, logical_x, logical_y, dpi);
-    let anchor = crate::win32::PhysicalPoint::new(point.x - rect.left, point.y - rect.top);
-    Some((point, anchor))
+    Some(super::floating_interactions::logical_pointer_to_physical(
+        rect, logical_x, logical_y, dpi,
+    ))
 }
 
+/// 将当前指针拖动移交给原生 OS 模态移动循环（winit `drag_window()`，等价于
+/// WPF `DragMove()`）。使用 winit 方法而非裸 FFI，可让 winit 维护内部
+/// `dragging` 标志，从而在 `WM_EXITSIZEMOVE` 时合成 pointer-up，保证 Slint
+/// 指针状态机正常结束拖动。替代逐帧 `SetWindowPos`，软件渲染下与 C# 拖动等效。
 #[cfg(windows)]
-fn move_dragged_window(
-    handle: crate::win32::WindowHandle,
-    cursor: crate::win32::PhysicalPoint,
-    anchor: Option<crate::win32::PhysicalPoint>,
-) {
-    use crate::win32::taskbar::native::NativeWindowPositionOps;
-    use crate::win32::WindowPositionOps;
+fn begin_native_drag(app: &Shell) {
+    use slint::winit_030::WinitWindowAccessor;
+    use slint::ComponentHandle;
 
-    let Some(anchor) = anchor else {
-        return;
-    };
-    let origin = super::floating_interactions::drag_origin(cursor, anchor);
-    let positioner = NativeWindowPositionOps;
-    if !positioner.move_topmost(handle, origin.x, origin.y) {
-        tracing::warn!(
-            x = origin.x,
-            y = origin.y,
-            "SetWindowPos failed during floating drag"
-        );
+    let started = app
+        .window()
+        .with_winit_window(|window| window.drag_window().is_ok())
+        .unwrap_or(false);
+    if !started {
+        tracing::warn!("native drag_window handoff failed; window did not enter OS move loop");
     }
 }
 
@@ -932,8 +980,15 @@ fn finish_drag(handle: crate::win32::WindowHandle, weak: &slint::Weak<Shell>) {
 #[cfg(windows)]
 fn notify_subscription(runtime: &FloatingRuntimeState, state: &DesktopState) {
     if let Some(sender) = &runtime.subscription_tx {
+        // A-fix: the floating panel holds a constant Full subscription for its
+        // entire lifetime. Panel hover/click toggles Collapsed<->Expanded no
+        // longer change the SSE mode, so they can't tear down and re-establish
+        // the HTTP stream (SSE encodes mode in the URL query, so any mode flip
+        // forces a reconnect). Only pin-set changes travel here now, which are
+        // rare and user-driven. Localhost Full is cheap; collapsed rendering is
+        // unaffected since the projection still hides the process list.
         let _ = sender.send(crate::service_client::SseSubscription::new(
-            state.panel.subscription_mode(),
+            xhm_core::wire::SubscriptionMode::Full,
             state.normalized_pinned(),
         ));
     }
@@ -1197,23 +1252,22 @@ mod tests {
     }
 
     #[test]
-    fn smoke_fixture_exercises_long_list_disks_and_all_threshold_colors() {
+    fn smoke_fixture_exercises_long_list_and_all_threshold_colors() {
         let projection = smoke_projection(1234);
         assert_eq!(projection.processes.len(), 36);
         assert_eq!(projection.pinned.len(), 2);
-        assert_eq!(projection.disks.len(), 3);
         assert!(projection
             .metrics
             .iter()
-            .any(|metric| metric.tone == Some(ThresholdTone::Green)));
+            .any(|metric| metric.bar_tone == Some(ThresholdTone::Green)));
         assert!(projection
             .metrics
             .iter()
-            .any(|metric| metric.tone == Some(ThresholdTone::Yellow)));
+            .any(|metric| metric.bar_tone == Some(ThresholdTone::Yellow)));
         assert!(projection
             .metrics
             .iter()
-            .any(|metric| metric.tone == Some(ThresholdTone::Red)));
+            .any(|metric| metric.bar_tone == Some(ThresholdTone::Red)));
     }
 
     #[test]
@@ -1246,5 +1300,33 @@ mod tests {
             panel_after_click(PanelState::Clickthrough),
             PanelState::Clickthrough
         );
+    }
+
+    #[test]
+    fn reconcile_model_updates_in_place_without_swapping() {
+        let model: ModelRc<i32> = ModelRc::new(VecModel::from(vec![1, 2, 3]));
+        let backing_ptr =
+            model.as_any().downcast_ref::<VecModel<i32>>().unwrap() as *const VecModel<i32>;
+
+        // Same length, one changed row: reconciles in place (None), keeps the
+        // same backing VecModel, updates only the changed index.
+        assert!(reconcile_model(&model, vec![1, 9, 3]).is_none());
+        assert_eq!(
+            model.as_any().downcast_ref::<VecModel<i32>>().unwrap() as *const VecModel<i32>,
+            backing_ptr,
+            "reconcile must not swap the backing model"
+        );
+        assert_eq!(model.row_data(1), Some(9));
+        assert_eq!(model.row_count(), 3);
+
+        // Grow adds the new tail rows.
+        assert!(reconcile_model(&model, vec![1, 9, 3, 4, 5]).is_none());
+        assert_eq!(model.row_count(), 5);
+        assert_eq!(model.row_data(4), Some(5));
+
+        // Shrink drops the surplus rows.
+        assert!(reconcile_model(&model, vec![7]).is_none());
+        assert_eq!(model.row_count(), 1);
+        assert_eq!(model.row_data(0), Some(7));
     }
 }

@@ -264,6 +264,16 @@ impl PointerMachine {
     pub fn is_dragging(&self) -> bool {
         matches!(self.phase, PointerPhase::Dragging)
     }
+
+    /// True while a pointer gesture owns the bar (pressed, dragging, or holding
+    /// a long-press). Hover-driven panel toggles are suppressed during this
+    /// window so drag-time hover jitter cannot thrash the SSE subscription.
+    pub fn is_active(&self) -> bool {
+        matches!(
+            self.phase,
+            PointerPhase::Pressed { .. } | PointerPhase::Dragging | PointerPhase::LongPressed { .. }
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -382,13 +392,6 @@ pub fn logical_pointer_to_physical(
         window_rect
             .top
             .saturating_add(round_i32(f64::from(logical_y) * scale)),
-    )
-}
-
-pub fn drag_origin(cursor: PhysicalPoint, anchor: PhysicalPoint) -> PhysicalPoint {
-    PhysicalPoint::new(
-        cursor.x.saturating_sub(anchor.x),
-        cursor.y.saturating_sub(anchor.y),
     )
 }
 
@@ -540,6 +543,28 @@ mod tests {
         assert_eq!(pointer.visual(6), None);
         assert_eq!(pointer.cancel(10), Some(PointerAction::EndDrag));
         assert!(!pointer.is_dragging());
+    }
+
+    #[test]
+    fn is_active_covers_press_drag_hold_and_clears_on_release() {
+        let mut pointer = PointerMachine::default();
+        assert!(!pointer.is_active(), "idle is inactive");
+        pointer.press(PhysicalPoint::new(10, 10), "cpu", 0);
+        assert!(pointer.is_active(), "pressed is active");
+        assert_eq!(
+            pointer.move_pointer(PhysicalPoint::new(20, 10), 5),
+            Some(PointerAction::BeginDrag)
+        );
+        assert!(pointer.is_active(), "dragging is active");
+        assert_eq!(pointer.release(6), Some(PointerAction::EndDrag));
+        assert!(!pointer.is_active(), "released drag is inactive");
+        // Long-press hold is also active (suppresses hover toggles mid-hold).
+        pointer.press(PhysicalPoint::new(10, 10), "power", 100);
+        assert_eq!(
+            pointer.tick(100 + LONG_PRESS_MS),
+            Some(PointerAction::LongPress("power".into()))
+        );
+        assert!(pointer.is_active(), "long-pressed hold is active");
     }
 
     #[test]

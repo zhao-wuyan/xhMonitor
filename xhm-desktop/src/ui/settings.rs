@@ -103,6 +103,14 @@ pub fn allowed_subset(
 
     let mut data_collection = BTreeMap::new();
     data_collection.insert("ProcessKeywords".into(), settings.process_keywords);
+    data_collection.insert(
+        "TopProcessCount".into(),
+        settings.top_process_count.to_string(),
+    );
+    data_collection.insert(
+        "DataRetentionDays".into(),
+        settings.data_retention_days.to_string(),
+    );
 
     let mut monitoring = BTreeMap::new();
     monitoring.insert("MonitorCpu".into(), settings.monitor_cpu.to_string());
@@ -252,10 +260,35 @@ fn parse_input(value: &str, field: &'static str, min: u8, max: u8) -> Result<u8,
         .map_err(|_| SettingsError::InvalidNumber { field })
 }
 
+fn parse_u32_input(
+    value: &str,
+    field: &'static str,
+    min: u32,
+    max: u32,
+) -> Result<u32, SettingsError> {
+    value
+        .trim()
+        .parse::<u32>()
+        .map(|value| value.clamp(min, max))
+        .map_err(|_| SettingsError::InvalidNumber { field })
+}
+
 pub fn collect_from_window(app: &SettingsWindow) -> Result<TaskbarSettings, SettingsError> {
     let mut settings = TaskbarSettings {
         opacity_percent: parse_input(app.get_opacity_text().as_str(), "Opacity", 20, 100)?,
         process_keywords: app.get_process_keywords().to_string(),
+        top_process_count: parse_u32_input(
+            app.get_top_process_count().as_str(),
+            "TopProcessCount",
+            1,
+            100,
+        )?,
+        data_retention_days: parse_u32_input(
+            app.get_data_retention_days().as_str(),
+            "DataRetentionDays",
+            1,
+            365,
+        )?,
         monitor_cpu: app.get_monitor_cpu(),
         monitor_memory: app.get_monitor_memory(),
         monitor_gpu: app.get_monitor_gpu(),
@@ -304,6 +337,8 @@ pub fn collect_document_from_window(
 pub fn apply_to_window(app: &SettingsWindow, settings: &TaskbarSettings) {
     let settings = settings.clone().normalized();
     app.set_opacity_text(settings.opacity_percent.to_string().into());
+    app.set_top_process_count(settings.top_process_count.to_string().into());
+    app.set_data_retention_days(settings.data_retention_days.to_string().into());
     app.set_process_keywords(settings.process_keywords.into());
     app.set_monitor_cpu(settings.monitor_cpu);
     app.set_monitor_memory(settings.monitor_memory);
@@ -642,7 +677,11 @@ mod tests {
             .and(path("/api/v1/config/settings"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "Appearance": {"Opacity": "105", "Ignored": "yes"},
-                "DataCollection": {"ProcessKeywords": "[\"gpu\"]"},
+                "DataCollection": {
+                    "ProcessKeywords": "[\"gpu\"]",
+                    "TopProcessCount": "150",
+                    "DataRetentionDays": "400"
+                },
                 "Monitoring": {"DockVisualStyle": "Text", "DockColumnGap": "29", "MonitorCpu": "false", "AdminMode": "true"},
                 "System": {
                     "StartWithWindows": "true",
@@ -658,7 +697,11 @@ mod tests {
             .and(path("/api/v1/config/settings"))
             .and(body_partial_json(serde_json::json!({
                 "Appearance": {"Opacity": "100"},
-                "DataCollection": {"ProcessKeywords": "[\"gpu\"]"},
+                "DataCollection": {
+                    "ProcessKeywords": "[\"gpu\"]",
+                    "TopProcessCount": "100",
+                    "DataRetentionDays": "365"
+                },
                 "Monitoring": {
                     "DockVisualStyle": "Text",
                     "DockColumnGap": "24",
@@ -682,6 +725,8 @@ mod tests {
         let client = client_for(&server);
         let document = load_settings(&client).await.unwrap();
         assert_eq!(document.taskbar.opacity_percent, 100);
+        assert_eq!(document.taskbar.top_process_count, 100);
+        assert_eq!(document.taskbar.data_retention_days, 365);
         assert_eq!(document.taskbar.dock_column_gap, 24);
         assert_eq!(document.taskbar.dock_visual_style, TaskbarVisualStyle::Text);
         assert!(!document.taskbar.monitor_cpu);

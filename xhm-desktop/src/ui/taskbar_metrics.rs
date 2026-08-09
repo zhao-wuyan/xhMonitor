@@ -142,6 +142,8 @@ pub fn render_geometry(
 pub struct TaskbarSettings {
     pub opacity_percent: u8,
     pub process_keywords: String,
+    pub top_process_count: u32,
+    pub data_retention_days: u32,
     pub monitor_cpu: bool,
     pub monitor_memory: bool,
     pub monitor_gpu: bool,
@@ -166,6 +168,8 @@ impl Default for TaskbarSettings {
         Self {
             opacity_percent: 90,
             process_keywords: "[]".into(),
+            top_process_count: 10,
+            data_retention_days: 30,
             monitor_cpu: true,
             monitor_memory: true,
             monitor_gpu: true,
@@ -190,6 +194,8 @@ impl Default for TaskbarSettings {
 impl TaskbarSettings {
     pub fn normalized(mut self) -> Self {
         self.opacity_percent = self.opacity_percent.clamp(20, 100);
+        self.top_process_count = self.top_process_count.clamp(1, 100);
+        self.data_retention_days = self.data_retention_days.clamp(1, 365);
         self.dock_column_gap = self.dock_column_gap.min(24);
         self.dock_cpu_label = normalized_label(&self.dock_cpu_label, "CPU");
         self.dock_memory_label = normalized_label(&self.dock_memory_label, "RAM");
@@ -211,6 +217,20 @@ impl TaskbarSettings {
         }
         if let Some(value) = data_collection.and_then(|group| group.get("ProcessKeywords")) {
             self.process_keywords = value.clone();
+        }
+        if let Some(value) = data_collection.and_then(|group| group.get("TopProcessCount")) {
+            self.top_process_count = value
+                .trim()
+                .parse()
+                .map(|value: u32| value.clamp(1, 100))
+                .unwrap_or(self.top_process_count);
+        }
+        if let Some(value) = data_collection.and_then(|group| group.get("DataRetentionDays")) {
+            self.data_retention_days = value
+                .trim()
+                .parse()
+                .map(|value: u32| value.clamp(1, 365))
+                .unwrap_or(self.data_retention_days);
         }
         if let Some(group) = monitoring {
             self.monitor_cpu = parse_bool(group.get("MonitorCpu"), self.monitor_cpu);
@@ -1044,12 +1064,16 @@ mod tests {
     fn settings_normalization_clamps_only_allowed_values() {
         let settings = TaskbarSettings {
             opacity_percent: 0,
+            top_process_count: 0,
+            data_retention_days: u32::MAX,
             dock_column_gap: 255,
             dock_cpu_label: " ".into(),
             ..TaskbarSettings::default()
         }
         .normalized();
         assert_eq!(settings.opacity_percent, 20);
+        assert_eq!(settings.top_process_count, 1);
+        assert_eq!(settings.data_retention_days, 365);
         assert_eq!(settings.dock_column_gap, 24);
         assert_eq!(settings.dock_cpu_label, "CPU");
     }

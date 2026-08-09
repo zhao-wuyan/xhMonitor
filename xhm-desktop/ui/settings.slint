@@ -2,38 +2,45 @@ component Field inherits Rectangle {
     in property <string> label;
     in-out property <string> value;
     in property <InputType> input-type: text;
+    in property <bool> editable: true;
     callback changed(string);
-    width: 252px;
+    width: 300px;
     height: 42px;
     background: transparent;
+    opacity: root.editable ? 1 : 0.42;
 
     Text {
         x: 0px;
         y: 0px;
         width: parent.width;
         text: root.label;
-        color: #ffffff9f;
-        font-size: 9px;
+        color: #ffffffa8;
+        font-size: 10px;
         font-weight: 600;
     }
     Rectangle {
-        y: 15px;
+        y: 16px;
         width: parent.width;
-        height: 25px;
-        background: #ffffff0d;
-        border-color: #ffffff24;
+        height: 26px;
+        background: root.editable ? #ffffff0d : #ffffff08;
+        border-color: root.editable ? #ffffff24 : #ffffff14;
         border-width: 1px;
         border-radius: 4px;
         TextInput {
-            x: 7px;
+            x: 8px;
             y: 4px;
-            width: parent.width - 14px;
+            width: parent.width - 16px;
             height: 18px;
             text: root.value;
             input-type: root.input-type;
+            enabled: root.editable;
             color: #ffffffe6;
             font-size: 10px;
-            edited => { root.changed(self.text); }
+            edited => {
+                if root.editable {
+                    root.changed(self.text);
+                }
+            }
         }
     }
 }
@@ -42,33 +49,33 @@ component Switch inherits Rectangle {
     in property <string> label;
     in-out property <bool> checked;
     callback toggled(bool);
-    width: 170px;
-    height: 26px;
+    width: 194px;
+    height: 28px;
     background: transparent;
 
     Text {
         x: 0px;
         y: 6px;
-        width: 124px;
+        width: 150px;
         text: root.label;
-        color: #ffffffbf;
+        color: #ffffffc4;
         font-size: 10px;
         overflow: elide;
     }
     Rectangle {
-        x: 136px;
-        y: 4px;
-        width: 28px;
-        height: 16px;
-        background: root.checked ? #22c55e99 : #ffffff26;
-        border-radius: 8px;
+        x: 158px;
+        y: 5px;
+        width: 30px;
+        height: 17px;
+        background: root.checked ? #38bdf8b3 : #ffffff26;
+        border-radius: 9px;
         Rectangle {
-            x: root.checked ? 14px : 2px;
+            x: root.checked ? 15px : 2px;
             y: 2px;
-            width: 12px;
-            height: 12px;
+            width: 13px;
+            height: 13px;
             background: #fffffff2;
-            border-radius: 6px;
+            border-radius: 7px;
             animate x { duration: 100ms; }
         }
         TouchArea {
@@ -85,9 +92,9 @@ component ActionButton inherits Rectangle {
     in property <string> text;
     in property <bool> primary: false;
     callback clicked;
-    width: 90px;
-    height: 30px;
-    background: root.primary ? #0ea5e9cc : button-touch.has-hover ? #ffffff22 : #ffffff12;
+    width: 92px;
+    height: 32px;
+    background: root.primary ? #0ea5e9d9 : button-touch.has-hover ? #ffffff22 : #ffffff12;
     border-color: root.primary ? #38bdf8 : #ffffff24;
     border-width: 1px;
     border-radius: 4px;
@@ -102,15 +109,25 @@ component ActionButton inherits Rectangle {
     button-touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
+component SectionTitle inherits Text {
+    in property <string> title;
+    text: root.title;
+    color: #38bdf8;
+    font-size: 10px;
+    font-weight: 700;
+}
+
 export component SettingsWindow inherits Window {
-    title: "xhMonitor Settings";
-    width: 580px;
-    height: 840px;
+    title: "xhMonitor 设置";
+    width: 680px;
+    height: 900px;
     background: #101217;
 
-    in-out property <string> status-text: "Loading settings...";
+    in-out property <string> status-text: "正在加载设置…";
     in-out property <string> opacity-text: "90";
     in-out property <string> process-keywords: "[]";
+    in-out property <string> top-process-count: "10";
+    in-out property <string> data-retention-days: "30";
     in-out property <bool> monitor-cpu: true;
     in-out property <bool> monitor-memory: true;
     in-out property <bool> monitor-gpu: true;
@@ -134,7 +151,7 @@ export component SettingsWindow inherits Window {
     in-out property <bool> enable-access-key: false;
     in-out property <string> access-key: "";
     in-out property <string> ip-whitelist: "";
-    in-out property <string> local-ip: "Loading...";
+    in-out property <string> local-ip: "正在获取…";
     callback load-settings();
     callback save-settings();
     callback close-window();
@@ -143,136 +160,101 @@ export component SettingsWindow inherits Window {
         x: 0px;
         y: 0px;
         width: parent.width;
-        height: 54px;
+        height: 58px;
         background: #151922;
-        Text { x: 18px; y: 13px; text: "SETTINGS"; color: #fffffff2; font-size: 15px; font-weight: 700; }
-        Text { x: 18px; y: 32px; width: 410px; text: root.status-text; color: #ffffff8f; font-size: 9px; overflow: elide; }
-        ActionButton { x: 472px; y: 12px; text: "Close"; clicked => { root.close-window(); } }
+        Rectangle { x: 18px; y: 15px; width: 3px; height: 28px; background: #38bdf8; border-radius: 2px; }
+        Text { x: 30px; y: 11px; text: "设置"; color: #fffffff2; font-size: 16px; font-weight: 700; }
+        Text { x: 30px; y: 34px; width: 620px; text: root.status-text; color: #ffffff8f; font-size: 9px; overflow: elide; }
     }
 
     Rectangle {
-        x: 18px;
-        y: 70px;
-        width: 544px;
-        height: 104px;
-        background: #ffffff08;
-        border-color: #ffffff18;
-        border-width: 1px;
-        border-radius: 5px;
-        Text { x: 12px; y: 10px; text: "DISPLAY"; color: #38bdf8; font-size: 10px; font-weight: 700; }
+        x: 18px; y: 72px; width: 644px; height: 116px;
+        background: #ffffff08; border-color: #ffffff18; border-width: 1px; border-radius: 5px;
+        SectionTitle { x: 14px; y: 10px; title: "外观"; }
         Field {
-            x: 12px;
-            y: 28px;
-            label: "Opacity (20-100)";
-            value: root.opacity-text;
-            changed(value) => { root.opacity-text = value; }
+            x: 14px; y: 32px; width: 202px; label: "悬浮窗透明度（20–100）"; input-type: number;
+            value: root.opacity-text; changed(value) => { root.opacity-text = value; }
         }
-        Field {
-            x: 280px;
-            y: 28px;
-            label: "Process keywords (JSON array)";
-            value: root.process-keywords;
-            changed(value) => { root.process-keywords = value; }
-        }
-        Switch {
-            x: 12px;
-            y: 73px;
-            label: "Floating window";
-            checked: root.enable-floating-mode;
-            toggled(value) => { root.enable-floating-mode = value; }
-        }
-        Switch {
-            x: 280px;
-            y: 73px;
-            label: "Edge dock";
-            checked: root.enable-edge-dock-mode;
-            toggled(value) => { root.enable-edge-dock-mode = value; }
-        }
-    }
-
-    Rectangle {
-        x: 18px;
-        y: 186px;
-        width: 544px;
-        height: 93px;
-        background: #ffffff08;
-        border-color: #ffffff18;
-        border-width: 1px;
-        border-radius: 5px;
-        Text { x: 12px; y: 10px; text: "MONITORING"; color: #a78bfa; font-size: 10px; font-weight: 700; }
-        Switch { x: 12px; y: 30px; label: "CPU"; checked: root.monitor-cpu; toggled(value) => { root.monitor-cpu = value; } }
-        Switch { x: 190px; y: 30px; label: "Memory"; checked: root.monitor-memory; toggled(value) => { root.monitor-memory = value; } }
-        Switch { x: 368px; y: 30px; label: "GPU"; checked: root.monitor-gpu; toggled(value) => { root.monitor-gpu = value; } }
-        Switch { x: 12px; y: 60px; label: "VRAM"; checked: root.monitor-vram; toggled(value) => { root.monitor-vram = value; } }
-        Switch { x: 190px; y: 60px; label: "Power"; checked: root.monitor-power; toggled(value) => { root.monitor-power = value; } }
-        Switch { x: 368px; y: 60px; label: "Network"; checked: root.monitor-network; toggled(value) => { root.monitor-network = value; } }
-    }
-
-    Rectangle {
-        x: 18px;
-        y: 291px;
-        width: 544px;
-        height: 219px;
-        background: #ffffff08;
-        border-color: #ffffff18;
-        border-width: 1px;
-        border-radius: 5px;
-        Text { x: 12px; y: 10px; text: "EDGE DOCK"; color: #f59e0b; font-size: 10px; font-weight: 700; }
-        Text { x: 282px; y: 10px; text: root.bar-visual ? "Bar visual" : "Text visual"; color: #ffffffe6; font-size: 10px; font-weight: 700; }
+        Switch { x: 238px; y: 35px; label: "悬浮窗模式"; checked: root.enable-floating-mode; toggled(value) => { root.enable-floating-mode = value; } }
+        Switch { x: 438px; y: 35px; label: "迷你／贴边模式"; checked: root.enable-edge-dock-mode; toggled(value) => { root.enable-edge-dock-mode = value; } }
+        Text { x: 238px; y: 83px; text: "迷你／贴边风格"; color: #ffffffa8; font-size: 10px; font-weight: 600; }
         Rectangle {
-            x: 406px;
-            y: 7px;
-            width: 124px;
-            height: 24px;
-            background: #ffffff12;
-            border-radius: 4px;
-            Text { x: 0px; y: 4px; width: 60px; text: "Text"; color: !root.bar-visual ? #38bdf8 : #ffffff80; font-size: 9px; horizontal-alignment: center; }
-            Text { x: 62px; y: 4px; width: 60px; text: "Bar"; color: root.bar-visual ? #38bdf8 : #ffffff80; font-size: 9px; horizontal-alignment: center; }
+            x: 354px; y: 77px; width: 156px; height: 27px; background: #ffffff0d;
+            border-color: #ffffff20; border-width: 1px; border-radius: 4px;
+            Rectangle { x: root.bar-visual ? 78px : 0px; width: 78px; height: parent.height; background: #38bdf826; border-radius: 4px; }
+            Text { x: 0px; y: 5px; width: 78px; text: "文本"; color: !root.bar-visual ? #38bdf8 : #ffffff80; font-size: 10px; horizontal-alignment: center; }
+            Text { x: 78px; y: 5px; width: 78px; text: "柱状条"; color: root.bar-visual ? #38bdf8 : #ffffff80; font-size: 10px; horizontal-alignment: center; }
             TouchArea { mouse-cursor: pointer; clicked => { root.bar-visual = !root.bar-visual; } }
         }
-        Field { x: 12px; y: 38px; label: "CPU label"; value: root.dock-cpu-label; changed(value) => { root.dock-cpu-label = value; } }
-        Field { x: 280px; y: 38px; label: "Memory label"; value: root.dock-memory-label; changed(value) => { root.dock-memory-label = value; } }
-        Field { x: 12px; y: 84px; label: "GPU label"; value: root.dock-gpu-label; changed(value) => { root.dock-gpu-label = value; } }
-        Field { x: 280px; y: 84px; label: "VRAM label"; value: root.dock-vram-label; changed(value) => { root.dock-vram-label = value; } }
-        Field { x: 12px; y: 130px; label: "Power label"; value: root.dock-power-label; changed(value) => { root.dock-power-label = value; } }
-        Field { x: 280px; y: 130px; label: "Upload label"; value: root.dock-upload-label; changed(value) => { root.dock-upload-label = value; } }
-        Field { x: 12px; y: 176px; label: "Download label"; value: root.dock-download-label; changed(value) => { root.dock-download-label = value; } }
-        Field { x: 280px; y: 176px; label: "Column gap (0-24)"; value: root.dock-column-gap; changed(value) => { root.dock-column-gap = value; } }
     }
 
     Rectangle {
-        x: 18px;
-        y: 522px;
-        width: 544px;
-        height: 244px;
-        background: #ffffff08;
-        border-color: #ffffff18;
-        border-width: 1px;
-        border-radius: 5px;
-        Text { x: 12px; y: 10px; text: "SYSTEM"; color: #fbbf24; font-size: 10px; font-weight: 700; }
-        Switch { x: 12px; y: 30px; label: "Admin mode"; checked: root.admin-mode; toggled(value) => { root.admin-mode = value; } }
-        Switch { x: 280px; y: 30px; label: "Start with Windows"; checked: root.start-with-windows; toggled(value) => { root.start-with-windows = value; } }
-        Switch { x: 12px; y: 60px; label: "Enable LAN access"; checked: root.enable-lan-access; toggled(value) => { root.enable-lan-access = value; } }
-        Switch { x: 280px; y: 60px; label: "Require access key"; checked: root.enable-access-key; toggled(value) => { root.enable-access-key = value; } }
-        Field {
-            x: 12px;
-            y: 90px;
-            label: "Access key";
-            value: root.access-key;
-            input-type: password;
-            changed(value) => { root.access-key = value; }
-        }
-        Field {
-            x: 280px;
-            y: 90px;
-            label: "IP whitelist (IP or CIDR, comma separated)";
-            value: root.ip-whitelist;
-            changed(value) => { root.ip-whitelist = value; }
-        }
-        Text { x: 12px; y: 146px; width: 520px; text: "Local IP: " + root.local-ip; color: #81c784; font-size: 9px; }
+        x: 18px; y: 200px; width: 644px; height: 92px;
+        background: #ffffff08; border-color: #ffffff18; border-width: 1px; border-radius: 5px;
+        SectionTitle { x: 14px; y: 10px; title: "监控项"; }
+        Switch { x: 14px; y: 31px; label: "CPU"; checked: root.monitor-cpu; toggled(value) => { root.monitor-cpu = value; } }
+        Switch { x: 224px; y: 31px; label: "内存"; checked: root.monitor-memory; toggled(value) => { root.monitor-memory = value; } }
+        Switch { x: 434px; y: 31px; label: "显卡 GPU"; checked: root.monitor-gpu; toggled(value) => { root.monitor-gpu = value; } }
+        Switch { x: 14px; y: 59px; label: "显存 VRAM"; checked: root.monitor-vram; toggled(value) => { root.monitor-vram = value; } }
+        Switch { x: 224px; y: 59px; label: "功耗"; checked: root.monitor-power; toggled(value) => { root.monitor-power = value; } }
+        Switch { x: 434px; y: 59px; label: "网络"; checked: root.monitor-network; toggled(value) => { root.monitor-network = value; } }
     }
 
+    Rectangle {
+        x: 18px; y: 304px; width: 644px; height: 116px;
+        background: #ffffff08; border-color: #ffffff18; border-width: 1px; border-radius: 5px;
+        SectionTitle { x: 14px; y: 10px; title: "数据采集"; }
+        Field {
+            x: 14px; y: 32px; width: 300px; label: "进程监控关键词";
+            value: root.process-keywords; changed(value) => { root.process-keywords = value; }
+        }
+        Field {
+            x: 330px; y: 32px; width: 140px; label: "Top 进程数量"; input-type: number;
+            value: root.top-process-count; changed(value) => { root.top-process-count = value; }
+        }
+        Field {
+            x: 486px; y: 32px; width: 144px; label: "历史数据保留时长（天）"; input-type: number;
+            value: root.data-retention-days; changed(value) => { root.data-retention-days = value; }
+        }
+        Text { x: 14px; y: 82px; width: 610px; text: "每行一个关键词，支持正则，! 前缀表示排除"; color: #ffffff70; font-size: 9px; }
+    }
 
-    ActionButton { x: 280px; y: 790px; text: "Reload"; clicked => { root.load-settings(); } }
-    ActionButton { x: 382px; y: 790px; text: "Save"; primary: true; clicked => { root.save-settings(); } }
+    Rectangle {
+        x: 18px; y: 432px; width: 644px; height: 220px;
+        background: #ffffff08; border-color: #ffffff18; border-width: 1px; border-radius: 5px;
+        SectionTitle { x: 14px; y: 10px; title: "迷你／贴边指标名称"; }
+        Field { x: 14px; y: 32px; label: "CPU 名称"; value: root.dock-cpu-label; changed(value) => { root.dock-cpu-label = value; } }
+        Field { x: 330px; y: 32px; label: "内存名称"; value: root.dock-memory-label; changed(value) => { root.dock-memory-label = value; } }
+        Field { x: 14px; y: 78px; label: "GPU 名称"; value: root.dock-gpu-label; changed(value) => { root.dock-gpu-label = value; } }
+        Field { x: 330px; y: 78px; label: "VRAM 名称"; value: root.dock-vram-label; changed(value) => { root.dock-vram-label = value; } }
+        Field { x: 14px; y: 124px; label: "功耗名称"; value: root.dock-power-label; changed(value) => { root.dock-power-label = value; } }
+        Field { x: 330px; y: 124px; label: "上传前缀"; value: root.dock-upload-label; changed(value) => { root.dock-upload-label = value; } }
+        Field { x: 14px; y: 170px; label: "下载前缀"; value: root.dock-download-label; changed(value) => { root.dock-download-label = value; } }
+        Field { x: 330px; y: 170px; label: "组间距（px，0–24）"; input-type: number; value: root.dock-column-gap; changed(value) => { root.dock-column-gap = value; } }
+    }
+
+    Rectangle {
+        x: 18px; y: 664px; width: 644px; height: 174px;
+        background: #ffffff08; border-color: #ffffff18; border-width: 1px; border-radius: 5px;
+        SectionTitle { x: 14px; y: 10px; title: "系统"; }
+        Switch { x: 14px; y: 31px; label: "开机自启动"; checked: root.start-with-windows; toggled(value) => { root.start-with-windows = value; } }
+        Switch { x: 224px; y: 31px; label: "管理员模式"; checked: root.admin-mode; toggled(value) => { root.admin-mode = value; } }
+        Switch { x: 434px; y: 31px; label: "启用局域网访问"; checked: root.enable-lan-access; toggled(value) => { root.enable-lan-access = value; } }
+        Switch { x: 14px; y: 61px; label: "要求访问密钥"; checked: root.enable-access-key; toggled(value) => { root.enable-access-key = value; } }
+        Field {
+            x: 14px; y: 91px; label: "访问密钥"; input-type: password; editable: root.enable-access-key;
+            value: root.access-key; changed(value) => { root.access-key = value; }
+        }
+        Field {
+            x: 330px; y: 91px; label: "IP 白名单";
+            value: root.ip-whitelist; changed(value) => { root.ip-whitelist = value; }
+        }
+        Text { x: 14px; y: 137px; width: 300px; text: "留空将自动生成"; color: root.enable-access-key ? #ffffff70 : #ffffff42; font-size: 9px; }
+        Text { x: 330px; y: 137px; width: 300px; text: "每行一个 IP 或 CIDR"; color: #ffffff70; font-size: 9px; }
+        Text { x: 14px; y: 155px; width: 616px; text: "本机 IP 显示：" + root.local-ip; color: #81c784; font-size: 9px; overflow: elide; }
+    }
+
+    ActionButton { x: 362px; y: 852px; text: "重新加载"; clicked => { root.load-settings(); } }
+    ActionButton { x: 462px; y: 852px; text: "关闭"; clicked => { root.close-window(); } }
+    ActionButton { x: 562px; y: 852px; text: "保存"; primary: true; clicked => { root.save-settings(); } }
 }
