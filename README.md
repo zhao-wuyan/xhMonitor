@@ -83,6 +83,14 @@ dotnet run --project XhMonitor.Desktop/XhMonitor.Desktop.csproj
 
 完整配置字段见 [docs/appsettings-reference.md](docs/appsettings-reference.md)。
 
+## 日志
+
+Rust Service 默认向控制台输出 `info` 及以上级别日志，可通过 `RUST_LOG` 覆盖过滤规则。同时以非阻塞方式写入每日文件：
+
+- 发布环境：`Service/logs/xhmonitor.YYYY-MM-DD.log`；
+- 开发环境：`target/debug/logs/xhmonitor.YYYY-MM-DD.log`；
+- 文件记录 `debug` 及以上级别，服务退出时会刷完缓冲日志。
+
 ## 数据生命周期
 
 Rust Service 使用 SQLite 存储指标，并按以下层级聚合和保留：
@@ -92,7 +100,11 @@ Rust Service 使用 SQLite 存储指标，并按以下层级聚合和保留：
 - hour：小时聚合；
 - day：日聚合。
 
-生命周期 worker 只有在目标层 coverage 验证完成后才删除源数据。旧版大数据库首次升级时会创建当前 schema 的新数据库，只复制应用配置和告警配置，不复制历史指标。
+生命周期 worker 只有在目标层 coverage 验证完成后才删除源数据。`MetricLifecycleCheckpoints` 保存 Minute、Hour、Day 各层的连续覆盖起点和完成边界，避免重复聚合，并确保源数据仅在下一级聚合完整后删除。
+
+旧版大数据库首次升级时会创建当前 schema 的新数据库，只复制应用配置和告警配置，不复制历史指标。`20260810000000_AddMetricLifecycleStorage` 是该一次性重建完成的唯一 marker，不根据 `MetricLifecycleCheckpoints` 表是否存在判断。
+
+若旧数据库被 DBX 等外部程序占用，Service 对 `SQLITE_BUSY` / `SQLITE_LOCKED` 最多等待 1 秒，随后保留原数据库继续启动且不写 marker；释放占用后，下次启动会重新尝试重建。数据库损坏、字段缺失或磁盘错误不会降级。未来 schema 变更必须使用新的 `MigrationId`，不得复用现有 marker。
 
 ## API
 

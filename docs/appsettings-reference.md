@@ -4,22 +4,18 @@
 
 ## 1. Service 配置（`xhm-service/appsettings.json`）
 
-### 1.1 `Serilog`
+### 1.1 日志
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `Serilog:MinimumLevel:Default` | string | `Information` | 全局日志级别 |
-| `Serilog:MinimumLevel:Override:*` | object | 见文件 | 按命名空间覆盖日志级别 |
-| `Serilog:WriteTo` | array | 见文件 | 日志输出目标（Console/Debug/File） |
-| `Serilog:WriteTo:File:path` | string | `logs/xhmonitor-.log` | 文件日志路径 |
-| `Serilog:WriteTo:File:rollingInterval` | string | `Day` | 滚动策略 |
-| `Serilog:WriteTo:File:retainedFileCountLimit` | int | `7` | 保留文件数 |
+Rust Service 不读取 `appsettings.json` 中遗留的 `Serilog` 段。日志规则如下：
 
-### 1.2 `ConnectionStrings`
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `RUST_LOG` | `info` | 控制台日志过滤规则 |
+| 文件日志 | `debug` | 写入 `logs/xhmonitor.YYYY-MM-DD.log`，按天滚动 |
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `ConnectionStrings:DatabaseConnection` | string | `Data Source=xhmonitor.db;Mode=ReadWriteCreate;Cache=Shared` | SQLite 连接串 |
+### 1.2 数据库
+
+Rust Service 不读取遗留的 `ConnectionStrings:DatabaseConnection`。SQLite 数据库固定为 Service 可执行文件目录下的 `xhmonitor.db`。
 
 ### 1.3 `Monitor`
 
