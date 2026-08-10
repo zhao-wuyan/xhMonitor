@@ -3,14 +3,23 @@
 //! 对齐 C# `Program.cs`：路径基于 `current_exe().parent()`、graceful shutdown、
 //! 管理员检测，以及采集 worker 与 LHM bridge 的确定性回收。
 
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, path::Path, sync::Arc};
 
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
-use tracing_subscriber::EnvFilter;
+use tracing_appender::{
+    non_blocking::WorkerGuard,
+    rolling::{RollingFileAppender, Rotation},
+};
+use tracing_subscriber::{
+    filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+};
 use xhm_core::traits::{Clock, LhmReader, MetricStore, RyzenAdjClient, SystemClock};
 use xhm_service::{
-    db::{finalize_legacy_database_rebuild, prepare_legacy_database, SqliteMetricStore},
+    db::{
+        finalize_legacy_database_rebuild, prepare_legacy_database, LegacyDatabasePreparation,
+        SqliteMetricStore,
+    },
     lhm::LhmBridgeManager,
     power::{is_supported_power_platform, ProductionRyzenAdjClient},
     state::{load_process_name_rules, RuntimeConfig, ServicePaths},
@@ -20,23 +29,34 @@ use xhm_service::{
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .init();
-
     let paths = ServicePaths::new()?;
-    let legacy_rebuild = prepare_legacy_database(&paths.db_path)?;
+    let _log_guard = init_logging(&paths.exe_dir)?;
+
+    let database_preparation = prepare_legacy_database(&paths.db_path)?;
     tracing::info!(db = %paths.db_path.display(), "opening database");
-    let store: Arc<dyn MetricStore> = Arc::new(SqliteMetricStore::open(&paths.db_path)?);
-    if let Some(rebuild) = legacy_rebuild {
-        tracing::info!(
-            settings = rebuild.settings_copied,
-            alerts = rebuild.alerts_copied,
-            "legacy database replaced with current schema"
-        );
-        if let Err(error) = finalize_legacy_database_rebuild(rebuild) {
-            tracing::warn!(%error, "legacy database backup cleanup deferred");
+    let sqlite_store = if matches!(&database_preparation, &LegacyDatabasePreparation::Deferred) {
+        SqliteMetricStore::open_deferred_legacy(&paths.db_path)?
+    } else {
+        SqliteMetricStore::open(&paths.db_path)?
+    };
+    let store: Arc<dyn MetricStore> = Arc::new(sqlite_store);
+    match database_preparation {
+        LegacyDatabasePreparation::Rebuilt(rebuild) => {
+            tracing::info!(
+                settings = rebuild.settings_copied,
+                alerts = rebuild.alerts_copied,
+                "legacy database replaced with current schema"
+            );
+            if let Err(error) = finalize_legacy_database_rebuild(rebuild) {
+                tracing::warn!(%error, "legacy database backup cleanup deferred");
+            }
         }
+        LegacyDatabasePreparation::Deferred => {
+            tracing::warn!(
+                "service started with the original database; lifecycle rebuild will retry next time"
+            );
+        }
+        LegacyDatabasePreparation::NotRequired => {}
     }
     let power_platform_supported = is_supported_power_platform();
     if !power_platform_supported {
@@ -186,6 +206,33 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("service stopped");
     Ok(())
 }
+fn init_logging(exe_dir: &Path) -> anyhow::Result<WorkerGuard> {
+    let file_appender = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("xhmonitor")
+        .filename_suffix("log")
+        .build(exe_dir.join("logs"))?;
+    let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
+    let console_filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .from_env_lossy();
+
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_writer(std::io::stderr)
+                .with_filter(console_filter),
+        )
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_ansi(false)
+                .with_writer(file_writer)
+                .with_filter(LevelFilter::DEBUG),
+        )
+        .try_init()?;
+
+    Ok(guard)
+}
 
 fn load_process_keywords(store: &dyn MetricStore) -> Vec<String> {
     let settings = match store.list_settings() {
@@ -258,6 +305,26 @@ async fn shutdown_signal() {
 mod tests {
     use super::*;
     use xhm_service::{web::DEFAULT_WEB_PORT, DEFAULT_SERVICE_PORT};
+
+    #[test]
+    fn logging_writes_info_events_to_the_daily_file() {
+        let log_root =
+            std::env::temp_dir().join(format!("xhm-service-logs-{}", uuid::Uuid::new_v4()));
+        let guard = init_logging(&log_root).unwrap();
+
+        tracing::info!("logging smoke marker");
+        drop(guard);
+
+        let log_path = std::fs::read_dir(log_root.join("logs"))
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap()
+            .path();
+        let contents = std::fs::read_to_string(log_path).unwrap();
+        assert!(contents.contains("logging smoke marker"));
+        std::fs::remove_dir_all(log_root).unwrap();
+    }
 
     #[test]
     fn service_listener_is_loopback_only_on_fixed_port() {

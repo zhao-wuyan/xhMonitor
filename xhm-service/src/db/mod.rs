@@ -154,6 +154,13 @@ pub struct LegacyDatabaseRebuild {
     pub alerts_copied: usize,
 }
 
+#[derive(Debug)]
+pub enum LegacyDatabasePreparation {
+    NotRequired,
+    Deferred,
+    Rebuilt(LegacyDatabaseRebuild),
+}
+
 #[derive(Debug, PartialEq)]
 struct LegacySetting {
     category: String,
@@ -173,7 +180,7 @@ struct LegacyAlert {
     updated_at: String,
 }
 
-pub fn prepare_legacy_database(path: impl AsRef<Path>) -> Result<Option<LegacyDatabaseRebuild>> {
+pub fn prepare_legacy_database(path: impl AsRef<Path>) -> Result<LegacyDatabasePreparation> {
     let path = path.as_ref();
     let parent = path.parent().ok_or_else(|| {
         CoreError::storage(format!("database path has no parent: {}", path.display()))
@@ -194,7 +201,7 @@ pub fn prepare_legacy_database(path: impl AsRef<Path>) -> Result<Option<LegacyDa
     }
 
     if !path.is_file() {
-        return Ok(None);
+        return Ok(LegacyDatabasePreparation::NotRequired);
     }
 
     let legacy = Connection::open(path).map_err(|error| {
@@ -204,22 +211,36 @@ pub fn prepare_legacy_database(path: impl AsRef<Path>) -> Result<Option<LegacyDa
         ))
     })?;
     legacy
-        .busy_timeout(std::time::Duration::from_secs(5))
+        .busy_timeout(std::time::Duration::from_secs(1))
         .map_err(|error| sql_error("configuring legacy database busy timeout", error))?;
 
     let has_lifecycle_marker = migration_exists(&legacy, LIFECYCLE_SCHEMA_MIGRATION_ID)?;
     let has_lifecycle_table = table_exists(&legacy, "MetricLifecycleCheckpoints")?;
     let has_metric_table = table_exists(&legacy, "ProcessMetricRecords")?;
-    if has_lifecycle_marker || has_lifecycle_table || !has_metric_table {
+    tracing::info!(
+        path = %path.display(),
+        has_lifecycle_marker,
+        has_lifecycle_table,
+        has_metric_table,
+        "inspected database for lifecycle rebuild"
+    );
+    if has_lifecycle_marker || !has_metric_table {
+        tracing::info!(
+            path = %path.display(),
+            has_lifecycle_marker,
+            has_lifecycle_table,
+            has_metric_table,
+            "lifecycle database rebuild skipped"
+        );
         drop(legacy);
         return if backup_path.exists() {
-            Ok(Some(LegacyDatabaseRebuild {
+            Ok(LegacyDatabasePreparation::Rebuilt(LegacyDatabaseRebuild {
                 backup_path,
                 settings_copied: 0,
                 alerts_copied: 0,
             }))
         } else {
-            Ok(None)
+            Ok(LegacyDatabasePreparation::NotRequired)
         };
     }
     if backup_path.exists() {
@@ -228,8 +249,18 @@ pub fn prepare_legacy_database(path: impl AsRef<Path>) -> Result<Option<LegacyDa
             backup_path.display()
         )));
     }
+    tracing::info!(
+        path = %path.display(),
+        "legacy metric database detected; rebuilding without metric history"
+    );
 
-    checkpoint_and_use_delete_journal(&legacy)?;
+    if checkpoint_and_use_delete_journal(&legacy)? == CheckpointOutcome::Deferred {
+        tracing::warn!(
+            path = %path.display(),
+            "legacy database rebuild deferred because the database is in use"
+        );
+        return Ok(LegacyDatabasePreparation::Deferred);
+    }
     let settings = load_legacy_settings(&legacy)?;
     let alerts = load_legacy_alerts(&legacy)?;
     drop(legacy);
@@ -256,8 +287,15 @@ pub fn prepare_legacy_database(path: impl AsRef<Path>) -> Result<Option<LegacyDa
                 .unwrap_or_else(|rollback_error| rollback_error.to_string())
         )));
     }
+    tracing::info!(
+        path = %path.display(),
+        backup = %backup_path.display(),
+        settings = settings.len(),
+        alerts = alerts.len(),
+        "rebuilt lifecycle database activated"
+    );
 
-    Ok(Some(LegacyDatabaseRebuild {
+    Ok(LegacyDatabasePreparation::Rebuilt(LegacyDatabaseRebuild {
         backup_path,
         settings_copied: settings.len(),
         alerts_copied: alerts.len(),
@@ -322,28 +360,51 @@ fn require_table_columns(
         )))
     }
 }
-fn checkpoint_and_use_delete_journal(connection: &Connection) -> Result<()> {
-    let busy = connection
-        .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
-            row.get::<_, i64>(0)
-        })
-        .map_err(|error| sql_error("checkpointing legacy SQLite WAL", error))?;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CheckpointOutcome {
+    Ready,
+    Deferred,
+}
+
+fn checkpoint_and_use_delete_journal(connection: &Connection) -> Result<CheckpointOutcome> {
+    let busy = match connection.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+        row.get::<_, i64>(0)
+    }) {
+        Ok(busy) => busy,
+        Err(error) if is_database_in_use(&error) => return Ok(CheckpointOutcome::Deferred),
+        Err(error) => return Err(sql_error("checkpointing legacy SQLite WAL", error)),
+    };
     if busy != 0 {
-        return Err(CoreError::storage(
-            "legacy SQLite WAL checkpoint remained busy",
-        ));
+        return Ok(CheckpointOutcome::Deferred);
     }
-    let mode = connection
-        .query_row("PRAGMA journal_mode=DELETE", [], |row| {
-            row.get::<_, String>(0)
-        })
-        .map_err(|error| sql_error("switching SQLite journal mode for rebuild", error))?;
+    let mode = match connection.query_row("PRAGMA journal_mode=DELETE", [], |row| {
+        row.get::<_, String>(0)
+    }) {
+        Ok(mode) => mode,
+        Err(error) if is_database_in_use(&error) => return Ok(CheckpointOutcome::Deferred),
+        Err(error) => {
+            return Err(sql_error(
+                "switching SQLite journal mode for rebuild",
+                error,
+            ))
+        }
+    };
     if !mode.eq_ignore_ascii_case("delete") {
-        return Err(CoreError::storage(format!(
-            "SQLite refused DELETE journal mode during rebuild: {mode}"
-        )));
+        return Ok(CheckpointOutcome::Deferred);
     }
-    Ok(())
+    Ok(CheckpointOutcome::Ready)
+}
+
+fn is_database_in_use(error: &rusqlite::Error) -> bool {
+    matches!(
+        error,
+        rusqlite::Error::SqliteFailure(code, _)
+            if matches!(
+                code.code,
+                rusqlite::ffi::ErrorCode::DatabaseBusy
+                    | rusqlite::ffi::ErrorCode::DatabaseLocked
+            )
+    )
 }
 
 fn load_legacy_settings(connection: &Connection) -> Result<Vec<LegacySetting>> {
@@ -432,7 +493,7 @@ fn build_replacement_database(
             path.display()
         ))
     })?;
-    initialize_schema(&mut connection)?;
+    initialize_schema(&mut connection, true)?;
     let transaction = connection
         .transaction()
         .map_err(|error| sql_error("starting legacy configuration copy", error))?;
@@ -493,7 +554,12 @@ fn build_replacement_database(
             "rebuilt SQLite database failed quick_check: {quick_check}"
         )));
     }
-    checkpoint_and_use_delete_journal(&connection)
+    match checkpoint_and_use_delete_journal(&connection)? {
+        CheckpointOutcome::Ready => Ok(()),
+        CheckpointOutcome::Deferred => Err(CoreError::storage(
+            "rebuilt SQLite database unexpectedly remained busy",
+        )),
+    }
 }
 
 fn verify_copied_configuration(
@@ -603,18 +669,32 @@ impl SqliteMetricStore {
                 path.display()
             ))
         })?;
-        Self::from_connection(connection)
+        Self::from_connection(connection, true)
+    }
+
+    pub fn open_deferred_legacy(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
+        let connection = Connection::open(path).map_err(|error| {
+            CoreError::storage(format!(
+                "failed to open deferred legacy SQLite database {}: {error}",
+                path.display()
+            ))
+        })?;
+        Self::from_connection(connection, false)
     }
 
     pub fn open_in_memory() -> Result<Self> {
         let connection = Connection::open_in_memory().map_err(|error| {
             CoreError::storage(format!("failed to open in-memory SQLite: {error}"))
         })?;
-        Self::from_connection(connection)
+        Self::from_connection(connection, true)
     }
 
-    fn from_connection(mut connection: Connection) -> Result<Self> {
-        initialize_schema(&mut connection)?;
+    fn from_connection(
+        mut connection: Connection,
+        record_lifecycle_migration: bool,
+    ) -> Result<Self> {
+        initialize_schema(&mut connection, record_lifecycle_migration)?;
         Ok(Self {
             connection: Mutex::new(connection),
         })
@@ -632,7 +712,7 @@ impl SqliteMetricStore {
     }
 }
 
-fn initialize_schema(connection: &mut Connection) -> Result<()> {
+fn initialize_schema(connection: &mut Connection, record_lifecycle_migration: bool) -> Result<()> {
     connection
         .pragma_update(None, "journal_mode", "WAL")
         .map_err(|error| sql_error("enabling SQLite WAL mode", error))?;
@@ -713,7 +793,14 @@ fn initialize_schema(connection: &mut Connection) -> Result<()> {
         "8.0.23",
         SECURITY_SETTINGS_SEED_SQL,
     )?;
-    apply_migration(&transaction, LIFECYCLE_SCHEMA_MIGRATION_ID, "8.0.23", "")?;
+    if record_lifecycle_migration {
+        apply_migration(
+            &transaction,
+            LIFECYCLE_SCHEMA_MIGRATION_ID,
+            env!("CARGO_PKG_VERSION"),
+            "",
+        )?;
+    }
     let has_legacy_conflicts = transaction
         .query_row(
             "SELECT EXISTS(
@@ -2600,6 +2687,15 @@ mod tests {
                 )
                 .unwrap();
             assert_eq!(migration_count, 9);
+            let lifecycle_product_version = connection
+                .query_row(
+                    "SELECT \"ProductVersion\" FROM \"__EFMigrationsHistory\"
+                     WHERE \"MigrationId\" = ?1",
+                    [LIFECYCLE_SCHEMA_MIGRATION_ID],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap();
+            assert_eq!(lifecycle_product_version, env!("CARGO_PKG_VERSION"));
             drop(index_statement);
             drop(connection);
             assert!(store.delete_alert(1).unwrap());
@@ -2617,6 +2713,37 @@ mod tests {
         let _ = fs::remove_file(&path);
         let _ = fs::remove_file(format!("{}-wal", path.display()));
         let _ = fs::remove_file(format!("{}-shm", path.display()));
+    }
+
+    #[test]
+    fn fresh_install_records_lifecycle_marker_and_skips_future_rebuilds() {
+        let root = std::env::temp_dir().join(format!("xhm-fresh-install-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("xhmonitor.db");
+
+        assert!(matches!(
+            prepare_legacy_database(&path).unwrap(),
+            LegacyDatabasePreparation::NotRequired
+        ));
+        {
+            let store = SqliteMetricStore::open(&path).unwrap();
+            let connection = store.test_connection().unwrap();
+            let product_version = connection
+                .query_row(
+                    "SELECT \"ProductVersion\" FROM \"__EFMigrationsHistory\"
+                     WHERE \"MigrationId\" = ?1",
+                    [LIFECYCLE_SCHEMA_MIGRATION_ID],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap();
+            assert_eq!(product_version, env!("CARGO_PKG_VERSION"));
+        }
+        assert!(matches!(
+            prepare_legacy_database(&path).unwrap(),
+            LegacyDatabasePreparation::NotRequired
+        ));
+
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -2682,7 +2809,10 @@ mod tests {
                 .unwrap();
         }
 
-        let rebuild = prepare_legacy_database(&path).unwrap().unwrap();
+        let LegacyDatabasePreparation::Rebuilt(rebuild) = prepare_legacy_database(&path).unwrap()
+        else {
+            panic!("legacy database should be rebuilt");
+        };
         assert_eq!(rebuild.settings_copied, 2);
         assert_eq!(rebuild.alerts_copied, 1);
         assert!(rebuild.backup_path.is_file());
@@ -2712,10 +2842,94 @@ mod tests {
         }
         finalize_legacy_database_rebuild(rebuild).unwrap();
 
-        assert!(prepare_legacy_database(&path).unwrap().is_none());
+        assert!(matches!(
+            prepare_legacy_database(&path).unwrap(),
+            LegacyDatabasePreparation::NotRequired
+        ));
         let connection = Connection::open(&path).unwrap();
         assert!(migration_exists(&connection, LIFECYCLE_SCHEMA_MIGRATION_ID).unwrap());
         drop(connection);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn busy_legacy_database_starts_without_marker_and_rebuilds_after_release() {
+        let root = std::env::temp_dir().join(format!("xhm-legacy-rebuild-busy-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("xhmonitor.db");
+        let reader = Connection::open(&path).unwrap();
+        reader
+            .execute_batch(
+                r#"
+                PRAGMA journal_mode=WAL;
+                CREATE TABLE "ProcessMetricRecords" (
+                    "Id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                    "ProcessId" INTEGER NOT NULL,
+                    "ProcessName" TEXT NOT NULL,
+                    "CommandLine" TEXT NULL,
+                    "Timestamp" TEXT NOT NULL,
+                    "MetricsJson" TEXT NOT NULL
+                );
+                INSERT INTO "ProcessMetricRecords"
+                    ("ProcessId", "ProcessName", "Timestamp", "MetricsJson")
+                VALUES (7, 'legacy', '2026-07-26 12:00:00', '{}');
+                CREATE TABLE "MetricLifecycleCheckpoints" (
+                    "TargetLevel" INTEGER NOT NULL PRIMARY KEY,
+                    "CoveredFrom" TEXT NOT NULL,
+                    "CompletedThrough" TEXT NOT NULL,
+                    "UpdatedAt" TEXT NOT NULL
+                );
+                CREATE TABLE "__EFMigrationsHistory" (
+                    "MigrationId" TEXT PRIMARY KEY,
+                    "ProductVersion" TEXT NOT NULL
+                );
+                INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+                VALUES ('20251221075010_InitialCreate', '8.0.22');
+                BEGIN;
+                SELECT COUNT(*) FROM "ProcessMetricRecords";
+                "#,
+            )
+            .unwrap();
+        {
+            let writer = Connection::open(&path).unwrap();
+            writer
+                .execute(
+                    "INSERT INTO \"ProcessMetricRecords\"
+                         (\"ProcessId\", \"ProcessName\", \"Timestamp\", \"MetricsJson\")
+                     VALUES (8, 'wal-frame', '2026-07-26 12:01:00', '{}')",
+                    [],
+                )
+                .unwrap();
+        }
+
+        assert!(matches!(
+            prepare_legacy_database(&path).unwrap(),
+            LegacyDatabasePreparation::Deferred
+        ));
+        {
+            let store = SqliteMetricStore::open_deferred_legacy(&path).unwrap();
+            let connection = store.test_connection().unwrap();
+            assert!(!migration_exists(&connection, LIFECYCLE_SCHEMA_MIGRATION_ID).unwrap());
+            assert!(table_exists(&connection, "MetricLifecycleCheckpoints").unwrap());
+            let raw_count = connection
+                .query_row("SELECT COUNT(*) FROM \"ProcessMetricRecords\"", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .unwrap();
+            assert_eq!(raw_count, 2);
+        }
+
+        reader.execute_batch("COMMIT").unwrap();
+        drop(reader);
+        let LegacyDatabasePreparation::Rebuilt(rebuild) = prepare_legacy_database(&path).unwrap()
+        else {
+            panic!("released legacy database should be rebuilt");
+        };
+        {
+            let store = SqliteMetricStore::open(&path).unwrap();
+            assert_eq!(store.earliest_raw_timestamp().unwrap(), None);
+        }
+        finalize_legacy_database_rebuild(rebuild).unwrap();
         fs::remove_dir_all(root).unwrap();
     }
 
