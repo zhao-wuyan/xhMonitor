@@ -75,7 +75,7 @@ jobs:
           if (-not (Test-Path $langFile)) {
             Write-Host "Downloading ChineseSimplified.isl..."
             New-Item -ItemType Directory -Force -Path $innoLangDir | Out-Null
-            Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/ChineseSimplified.isl" -OutFile $langFile
+            Invoke-WebRequest -Uri "https://raw.githubusercontent.com/kira-96/Inno-Setup-Chinese-Simplified-Translation/main/ChineseSimplified.isl" -OutFile $langFile
             Write-Host "Downloaded ChineseSimplified.isl successfully"
           } else {
             Write-Host "ChineseSimplified.isl already exists"
