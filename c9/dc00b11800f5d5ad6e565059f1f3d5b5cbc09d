@@ -1,0 +1,71 @@
+.gitignore
+  h_cb0e2129f6578c 98-103
+xhm-service/src/worker.rs
+  h_cb0e2129f6578c 1-1918
+xhm-service/src/api/widget.rs
+  h_cb0e2129f6578c 1-395
+xhm-core/src/lib.rs
+  h_cb0e2129f6578c 1-25
+xhm-service/src/power/mod.rs
+  h_cb0e2129f6578c 1-1745
+xhm-service/src/main.rs
+  h_cb0e2129f6578c 1-281
+xhm-core/src/wire.rs
+  h_cb0e2129f6578c 1-562
+xhm-core/src/time.rs
+  h_cb0e2129f6578c 1-211
+xhm-service/src/state.rs
+  h_cb0e2129f6578c 1-569
+xhm-core/src/traits.rs
+  h_cb0e2129f6578c 1-503
+Cargo.lock
+  h_cb0e2129f6578c 1-1912
+xhm-service/Cargo.toml
+  h_cb0e2129f6578c 1-36
+xhm-service/src/lib.rs
+  h_cb0e2129f6578c 1-69
+xhm-service/appsettings.json
+  h_cb0e2129f6578c 1-77,79-232
+  h_cb0e2129f6578c 78
+Cargo.toml
+  h_cb0e2129f6578c 1-50
+xhm-service/src/db/mod.rs
+  h_cb0e2129f6578c 1-2773
+xhm-service/src/web.rs
+  h_cb0e2129f6578c 1-457
+xhm-service/src/api/power.rs
+  h_cb0e2129f6578c 1-495
+xhm-service/src/api/metrics.rs
+  h_cb0e2129f6578c 1-758
+xhm-service/src/api/mod.rs
+  h_cb0e2129f6578c 1-4
+xhm-core/src/models.rs
+  h_cb0e2129f6578c 1-937
+lhm-bridge/lhm-bridge.csproj
+  h_cb0e2129f6578c 1-22
+lhm-bridge/Program.cs
+  h_cb0e2129f6578c 1-1295
+xhm-service/src/realtime/mod.rs
+  h_cb0e2129f6578c 1-1520
+lhm-bridge/.gitignore
+  h_cb0e2129f6578c 1
+xhm-service/src/api/config.rs
+  h_cb0e2129f6578c 1-698
+xhm-core/Cargo.toml
+  h_cb0e2129f6578c 1-13
+xhm-core/src/error.rs
+  h_cb0e2129f6578c 1-69
+xhm-service/src/lhm/mod.rs
+  h_cb0e2129f6578c 1-1122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "c9dc00b11800f5d5ad6e565059f1f3d5b5cbc09d",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
