@@ -1,0 +1,14 @@
+.gitignore
+  h_cb0e2129f6578c 113-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "3edf6324752367a90f76833c4dfe02089ea45e7d",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
