@@ -95,3 +95,9 @@ xhmonitor.db
 !tools/PawnIO/
 !tools/PawnIO/PawnIO_setup.exe
 !tools/PawnIO/VERSION.txt
+
+## Rust and local workflow artifacts
+/target/
+target/
+/.workflow/
+/check012*.json
