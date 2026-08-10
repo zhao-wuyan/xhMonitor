@@ -106,9 +106,10 @@
                         <TextBlock Text="技术栈" FontSize="14" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,10"/>
                         <TextBlock Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap">
                             • 桌面端：WPF + MVVM（.NET 8）<LineBreak/>
-                            • 后端：.NET 8 + ASP.NET Core + SignalR<LineBreak/>
-                            • 数据：SQLite + EF Core 8<LineBreak/>
-                            • Web：React 19 + TypeScript + Vite 7（非 Vue）<LineBreak/>
+                            • 后端：Rust 1.82 + Tokio + Axum<LineBreak/>
+                            • 数据：SQLite + rusqlite（WAL）<LineBreak/>
+                            • 采集：sysinfo + LibreHardwareMonitor Bridge + RyzenAdj<LineBreak/>
+                            • Web：React 19 + TypeScript + Vite 7<LineBreak/>
                             • 可视化：ECharts 6
                         </TextBlock>
                     </StackPanel>
