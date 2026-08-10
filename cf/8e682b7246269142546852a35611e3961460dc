@@ -1,0 +1,16 @@
+README.md
+  h_cb0e2129f6578c 86-93,103-107
+docs/appsettings-reference.md
+  h_cb0e2129f6578c 7,9,11-14,16-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "cf8e682b7246269142546852a35611e3961460dc",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
