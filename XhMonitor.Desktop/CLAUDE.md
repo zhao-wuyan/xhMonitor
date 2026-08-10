@@ -3,7 +3,7 @@
 ## 模块职责
 
 WPF 桌面前端应用，负责：
-- 启动并管理后端服务进程（XhMonitor.Service）
+- 启动并管理 Rust `xhm-service` 后端进程
 - 托管嵌入式 Web 前端服务器（Kestrel + YARP 反向代理）
 - 渲染系统监控悬浮窗和任务栏贴边迷你窗口
 - 系统托盘图标与交互入口
@@ -122,7 +122,7 @@ OnExit()
 | 接口 | 实现类 | 职责 |
 |------|--------|------|
 | `IServiceDiscovery` | `ServiceDiscovery` | 从 service-endpoints.json 解析端口，探测后端健康状态确定实际端口 |
-| `IBackendServerService` | `BackendServerService` | 启动/停止 XhMonitor.Service 进程，支持开发模式（dotnet run）和发布模式（exe） |
+| `IBackendServerService` | `BackendServerService` | 启动/停止 Rust `xhm-service` 进程，支持开发模式（cargo run）和发布模式（exe） |
 | `IWebServerService` | `WebServerService` | 内嵌 Kestrel + YARP 反代，托管 wwwroot 静态文件，支持局域网访问和访问密钥 |
 | `ITrayIconService` | `TrayIconService` | 系统托盘图标，NotifyIcon 封装，提供菜单项回调 |
 | `IWindowManagementService` | `WindowManagementService` | 管理 FloatingWindow 与 TaskbarMetricsWindow 的显示模式切换与协调 |
@@ -148,8 +148,8 @@ OnExit()
 
 | 场景 | 判断条件 | 行为 |
 |------|----------|------|
-| 发布模式 | `../Service/XhMonitor.Service.exe` 存在 | 直接启动 exe，支持管理员 UAC（Verb="runas"） |
-| 开发模式 | exe 不存在 | `dotnet run --project <XhMonitor.Service 路径>` |
+| 发布模式 | `../Service/xhm-service.exe` 存在 | 直接启动 exe，支持管理员 UAC（Verb="runas"） |
+| 开发模式 | exe 不存在 | `cargo run -p xhm-service` |
 | 已运行 | 目标端口已占用 | 直接返回，跳过启动 |
 
 启动后轮询端口占用（最多 30s / 15s）确认服务就绪，端口就绪后再等 1s 确保 SignalR Hub 初始化完成。
@@ -265,7 +265,7 @@ http://localhost:WebPort
 - `IsAdminModeEnabled()`：检测标志文件是否存在
 - `SetAdminModeEnabled(true)`：写入标志文件
 - `RestartAsAdministrator()`：使用 `Verb = "runas"` 触发 UAC 重启应用
-- `BackendServerService` 在管理员模式下以 `runas` 启动 `XhMonitor.Service.exe`（用于需要高权限的硬件监控）
+- `BackendServerService` 在管理员模式下以 `runas` 启动 `xhm-service.exe`（用于需要高权限的硬件监控）
 
 ## 配置文件
 

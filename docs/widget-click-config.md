@@ -4,7 +4,7 @@
 
 配置文件会自动生成在：
 ```
-XhMonitor.Service/data/widget-settings.json
+Service/data/widget-settings.json
 ```
 
 ## 🎯 配置结构

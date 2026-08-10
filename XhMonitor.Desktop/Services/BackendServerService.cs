@@ -43,7 +43,7 @@ public sealed class BackendServerService : IBackendServerService
             }
 
             // 检查是否为发布版本（Service 应该单独启动）
-            var defaultPublishedPath = Path.GetFullPath(Path.Combine(baseDirectory, "..", "Service", "XhMonitor.Service.exe"));
+            var defaultPublishedPath = Path.GetFullPath(Path.Combine(baseDirectory, "..", "Service", "xhm-service.exe"));
             var publishedPath = configuredFullPath ?? defaultPublishedPath;
 
             if (File.Exists(publishedPath))
@@ -59,13 +59,13 @@ public sealed class BackendServerService : IBackendServerService
                 return;
             }
 
-            var projectPath = ResolveProjectPath(configuredFullPath, baseDirectory);
-            var fullPath = Path.GetFullPath(projectPath);
+            var workspaceRoot = ResolveWorkspaceRoot(baseDirectory);
+            var fullPath = Path.GetFullPath(workspaceRoot);
 
             if (!Directory.Exists(fullPath))
             {
                 await ShowMessageAsync(
-                    $"找不到 Server 项目路径：{fullPath}\n请确保项目结构完整。",
+                    $"找不到 Rust workspace 路径：{fullPath}\n请确保源码结构完整（需能执行 cargo run -p xhm-service）。",
                     "启动失败",
                     MessageBoxImage.Warning).ConfigureAwait(false);
                 return;
@@ -76,8 +76,8 @@ public sealed class BackendServerService : IBackendServerService
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "dotnet",
-                    Arguments = $"run --project \"{fullPath}\"",
+                    FileName = "cargo",
+                    Arguments = "run -p xhm-service",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -129,7 +129,7 @@ public sealed class BackendServerService : IBackendServerService
         catch (Exception ex)
         {
             await ShowMessageAsync(
-                $"启动后端服务失败：{ex.Message}\n\n您可以手动启动 XhMonitor.Service 项目。",
+                $"启动后端服务失败：{ex.Message}\n\n您可以手动启动 Rust xhm-service（cargo run -p xhm-service）。",
                 "启动失败",
                 MessageBoxImage.Error).ConfigureAwait(false);
         }
@@ -318,7 +318,7 @@ public sealed class BackendServerService : IBackendServerService
 
         try
         {
-            var processes = Process.GetProcessesByName("XhMonitor.Service");
+            var processes = Process.GetProcessesByName("xhm-service");
             foreach (var process in processes)
             {
                 try
@@ -365,22 +365,8 @@ public sealed class BackendServerService : IBackendServerService
         }).Task;
     }
 
-    private static string ResolveProjectPath(string? configuredFullPath, string baseDirectory)
+    private static string ResolveWorkspaceRoot(string baseDirectory)
     {
-        if (!string.IsNullOrWhiteSpace(configuredFullPath))
-        {
-            if (Directory.Exists(configuredFullPath))
-            {
-                return configuredFullPath;
-            }
-
-            if (File.Exists(configuredFullPath) &&
-                string.Equals(Path.GetExtension(configuredFullPath), ".csproj", StringComparison.OrdinalIgnoreCase))
-            {
-                return configuredFullPath;
-            }
-        }
-
-        return Path.Combine(baseDirectory, "..", "..", "..", "..", "XhMonitor.Service");
+        return Path.Combine(baseDirectory, "..", "..", "..", "..");
     }
 }

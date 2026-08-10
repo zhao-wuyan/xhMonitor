@@ -91,6 +91,13 @@ public class ApplicationHostedServiceTests
             return Task.CompletedTask;
         }
 
+        public Task RestartAsync(CancellationToken cancellationToken = default)
+        {
+            IsRunning = true;
+            _onStart();
+            return Task.CompletedTask;
+        }
+
         public Task StopAsync(CancellationToken cancellationToken = default)
         {
             IsRunning = false;

@@ -314,7 +314,7 @@ export const METRICS_HUB_URL = 'http://localhost:35179/hubs/metrics';
 
 ### 无法连接到后端服务
 
-1. 确认后端服务已启动（`XhMonitor.Service.exe`）
+1. 确认后端服务已启动（`xhm-service.exe`）
 2. 检查端口配置（默认 35179）
 3. 检查防火墙设置
 
@@ -363,7 +363,7 @@ MIT License
 
 - [主项目 README](../README.md)
 - [CHANGELOG](../CHANGELOG.md)
-- [后端服务文档](../XhMonitor.Service/README.md)
+- [后端服务文档](../xhm-service/appsettings.json)
 - [桌面应用文档](../XhMonitor.Desktop/README.md)
 
 ---

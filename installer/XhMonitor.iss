@@ -2,10 +2,9 @@
 ; 星核监视器安装程序
 ; 使用 Inno Setup 6.x 编译
 ;
-; 构建类型（通过命令行参数 /DBuildType=xxx 传递）：
-;   - BuildType=Lite           : Lite 不带 .NET（最精简，不显示运行时安装选项）
-;   - BuildType=LiteNet8       : Lite 带 .NET 安装包（中等，显示运行时安装选项并安装 3 个运行时）
-;   - BuildType=Full           : 全量 self-contained（最大，无需运行时）
+;   - BuildType=Lite           : Desktop/bridge 依赖系统 .NET 8（最精简，不内置运行时）
+;   - BuildType=LiteNet8       : 同 Lite，并内置 .NET Desktop + ASP.NET Core Runtime 8 安装包
+;   - BuildType=Full           : Desktop/bridge self-contained（最大，无需系统 .NET 运行时）
 ;
 ; 使用示例：
 ;   ISCC.exe /DMyAppVersion=1.0.0 /DBuildType=Lite XhMonitor.iss
@@ -25,10 +24,9 @@
 #define MyAppPublisher "Xinghe"
 #define MyAppURL "https://github.com/zhao-wuyan/xhMonitor"
 #define MyAppExeName "XhMonitor.Desktop.exe"
-#define MyAppServiceName "XhMonitor.Service.exe"
-#ifndef DotNetRuntimeInstallerFileName
-  #define DotNetRuntimeInstallerFileName "dotnet-runtime-8.0.27-win-x64.exe"
-#endif
+#define MyAppServiceName "xhm-service.exe"
+; C# WPF Desktop 需要 .NET Desktop Runtime（WPF/WinForms）与 ASP.NET Core Runtime（内嵌 Kestrel/YARP）。
+; 两者的运行时安装包均自带 Microsoft.NETCore.App 基础运行时，可覆盖 lhm-bridge 的需求，无需单独打包 dotnet-runtime。
 #ifndef AspNetCoreRuntimeInstallerFileName
   #define AspNetCoreRuntimeInstallerFileName "aspnetcore-runtime-8.0.27-win-x64.exe"
 #endif
@@ -80,7 +78,7 @@ LZMAUseSeparateProcess=yes
 
 ; 权限设置
 PrivilegesRequired=admin
-; XhMonitor installs and manages a Windows service, so the setup must stay elevated.
+; XhMonitor installs under Program Files and can manage hardware-access drivers, so setup stays elevated.
 
 ; 界面设置
 WizardStyle=modern
@@ -109,8 +107,8 @@ english.LaunchProgram=Launch %1
 english.AssocFileExtension=&Associate %1 with the %2 file extension
 english.StartupTask=Start automatically with Windows
 english.SystemSettings=System Settings:
-english.AutoInstallDotNetRuntime=Auto install required .NET runtimes
-english.AutoInstallDotNetRuntimeHint=Silently install the .NET 8 runtimes required by XhMonitor if missing
+english.AutoInstallDotNetRuntime=Auto install .NET 8 runtimes required by XhMonitor
+english.AutoInstallDotNetRuntimeHint=Silently install .NET Desktop + ASP.NET Core Runtime 8 when missing
 english.AutoInstallPawnIO=Auto install PawnIO hardware driver
 english.AutoInstallPawnIOHint=Install PawnIO for LibreHardwareMonitor builds that support safer CPU sensor access
 ; 中文消息（启用中文语言后生效）
@@ -118,11 +116,11 @@ english.AutoInstallPawnIOHint=Install PawnIO for LibreHardwareMonitor builds tha
 ; chinesesimplified.CreateQuickLaunchIcon=创建快速启动栏快捷方式(&Q)
 ; chinesesimplified.LaunchProgram=运行 %1
 ; chinesesimplified.AssocFileExtension=将 %1 与 %2 文件扩展名关联
-; chinesesimplified.StartupTask=开机自动启动
+chinesesimplified.StartupTask=开机自动启动
 ; chinesesimplified.SystemSettings=系统设置:
 chinesesimplified.SystemSettings=系统设置：
-chinesesimplified.AutoInstallDotNetRuntime=自动安装所需的 .NET 运行环境
-chinesesimplified.AutoInstallDotNetRuntimeHint=若缺少 XhMonitor 所需的 .NET 8 运行环境，则静默安装后继续
+chinesesimplified.AutoInstallDotNetRuntime=自动安装 XhMonitor 所需的 .NET 8 运行环境
+chinesesimplified.AutoInstallDotNetRuntimeHint=缺少运行环境时，静默安装 .NET Desktop + ASP.NET Core Runtime 8
 chinesesimplified.AutoInstallPawnIO=自动安装 PawnIO 硬件驱动
 chinesesimplified.AutoInstallPawnIOHint=为支持 PawnIO 的 LibreHardwareMonitor 版本安装更安全的 CPU 传感器访问驱动
 
@@ -132,7 +130,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 #if BuildType != "Lite"
 Name: "autoinstallpawnio"; Description: "{cm:AutoInstallPawnIO}"; GroupDescription: "{cm:SystemSettings}"
 #endif
-; 仅 LiteNet8 版本显示自动安装运行时的勾选框
+; 仅 LiteNet8 版本显示自动安装 .NET Runtime 8 的勾选框
 #if BuildType == "LiteNet8"
 Name: "autoinstalldotnetruntime"; Description: "{cm:AutoInstallDotNetRuntime}"; GroupDescription: "{cm:SystemSettings}"
 #endif
@@ -155,8 +153,8 @@ Source: "..\tools\PawnIO\{#PawnIOInstallerFileName}"; DestDir: "{tmp}"; Flags: d
 #endif
 
 #if BuildType == "LiteNet8"
-; LiteNet8 版本：将 .NET 运行时安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
-Source: "..\tools\RuntimePkg\{#DotNetRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy
+; LiteNet8 版本：将 .NET 8 运行时安装包打入安装器（不落盘到应用目录，仅用于安装阶段自动静默安装）
+; ASP.NET Core Runtime + .NET Desktop Runtime 均自带 Microsoft.NETCore.App 基础运行时。
 Source: "..\tools\RuntimePkg\{#AspNetCoreRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "..\tools\RuntimePkg\{#DotNetDesktopRuntimeInstallerFileName}"; DestDir: "{tmp}"; Flags: dontcopy
 #endif
@@ -259,7 +257,7 @@ begin
 
   SearchPattern := AddBackslash(SharedFrameworkBase) + '8.*';
 
-  // 通过共享框架目录判断是否已安装 Desktop Runtime 8.x
+  // 通过共享框架目录判断是否已安装 .NET Runtime 8.x
   if FindFirst(SearchPattern, FindRec) then
   begin
     Result := True;
@@ -321,19 +319,38 @@ end;
 
 function AreRequiredDotNetRuntimesInstalled(): Boolean;
 begin
+  // C# WPF Desktop 需要 Desktop + ASP.NET Core 共享框架；两者均自带 NETCore.App 基础运行时。
   Result :=
-    IsSharedFramework8Installed(DotNetCoreSharedFrameworkName) and
-    IsSharedFramework8Installed(AspNetCoreSharedFrameworkName) and
-    IsSharedFramework8Installed(WindowsDesktopSharedFrameworkName);
+    IsSharedFramework8Installed(WindowsDesktopSharedFrameworkName) and
+    IsSharedFramework8Installed(AspNetCoreSharedFrameworkName);
 end;
 
 function IsSelfContainedPackageInstalled(): Boolean;
 begin
-  // Self-Contained 版本会包含 hostfxr.dll（不依赖系统安装的 .NET Desktop Runtime）
+  // Full（self-contained）发布会随 Desktop 一起落地 hostfxr.dll，无需系统安装的 .NET 运行时。
   Result := FileExists(ExpandConstant('{app}\Desktop\hostfxr.dll'));
 end;
 
 procedure ShowRuntimeMissingPrompt(); forward;
+
+function CanLaunchDesktopApp(): Boolean;
+begin
+  if IsSelfContainedPackageInstalled() then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  if AreRequiredDotNetRuntimesInstalled() then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  // 运行时缺失时不自动拉起 Desktop，改为提示，避免弹出 .NET host 默认错误框。
+  ShowRuntimeMissingPrompt();
+  Result := False;
+end;
 
 function ShouldAutoInstallDotNetRuntime(): Boolean;
 begin
@@ -512,7 +529,7 @@ begin
   Result := True;
 end;
 
-function InstallRequiredDotNetRuntimesIfNeeded(var NeedsRestart: Boolean): String;
+function InstallRequiredDotNetRuntimeIfNeeded(var NeedsRestart: Boolean): String;
 begin
   Result := '';
 
@@ -523,17 +540,7 @@ begin
   if AreRequiredDotNetRuntimesInstalled() then
     exit;
 
-  Log('Auto-install required .NET 8 runtimes requested and at least one required runtime is missing.');
-
-  if not IsSharedFramework8Installed(DotNetCoreSharedFrameworkName) then
-  begin
-    Log('Microsoft.NETCore.App 8.x is missing, start silent install.');
-    if not InstallBundledRuntime('{#DotNetRuntimeInstallerFileName}', '.NET Runtime 8', NeedsRestart) then
-    begin
-      ShowRuntimeMissingPrompt();
-      exit;
-    end;
-  end;
+  Log('Auto-install .NET 8 runtimes requested because a required shared framework is missing.');
 
   if not IsSharedFramework8Installed(AspNetCoreSharedFrameworkName) then
   begin
@@ -557,18 +564,18 @@ begin
 
   if not AreRequiredDotNetRuntimesInstalled() then
   begin
-    Log('At least one required .NET 8 runtime is still missing after silent install, fallback to download prompt.');
+    Log('A required .NET 8 runtime is still missing after silent install, fallback to download prompt.');
     ShowRuntimeMissingPrompt();
     exit;
   end;
 
-  Log('Required .NET 8 runtimes silent installation completed.');
+  Log('.NET 8 runtimes silent installation completed.');
 #endif
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  Result := InstallRequiredDotNetRuntimesIfNeeded(NeedsRestart);
+  Result := InstallRequiredDotNetRuntimeIfNeeded(NeedsRestart);
   if Result <> '' then
     exit;
 
@@ -587,7 +594,6 @@ var
   TitleText: String;
   MessageText: String;
   DotNetUrl: String;
-  FullInstallerUrl: String;
   ResultId: Integer;
 begin
   if RuntimePromptShown then
@@ -595,38 +601,31 @@ begin
 
   RuntimePromptShown := True;
   DotNetUrl := '{#DotNetRuntimeDownloadUrl}';
-  FullInstallerUrl := '{#MyAppURL}/releases';
 
   if IsChineseSystemLanguage() then
   begin
-    TitleText := '缺少运行环境';
+    TitleText := '缺少 .NET 8 运行环境';
     MessageText :=
-      '要运行此应用程序，你必须安装或更新 .NET。' + #13#10 + #13#10 +
-      '当前安装包缺少或未能成功安装 XhMonitor 所需的 .NET 8 运行环境。' + #13#10 +
-      '检测到你的系统缺少相关运行环境，无法运行 XhMonitor。' + #13#10 + #13#10 +
-      '至少需要以下运行环境：' + #13#10 +
-      '- Microsoft.NETCore.App 8.x' + #13#10 +
-      '- Microsoft.AspNetCore.App 8.x' + #13#10 +
-      '- Microsoft.WindowsDesktop.App 8.x' + #13#10 + #13#10 +
-      '你可以安装这些运行环境，或者下载包含运行环境的完整安装包。' + #13#10 + #13#10 +
+      'XhMonitor 桌面应用需要 .NET 8 运行环境才能启动。' + #13#10 + #13#10 +
+      '当前系统缺少以下共享框架中的至少一个：' + #13#10 +
+      '- Microsoft.WindowsDesktop.App 8.x（WPF 桌面界面）' + #13#10 +
+      '- Microsoft.AspNetCore.App 8.x（内嵌 Web 服务 / lhm-bridge）' + #13#10 + #13#10 +
+      '请安装 ".NET Desktop Runtime 8" 与 "ASP.NET Core Runtime 8"（均含基础运行时），' + #13#10 +
+      '或改用包含 self-contained 组件的 Full 安装包。' + #13#10 + #13#10 +
       '运行环境下载：' + #13#10 + DotNetUrl + #13#10 + #13#10 +
-      '完整安装包下载：' + #13#10 + FullInstallerUrl + #13#10 + #13#10 +
       '是否立即打开运行环境下载页面？';
   end
   else
   begin
-    TitleText := 'Missing runtime';
+    TitleText := 'Missing .NET 8 runtime';
     MessageText :=
-      'You must install or update .NET to run this application.' + #13#10 + #13#10 +
-      'This installer is missing, or failed to install, the .NET 8 runtimes required by XhMonitor.' + #13#10 +
-      'Your system is missing at least one required runtime, so XhMonitor cannot run.' + #13#10 + #13#10 +
-      'Required runtimes:' + #13#10 +
-      '- Microsoft.NETCore.App 8.x' + #13#10 +
-      '- Microsoft.AspNetCore.App 8.x' + #13#10 +
-      '- Microsoft.WindowsDesktop.App 8.x' + #13#10 + #13#10 +
-      'Install the required runtimes, or download the full installer that includes the runtime (self-contained).' + #13#10 + #13#10 +
+      'The XhMonitor desktop application requires the .NET 8 runtime to start.' + #13#10 + #13#10 +
+      'Your system is missing at least one of these shared frameworks:' + #13#10 +
+      '- Microsoft.WindowsDesktop.App 8.x (WPF desktop UI)' + #13#10 +
+      '- Microsoft.AspNetCore.App 8.x (embedded web server / lhm-bridge)' + #13#10 + #13#10 +
+      'Install ".NET Desktop Runtime 8" and "ASP.NET Core Runtime 8" (both include the base runtime),' + #13#10 +
+      'or use the Full installer with self-contained components.' + #13#10 + #13#10 +
       'Runtime download:' + #13#10 + DotNetUrl + #13#10 + #13#10 +
-      'Full installer download:' + #13#10 + FullInstallerUrl + #13#10 + #13#10 +
       'Open the runtime download page now?';
   end;
 
@@ -637,25 +636,8 @@ begin
   end;
 end;
 
-function CanLaunchDesktopApp(): Boolean;
-begin
-  if IsSelfContainedPackageInstalled() then
-  begin
-    Result := True;
-    exit;
-  end;
 
-  if AreRequiredDotNetRuntimesInstalled() then
-  begin
-    Result := True;
-    exit;
-  end;
-
-  ShowRuntimeMissingPrompt();
-  Result := False;
-end;
-
-// 安装前停止旧服务（在安装目录确定后）
+// 安装升级前停止新旧组件（在安装目录确定后）
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
@@ -670,24 +652,27 @@ begin
       Exec(StopBat, '', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
       Sleep(2000);
     end;
-    // 强制终止可能残留的进程
+    // 强制终止可能残留的新旧进程（{#MyAppExeName}=XhMonitor.Desktop.exe，另补旧 Rust 进程名）
+    KillProcess('{#MyAppServiceName}');
+    KillProcess('{#MyAppExeName}');
+    KillProcess('lhm-bridge.exe');
+    KillProcess('xhm-desktop.exe');
     KillProcess('XhMonitor.Service.exe');
-    KillProcess('XhMonitor.Desktop.exe');
     StopWinRingDriver();
     Sleep(1000);
   end;
 
-  // 精简版（不带运行环境）在运行前给出明确提示，避免弹出 .NET host 默认错误提示
+#if BuildType != "Full"
+  // framework-dependent 版本：缺少运行时会导致 C# Desktop 无法启动，安装后立即提示。
   if CurStep = ssPostInstall then
   begin
-    if (not IsSelfContainedPackageInstalled()) and (not AreRequiredDotNetRuntimesInstalled()) then
-    begin
+    if not IsSelfContainedPackageInstalled() and not AreRequiredDotNetRuntimesInstalled() then
       ShowRuntimeMissingPrompt();
-    end;
   end;
+#endif
 end;
 
-// 卸载前停止服务
+// 卸载前停止新旧组件
 function InitializeUninstall(): Boolean;
 var
   ResultCode: Integer;
@@ -700,9 +685,12 @@ begin
     Exec(StopBat, '', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Sleep(2000);
   end;
-  // 强制终止进程
+  // 强制终止新旧进程（{#MyAppExeName}=XhMonitor.Desktop.exe，另补旧 Rust 进程名）
+  KillProcess('{#MyAppServiceName}');
+  KillProcess('{#MyAppExeName}');
+  KillProcess('lhm-bridge.exe');
+  KillProcess('xhm-desktop.exe');
   KillProcess('XhMonitor.Service.exe');
-  KillProcess('XhMonitor.Desktop.exe');
   StopWinRingDriver();
   Sleep(1000);
 end;

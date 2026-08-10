@@ -1,562 +1,172 @@
 # XhMonitor - Windows 资源监视器
 
-> 高性能的 Windows 进程资源监控系统，支持 CPU、内存、GPU、显存、功耗、网络等指标的实时采集、聚合分析和可视化展示
+XhMonitor 是一套 Windows 进程资源监控工具，支持 CPU、内存、GPU、显存、功耗、网络指标的实时采集、分层聚合和可视化展示。
 
+[![Rust](https://img.shields.io/badge/Rust-1.82-000000)](https://www.rust-lang.org/)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-## Features
+## 当前架构
 
-- ✅ **多维度监控** - CPU、内存、GPU、显存、硬盘、功耗、网络速度实时监控
-- ✅ **智能过滤** - 基于关键词过滤，精准监控目标进程
-- ✅ **分层聚合** - 自动生成分钟/小时/天级别统计数据
-- ✅ **实时推送** - SignalR 实时推送最新指标，延迟 < 100ms
-- ✅ **Web 可视化** - React + TailwindCSS 现代化界面，ECharts 动态图表
-- ✅ **桌面悬浮窗** - WPF 桌面应用，支持进程固定、拖拽、置顶
-- ✅ **插件化架构** - IMetricProvider 接口支持自定义指标扩展
-- ✅ **配置驱动** - 零前端代码修改，动态扩展指标
-- ✅ **国际化支持** - 中英文切换，易于扩展多语言
-- ✅ **功耗管理** - RyzenAdj 集成，支持 AMD 平台功耗监控与调节
-- ✅ **设备验证** - 设备白名单机制，保护功耗调节功能
-- ✅ **安全认证** - 访问密钥认证、IP 白名单、局域网访问控制
+当前过渡版本使用 Rust backend 和 C# WPF Desktop：
 
-## Installation
+| 模块 | 技术 | 职责 |
+|------|------|------|
+| `xhm-core` | Rust | 共享模型、trait、错误和 wire contract |
+| `xhm-service` | Rust、Tokio、Axum、SQLite | 指标采集、REST API、SignalR 兼容端点、分层聚合与数据保留 |
+| `lhm-bridge` | .NET 8、LibreHardwareMonitor | 向 Rust Service 提供硬件传感器快照 |
+| `XhMonitor.Desktop` | .NET 8 WPF | 桌面悬浮窗、任务栏窗口、托盘和内嵌 Web 界面 |
+| `XhMonitor.Core` | .NET 8 | C# Desktop 仍使用的共享配置和模型 |
+| `xhmonitor-web` | React、TypeScript、Vite | 实时 Web 可视化 |
 
-### Prerequisites
+旧 `XhMonitor.Service` 已由 `xhm-service` 替代。Rust Desktop 仍在独立迁移分支开发，不属于当前生产 workspace。
 
-**后端**：
-- Windows 10/11 (1709+)
-- .NET 8 SDK
-- Visual Studio 2022 或 VS Code
+## 目录结构
 
-**前端**：
-- Node.js 18+
-- npm 或 pnpm
-
-**权限要求**：
-- **推荐**：管理员权限（可监控功耗模式和切换功耗，AI MAX 395适配）
-- **最低**：普通用户权限（无法进行功耗监控和切换）
-
-### Install
-
-**1. 克隆仓库**
-
-```bash
-git clone <repository-url>
-cd xhMonitor
-```
-
-**2. 后端服务**
-
-```bash
-# 还原依赖
-dotnet restore
-
-# 应用数据库迁移
-cd XhMonitor.Service
-dotnet ef database update
-
-# 启动后端服务
-dotnet run --project XhMonitor.Service
-```
-
-服务将在 `http://localhost:35179` 启动。
-
-**3. 前端界面**
-
-```bash
-# 进入前端目录
-cd xhmonitor-web
-
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
-```
-
-前端将在 `http://localhost:35180` 启动。
-
-**4. 桌面应用**
-
-```bash
-# 启动桌面应用
-dotnet run --project XhMonitor.Desktop
-```
-
-或使用启动脚本：
-
-```bash
-# Windows
-.\start.bat
-```
-
-## Usage
-
-### Quick Start
-
-**1. 配置监控关键词**
-
-编辑 `XhMonitor.Service/appsettings.json`：
-
-```json
-{
-  "Monitor": {
-    "IntervalSeconds": 3,
-    "Keywords": ["python", "node", "docker", "chrome"]
-  }
-}
-```
-
-**2. 启动服务**
-
-```bash
-dotnet run --project XhMonitor.Service
-```
-
-**3. 访问 Web 界面**
-
-打开浏览器访问 `http://localhost:35180`，即可查看实时监控数据。
-
-**4. 使用桌面悬浮窗**
-
-运行 `XhMonitor.Desktop` 或执行 `start.bat`，桌面将显示悬浮窗，支持：
-- 进程固定（Pin）
-- 拖拽移动
-- 窗口置顶
-- 功耗调节（需管理员权限 + AMD 平台）
-
-### Examples
-
-**REST API 查询**
-
-```bash
-# 获取最新指标
-curl http://localhost:35179/api/v1/metrics/latest
-
-# 获取历史数据（分钟聚合）
-curl "http://localhost:35179/api/v1/metrics/history?processId=1234&aggregation=minute"
-
-# 获取进程列表
-curl http://localhost:35179/api/v1/metrics/processes
-```
-
-**SignalR 实时订阅**
-
-```typescript
-import * as signalR from "@microsoft/signalr";
-
-const connection = new signalR.HubConnectionBuilder()
-  .withUrl("http://localhost:35179/hubs/metrics")
-  .withAutomaticReconnect()
-  .build();
-
-connection.on("ReceiveSystemUsage", (data) => console.log("ReceiveSystemUsage", data));
-connection.on("ReceiveHardwareLimits", (data) => console.log("ReceiveHardwareLimits", data));
-connection.on("ReceiveProcessMetrics", (data) => console.log("ReceiveProcessMetrics", data));
-connection.on("ReceiveProcessMetadata", (data) => console.log("ReceiveProcessMetadata", data));
-
-await connection.start();
-```
-
-## Configuration
-
-### 关键配置（建议优先关注）
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `Monitor:IntervalSeconds` | `3` | Service 进程采集间隔（秒） |
-| `Monitor:LlamaMetricsIntervalSeconds` | `1` | llama-server（`/metrics`） 采样间隔（秒），`0` 表示禁用 |
-| `Monitor:Keywords` | 示例见 `appsettings.json` | 目标进程过滤关键词 |
-| `Server:Port` | `35179` | Service HTTP/SignalR 服务端口 |
-| `SignalR:*BufferSize` | `1048576` | SignalR 缓冲上限，影响峰值内存 |
-| `Aggregation:BatchSize` | `2000` | 聚合任务分批读取大小，影响聚合阶段峰值内存 |
-| `UiOptimization:ProcessRefreshIntervalMs` | `Development=100` `Staging=150` `Production=200` | Desktop 刷新节流间隔 |
-
-完整配置说明（含全部字段）请看：`docs/appsettings-reference.md`  
-配置边界说明请看：[Configuration Boundaries](XhMonitor.Service/docs/configuration-boundaries.md)
-
-### 手动采集功耗设备识别信息
-
-功耗方案会从 SMBIOS/WMI 读取硬件平台信息。需要排查设备识别时，优先复制下面“一行版”到 PowerShell 直接执行；不需要保存 `.ps1` 文件，也不需要管理员权限。PowerShell 的续行符是反引号 `` ` ``，不是 Linux shell 的 `\`，而且行尾不能有空格，所以这里用分号拼成单条命令更稳。
-
-```powershell
-& { $ErrorActionPreference = 'Stop'; function n($v) { if ([string]::IsNullOrWhiteSpace([string]$v)) { $null } else { ([string]$v).Trim() } }; $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem; $systemProduct = Get-CimInstance -ClassName Win32_ComputerSystemProduct; $baseBoard = Get-CimInstance -ClassName Win32_BaseBoard; $bios = Get-CimInstance -ClassName Win32_BIOS; $processor = Get-CimInstance -ClassName Win32_Processor | Select-Object -First 1; $hardware = [ordered]@{ system_manufacturer = n $computerSystem.Manufacturer; system_model = n $computerSystem.Model; product_vendor = n $systemProduct.Vendor; product_name = n $systemProduct.Name; baseboard_manufacturer = n $baseBoard.Manufacturer; baseboard_product = n $baseBoard.Product; bios_manufacturer = n $bios.Manufacturer; bios_version = n $bios.SMBIOSBIOSVersion; processor_name = n $processor.Name }; $matchesSixUnited = @($hardware.system_manufacturer, $hardware.product_vendor, $hardware.baseboard_manufacturer) -match '(?i)Six United|Sixunited'; $matchesAxb3502 = @($hardware.system_model, $hardware.product_name, $hardware.baseboard_product) -match '(?i)AXB35-02'; $matchesAmd395 = $hardware.processor_name -match '(?i)AMD Ryzen AI Max.*395'; $isSupported = [bool]$matchesSixUnited -and [bool]$matchesAxb3502; Write-Host ("XhMonitor amd_395 power monitoring verification: " + $(if ($matchesAmd395) { "PASS" } else { "FAIL" })); Write-Host ("XhMonitor AXB35-02 power switching verification: " + $(if ($isSupported) { "PASS" } else { "FAIL" })); [pscustomobject]@{ matches_amd395_monitoring = [bool]$matchesAmd395; matches_six_united_axb3502 = $isSupported; manufacturer_match = [bool]$matchesSixUnited; model_match = [bool]$matchesAxb3502 } | Format-List; [pscustomobject]$hardware | Format-List }
-```
-
-下面是同一逻辑的展开版，便于阅读和调整字段：
-
-```powershell
-$ErrorActionPreference = 'Stop'
-function n($v) { if ([string]::IsNullOrWhiteSpace([string]$v)) { $null } else { ([string]$v).Trim() } }
-$computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem
-$systemProduct = Get-CimInstance -ClassName Win32_ComputerSystemProduct
-$baseBoard = Get-CimInstance -ClassName Win32_BaseBoard
-$bios = Get-CimInstance -ClassName Win32_BIOS
-$processor = Get-CimInstance -ClassName Win32_Processor | Select-Object -First 1
-
-$hardware = [ordered]@{
-    system_manufacturer    = n $computerSystem.Manufacturer
-    system_model           = n $computerSystem.Model
-    product_vendor         = n $systemProduct.Vendor
-    product_name           = n $systemProduct.Name
-    baseboard_manufacturer = n $baseBoard.Manufacturer
-    baseboard_product      = n $baseBoard.Product
-    bios_manufacturer      = n $bios.Manufacturer
-    bios_version           = n $bios.SMBIOSBIOSVersion
-    processor_name         = n $processor.Name
-}
-
-$matchesSixUnited = @($hardware.system_manufacturer, $hardware.product_vendor, $hardware.baseboard_manufacturer) -match '(?i)Six United|Sixunited'
-$matchesAxb3502 = @($hardware.system_model, $hardware.product_name, $hardware.baseboard_product) -match '(?i)AXB35-02'
-$matchesAmd395 = $hardware.processor_name -match '(?i)AMD Ryzen AI Max.*395'
-$isSupported = [bool]$matchesSixUnited -and [bool]$matchesAxb3502
-
-Write-Host ("XhMonitor amd_395 power monitoring verification: " + $(if ($matchesAmd395) { "PASS" } else { "FAIL" }))
-Write-Host ("XhMonitor AXB35-02 power switching verification: " + $(if ($isSupported) { "PASS" } else { "FAIL" }))
-
-[pscustomobject]@{
-    matches_amd395_monitoring    = [bool]$matchesAmd395
-    matches_six_united_axb3502 = $isSupported
-    manufacturer_match         = [bool]$matchesSixUnited
-    model_match                = [bool]$matchesAxb3502
-} | Format-List
-
-[pscustomobject]$hardware | Format-List
-```
-
-当前功耗监控启用条件只看本机硬件：`processor_name` 同时包含 `AMD Ryzen AI Max` 和 `395`。默认功耗切换方案识别条件为：`system_manufacturer` / `product_vendor` / `baseboard_manufacturer` 任一字段包含 `Six United` 或 `Sixunited`，并且 `system_model` / `product_name` / `baseboard_product` 任一字段包含 `AXB35-02`。NovaStudio `/device_info` 不再用于开启功耗监控，只保留给没有 SMBIOS 硬件条件的旧设备验证规则。
-
-功耗切换档位通过 `Power:DeviceVerification:SchemeProfiles` 统一配置，设备识别项通过 `SchemeKey` 绑定对应方案。`SchemeKey` 缺失、没有匹配 profile 或未命中 AXB35-02 设备规则时，只禁用功耗切换并写日志，不影响 `amd_395` 平台的功耗监控和展示。
-
-### llama-server（llama.cpp） 指标说明
-
-启用条件：
-- 启动 `llama-server` 时带上 `--metrics`，并指定 `--port <PORT>`（或 `--port=<PORT>`）。
-- `Monitor:LlamaMetricsIntervalSeconds` > 0（默认 `1` 秒）。
-
-Desktop 的进程行会显示一行类似：
-
-`Port 1234   Gen 43.9 tok/s   Busy 87%   Req 1/0   Out 3071   Dec 3584`
-
-| 字段 | 指标键 | 说明 | 来源 |
-|------|--------|------|------|
-| `Port` | `llama_port` | metrics 端口（从进程命令行解析） | `--port` |
-| `Gen` | `llama_gen_tps_compute` | 生成吞吐（tok/s） | 计算得出 |
-| `Busy` | `llama_busy_percent` | 推理忙碌程度（%） | 计算得出 |
-| `Req` | `llama_req_processing` / `llama_req_deferred` | 正在处理 / 排队请求数 | `llamacpp:requests_processing` / `llamacpp:requests_deferred` |
-| `Out` | `llama_out_tokens_total` | 累计生成 token 数 | `llamacpp:tokens_predicted_total` |
-| `Dec` | `llama_decode_total` | 累计 `llama_decode()` 调用次数 | `llamacpp:n_decode_total` |
-
-实时显示说明（Desktop）：
-- 部分 `llama-server` 构建下，`llamacpp:tokens_predicted_total` / `llamacpp:tokens_predicted_seconds_total` 可能在推理过程中不连续更新，导致 `Gen` / `Busy` / `Out` 看起来“卡住”。
-- 为了让推理过程中也能看到变化，Desktop 会在数值后用 `~` 追加一组 **live 估算值**：
-  - `llama_out_tokens_live`：基于 `Δ(llamacpp:n_decode_total)` 的累计估算。
-  - `llama_gen_tps_live`：`Δ(llama_out_tokens_live) / Δ(wall_seconds)`。
-  - `llama_busy_percent_live`：当 `llama_gen_tps_live > 0` 时为 `100`，否则为 `0`。
-- 当原始指标恢复更新或推理进入空闲（两次采样无增量）时，live 估算会回落到原始值（避免长期保留上一次的估算导致误读）。
-
-计算方式（需要两次采样的增量）：
-- 相关原始指标含义：
-  - `llamacpp:tokens_predicted_total`：累计生成的 token 数（counter，单调递增，重启后从 0 开始）。
-  - `llamacpp:tokens_predicted_seconds_total`：llama-server 统计的“生成阶段”累计耗时（秒，counter，单调递增，重启后从 0 开始）。
-  - `wall_seconds`：两次采样间的真实经过时间（秒），不是 llama 的 Prometheus 指标；由 Service 侧用 `Stopwatch` 计算。
-- 记号说明：
-  - `ΔX`：两次采样的差值（`X(t1) - X(t0)`）。
-  - `clamp(x, 0, 100)`：将 `x` 限制在 `0` 到 `100` 之间，避免异常值导致显示越界。
-- 记第 1 次采样为 `t0`，第 2 次采样为 `t1`：
-  - `T0` = `llamacpp:tokens_predicted_total(t0)`，`T1` = `llamacpp:tokens_predicted_total(t1)`
-  - `S0` = `llamacpp:tokens_predicted_seconds_total(t0)`，`S1` = `llamacpp:tokens_predicted_seconds_total(t1)`
-  - `W` 为两次采样间的墙钟耗时（秒）：`W = wall_seconds(t1) - wall_seconds(t0)`
-- 增量：`ΔT = T1 - T0`，`ΔS = S1 - S0`
-- `Gen(tok/s)`：`ΔT / ΔS`
-- `Busy(%)`：`clamp(ΔS / W * 100, 0, 100)`
-
-注意：
-- 第一次采样或计数器重置（例如 `llama-server` 重启）时，`Gen` / `Busy` 可能显示为 `--`。
-- 当两次采样间无增量时，`Gen` / `Busy` 会归 `0`（避免长时间保留上一次的非 0 值导致误读；不依赖 `Req` 指标是否可靠）。
-
-## API Reference
-
-### REST API
-
-**Base URL**: `http://localhost:35179/api/v1`
-
-#### Metrics API
-
-**获取最新指标**
-
-```http
-GET /metrics/latest?processId={int}&processName={string}&keyword={string}
-```
-
-**获取历史数据**
-
-```http
-GET /metrics/history?processId={int}&from={datetime}&to={datetime}&aggregation={string}
-```
-
-参数：
-- `aggregation`: `raw` | `minute` | `hour` | `day`
-
-**获取进程列表**
-
-```http
-GET /metrics/processes?from={datetime}&to={datetime}&keyword={string}
-```
-
-#### Config API
-
-**获取指标元数据**
-
-```http
-GET /config/metrics
-```
-
-返回所有已注册的指标提供者信息，用于前端动态渲染。
-
-**获取配置**
-
-```http
-GET /config
-```
-
-**健康检查**
-
-```http
-GET /config/health
-```
-
-### SignalR Hub
-
-**Hub URL**: `http://localhost:35179/hubs/metrics`
-
-**事件**：
-- `ReceiveHardwareLimits` - 硬件上限（内存 / 显存）
-- `ReceiveSystemUsage` - 系统总览（CPU / 内存 / GPU / 显存 / 功耗 / 网速 / 电源方案）
-- `ReceiveProcessMetrics` - 进程指标列表
-- `ReceiveProcessMetadata` - 进程元数据（名称 / 命令行 / DisplayName）
-
-## Architecture
-
-### 系统架构
-
-XhMonitor 采用分层架构设计：
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  采集层 (Collection Layer)                                   │
-│  ├─ PerformanceMonitor (协调器)                              │
-│  ├─ ProcessScanner (进程扫描)                                │
-│  └─ MetricProviders (指标采集器)                             │
-│     ├─ CpuMetricProvider                                     │
-│     ├─ MemoryMetricProvider                                  │
-│     ├─ GpuMetricProvider                                     │
-│     ├─ VramMetricProvider                                    │
-│     ├─ DiskMetricProvider                                    │
-│     ├─ PowerMetricProvider (RyzenAdj)                        │
-│     └─ NetworkMetricProvider                                 │
-└─────────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│  存储层 (Storage Layer)                                      │
-│  ├─ SQLite Database (EF Core 8)                             │
-│  ├─ ProcessMetricRecords (原始数据)                          │
-│  └─ AggregatedMetricRecords (分层聚合)                       │
-└─────────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│  服务层 (Service Layer)                                      │
-│  ├─ REST API (MetricsController, ConfigController)          │
-│  └─ SignalR Hub (实时推送)                                   │
-└─────────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│  展示层 (Presentation Layer)                                 │
-│  ├─ Web 前端 (React 19 + TypeScript)                        │
-│  └─ 桌面应用 (WPF + MVVM)                                    │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 技术栈
-
-| 类别 | 技术 |
-|------|------|
-| 后端框架 | .NET 8 + ASP.NET Core |
-| 前端框架 | React 19 + TypeScript + Vite 7 |
-| 桌面应用 | WPF + MVVM |
-| 数据库 | SQLite + EF Core 8 |
-| 实时通信 | SignalR |
-| 可视化 | ECharts 6 |
-| 样式 | TailwindCSS v4 (Glassmorphism) |
-| 性能监控 | LibreHardwareMonitor + PerformanceCounter API |
-| 功耗管理 | RyzenAdj |
-| 日志 | Serilog |
-
-### 项目结构
-
-```
+```text
 xhMonitor/
-├── XhMonitor.Core/              # 核心库
-│   ├── Entities/                # EF Core 实体
-│   ├── Enums/                   # 枚举定义
-│   ├── Interfaces/              # 接口定义
-│   ├── Models/                  # 数据模型
-│   └── Providers/               # 内置指标提供者
-├── XhMonitor.Service/           # 后端服务
-│   ├── Controllers/             # API 控制器
-│   ├── Core/                    # 核心业务逻辑
-│   ├── Data/                    # 数据访问层
-│   ├── Hubs/                    # SignalR Hub
-│   ├── Workers/                 # 后台任务
-│   └── appsettings.json         # 配置文件
-├── XhMonitor.Desktop/           # WPF 桌面应用
-│   ├── ViewModels/              # MVVM ViewModels
-│   ├── Views/                   # XAML 视图
-│   └── Services/                # 服务层
-├── xhmonitor-web/               # React 前端
-│   ├── src/
-│   │   ├── components/          # React 组件
-│   │   ├── hooks/               # 自定义 Hooks
-│   │   └── i18n.ts              # 国际化配置
-│   └── vite.config.ts           # Vite 配置
-└── tools/                       # 工具集
-    └── RyzenAdj/                # RyzenAdj 功耗管理工具
+├── Cargo.toml
+├── xhm-core/
+├── xhm-service/
+├── lhm-bridge/
+├── XhMonitor.Core/
+├── XhMonitor.Desktop/
+├── XhMonitor.Desktop.Tests/
+├── xhmonitor-web/
+├── tools/RyzenAdj/
+├── scripts/
+├── publish.ps1
+├── build-installer.ps1
+└── installer/XhMonitor.iss
 ```
 
-## Development
+## 环境要求
 
-### 添加自定义指标
+- Windows 10/11 x64。
+- Rust 1.82 或更高版本，MSVC toolchain。
+- .NET SDK 8。
+- Node.js 18 或更高版本。
+- Visual Studio 2022 Build Tools。
+- 构建安装器时需要 Inno Setup 6.x。
 
-**1. 实现 IMetricProvider 接口**
+## 开发运行
 
-```csharp
-public class CustomMetricProvider : IMetricProvider
-{
-    public string MetricId => "custom_metric";
-    public string DisplayName => "Custom Metric";
-    public string Unit => "units";
-    public MetricType Type => MetricType.Gauge;
+启动 Rust Service：
 
-    public bool IsSupported() => true;
-
-    public async Task<MetricValue> CollectAsync(int processId)
-    {
-        var value = await GetCustomMetricAsync(processId);
-        return new MetricValue
-        {
-            Value = value,
-            Unit = Unit,
-            DisplayName = DisplayName,
-            Timestamp = DateTime.UtcNow
-        };
-    }
-
-    public void Dispose() { }
-}
+```powershell
+cargo run -p xhm-service
 ```
 
-**2. 注册到 MetricProviderRegistry**
+Service 默认监听 `http://127.0.0.1:35179`。
 
-提供者会自动被发现并注册。
+启动 C# Desktop：
 
-**3. 前端国际化**
-
-在 `xhmonitor-web/src/i18n.ts` 中添加翻译：
-
-```typescript
-export const i18n = {
-  zh: {
-    'Custom Metric': '自定义指标',
-  },
-  en: {
-    'Custom Metric': 'Custom Metric',
-  },
-};
+```powershell
+dotnet run --project XhMonitor.Desktop/XhMonitor.Desktop.csproj
 ```
 
-前端会自动通过 `/api/v1/config/metrics` 获取指标元数据并渲染，无需修改组件代码。
+如果 `../Service/xhm-service.exe` 不存在，Desktop 会从 workspace 根目录执行 `cargo run -p xhm-service`。
 
-### 运行测试
+一键启动 Desktop 和 Web 开发服务器：
 
-```bash
-# 单元测试
-dotnet test
-
-# 集成测试
-dotnet test --filter Category=Integration
+```powershell
+.\start-all.ps1
 ```
 
-### 构建发布
+## 配置
 
-```bash
-# 发布为单文件可执行程序
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+- Service 配置模板：`xhm-service/appsettings.json`
+- Desktop 配置：`XhMonitor.Desktop/appsettings.json`
+- Desktop 服务端点：`XhMonitor.Desktop/service-endpoints.json`
+- Web 开发配置：`xhmonitor-web/vite.config.ts`
 
-# 输出目录
-# XhMonitor.Service/bin/Release/net8.0/win-x64/publish/
+完整配置字段见 [docs/appsettings-reference.md](docs/appsettings-reference.md)。
+
+## 数据生命周期
+
+Rust Service 使用 SQLite 存储指标，并按以下层级聚合和保留：
+
+- raw：短期原始采样；
+- minute：分钟聚合；
+- hour：小时聚合；
+- day：日聚合。
+
+生命周期 worker 只有在目标层 coverage 验证完成后才删除源数据。旧版大数据库首次升级时会创建当前 schema 的新数据库，只复制应用配置和告警配置，不复制历史指标。
+
+## API
+
+默认地址：
+
+- REST API：`http://127.0.0.1:35179/api/v1`
+- 健康检查：`http://127.0.0.1:35179/api/v1/config/health`
+- SignalR Hub：`http://127.0.0.1:35179/hubs/metrics`
+- Web 界面：`http://127.0.0.1:35180`
+
+常用请求：
+
+```text
+GET /api/v1/metrics/latest
+GET /api/v1/metrics/history
+GET /api/v1/metrics/processes
+GET /api/v1/config
+GET /api/v1/config/health
 ```
 
-详细发布指南参考：[PUBLISH_GUIDE.md](PUBLISH_GUIDE.md)
+## 测试
 
-## Performance
+Rust workspace：
 
-**当前测试环境**：
-- 监控进程数：141
-- 采集间隔：3 秒
-- 首次周期：102 秒（含缓存构建）
-- 后续周期：8-9 秒
-- CPU 占用：< 5%
-- 内存占用：~50MB
+```powershell
+cargo fmt --check
+cargo test --workspace -- --test-threads=1
+cargo clippy --workspace --all-targets -- -D warnings
+```
 
-**优化建议**：
-- 使用进程关键词过滤减少监控数量
-- 调整采集间隔（3-10 秒）
-- 定期清理历史数据
+C# Desktop：
 
-## Roadmap
+```powershell
+dotnet test XhMonitor.Desktop.Tests/XhMonitor.Desktop.Tests.csproj
+```
 
-### 已完成
+LHM bridge：
 
-- ✅ 核心架构搭建
-- ✅ 监控核心实现
-- ✅ 数据持久化与聚合
-- ✅ Web API + SignalR
-- ✅ Web 前端开发
-- ✅ WPF 桌面悬浮窗
-- ✅ 功耗监控（RyzenAdj）
-- ✅ 网络监控
-- ✅ 进程管理（强制结束）
+```powershell
+dotnet build lhm-bridge/lhm-bridge.csproj -c Release
+```
 
-### 进行中
+## 发布
 
-### 待开发
+构建绿色版：
 
-- ⏳ 进程详情查看
+```powershell
+.\publish.ps1 -Version "1.0.0"
+.\publish.ps1 -Version "1.0.0" -Lite
+```
 
-## Contributing
+构建安装器：
 
-欢迎提交 Issue 和 Pull Request！
+```powershell
+.\build-installer.ps1 -Version "1.0.0" -BuildType LiteNet8
+.\build-installer.ps1 -Version "1.0.0" -BuildType Full
+```
 
-### 开发流程
+发布目录包含：
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'feat: Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-### 代码规范
-
-- 遵循 C# Coding Conventions
-- 使用有意义的变量和方法名
-- 添加必要的注释（非必要不添加）
-- 保持代码简洁高效
+```text
+XhMonitor-v1.0.0/
+├── Service/
+│   ├── xhm-service.exe
+│   ├── lhm-bridge.exe
+│   ├── appsettings.json
+│   └── tools/RyzenAdj/
+├── Desktop/
+│   └── XhMonitor.Desktop.exe
+├── 启动服务.bat
+├── 停止服务.bat
+└── README.txt
+```
 
 ## License
 
 [MIT License](LICENSE)
-
----
-

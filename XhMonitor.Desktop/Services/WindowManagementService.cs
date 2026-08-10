@@ -266,6 +266,7 @@ public sealed class WindowManagementService : IWindowManagementService
             var startupManager = _serviceProvider.GetRequiredService<IStartupManager>();
             var adminModeManager = _serviceProvider.GetRequiredService<IAdminModeManager>();
             var backendServerService = _serviceProvider.GetRequiredService<IBackendServerService>();
+            var webServerService = _serviceProvider.GetRequiredService<IWebServerService>();
             var appVersionService = _serviceProvider.GetRequiredService<IAppVersionService>();
             var appUpdateService = _serviceProvider.GetRequiredService<IAppUpdateService>();
             var settingsWindow = new Windows.SettingsWindow(
@@ -273,6 +274,7 @@ public sealed class WindowManagementService : IWindowManagementService
                 startupManager,
                 adminModeManager,
                 backendServerService,
+                webServerService,
                 _serviceDiscovery,
                 appVersionService,
                 appUpdateService,

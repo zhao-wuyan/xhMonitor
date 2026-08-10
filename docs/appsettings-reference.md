@@ -2,7 +2,7 @@
 
 本文档汇总项目中与 `appsettings*.json` 相关的主要配置项，按 Service 与 Desktop 分开说明。
 
-## 1. Service 配置（`XhMonitor.Service/appsettings.json`）
+## 1. Service 配置（`xhm-service/appsettings.json`）
 
 ### 1.1 `Serilog`
 
@@ -96,7 +96,7 @@ Desktop 采用环境分层配置：先加载 `appsettings.json`，再按环境�
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `ServiceExecutablePath` | string | `../Service/XhMonitor.Service.exe` | 本地 Service 可执行文件路径 |
+| `ServiceExecutablePath` | string | `../Service/xhm-service.exe` | Rust Service 可执行文件路径 |
 | `UiOptimization:EnableProcessRefreshThrottling` | bool | `true` | 是否启用进程列表刷新节流 |
 | `UiOptimization:ProcessRefreshIntervalMs` | int | `150` | 节流间隔（毫秒），兜底值 |
 
@@ -126,4 +126,4 @@ Desktop 通过 `DOTNET_ENVIRONMENT` 决定加载哪个环境文件。未设置�
 - `System.AccessKey`
 - `System.IpWhitelist`
 
-配置边界规则见：`XhMonitor.Service/docs/configuration-boundaries.md`
+Service 的运行时设置通过 `/api/v1/config` 读取和更新，并持久化到 SQLite。

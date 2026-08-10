@@ -7,8 +7,8 @@ param(
     [switch]$SkipDesktop,
     [switch]$SkipService,
     [switch]$NoZip,
-    [switch]$Lite,  # 轻量级模式，不包含.NET运行时
-    [switch]$Debug,  # Debug模式，保留符号文件和控制台窗口
+    [switch]$Lite,  # 轻量级模式，lhm-bridge 使用系统 .NET 8 Runtime
+    [switch]$Debug,  # Debug 模式，使用 Rust/bridge Debug 构建并保留符号文件
     [Alias("h")]
     [switch]$Help  # 显示帮助信息
 )
@@ -40,59 +40,41 @@ if ($Help) {
     Write-Host "  .\publish.ps1 [参数]" -ForegroundColor White
     Write-Host ""
     Write-Host "参数:" -ForegroundColor Yellow
-    Write-Host "  -Version <版本号>    指定发布版本号 (默认: 0.1.0)" -ForegroundColor White
+    Write-Host "  -Version <版本号>    指定发布版本号 (默认: 从 Directory.Build.props 读取)" -ForegroundColor White
     Write-Host "                       示例: -Version `"1.2.3`"" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  -SkipDesktop         跳过桌面应用发布" -ForegroundColor White
-    Write-Host "  -SkipService         跳过后端服务发布" -ForegroundColor White
+    Write-Host "  -SkipDesktop         跳过 C# WPF 桌面应用发布和打包" -ForegroundColor White
+    Write-Host "  -SkipService         跳过 Rust 后端服务及 lhm-bridge 发布和打包" -ForegroundColor White
     Write-Host "  -NoZip               不创建 ZIP 压缩包" -ForegroundColor White
     Write-Host ""
-    Write-Host "  -Lite                轻量级模式 (不包含 .NET 运行时和原生依赖)" -ForegroundColor White
-    Write-Host "                       需要目标系统预装 .NET 8 Runtime" -ForegroundColor Gray
-    Write-Host "                       体积约 1-2MB，但需要系统环境支持" -ForegroundColor Gray
+    Write-Host "  -Lite                Desktop 与 lhm-bridge 使用 framework-dependent 发布" -ForegroundColor White
+    Write-Host "                       目标系统需 .NET Desktop + ASP.NET Core Runtime 8 (Windows x64)" -ForegroundColor Gray
+    Write-Host "                       Rust Service 为原生二进制，不受此选项影响" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  -Debug               Debug 模式 (保留符号文件和控制台窗口)" -ForegroundColor White
-    Write-Host "                       用于调试和开发" -ForegroundColor Gray
+    Write-Host "  -Debug               使用 cargo Debug 构建和 bridge Debug 发布" -ForegroundColor White
+    Write-Host "                       保留 PDB 符号文件，用于调试和开发" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  -Help, -h            显示此帮助信息" -ForegroundColor White
     Write-Host ""
     Write-Host "示例:" -ForegroundColor Yellow
     Write-Host "  .\publish.ps1" -ForegroundColor White
-    Write-Host "    使用默认设置发布完整版" -ForegroundColor Gray
+    Write-Host "    发布完整版：Rust Service Release + self-contained C# Desktop + self-contained bridge" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  .\publish.ps1 -Version `"1.0.0`"" -ForegroundColor White
-    Write-Host "    发布 v1.0.0 版本" -ForegroundColor Gray
+    Write-Host "    发布 v1.0.0 完整版" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  .\publish.ps1 -Lite -NoZip" -ForegroundColor White
-    Write-Host "    发布轻量级版本，不创建压缩包" -ForegroundColor Gray
+    Write-Host "    发布 framework-dependent Desktop/bridge 版本，不创建压缩包" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  .\publish.ps1 -Debug -SkipDesktop" -ForegroundColor White
-    Write-Host "    Debug 模式发布，仅发布后端服务" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "  .\publish.ps1 -Lite -Version `"1.0.0`"" -ForegroundColor White
-    Write-Host "    发布 v1.0.0 轻量级版本 (推荐写法)" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "注意事项:" -ForegroundColor Red
-    Write-Host "  ⚠ 使用 -Lite 时，建议显式指定 -Version 参数！" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "  错误用法:" -ForegroundColor Red
-    Write-Host "    .\publish.ps1 -Lite" -ForegroundColor White
-    Write-Host "    → PowerShell 可能将 -Lite 误解析为 -Version 的值" -ForegroundColor Gray
-    Write-Host "    → 导致输出目录变成 XhMonitor-v-Lite，且仍为完整版" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "  正确用法:" -ForegroundColor Green
-    Write-Host "    .\publish.ps1 -Lite -Version `"0.1.0`"" -ForegroundColor White
-    Write-Host "    .\publish.ps1 -Version `"0.1.0`" -Lite" -ForegroundColor White
-    Write-Host "    .\publish.ps1 -Lite:`$true" -ForegroundColor White
+    Write-Host "    Debug 模式，仅构建和打包 Rust Service 与 lhm-bridge" -ForegroundColor Gray
     Write-Host ""
     Write-Host "发布模式:" -ForegroundColor Yellow
-    Write-Host "  完整版 (默认)        包含 .NET 8 运行时，单文件发布" -ForegroundColor White
-    Write-Host "                       优点: 无需安装依赖，开箱即用" -ForegroundColor Gray
-    Write-Host "                       缺点: 文件体积较大 (~100MB)" -ForegroundColor Gray
+    Write-Host "  完整版 (默认)        C# Desktop 与 lhm-bridge 均为 win-x64 self-contained" -ForegroundColor White
+    Write-Host "                       无需额外安装 .NET Runtime" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  轻量级 (-Lite)       不包含运行时和原生依赖，需要系统预装 .NET 8" -ForegroundColor White
-    Write-Host "                       优点: 文件体积极小 (~1-2MB)" -ForegroundColor Gray
-    Write-Host "                       缺点: 需要预装 .NET 8 Runtime + 系统原生库支持" -ForegroundColor Gray
+    Write-Host "  轻量级 (-Lite)       C# Desktop 与 lhm-bridge 为 win-x64 framework-dependent" -ForegroundColor White
+    Write-Host "                       需 .NET Desktop + ASP.NET Core Runtime 8" -ForegroundColor Gray
     Write-Host ""
     Write-Host "输出目录:" -ForegroundColor Yellow
     Write-Host "  release\XhMonitor-v<版本号>\" -ForegroundColor White
@@ -103,7 +85,12 @@ if ($Help) {
 
 # 确定发布配置
 $configuration = if ($Debug) { "Debug" } else { "Release" }
-$publishMode = if ($Lite) { "轻量级 (需要系统 .NET 8)" } else { "完整版 (含 .NET 运行时)" }
+$targetProfile = if ($Debug) { "debug" } else { "release" }
+$publishMode = if ($Lite) {
+    "轻量级 (Desktop + lhm-bridge framework-dependent)"
+} else {
+    "完整版 (Desktop + lhm-bridge self-contained)"
+}
 if ($Debug) {
     $publishMode += " [DEBUG]"
 }
@@ -114,231 +101,294 @@ Write-Host "  发布模式: $publishMode" -ForegroundColor Cyan
 Write-Host "  编译配置: $configuration" -ForegroundColor Cyan
 Write-Host "====================================" -ForegroundColor Cyan
 Write-Host ""
-  
+
+function Copy-RequiredFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Source,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Destination,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DisplayName
+    )
+
+    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
+        throw "找不到 $DisplayName：$Source"
+    }
+
+    $destinationParent = Split-Path -Parent $Destination
+    if ($destinationParent) {
+        New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
+    }
+    Copy-Item -LiteralPath $Source -Destination $Destination -Force
+}
+
+function Copy-RequiredDirectory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Source,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Destination,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DisplayName
+    )
+
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
+        throw "找不到 $DisplayName：$Source"
+    }
+
+    $destinationParent = Split-Path -Parent $Destination
+    New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
+    Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
+}
+
 # 设置路径
 $RootDir = $PSScriptRoot
-$OutputDir = Join-Path $RootDir "release\XhMonitor-v$Version"
+$ReleaseDir = Join-Path $RootDir "release"
+$OutputDir = Join-Path $ReleaseDir "XhMonitor-v$Version"
 $ServiceDir = Join-Path $OutputDir "Service"
 $DesktopDir = Join-Path $OutputDir "Desktop"
-  
-# 清理旧文件
-Write-Host "[1/6] 清理旧的发布文件..." -ForegroundColor Yellow
-if (Test-Path (Join-Path $RootDir "release")) {
-    Remove-Item (Join-Path $RootDir "release") -Recurse -Force
+$CargoOutputDir = Join-Path $RootDir "target\$targetProfile"
+$BridgePublishDir = Join-Path $RootDir "target\bridge-publish"
+
+# 仅清理当前版本目录，避免误删/锁定其他版本的安装器与发布产物。
+Write-Host "[1/5] 清理当前版本的发布文件..." -ForegroundColor Yellow
+if (Test-Path $OutputDir) {
+    Remove-Item $OutputDir -Recurse -Force
 }
-New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 New-Item -ItemType Directory -Path $ServiceDir -Force | Out-Null
 New-Item -ItemType Directory -Path $DesktopDir -Force | Out-Null
 
-# 构建 Web 前端资源
+# 构建 Rust Service（Desktop 已迁回 C# WPF，见下方 dotnet publish 段）
 Write-Host ""
-Write-Host "[2/6] 构建 Web 前端资源..." -ForegroundColor Yellow
-$webProjectPath = Join-Path $RootDir "xhmonitor-web"
-
-if (-not (Test-Path $webProjectPath)) {
-    Write-Host "错误: Web 项目目录不存在: $webProjectPath" -ForegroundColor Red
-    exit 1
-}
-
-Push-Location $webProjectPath
-try {
-    # 检查并安装 npm 依赖
-    if (-not (Test-Path (Join-Path $webProjectPath "node_modules"))) {
-        Write-Host "安装 npm 依赖..." -ForegroundColor Yellow
-        & npm install
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "错误: npm install 失败！" -ForegroundColor Red
-            exit 1
-        }
+if ($SkipService) {
+    Write-Host "[2/5] 跳过 Rust Service 构建" -ForegroundColor Gray
+} else {
+    $cargoArgs = @("build", "-p", "xhm-service")
+    if (-not $Debug) {
+        $cargoArgs += "--release"
     }
 
-    # 同步 package.json 版本号（使用正则替换保持原格式）
-    $packageJsonPath = Join-Path $webProjectPath "package.json"
-    if (Test-Path $packageJsonPath) {
-        $content = Get-Content $packageJsonPath -Raw
-        $content = $content -replace '"version":\s*"[^"]*"', "`"version`": `"$Version`""
-        [System.IO.File]::WriteAllText($packageJsonPath, $content)
-        Write-Host "已同步前端版本号: $Version" -ForegroundColor Green
-    }
-
-    # 构建 Web 资源
-    Write-Host "构建 Web 资源..." -ForegroundColor Yellow
-    & npm run build
+    Write-Host "[2/5] 构建 Rust xhm-service..." -ForegroundColor Yellow
+    & cargo @cargoArgs
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "错误: Web 资源构建失败！" -ForegroundColor Red
+        Write-Host "错误: Rust Service 构建失败！" -ForegroundColor Red
         exit 1
     }
-
-    # 验证 dist 目录是否存在
-    $distPath = Join-Path $webProjectPath "dist"
-    if (-not (Test-Path $distPath)) {
-        Write-Host "错误: dist 目录未生成！" -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host "✓ Web 资源构建成功" -ForegroundColor Green
-}
-finally {
-    Pop-Location
+    Write-Host "✓ Rust xhm-service 构建成功" -ForegroundColor Green
 }
 
-# 发布后端服务
 if (-not $SkipService) {
-    Write-Host ""
-    Write-Host "[3/6] 发布后端服务 (XhMonitor.Service)..." -ForegroundColor Yellow
+    $webDirectory = Join-Path $RootDir "xhmonitor-web"
+    $webNodeModules = Join-Path $webDirectory "node_modules"
+    Push-Location $webDirectory
+    try {
+        if (-not (Test-Path -LiteralPath $webNodeModules -PathType Container)) {
+            Write-Host "  安装 Web 依赖..." -ForegroundColor Gray
+            & npm ci
+            if ($LASTEXITCODE -ne 0) {
+                throw "Web 依赖安装失败"
+            }
+        }
+        Write-Host "  构建 Web 前端..." -ForegroundColor Gray
+        & npm run build
+        if ($LASTEXITCODE -ne 0) {
+            throw "Web 前端构建失败"
+        }
+    } finally {
+        Pop-Location
+    }
+}
 
-    $publishArgs = @(
+# 发布 lhm-bridge
+Write-Host ""
+if (-not $SkipService) {
+    Write-Host "[3/5] 发布 lhm-bridge..." -ForegroundColor Yellow
+
+    if (Test-Path $BridgePublishDir) {
+        Remove-Item $BridgePublishDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $BridgePublishDir -Force | Out-Null
+
+    $bridgePublishArgs = @(
         "publish"
-        (Join-Path $RootDir "XhMonitor.Service\XhMonitor.Service.csproj")
+        (Join-Path $RootDir "lhm-bridge\lhm-bridge.csproj")
         "-c"
         $configuration
+        "-r"
+        "win-x64"
         "-o"
-        $ServiceDir
+        $BridgePublishDir
         "--nologo"
+        "-p:Version=$Version"
+        "-p:AssemblyVersion=$Version"
+        "-p:FileVersion=$Version"
+        "-p:InformationalVersion=$Version"
+        "-p:IncludeSourceRevisionInInformationalVersion=false"
+        "-p:PublishTrimmed=false"
     )
 
     if ($Lite) {
-        # 轻量级模式：不包含运行时和原生依赖（真正的 framework-dependent）
-        $publishArgs += "-r"
-        $publishArgs += "win-x64"
-        $publishArgs += "--self-contained"
-        $publishArgs += "false"
-        $publishArgs += "-p:Version=$Version"
+        $bridgePublishArgs += @(
+            "--self-contained"
+            "false"
+            "-p:PublishSingleFile=false"
+        )
     } else {
-        # 完整模式：包含运行时，单文件
-        $publishArgs += "-r"
-        $publishArgs += "win-x64"
-        $publishArgs += "--self-contained"
-        $publishArgs += "true"
-        $publishArgs += "-p:PublishSingleFile=true"
-        $publishArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
-        $publishArgs += "-p:PublishTrimmed=false"
-        $publishArgs += "-p:Version=$Version"
+        $bridgePublishArgs += @(
+            "--self-contained"
+            "true"
+            "-p:PublishSingleFile=true"
+        )
     }
 
-    & dotnet @publishArgs
-
+    & dotnet @bridgePublishArgs
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "错误: 后端服务发布失败！" -ForegroundColor Red
+        Write-Host "错误: lhm-bridge 发布失败！" -ForegroundColor Red
         exit 1
     }
-    Write-Host "✓ 后端服务发布成功" -ForegroundColor Green
+
+    $bridgeExecutable = Join-Path $BridgePublishDir "lhm-bridge.exe"
+    if (-not (Test-Path -LiteralPath $bridgeExecutable -PathType Leaf)) {
+        Write-Host "错误: lhm-bridge 发布产物不存在: $bridgeExecutable" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "✓ lhm-bridge 发布成功" -ForegroundColor Green
 } else {
-    Write-Host "[3/6] 跳过后端服务发布" -ForegroundColor Gray
+    Write-Host "[3/5] 跳过 lhm-bridge 发布" -ForegroundColor Gray
 }
 
-# 发布桌面应用
-if (-not $SkipDesktop) {
-    Write-Host ""
-    Write-Host "[4/6] 发布桌面应用 (XhMonitor.Desktop)..." -ForegroundColor Yellow
+# 组装共享 release 布局
+Write-Host ""
+Write-Host "[4/5] 组装发布目录..." -ForegroundColor Yellow
 
-    $publishArgs = @(
+if (-not $SkipService) {
+    Copy-RequiredFile `
+        -Source (Join-Path $CargoOutputDir "xhm-service.exe") `
+        -Destination (Join-Path $ServiceDir "xhm-service.exe") `
+        -DisplayName "Rust Service 可执行文件"
+
+    if ($Debug) {
+        $servicePdb = Join-Path $CargoOutputDir "xhm-service.pdb"
+        if (Test-Path -LiteralPath $servicePdb -PathType Leaf) {
+            Copy-Item -LiteralPath $servicePdb -Destination $ServiceDir -Force
+        }
+    }
+
+    Get-ChildItem -LiteralPath $BridgePublishDir -Force |
+        Copy-Item -Destination $ServiceDir -Recurse -Force
+
+    Copy-RequiredFile `
+        -Source (Join-Path $RootDir "xhm-service\appsettings.json") `
+        -Destination (Join-Path $ServiceDir "appsettings.json") `
+        -DisplayName "appsettings.json"
+
+    Copy-RequiredDirectory `
+        -Source (Join-Path $RootDir "tools\RyzenAdj") `
+        -Destination (Join-Path $ServiceDir "tools\RyzenAdj") `
+        -DisplayName "RyzenAdj 工具目录"
+
+    Copy-RequiredDirectory `
+        -Source (Join-Path $RootDir "xhmonitor-web\dist") `
+        -Destination (Join-Path $ServiceDir "wwwroot") `
+        -DisplayName "Web 前端资源"
+
+    Write-Host "✓ Service 已包含 Rust 二进制、bridge 依赖、Web 资源、配置和 RyzenAdj" -ForegroundColor Green
+} else {
+    Write-Host "  跳过 Service 文件组装" -ForegroundColor Gray
+}
+
+if (-not $SkipDesktop) {
+    Write-Host "  发布 C# WPF Desktop (XhMonitor.Desktop)..." -ForegroundColor Gray
+
+    $desktopPublishArgs = @(
         "publish"
         (Join-Path $RootDir "XhMonitor.Desktop\XhMonitor.Desktop.csproj")
         "-c"
         $configuration
+        "-r"
+        "win-x64"
         "-o"
         $DesktopDir
         "--nologo"
+        "-p:Version=$Version"
+        "-p:AssemblyVersion=$Version"
+        "-p:FileVersion=$Version"
+        "-p:InformationalVersion=$Version"
+        "-p:IncludeSourceRevisionInInformationalVersion=false"
+        "-p:PublishTrimmed=false"
     )
 
     if ($Lite) {
-        # 轻量级模式：不包含运行时和原生依赖（真正的 framework-dependent）
-        $publishArgs += "-r"
-        $publishArgs += "win-x64"
-        $publishArgs += "--self-contained"
-        $publishArgs += "false"
-        $publishArgs += "-p:Version=$Version"
+        # Lite/LiteNet8：framework-dependent，依赖系统 .NET 8（WindowsDesktop + AspNetCore）
+        $desktopPublishArgs += @(
+            "--self-contained"
+            "false"
+            "-p:PublishSingleFile=false"
+        )
     } else {
-        # 完整模式：包含运行时，单文件
-        $publishArgs += "-r"
-        $publishArgs += "win-x64"
-        $publishArgs += "--self-contained"
-        $publishArgs += "true"
-        $publishArgs += "-p:PublishSingleFile=true"
-        $publishArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
-        $publishArgs += "-p:PublishTrimmed=false"
-        $publishArgs += "-p:Version=$Version"
+        # Full：self-contained single-file，无需系统 .NET 运行时
+        $desktopPublishArgs += @(
+            "--self-contained"
+            "true"
+            "-p:PublishSingleFile=true"
+            "-p:IncludeNativeLibrariesForSelfExtract=true"
+        )
     }
 
-    & dotnet @publishArgs
-
+    & dotnet @desktopPublishArgs
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "错误: 桌面应用发布失败！" -ForegroundColor Red
+        Write-Host "错误: C# Desktop 发布失败！" -ForegroundColor Red
         exit 1
     }
-    Write-Host "✓ 桌面应用发布成功" -ForegroundColor Green
+
+    $desktopExecutable = Join-Path $DesktopDir "XhMonitor.Desktop.exe"
+    if (-not (Test-Path -LiteralPath $desktopExecutable -PathType Leaf)) {
+        Write-Host "错误: C# Desktop 发布产物不存在: $desktopExecutable" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "✓ Desktop 已包含 C# WPF 二进制、端点配置、Web 资源和图标" -ForegroundColor Green
 } else {
-    Write-Host "[4/6] 跳过桌面应用发布" -ForegroundColor Gray
-}
-
-# 复制配置文件和创建脚本
-Write-Host ""
-Write-Host "[5/6] 复制配置文件和文档..." -ForegroundColor Yellow
-
-# 复制 Service 配置文件（强制覆盖，确保发布后有配置）
-if (-not $SkipService) {
-    $sourceConfig = Join-Path $RootDir "XhMonitor.Service\appsettings.json"
-    $destConfig = Join-Path $ServiceDir "appsettings.json"
-
-    if (Test-Path $sourceConfig) {
-        Copy-Item $sourceConfig $destConfig -Force
-        Write-Host "✓ 已复制 appsettings.json" -ForegroundColor Green
-    } else {
-        Write-Host "警告: 找不到 appsettings.json" -ForegroundColor Yellow
-    }
-
-    # 如果是轻量级模式，需要确保 Migrations 目录被复制
-    if ($Lite) {
-        $sourceMigrations = Join-Path $RootDir "XhMonitor.Service\Migrations"
-        $destMigrations = Join-Path $ServiceDir "Migrations"
-
-        if (Test-Path $sourceMigrations) {
-            Copy-Item $sourceMigrations $destMigrations -Recurse -Force
-            Write-Host "✓ 已复制 Migrations 目录" -ForegroundColor Green
-        }
-    }
-
-    # 删除开发环境配置文件（不应该出现在生产发布包中）
-    $devConfig = Join-Path $ServiceDir "appsettings.Development.json"
-    if (Test-Path $devConfig) {
-        Remove-Item $devConfig -Force
-        Write-Host "✓ 已删除 appsettings.Development.json" -ForegroundColor Green
-    }
+    Write-Host "  跳过 Desktop 文件组装" -ForegroundColor Gray
 }
   
 # 复制启动/停止脚本
-Copy-Item (Join-Path $RootDir "scripts\启动服务.bat") (Join-Path $OutputDir "启动服务.bat") -Force
-Copy-Item (Join-Path $RootDir "scripts\停止服务.bat") (Join-Path $OutputDir "停止服务.bat") -Force
+Copy-RequiredFile `
+    -Source (Join-Path $RootDir "scripts\启动服务.bat") `
+    -Destination (Join-Path $OutputDir "启动服务.bat") `
+    -DisplayName "启动服务.bat"
+Copy-RequiredFile `
+    -Source (Join-Path $RootDir "scripts\停止服务.bat") `
+    -Destination (Join-Path $OutputDir "停止服务.bat") `
+    -DisplayName "停止服务.bat"
 
 # 创建 README
 $systemRequirement = if ($Lite) {
     @"
 - Windows 10/11 x64
-- 需要预先安装 XhMonitor 所需的 .NET 8 运行环境
+- 需要 .NET 8 运行时（Windows x64）：
+  - Microsoft.WindowsDesktop.App 8.0.x（C# WPF 桌面应用）
+  - Microsoft.AspNetCore.App 8.0.x（内嵌 Web 服务器 / lhm-bridge）
 
-【重要】安装步骤：
+安装步骤：
 1. 访问官方下载页：https://dotnet.microsoft.com/download/dotnet/8.0
-2. 安装以下 Windows x64 运行环境：
-   - .NET Runtime 8.0.x
-   - ASP.NET Core Runtime 8.0.x
-   - .NET Desktop Runtime 8.0.x
-3. 安装完成后建议重启电脑
+2. 安装 ".NET Desktop Runtime 8" 与 "ASP.NET Core Runtime 8" 的 Windows x64 版本
+   （两者均自带 Microsoft.NETCore.App 基础运行时，无需单独安装）
 
-【注意】
-- 不要只安装其中一个 Runtime，XhMonitor 同时依赖以上 3 个运行环境
-- 不需要安装 .NET SDK（开发工具包），只需要 Runtime
-- 如果已安装旧版本 8.x，仍建议更新到较新的 8.0.x 补丁版本
-
-【验证安装】
+验证安装：
 打开命令提示符，运行：dotnet --list-runtimes
-应该至少看到：
-- Microsoft.NETCore.App 8.0.x
+应该看到：
 - Microsoft.AspNetCore.App 8.0.x
+- Microsoft.NETCore.App 8.0.x
 - Microsoft.WindowsDesktop.App 8.0.x
 "@
 } else {
-    "- Windows 10/11 x64`n- 无需安装 .NET Runtime（已包含）"
+    "- Windows 10/11 x64`n- Desktop 与 bridge 均已 self-contained，无需另装 .NET 运行时"
 }
 
 $readme = @"
@@ -353,45 +403,53 @@ $readme = @"
 
 ```
 XhMonitor-v$Version/
-├─ Service/              # 后端服务
-│  ├─ XhMonitor.Service.exe
-│  ├─ appsettings.json   # 配置文件
-│  ├─ logs/              # 日志目录（自动创建）
-│  ├─ xhmonitor.db       # 数据库文件（自动创建）
-│  └─ tools/             # 可选：第三方工具（如 RyzenAdj）
-│     └─ RyzenAdj/       # 功耗监测/切换（可直接替换升级）
-├─ Desktop/              # 桌面应用
-│  └─ XhMonitor.Desktop.exe
+├─ Service/                 # 后端服务
+│  ├─ xhm-service.exe
+│  ├─ lhm-bridge.exe        # 以及 bridge publish 的全部运行依赖
+│  ├─ appsettings.json
+│  ├─ wwwroot/              # Web 前端静态资源
+│  ├─ logs/                 # 日志目录（自动创建）
+│  ├─ xhmonitor.db          # 数据库文件（自动创建）
+│  └─ tools/
+│     └─ RyzenAdj/
+├─ Desktop/                 # 桌面应用 (C# WPF)
+│  ├─ XhMonitor.Desktop.exe
+│  ├─ appsettings.json
+│  ├─ service-endpoints.json
+│  ├─ wwwroot/              # 内嵌 Web 前端静态资源
+│  └─ Assets/
+│     └─ icon.ico
 ├─ 启动服务.bat
 ├─ 停止服务.bat
 └─ README.txt
 ```
- 
+
 ## 配置说明
- 
-配置文件位置: `Service\appsettings.json`
- 
+
+服务配置文件：`Service\appsettings.json`
+桌面端点配置：`Desktop\service-endpoints.json`
+
 ### 数据库清理配置
- 
+
 ```json
 "Database": {
-  "RetentionDays": 30,           // 数据保留天数（默认30天）
-  "CleanupIntervalHours": 24     // 清理间隔小时数（默认24小时）
+  "RetentionDays": 30,
+  "CleanupIntervalHours": 24
 }
 ```
- 
+
 ### 监控配置
- 
+
 ```json
 "Monitor": {
-  "IntervalSeconds": 3,                    // 进程采样间隔（秒）
-  "SystemUsageIntervalSeconds": 1,         // 系统使用率采样间隔（秒）
-  "Keywords": ["--port 8188", "llama-server"]  // 监控关键词
+  "IntervalSeconds": 3,
+  "SystemUsageIntervalSeconds": 1,
+  "Keywords": ["--port 8188", "llama-server"]
 }
 ```
- 
+
 ### 服务器配置
- 
+
 ```json
 "Server": {
   "Host": "localhost",
@@ -399,41 +457,35 @@ XhMonitor-v$Version/
   "HubPath": "/hubs/metrics"
 }
 ```
- 
-## 日志管理
- 
-- 日志位置: `Service\logs\`
-- 日志轮转: 每日或达到50MB时自动轮转
-- 保留期限: 最近7天
- 
-## 数据库管理
- 
-- 数据库文件: `Service\xhmonitor.db`
-- 自动清理: 每24小时清理30天前的数据
-- 自动优化: 清理后执行 VACUUM 优化
- 
+
+## 日志与数据库
+
+- 日志位置：`Service\logs\`
+- 数据库文件：`Service\xhmonitor.db`
+- 首次运行时自动创建所需目录和数据库
+
 ## 系统要求
 
 $systemRequirement
 
 ## 版本信息
 
-- 版本: v$Version
-- 发布模式: $publishMode
-- 发布日期: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+- 版本：v$Version
+- 发布模式：$publishMode
+- 发布日期：$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 "@
 Set-Content -Path (Join-Path $OutputDir "README.txt") -Value $readme -Encoding UTF8
   
-Write-Host "✓ 配置文件和文档已创建" -ForegroundColor Green
-  
-# 清理临时文件
+Write-Host "✓ 共享发布目录已组装" -ForegroundColor Green
+
+# 清理符号文件
 Write-Host ""
-Write-Host "[6/6] 清理临时文件..." -ForegroundColor Yellow
+Write-Host "[5/5] 清理发布文件..." -ForegroundColor Yellow
 if (-not $Debug) {
-    Get-ChildItem -Path $OutputDir -Recurse -Filter "*.pdb" | Remove-Item -Force
-    Write-Host "✓ 临时文件已清理" -ForegroundColor Green
+    Get-ChildItem -Path $OutputDir -Recurse -File -Filter "*.pdb" | Remove-Item -Force
+    Write-Host "✓ 已从非 Debug 发布包移除 PDB" -ForegroundColor Green
 } else {
-    Write-Host "⚠ Debug 模式：保留 .pdb 符号文件用于调试" -ForegroundColor Yellow
+    Write-Host "Debug 模式：保留可用的 PDB 符号文件" -ForegroundColor Yellow
 }
   
 # 计算大小
