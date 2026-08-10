@@ -55,10 +55,11 @@
 release/
 ├─ XhMonitor-v1.0.0/
 │  ├─ Service/                      # 后端服务
-│  │  ├─ XhMonitor.Service.exe     # 单文件可执行程序（含.NET运行时）
-│  │  └─ appsettings.json          # 配置文件
-│  ├─ Desktop/                      # 桌面应用
-│  │  └─ XhMonitor.Desktop.exe     # 单文件可执行程序（含.NET运行时）
+│  │  ├─ xhm-service.exe           # Rust 后端服务
+│  │  ├─ lhm-bridge.exe            # 硬件传感器桥
+│  │  └─ appsettings.json          # Service 配置文件
+│  ├─ Desktop/                      # C# WPF 桌面应用
+│  │  └─ XhMonitor.Desktop.exe
 │  ├─ 启动服务.bat                  # 一键启动脚本
 │  ├─ 停止服务.bat                  # 一键停止脚本
 │  └─ README.txt                    # 使用说明

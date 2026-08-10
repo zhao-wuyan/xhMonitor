@@ -24,6 +24,7 @@ public class SettingsViewModelTests
         public WebServerBindingMode CurrentBindingMode { get; set; } = WebServerBindingMode.Unknown;
 
         public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task RestartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 

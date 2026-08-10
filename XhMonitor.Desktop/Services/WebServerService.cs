@@ -60,7 +60,7 @@ public sealed class WebServerService : IWebServerService
             }
 
             // 读取局域网访问配置
-            var securityConfig = await GetSecurityConfigAsync(cancellationToken).ConfigureAwait(false);
+            var securityConfig = await GetSecurityConfigAsync(cancellationToken, waitForService: true).ConfigureAwait(false);
 
             _webServerCts?.Cancel();
             _webServerCts?.Dispose();
@@ -265,6 +265,12 @@ public sealed class WebServerService : IWebServerService
         }
     }
 
+    public async Task RestartAsync(CancellationToken cancellationToken = default)
+    {
+        await StopAsync(cancellationToken).ConfigureAwait(false);
+        await StartAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -322,54 +328,72 @@ public sealed class WebServerService : IWebServerService
         }
     }
 
-    private async Task<SecurityConfig> GetSecurityConfigAsync(CancellationToken cancellationToken)
+    private async Task<SecurityConfig> GetSecurityConfigAsync(
+        CancellationToken cancellationToken,
+        bool waitForService = false)
     {
-        try
-        {
-            var apiUrl = $"{_serviceDiscovery.ApiBaseUrl}/api/v1/config/settings";
-            var response = await _httpClient.GetAsync(apiUrl, cancellationToken).ConfigureAwait(false);
+        const int startupAttempts = 40;
+        var attempts = waitForService ? startupAttempts : 1;
 
-            if (!response.IsSuccessStatusCode)
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            try
             {
-                Debug.WriteLine($"Failed to load settings from API: {response.StatusCode}");
-                return new SecurityConfig();
+                var apiUrl = $"{_serviceDiscovery.ApiBaseUrl}/api/v1/config/settings";
+                using var response = await _httpClient.GetAsync(apiUrl, cancellationToken).ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Debug.WriteLine($"Failed to load settings from API: {response.StatusCode}");
+                }
+                else
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    using var document = JsonDocument.Parse(json);
+                    var config = new SecurityConfig();
+
+                    if (document.RootElement.TryGetProperty("System", out var systemSection))
+                    {
+                        if (systemSection.TryGetProperty("EnableLanAccess", out var enableLanAccess))
+                        {
+                            config.EnableLanAccess = enableLanAccess.GetString()?.ToLower() == "true";
+                        }
+
+                        if (systemSection.TryGetProperty("EnableAccessKey", out var enableAccessKey))
+                        {
+                            config.EnableAccessKey = enableAccessKey.GetString()?.ToLower() == "true";
+                        }
+
+                        if (systemSection.TryGetProperty("AccessKey", out var accessKey))
+                        {
+                            config.AccessKey = accessKey.GetString() ?? "";
+                        }
+
+                        if (systemSection.TryGetProperty("IpWhitelist", out var ipWhitelist))
+                        {
+                            config.IpWhitelist = ipWhitelist.GetString() ?? "";
+                        }
+                    }
+
+                    return config;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error reading security config: {ex.Message}");
             }
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(json);
-
-            var config = new SecurityConfig();
-
-            if (document.RootElement.TryGetProperty("System", out var systemSection))
+            if (attempt < attempts)
             {
-                if (systemSection.TryGetProperty("EnableLanAccess", out var enableLanAccess))
-                {
-                    config.EnableLanAccess = enableLanAccess.GetString()?.ToLower() == "true";
-                }
-
-                if (systemSection.TryGetProperty("EnableAccessKey", out var enableAccessKey))
-                {
-                    config.EnableAccessKey = enableAccessKey.GetString()?.ToLower() == "true";
-                }
-
-                if (systemSection.TryGetProperty("AccessKey", out var accessKey))
-                {
-                    config.AccessKey = accessKey.GetString() ?? "";
-                }
-
-                if (systemSection.TryGetProperty("IpWhitelist", out var ipWhitelist))
-                {
-                    config.IpWhitelist = ipWhitelist.GetString() ?? "";
-                }
+                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
             }
+        }
 
-            return config;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error reading security config: {ex.Message}");
-            return new SecurityConfig();
-        }
+        return new SecurityConfig();
     }
 
     private static IPAddress? NormalizeClientIp(IPAddress? remoteIp)

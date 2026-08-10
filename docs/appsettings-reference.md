@@ -2,24 +2,20 @@
 
 本文档汇总项目中与 `appsettings*.json` 相关的主要配置项，按 Service 与 Desktop 分开说明。
 
-## 1. Service 配置（`XhMonitor.Service/appsettings.json`）
+## 1. Service 配置（`xhm-service/appsettings.json`）
 
-### 1.1 `Serilog`
+### 1.1 日志
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `Serilog:MinimumLevel:Default` | string | `Information` | 全局日志级别 |
-| `Serilog:MinimumLevel:Override:*` | object | 见文件 | 按命名空间覆盖日志级别 |
-| `Serilog:WriteTo` | array | 见文件 | 日志输出目标（Console/Debug/File） |
-| `Serilog:WriteTo:File:path` | string | `logs/xhmonitor-.log` | 文件日志路径 |
-| `Serilog:WriteTo:File:rollingInterval` | string | `Day` | 滚动策略 |
-| `Serilog:WriteTo:File:retainedFileCountLimit` | int | `7` | 保留文件数 |
+Rust Service 不读取 `appsettings.json` 中遗留的 `Serilog` 段。日志规则如下：
 
-### 1.2 `ConnectionStrings`
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `RUST_LOG` | `info` | 控制台日志过滤规则 |
+| 文件日志 | `debug` | 写入 `logs/xhmonitor.YYYY-MM-DD.log`，按天滚动 |
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `ConnectionStrings:DatabaseConnection` | string | `Data Source=xhmonitor.db;Mode=ReadWriteCreate;Cache=Shared` | SQLite 连接串 |
+### 1.2 数据库
+
+Rust Service 不读取遗留的 `ConnectionStrings:DatabaseConnection`。SQLite 数据库固定为 Service 可执行文件目录下的 `xhmonitor.db`。
 
 ### 1.3 `Monitor`
 
@@ -96,7 +92,7 @@ Desktop 采用环境分层配置：先加载 `appsettings.json`，再按环境�
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `ServiceExecutablePath` | string | `../Service/XhMonitor.Service.exe` | 本地 Service 可执行文件路径 |
+| `ServiceExecutablePath` | string | `../Service/xhm-service.exe` | Rust Service 可执行文件路径 |
 | `UiOptimization:EnableProcessRefreshThrottling` | bool | `true` | 是否启用进程列表刷新节流 |
 | `UiOptimization:ProcessRefreshIntervalMs` | int | `150` | 节流间隔（毫秒），兜底值 |
 
@@ -126,4 +122,4 @@ Desktop 通过 `DOTNET_ENVIRONMENT` 决定加载哪个环境文件。未设置�
 - `System.AccessKey`
 - `System.IpWhitelist`
 
-配置边界规则见：`XhMonitor.Service/docs/configuration-boundaries.md`
+Service 的运行时设置通过 `/api/v1/config` 读取和更新，并持久化到 SQLite。

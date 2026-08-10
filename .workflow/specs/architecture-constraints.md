@@ -31,3 +31,12 @@ priority: high
 
 - Desktop UI should use services (`IServiceDiscovery`, `IBackendServerService`, `IWindowManagementService`, etc.) rather than constructing process/network behavior inline.
 - Backend API changes require checking frontend and desktop consumers before modifying response shapes.
+
+
+<spec-entry category="arch" keywords="lifecycle,migration,rebuild,sqlite,marker" date="2026-08-10" sid="S-20260810-r6rv" title="Rust 生命周期数据库重建标志策略" description="Rust 后端生命周期数据库重建、占用降级与未来迁移的稳定规则" source="feature/rust-service-backend@901d86c">
+
+### Rust 生命周期数据库重建标志策略
+
+20260810000000_AddMetricLifecycleStorage 是生命周期存储一次性重建完成的唯一标志。不得根据 MetricLifecycleCheckpoints 表是否存在判断重建完成。首次安装由普通 schema 初始化创建该表并使用 CARGO_PKG_VERSION 写入 marker。旧数据库重建遇到 SQLITE_BUSY 或 SQLITE_LOCKED 时最多等待 1 秒，随后保留原数据库继续启动；可创建运行所需 schema，但不得写入该 marker，使下次启动继续尝试重建。数据库损坏、字段缺失、磁盘错误不得降级。未来数据库变更必须新增独立 MigrationId，不得复用现有 marker 或根据 ProductVersion 决定是否执行。
+
+</spec-entry>

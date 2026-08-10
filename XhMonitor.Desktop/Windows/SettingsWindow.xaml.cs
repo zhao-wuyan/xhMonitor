@@ -23,6 +23,7 @@ public partial class SettingsWindow : Window
     private readonly IStartupManager _startupManager;
     private readonly IAdminModeManager _adminModeManager;
     private readonly IBackendServerService _backendServerService;
+    private readonly IWebServerService _webServerService;
     private readonly IServiceDiscovery _serviceDiscovery;
     private readonly IAppVersionService _appVersionService;
     private readonly IAppUpdateService _appUpdateService;
@@ -37,6 +38,7 @@ public partial class SettingsWindow : Window
         IStartupManager startupManager,
         IAdminModeManager adminModeManager,
         IBackendServerService backendServerService,
+        IWebServerService webServerService,
         IServiceDiscovery serviceDiscovery,
         IAppVersionService appVersionService,
         IAppUpdateService appUpdateService,
@@ -47,6 +49,7 @@ public partial class SettingsWindow : Window
         _startupManager = startupManager;
         _adminModeManager = adminModeManager;
         _backendServerService = backendServerService;
+        _webServerService = webServerService;
         _serviceDiscovery = serviceDiscovery;
         _appVersionService = appVersionService;
         _appUpdateService = appUpdateService;
@@ -184,84 +187,52 @@ public partial class SettingsWindow : Window
         {
             await ApplyDisplayModesAsync();
 
-            // 如果管理员模式或局域网访问变更，需要重启
+            // 配置变更后重启受影响的服务，使局域网监听地址立即生效。
             if (adminModeChanged || lanAccessChanged)
             {
-                var message = adminModeChanged && lanAccessChanged
-                    ? "管理员模式和局域网访问设置已变更。需要重启应用才能生效。\n\n是否立即重启？"
-                    : adminModeChanged
-                        ? "管理员模式已变更。需要重启后台服务才能生效。\n\n是否立即重启服务？"
-                        : "局域网访问设置已变更。需要重启应用才能生效。\n\n是否立即重启？";
-
-                if (!string.IsNullOrWhiteSpace(firewallWarning))
+                try
                 {
-                    message += $"\n\n注意：防火墙配置失败：{firewallWarning}\n局域网可能无法访问。";
-                }
-
-                var restartResult = System.Windows.MessageBox.Show(
-                    message,
-                    "需要重启",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (restartResult == MessageBoxResult.Yes)
-                {
-                    try
+                    if (lanAccessChanged)
                     {
-                        if (lanAccessChanged)
+                        await _webServerService.RestartAsync();
+                    }
+
+                    if (adminModeChanged)
+                    {
+                        await _backendServerService.RestartAsync();
+
+                        // Service 重启后，主动重连 SignalR 以刷新 Power 等指标状态。
+                        if (Owner is FloatingWindow fw)
                         {
-                            // 局域网访问变更需要重启整个应用
-                            var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-                            var pid = System.Diagnostics.Process.GetCurrentProcess().Id;
-
-                            if (!string.IsNullOrWhiteSpace(exePath))
-                            {
-                                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                                {
-                                    FileName = exePath,
-                                    Arguments = $"--restart-parent {pid}",
-                                    UseShellExecute = true
-                                });
-                            }
-
-                            System.Windows.Application.Current.Shutdown();
-                            DialogResult = true;
-                            Close();
-                            return;
-                        }
-                        else
-                        {
-                            // 仅管理员模式变更，重启Service即可
-                            await _backendServerService.RestartAsync();
-                            _viewModel.RefreshWebServerBindingStatus();
-
-                            // Service 重启后，主动重连 SignalR 以刷新 Power 等指标状态
-                            if (Owner is FloatingWindow fw)
-                            {
-                                await fw.ReconnectSignalRAsync();
-                            }
-
-                            DialogResult = true;
-                            Close();
-                            return;
+                            await fw.ReconnectSignalRAsync();
                         }
                     }
-                    catch (Exception ex)
+
+                    if (!string.IsNullOrWhiteSpace(firewallWarning))
                     {
+                        await ShowSaveSuccessHintAsync();
                         System.Windows.MessageBox.Show(
-                            $"重启失败：{ex.Message}\n\n请手动重启应用。",
-                            "错误",
+                            $"设置已保存，但防火墙配置失败：{firewallWarning}\n局域网访问可能仍被 Windows 防火墙拦截。",
+                            "局域网访问提示",
                             MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+                            MessageBoxImage.Warning);
+                    }
+                    else
+                    {
+                        await ShowSaveSuccessHintAsync();
                     }
                 }
-
-                // 用户选择不重启，视为普通保存成功
-                await ShowSaveSuccessHintAsync();
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"服务重启失败：{ex.Message}\n请检查端口是否被占用。",
+                        "错误",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             }
             else
             {
-                // 普通保存成功，显示临时提示
                 await ShowSaveSuccessHintAsync();
             }
 
