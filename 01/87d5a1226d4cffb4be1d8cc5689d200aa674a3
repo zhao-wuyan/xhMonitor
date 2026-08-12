@@ -1,0 +1,19 @@
+.workflow/spec-analytics.jsonl
+  s_e70b05190ae951::t_81b0f75bbd5cb9 36-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "0187d5a1226d4cffb4be1d8cc5689d200aa674a3",
+  "prompts": {},
+  "sessions": {
+    "s_e70b05190ae951": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "55f93d6d-174c-4dff-9f46-2f6e0611a843",
+        "model": "unknown"
+      },
+      "human_author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
