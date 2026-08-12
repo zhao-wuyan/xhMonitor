@@ -126,6 +126,7 @@ pub(crate) fn strip_json_comments(contents: &str) -> String {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeConfig {
     pub interval_seconds: u64,
+    pub record_metrics: bool,
     pub process_keywords: Vec<String>,
     pub process_name_rules: Vec<ProcessNameRule>,
     pub plugin_directory: PathBuf,
@@ -139,6 +140,7 @@ impl Default for RuntimeConfig {
     fn default() -> Self {
         Self {
             interval_seconds: 1,
+            record_metrics: false,
             process_keywords: Vec::new(),
             process_name_rules: Vec::new(),
             plugin_directory: PathBuf::from("plugins"),

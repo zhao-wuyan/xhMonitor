@@ -43,6 +43,14 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public void RecordMetrics_ShouldDefaultToDisabled()
+    {
+        var vm = CreateViewModel();
+
+        vm.RecordMetrics.Should().BeFalse();
+    }
+
+    [Fact]
     public void LocalIpEndpoint_ShouldAppendPort_ForSingleIp()
     {
         var vm = CreateViewModel(new FakeServiceDiscovery { WebPort = 35180 });

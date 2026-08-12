@@ -29,6 +29,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     // 数据采集设置
     private string _processKeywords = string.Join("\n", ConfigurationDefaults.DataCollection.ProcessKeywords);
+    private bool _recordMetrics = ConfigurationDefaults.DataCollection.RecordMetrics;
     private int _topProcessCount = ConfigurationDefaults.DataCollection.TopProcessCount;
     private int _dataRetentionDays = ConfigurationDefaults.DataCollection.DataRetentionDays;
 
@@ -101,6 +102,12 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         get => _processKeywords;
         set => SetProperty(ref _processKeywords, value);
+    }
+
+    public bool RecordMetrics
+    {
+        get => _recordMetrics;
+        set => SetProperty(ref _recordMetrics, value);
     }
 
     public int TopProcessCount
@@ -380,6 +387,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (settings.TryGetValue(ConfigurationDefaults.Keys.Categories.DataCollection, out var dataCollection))
             {
                 var keywords = JsonSerializer.Deserialize<string[]>(dataCollection[ConfigurationDefaults.Keys.DataCollection.ProcessKeywords]) ?? Array.Empty<string>();
+                RecordMetrics = GetBool(dataCollection, ConfigurationDefaults.Keys.DataCollection.RecordMetrics, ConfigurationDefaults.DataCollection.RecordMetrics);
                 ProcessKeywords = string.Join("\n", keywords);
                 TopProcessCount = int.Parse(dataCollection[ConfigurationDefaults.Keys.DataCollection.TopProcessCount]);
                 DataRetentionDays = int.Parse(dataCollection[ConfigurationDefaults.Keys.DataCollection.DataRetentionDays]);
@@ -477,6 +485,7 @@ public class SettingsViewModel : INotifyPropertyChanged
                 {
                     [ConfigurationDefaults.Keys.DataCollection.ProcessKeywords] = JsonSerializer.Serialize(
                         ProcessKeywords.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)),
+                    [ConfigurationDefaults.Keys.DataCollection.RecordMetrics] = RecordMetrics.ToString().ToLower(),
                     [ConfigurationDefaults.Keys.DataCollection.TopProcessCount] = TopProcessCount.ToString(),
                     [ConfigurationDefaults.Keys.DataCollection.DataRetentionDays] = DataRetentionDays.ToString()
                 },

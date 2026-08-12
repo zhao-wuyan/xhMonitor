@@ -833,24 +833,28 @@ async fn run_lifecycle_worker(state: AppState, mut shutdown_rx: watch::Receiver<
         if *shutdown_rx.borrow() {
             break;
         }
-        let cycle_state = state.clone();
-        match tokio::task::spawn_blocking(move || run_lifecycle_cycle(&cycle_state, limits)).await {
-            Ok(result) => tracing::info!(
-                configured_days = ?result.configured_days,
-                retention_windows = ?result.retention_windows,
-                cutoffs = ?result.cutoffs,
-                tiers = ?result.tiers,
-                wal = ?result.wal,
-                deleted_raw = result.deleted[0],
-                deleted_minute = result.deleted[1],
-                deleted_hour = result.deleted[2],
-                deleted_day = result.deleted[3],
-                failure = ?result.failure,
-                purge_skipped = ?result.purge_skipped,
-                elapsed_ms = result.elapsed.as_millis(),
-                "metric lifecycle cycle completed"
-            ),
-            Err(error) => tracing::error!(%error, "metric lifecycle blocking task failed"),
+        if state.runtime.read().await.record_metrics {
+            let cycle_state = state.clone();
+            match tokio::task::spawn_blocking(move || run_lifecycle_cycle(&cycle_state, limits))
+                .await
+            {
+                Ok(result) => tracing::info!(
+                    configured_days = ?result.configured_days,
+                    retention_windows = ?result.retention_windows,
+                    cutoffs = ?result.cutoffs,
+                    tiers = ?result.tiers,
+                    wal = ?result.wal,
+                    deleted_raw = result.deleted[0],
+                    deleted_minute = result.deleted[1],
+                    deleted_hour = result.deleted[2],
+                    deleted_day = result.deleted[3],
+                    failure = ?result.failure,
+                    purge_skipped = ?result.purge_skipped,
+                    elapsed_ms = result.elapsed.as_millis(),
+                    "metric lifecycle cycle completed"
+                ),
+                Err(error) => tracing::error!(%error, "metric lifecycle blocking task failed"),
+            }
         }
 
         let deadline = Instant::now() + LIFECYCLE_INTERVAL;
@@ -969,6 +973,16 @@ async fn collect_cycle(
     metadata.sort_unstable_by_key(|process| process.process_id);
     records.sort_unstable_by_key(|record| record.process_id);
 
+    persist_process_records(state, records).await;
+
+    route_process_events(state, wire_timestamp, snapshots, metadata).await;
+}
+
+async fn persist_process_records(state: &AppState, records: Vec<NewProcessMetricRecord>) {
+    if !state.runtime.read().await.record_metrics {
+        return;
+    }
+
     let expected_count = records.len();
     let store = state.store.clone();
     match tokio::task::spawn_blocking(move || store.save_process_metrics(&records)).await {
@@ -987,8 +1001,6 @@ async fn collect_cycle(
             tracing::error!(%error, "process metric store task failed");
         }
     }
-
-    route_process_events(state, wire_timestamp, snapshots, metadata).await;
 }
 
 fn normalize_keywords(keywords: &[String]) -> Vec<String> {
@@ -1295,7 +1307,7 @@ mod tests {
     use tokio::sync::broadcast::error::TryRecvError;
     use xhm_core::{
         time::to_sqlite_text,
-        traits::{MockClock, MockLhmReader, MockRyzenAdjClient},
+        traits::{MetricStore, MockClock, MockLhmReader, MockRyzenAdjClient},
     };
 
     use super::*;
@@ -1886,6 +1898,19 @@ mod tests {
         assert_eq!(metadata.processes[0].command_line, "process-1.exe");
         assert_eq!(metadata.processes[0].display_name, "Process 1");
         assert!(matches!(receiver.try_recv(), Err(TryRecvError::Empty)));
+    }
+
+    #[tokio::test]
+    async fn metric_recording_defaults_off_and_hot_enables_persistence() {
+        let (state, store) = test_state_with_store(RuntimeConfig::default());
+        let record = raw_metric(7, "worker", fixed_time(), r#"{"cpu":{"value":1.0}}"#);
+
+        persist_process_records(&state, vec![record.clone()]).await;
+        assert!(store.history_raw(7, None, None).unwrap().is_empty());
+
+        state.runtime.write().await.record_metrics = true;
+        persist_process_records(&state, vec![record]).await;
+        assert_eq!(store.history_raw(7, None, None).unwrap().len(), 1);
     }
 
     #[tokio::test]

@@ -40,3 +40,11 @@ priority: high
 20260810000000_AddMetricLifecycleStorage 是生命周期存储一次性重建完成的唯一标志。不得根据 MetricLifecycleCheckpoints 表是否存在判断重建完成。首次安装由普通 schema 初始化创建该表并使用 CARGO_PKG_VERSION 写入 marker。旧数据库重建遇到 SQLITE_BUSY 或 SQLITE_LOCKED 时最多等待 1 秒，随后保留原数据库继续启动；可创建运行所需 schema，但不得写入该 marker，使下次启动继续尝试重建。数据库损坏、字段缺失、磁盘错误不得降级。未来数据库变更必须新增独立 MigrationId，不得复用现有 marker 或根据 ProductVersion 决定是否执行。
 
 </spec-entry>
+
+<spec-entry category="arch" keywords="recordmetrics,sqlite,datacollection" date="2026-08-10" sid="S-20260810-hqn4" title="指标历史记录默认关闭" description="进程指标持久化开关及实时链路边界" source="feature/rust-service-backend@3a209ac">
+
+### 指标历史记录默认关闭
+
+DataCollection.RecordMetrics 控制进程指标写入 SQLite，默认 false。关闭时实时推送继续运行，但跳过 ProcessMetricRecords 写入以及指标聚合、清理和 WAL checkpoint 生命周期任务；配置 API 保存后热更新。
+
+</spec-entry>

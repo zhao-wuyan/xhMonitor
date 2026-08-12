@@ -12,7 +12,7 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::json;
-use xhm_core::models::{AlertConfiguration, MetricMetadata, SettingsUpsertCounts};
+use xhm_core::models::{AlertConfiguration, MetricMetadata};
 
 use crate::state::AppState;
 
@@ -270,13 +270,16 @@ async fn update_setting(
     .await;
 
     match result {
-        Ok((true, category, key, value)) => Json(json!({
-            "message": "配置已更新",
-            "category": category,
-            "key": key,
-            "value": value,
-        }))
-        .into_response(),
+        Ok((true, category, key, value)) => {
+            reload_data_collection_setting(&state, &category, &key, &value).await;
+            Json(json!({
+                "message": "配置已更新",
+                "category": category,
+                "key": key,
+                "value": value,
+            }))
+            .into_response()
+        }
         Ok((false, category, key, _)) => (
             StatusCode::NOT_FOUND,
             Json(json!({
@@ -300,11 +303,15 @@ async fn update_settings(
     let entry_count = settings.values().map(BTreeMap::len).sum();
     let mut entries = Vec::with_capacity(entry_count);
     let mut process_keywords = None;
+    let mut record_metrics = None;
 
     for (category, group) in settings {
         for (key, value) in group {
             if category == "DataCollection" && key == "ProcessKeywords" {
                 process_keywords = Some(value.clone());
+            }
+            if category == "DataCollection" && key == "RecordMetrics" {
+                record_metrics = Some(value.clone());
             }
             entries.push((category.clone(), key, value));
         }
@@ -317,7 +324,13 @@ async fn update_settings(
         Err(error) => return internal_error(error),
     };
 
-    reload_process_keywords(&state, counts, process_keywords).await;
+    if let Some(serialized) = process_keywords {
+        reload_data_collection_setting(&state, "DataCollection", "ProcessKeywords", &serialized)
+            .await;
+    }
+    if let Some(value) = record_metrics {
+        reload_data_collection_setting(&state, "DataCollection", "RecordMetrics", &value).await;
+    }
 
     Json(json!({
         "message": format!(
@@ -330,25 +343,26 @@ async fn update_settings(
     .into_response()
 }
 
-async fn reload_process_keywords(
-    state: &AppState,
-    counts: SettingsUpsertCounts,
-    serialized: Option<String>,
-) {
-    if !counts.process_keywords_touched {
+async fn reload_data_collection_setting(state: &AppState, category: &str, key: &str, value: &str) {
+    if category != "DataCollection" {
         return;
     }
-    let Some(serialized) = serialized else {
-        return;
-    };
 
-    match serde_json::from_str::<Option<Vec<String>>>(&serialized) {
-        Ok(keywords) => {
-            state.runtime.write().await.process_keywords = keywords.unwrap_or_default();
-        }
-        Err(error) => {
-            tracing::error!(error = %error, "failed to reload process keywords");
-        }
+    match key {
+        "ProcessKeywords" => match serde_json::from_str::<Option<Vec<String>>>(value) {
+            Ok(keywords) => {
+                state.runtime.write().await.process_keywords = keywords.unwrap_or_default();
+            }
+            Err(error) => {
+                tracing::error!(%error, "failed to reload process keywords");
+            }
+        },
+        "RecordMetrics" => match value.trim().to_ascii_lowercase().as_str() {
+            "true" => state.runtime.write().await.record_metrics = true,
+            "false" => state.runtime.write().await.record_metrics = false,
+            _ => tracing::error!(value, "failed to reload metric recording setting"),
+        },
+        _ => {}
     }
 }
 
@@ -591,6 +605,7 @@ mod tests {
         let body = json_body(response).await;
         assert!(body["Appearance"]["ThemeColor"].is_string());
         assert!(body["DataCollection"]["ProcessKeywords"].is_string());
+        assert_eq!(body["DataCollection"]["RecordMetrics"], "false");
         assert_eq!(body["Monitoring"]["MonitorCpu"], "true");
         assert_eq!(body["System"]["StartWithWindows"], "false");
         assert_eq!(body["System"]["EnableLanAccess"], "false");
@@ -635,27 +650,28 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn put_settings_upserts_counts_and_hot_reloads_process_keywords() {
+    async fn put_settings_hot_reloads_data_collection_settings() {
         let state = test_state(false);
         let app = router().with_state(state.clone());
         let response = app
             .oneshot(json_request(
                 Method::PUT,
                 "/api/v1/config/settings",
-                r#"{"DataCollection":{"ProcessKeywords":"[\"python\",\"new-worker\"]"},"NewCategory":{"NewKey":"new-value"}}"#,
+                r#"{"DataCollection":{"ProcessKeywords":"[\"python\",\"new-worker\"]","RecordMetrics":"true"},"NewCategory":{"NewKey":"new-value"}}"#,
             ))
             .await
             .expect("request succeeds");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = json_body(response).await;
-        assert_eq!(body["updatedCount"], 1);
+        assert_eq!(body["updatedCount"], 2);
         assert_eq!(body["insertedCount"], 1);
-        assert_eq!(body["message"], "成功更新 1 个配置项，新增 1 个配置项");
+        assert_eq!(body["message"], "成功更新 2 个配置项，新增 1 个配置项");
         assert_eq!(
             state.runtime.read().await.process_keywords,
             ["python", "new-worker"]
         );
+        assert!(state.runtime.read().await.record_metrics);
     }
 
     #[tokio::test]

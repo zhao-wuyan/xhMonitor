@@ -147,6 +147,13 @@ VALUES
     ('System', 'IpWhitelist', '', '2024-01-01 00:00:00', '2024-01-01 00:00:00');
 "#;
 
+const METRIC_RECORDING_SETTINGS_SEED_SQL: &str = r#"
+INSERT OR IGNORE INTO "ApplicationSettings"
+    ("Category", "Key", "Value", "CreatedAt", "UpdatedAt")
+VALUES
+    ('DataCollection', 'RecordMetrics', 'false', '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+"#;
+
 #[derive(Debug)]
 pub struct LegacyDatabaseRebuild {
     backup_path: PathBuf,
@@ -792,6 +799,12 @@ fn initialize_schema(connection: &mut Connection, record_lifecycle_migration: bo
         "20260804000000_AddSecuritySettings",
         "8.0.23",
         SECURITY_SETTINGS_SEED_SQL,
+    )?;
+    apply_migration(
+        &transaction,
+        "20260810000000_AddMetricRecordingSetting",
+        env!("CARGO_PKG_VERSION"),
+        METRIC_RECORDING_SETTINGS_SEED_SQL,
     )?;
     if record_lifecycle_migration {
         apply_migration(
@@ -2490,9 +2503,14 @@ mod tests {
         assert_eq!(generated.updated_at, at(10));
 
         let initial_settings = store.list_settings().unwrap();
-        assert_eq!(initial_settings.len(), 17);
+        assert_eq!(initial_settings.len(), 18);
         assert!(initial_settings.windows(2).all(|pair| {
             (&pair[0].category, &pair[0].key) <= (&pair[1].category, &pair[1].key)
+        }));
+        assert!(initial_settings.iter().any(|setting| {
+            setting.category == "DataCollection"
+                && setting.key == "RecordMetrics"
+                && setting.value == "false"
         }));
         let original_opacity = initial_settings
             .iter()
@@ -2623,10 +2641,15 @@ mod tests {
             assert_eq!(legacy[0].display_name, None);
 
             let settings = store.list_settings().unwrap();
-            assert_eq!(settings.len(), 17);
+            assert_eq!(settings.len(), 18);
             assert!(!settings.iter().any(|setting| setting.key == "WebPort"));
             assert!(settings.iter().any(|setting| {
                 setting.category == "Monitoring" && setting.key == "MonitorCpu"
+            }));
+            assert!(settings.iter().any(|setting| {
+                setting.category == "DataCollection"
+                    && setting.key == "RecordMetrics"
+                    && setting.value == "false"
             }));
             for key in [
                 "EnableLanAccess",
@@ -2686,7 +2709,7 @@ mod tests {
                     |row| row.get::<_, i64>(0),
                 )
                 .unwrap();
-            assert_eq!(migration_count, 9);
+            assert_eq!(migration_count, 10);
             let lifecycle_product_version = connection
                 .query_row(
                     "SELECT \"ProductVersion\" FROM \"__EFMigrationsHistory\"
