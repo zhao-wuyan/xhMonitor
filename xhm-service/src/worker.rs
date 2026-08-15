@@ -833,24 +833,28 @@ async fn run_lifecycle_worker(state: AppState, mut shutdown_rx: watch::Receiver<
         if *shutdown_rx.borrow() {
             break;
         }
-        let cycle_state = state.clone();
-        match tokio::task::spawn_blocking(move || run_lifecycle_cycle(&cycle_state, limits)).await {
-            Ok(result) => tracing::info!(
-                configured_days = ?result.configured_days,
-                retention_windows = ?result.retention_windows,
-                cutoffs = ?result.cutoffs,
-                tiers = ?result.tiers,
-                wal = ?result.wal,
-                deleted_raw = result.deleted[0],
-                deleted_minute = result.deleted[1],
-                deleted_hour = result.deleted[2],
-                deleted_day = result.deleted[3],
-                failure = ?result.failure,
-                purge_skipped = ?result.purge_skipped,
-                elapsed_ms = result.elapsed.as_millis(),
-                "metric lifecycle cycle completed"
-            ),
-            Err(error) => tracing::error!(%error, "metric lifecycle blocking task failed"),
+        if state.runtime.read().await.record_metrics {
+            let cycle_state = state.clone();
+            match tokio::task::spawn_blocking(move || run_lifecycle_cycle(&cycle_state, limits))
+                .await
+            {
+                Ok(result) => tracing::info!(
+                    configured_days = ?result.configured_days,
+                    retention_windows = ?result.retention_windows,
+                    cutoffs = ?result.cutoffs,
+                    tiers = ?result.tiers,
+                    wal = ?result.wal,
+                    deleted_raw = result.deleted[0],
+                    deleted_minute = result.deleted[1],
+                    deleted_hour = result.deleted[2],
+                    deleted_day = result.deleted[3],
+                    failure = ?result.failure,
+                    purge_skipped = ?result.purge_skipped,
+                    elapsed_ms = result.elapsed.as_millis(),
+                    "metric lifecycle cycle completed"
+                ),
+                Err(error) => tracing::error!(%error, "metric lifecycle blocking task failed"),
+            }
         }
 
         let deadline = Instant::now() + LIFECYCLE_INTERVAL;
@@ -912,6 +916,7 @@ async fn collect_cycle(
     let mut records = Vec::new();
     let mut snapshots = Vec::new();
     let mut metadata = Vec::new();
+    let logical_cpu_count = system.cpus().len().max(1);
 
     for process in system.processes().values() {
         let process_name = process.name().to_string_lossy().into_owned();
@@ -944,7 +949,7 @@ async fn collect_cycle(
             process_name,
             command_line,
             display_name,
-            cpu_usage: f64::from(process.cpu_usage()),
+            cpu_usage: normalize_process_cpu_usage(process.cpu_usage(), logical_cpu_count),
             memory_bytes: process.memory(),
             gpu_usage,
             vram_mb,
@@ -969,6 +974,16 @@ async fn collect_cycle(
     metadata.sort_unstable_by_key(|process| process.process_id);
     records.sort_unstable_by_key(|record| record.process_id);
 
+    persist_process_records(state, records).await;
+
+    route_process_events(state, wire_timestamp, snapshots, metadata).await;
+}
+
+async fn persist_process_records(state: &AppState, records: Vec<NewProcessMetricRecord>) {
+    if !state.runtime.read().await.record_metrics {
+        return;
+    }
+
     let expected_count = records.len();
     let store = state.store.clone();
     match tokio::task::spawn_blocking(move || store.save_process_metrics(&records)).await {
@@ -987,8 +1002,6 @@ async fn collect_cycle(
             tracing::error!(%error, "process metric store task failed");
         }
     }
-
-    route_process_events(state, wire_timestamp, snapshots, metadata).await;
 }
 
 fn normalize_keywords(keywords: &[String]) -> Vec<String> {
@@ -1053,7 +1066,7 @@ fn build_process_sample(input: ProcessSampleInput) -> Result<ProcessSample, serd
         vram_mb,
         timestamp,
     } = input;
-    let cpu_usage = round_one(nonnegative(cpu_usage));
+    let cpu_usage = round_one(percentage(cpu_usage));
     let memory_mb = round_one(bytes_to_mb(memory_bytes));
     let mut metrics = MetricValueMap::new();
     metrics.insert(
@@ -1073,7 +1086,7 @@ fn build_process_sample(input: ProcessSampleInput) -> Result<ProcessSample, serd
     metrics.insert(
         "gpu".to_owned(),
         MetricValue {
-            value: round_one(nonnegative(gpu_usage)),
+            value: round_one(percentage(gpu_usage)),
             unit: Some("%".to_owned()),
         },
     );
@@ -1275,6 +1288,14 @@ fn optional_nonnegative(value: Option<f64>) -> Option<f64> {
     })
 }
 
+fn normalize_process_cpu_usage(cpu_usage: f32, logical_cpu_count: usize) -> f64 {
+    percentage(f64::from(cpu_usage) / logical_cpu_count.max(1) as f64)
+}
+
+fn percentage(value: f64) -> f64 {
+    nonnegative(value).min(100.0)
+}
+
 fn nonnegative(value: f64) -> f64 {
     if value.is_finite() && value > 0.0 {
         value
@@ -1295,7 +1316,7 @@ mod tests {
     use tokio::sync::broadcast::error::TryRecvError;
     use xhm_core::{
         time::to_sqlite_text,
-        traits::{MockClock, MockLhmReader, MockRyzenAdjClient},
+        traits::{MetricStore, MockClock, MockLhmReader, MockRyzenAdjClient},
     };
 
     use super::*;
@@ -1650,6 +1671,32 @@ mod tests {
     }
 
     #[test]
+    fn process_cpu_usage_uses_whole_system_percentage_scale() {
+        assert_eq!(normalize_process_cpu_usage(400.0, 32), 12.5);
+        assert_eq!(normalize_process_cpu_usage(1_600.0, 8), 100.0);
+        assert_eq!(normalize_process_cpu_usage(f32::NAN, 32), 0.0);
+    }
+
+    #[test]
+    fn process_sample_bounds_percentage_metrics() {
+        let sample = build_process_sample(ProcessSampleInput {
+            process_id: 42,
+            process_name: "alpha".to_owned(),
+            command_line: "alpha.exe --serve".to_owned(),
+            display_name: "Alpha Service".to_owned(),
+            cpu_usage: 120.0,
+            memory_bytes: 0,
+            gpu_usage: 250.0,
+            vram_mb: 0.0,
+            timestamp: fixed_time(),
+        })
+        .unwrap();
+
+        assert_eq!(sample.snapshot.metrics.get("cpu"), Some(&100.0));
+        assert_eq!(sample.snapshot.metrics.get("gpu"), Some(&100.0));
+    }
+
+    #[test]
     fn process_sample_uses_metric_value_json_and_online_units() {
         let sample = build_process_sample(ProcessSampleInput {
             process_id: 42,
@@ -1886,6 +1933,19 @@ mod tests {
         assert_eq!(metadata.processes[0].command_line, "process-1.exe");
         assert_eq!(metadata.processes[0].display_name, "Process 1");
         assert!(matches!(receiver.try_recv(), Err(TryRecvError::Empty)));
+    }
+
+    #[tokio::test]
+    async fn metric_recording_defaults_off_and_hot_enables_persistence() {
+        let (state, store) = test_state_with_store(RuntimeConfig::default());
+        let record = raw_metric(7, "worker", fixed_time(), r#"{"cpu":{"value":1.0}}"#);
+
+        persist_process_records(&state, vec![record.clone()]).await;
+        assert!(store.history_raw(7, None, None).unwrap().is_empty());
+
+        state.runtime.write().await.record_metrics = true;
+        persist_process_records(&state, vec![record]).await;
+        assert_eq!(store.history_raw(7, None, None).unwrap().len(), 1);
     }
 
     #[tokio::test]

@@ -35,6 +35,11 @@ public static class ConfigurationDefaults
         public static readonly string[] ProcessKeywords = new[] { "python", "llama-server" };
 
         /// <summary>
+        /// 是否将进程指标写入 SQLite。默认关闭以避免持续磁盘写入。
+        /// </summary>
+        public const bool RecordMetrics = false;
+
+        /// <summary>
          /// 系统指标采集间隔(毫秒)。建议大于 0。
          /// 当前系统级采集间隔由服务端 appsettings.json (Monitor:SystemUsageIntervalSeconds) 管理；此处仅作为默认/兼容值。
          /// </summary>
@@ -223,6 +228,7 @@ public static class ConfigurationDefaults
         public static class DataCollection
         {
             public const string ProcessKeywords = "ProcessKeywords";
+            public const string RecordMetrics = "RecordMetrics";
             public const string TopProcessCount = "TopProcessCount";
             public const string DataRetentionDays = "DataRetentionDays";
         }

@@ -1,54 +1,29 @@
 ---
 title: "Quality Rules"
-dimension: specs
-category: execution
-keywords:
-  - quality
-  - testing
-  - coverage
-  - xunit
-  - moq
-  - fluentassertions
-  - eslint
-  - security
-readMode: required
-priority: high
+category: quality
 ---
 
 # Quality Rules
 
-## Testing
+## Linters & Formatters
 
-- Add or update tests for all new/changed public behavior
-- Test edge cases and error conditions (timeouts, null/empty inputs, invalid config, external failures)
-- Mock external dependencies (hardware providers, SignalR, filesystem, external processes) to keep tests deterministic
-- Target >= 80% coverage for new code (pragmatic, focus on critical paths)
+- Rust: rustfmt + clippy at toolchain defaults — no `rustfmt.toml`/`clippy.toml` in the repo. Gate changes with `cargo fmt --check` and `cargo clippy --workspace`.
+- Web: ESLint 9 flat config (`xhmonitor-web/eslint.config.js`) — `@eslint/js` recommended + `typescript-eslint` recommended + `eslint-plugin-react-hooks` (flat recommended) + `eslint-plugin-react-refresh` (vite), applied to `**/*.{ts,tsx}`, `dist` ignored. Run `npm run lint`. No Prettier config exists.
+- TypeScript compiler acts as a gate: `npm run build` runs `tsc -b` before `vite build`; strict flags include `strict`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`, `noUncheckedSideEffectImports`.
+- C#: no `.editorconfig` or analyzer package configured; `<Nullable>enable</Nullable>` is the null-safety gate; `NoWarn CA1416` only in the test project.
 
-### .NET
+## CI (GitHub Actions)
 
-- Use xUnit + Moq + FluentAssertions
-- Prefer fast unit tests; add integration tests only when needed (EF Core/SQLite, SignalR, hosted services)
+- `.github/workflows/release-lite.yml` — on GitHub release publish, windows-latest: setup-dotnet 8.0.x + setup-node 20.x, syncs version into `Directory.Build.props`, then builds Lite/Lite-Net8/Full ZIPs and Inno Setup installers via `publish.ps1` / `build-installer.ps1` and uploads release assets.
+- `sync-latest-release.yml`, `sync-gitee-release.yml` — release mirroring workflows.
+- There is no lint/test CI workflow; linting and tests are run locally before release.
 
-### Frontend (xhmonitor-web)
+## Coverage
 
-- Use `node --test` via `npm run test`
-- Keep tests fast and deterministic; avoid real network calls
+- .NET: coverlet.collector is referenced — `dotnet test --collect:"XPlat Code Coverage"` works.
+- Rust and web: no coverage tooling configured.
 
-## Reliability
-
-- Prefer cancellation-aware loops in background services where practical
-- Ensure resources are disposed (`IDisposable`/`IAsyncDisposable`, `await using`) and connections are stopped on shutdown
-
-## Security & Secrets
-
-- Validate and sanitize input at boundaries (HTTP endpoints, config, plugin inputs)
-- Never commit secrets (keys/tokens/passwords); use environment variables or config overrides
-- Prefer parameterized queries / EF Core LINQ; avoid building SQL strings manually
-
-## Error Handling
-
-- Clear, actionable error messages; do not expose sensitive info
-- Log with context (ids, modes, endpoints) and appropriate severity
+## Entries
 
 <spec-entry category="quality" keywords="wpf,async-ui,reentrancy,save-button,dialog-storm" date="2026-05-15" source="XhMonitor.Desktop/Windows/SettingsWindow.xaml.cs:100">
 

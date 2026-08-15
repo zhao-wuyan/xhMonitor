@@ -898,6 +898,27 @@
                             </Border>
 
                             <Border Style="{StaticResource SettingsCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,16,0">
+                                        <TextBlock Text="记录历史指标" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                        <TextBlock Text="将进程指标写入 SQLite，供历史查询与聚合使用。关闭后实时监控不受影响。"
+                                                   Foreground="{StaticResource TextSecondary}"
+                                                   FontSize="12"
+                                                   Margin="0,4,0,0"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <CheckBox Grid.Column="1"
+                                              Style="{StaticResource ToggleSwitchStyle}"
+                                              IsChecked="{Binding RecordMetrics}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SettingsCard}">
                                 <StackPanel>
                                     <TextBlock Text="进程监控关键词" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
                                     <TextBlock Text="每行一个关键词。支持正则表达式，使用 ! 前缀排除，例如：!chrome"

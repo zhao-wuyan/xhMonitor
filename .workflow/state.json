@@ -1,7 +1,7 @@
 {
-  "version": "2.0",
   "project_name": "xhMonitor",
   "status": "initialized",
+  "version": "2.0",
   "current_milestone": null,
   "current_task_id": null,
   "milestones": [],
@@ -22,7 +22,6 @@
       "description": "Existing workflow issue records preserved during non-destructive recovery."
     }
   ],
-  "last_updated": "2026-05-20T00:00:00+08:00",
   "accumulated_context": {
     "key_decisions": [
       "Recovered missing maestro initialization metadata without overwriting existing .workflow assets.",
@@ -39,5 +38,17 @@
       "reason": "Restored missing .workflow/project.md, .workflow/state.json, and .workflow/config.json while preserving existing workflow assets."
     }
   ],
-  "milestone_history": []
+  "milestone_history": [],
+  "last_updated": "2026-08-14T20:21:47+08:00",
+  "sessions": [
+    {
+      "session_id": "maestro-20260813-debug-lhm-cpu-20260813-153104",
+      "intent": "处理 lhm-bridge CPU 监控不准确问题并校验其他进程指标",
+      "status": "sealed",
+      "depends_on": [],
+      "roadmap_artifact_id": null,
+      "seed_ref": null
+    }
+  ],
+  "active_session_id": null
 }

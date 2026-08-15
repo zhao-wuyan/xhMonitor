@@ -82,8 +82,10 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
+    let (process_keywords, record_metrics) = load_data_collection_settings(store.as_ref());
     let runtime = RuntimeConfig {
-        process_keywords: load_process_keywords(store.as_ref()),
+        process_keywords,
+        record_metrics,
         process_name_rules: match load_process_name_rules(&paths) {
             Ok(rules) => rules,
             Err(error) => {
@@ -234,29 +236,48 @@ fn init_logging(exe_dir: &Path) -> anyhow::Result<WorkerGuard> {
     Ok(guard)
 }
 
-fn load_process_keywords(store: &dyn MetricStore) -> Vec<String> {
+fn load_data_collection_settings(store: &dyn MetricStore) -> (Vec<String>, bool) {
     let settings = match store.list_settings() {
         Ok(settings) => settings,
         Err(error) => {
-            tracing::warn!(%error, "failed to load process keywords; using empty defaults");
-            return Vec::new();
+            tracing::warn!(%error, "failed to load data collection settings; using defaults");
+            return (Vec::new(), false);
         }
-    };
-    let Some(serialized) = settings
-        .iter()
-        .find(|setting| setting.category == "DataCollection" && setting.key == "ProcessKeywords")
-        .map(|setting| setting.value.as_str())
-    else {
-        return Vec::new();
     };
 
-    match serde_json::from_str::<Option<Vec<String>>>(serialized) {
-        Ok(keywords) => keywords.unwrap_or_default(),
-        Err(error) => {
-            tracing::warn!(%error, "failed to parse process keywords; using empty defaults");
-            Vec::new()
-        }
-    }
+    let process_keywords = settings
+        .iter()
+        .find(|setting| {
+            setting.category == "DataCollection" && setting.key == "ProcessKeywords"
+        })
+        .and_then(|setting| {
+            serde_json::from_str::<Option<Vec<String>>>(&setting.value)
+                .map_err(|error| {
+                    tracing::warn!(%error, "failed to parse process keywords; using empty defaults");
+                })
+                .ok()
+                .flatten()
+        })
+        .unwrap_or_default();
+    let record_metrics = settings
+        .iter()
+        .find(|setting| setting.category == "DataCollection" && setting.key == "RecordMetrics")
+        .and_then(
+            |setting| match setting.value.trim().to_ascii_lowercase().as_str() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => {
+                    tracing::warn!(
+                        value = setting.value,
+                        "failed to parse metric recording setting; using disabled default"
+                    );
+                    None
+                }
+            },
+        )
+        .unwrap_or(false);
+
+    (process_keywords, record_metrics)
 }
 
 fn listen_addr(port: u16) -> SocketAddr {
