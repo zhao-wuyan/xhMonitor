@@ -7,7 +7,7 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
   version?: string;
 };
 
-const appVersion = packageJson.version ?? '';
+const appVersion = process.env.XHMONITOR_APP_VERSION?.trim() || packageJson.version?.trim() || '';
 
 // https://vite.dev/config/
 export default defineConfig({

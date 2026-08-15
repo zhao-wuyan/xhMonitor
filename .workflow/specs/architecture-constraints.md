@@ -1,37 +1,44 @@
 ---
 title: "Architecture Constraints"
-dimension: specs
-category: architecture
-keywords:
-  - architecture
-  - desktop
-  - service
-  - web
-  - boundaries
-readMode: required
-priority: high
+category: arch
 ---
 
 # Architecture Constraints
 
-## Runtime Boundaries
+## Module Structure
 
-- `XhMonitor.Core` owns shared models, configuration defaults, and core abstractions.
-- `XhMonitor.Service` owns hosted service, HTTP API, persistence, hardware/process metrics, and background workers.
-- `XhMonitor.Desktop` owns WPF shell, tray integration, local web server/proxy, desktop settings UI, and desktop-only OS integration.
-- `xhmonitor-web` owns the browser UI and must communicate through configured API/SignalR endpoints instead of hardcoded service URLs.
+Multi-package repository: a Rust workspace + a .NET solution + a standalone .NET bridge + a web app.
 
-## Configuration
+- Rust workspace (`Cargo.toml`, resolver 2, workspace version 0.3.0): `xhm-core` (shared models/traits/errors/wire contract), `xhm-service` (Axum binary, port 35179).
+- .NET solution (`xhMonitor.sln`): `XhMonitor.Core` (shared config/models), `XhMonitor.Desktop` (WPF shell, net8.0-windows), `XhMonitor.Desktop.Tests` (xUnit).
+- `lhm-bridge/lhm-bridge.csproj` is NOT in the solution — standalone LibreHardwareMonitor sensor subprocess, built/published separately by `publish.ps1`.
+- `xhmonitor-web/package.json`: React 19 + Vite 7 SPA (dev port 35180).
+- Product version lives in `Directory.Build.props` (0.2.21) and drives .NET assemblies plus `publish.ps1`/`build-installer.ps1`; the Rust workspace version (0.3.0) is independent.
 
-- Shared defaults live in `ConfigurationDefaults` where practical.
-- Runtime user settings are persisted through the config API/database path, not by editing appsettings from UI.
-- Infrastructure-level ports and service endpoints remain in configuration/discovery services, not in user-facing settings unless explicitly designed.
+## Layer Boundaries
 
-## Integration
+- `xhm-core` → `xhm-service` is one-way. xhm-core depends only on serde/serde_json/thiserror/chrono — no Axum, no rusqlite. Storage and hardware boundaries are traits (`MetricStore`, `LhmReader`, `RyzenAdjClient`, `Clock`) defined in xhm-core and implemented in xhm-service (`SqliteMetricStore`, `LhmBridgeManager`, `ProductionRyzenAdjClient`).
+- `lhm-bridge` runs as a child process of xhm-service (`LhmBridgeManager::start`). Contract: stdout = one `LhmSnapshot` JSON per line, stderr = banner JSON (`is_admin`) + diagnostics, exit codes 0 (graceful) / 1 (LHM init failure) / 2 (`--require-admin` unmet). The service degrades to `MockLhmReader` when the bridge is unavailable.
+- `xhmonitor-web` communicates with the service only via REST (`/api/v1/...`) and the SignalR-compatible hub (`/hubs/metrics`) on port 35179; production builds use same-origin relative URLs behind the 35180 gateway (`src/config/endpoints.ts`).
+- `XhMonitor.Desktop` owns the service process lifecycle (release: `Service/xhm-service.exe`, dev fallback: `cargo run -p xhm-service`) and hosts web assets on 35180 with YARP reverse-proxying `/api/**` and `/hubs/**` to 35179.
+- The wire contract in `xhm-core/src/models.rs` + `wire.rs` is field-for-field aligned with the legacy C# JSON: camelCase properties, verbatim map keys (e.g. `"Appearance"` stays PascalCase), integer enums, explicit nulls. Renaming fields silently breaks the unmodified React frontend.
 
-- Desktop UI should use services (`IServiceDiscovery`, `IBackendServerService`, `IWindowManagementService`, etc.) rather than constructing process/network behavior inline.
-- Backend API changes require checking frontend and desktop consumers before modifying response shapes.
+## Dependency Rules
 
+- Rust dependency versions are centralized in `[workspace.dependencies]` at the root; member crates reference them with `.workspace = true`.
+- `XhMonitor.Desktop` references only `XhMonitor.Core`; the test project references `XhMonitor.Desktop`; lhm-bridge shares no project references (JSON contract only).
+- Frontend build output feeds the Desktop app: MSBuild target `BuildWebAssets` in `XhMonitor.Desktop.csproj` runs `npm install`/`npm run build` and copies `xhmonitor-web/dist/**` into `wwwroot/` at build and publish time.
+- Frontend code must route endpoints through `src/config/endpoints.ts` and layout state through `LayoutContext`.
+
+## Technology Constraints
+
+- Rust 1.82 (`rust-version` in workspace), edition 2021. Release profile: `opt-level = "z"`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, `strip = true`.
+- .NET 8: `net8.0-windows` for Desktop/Tests (WPF + WinForms enabled); Desktop takes `FrameworkReference Microsoft.AspNetCore.App` (embedded Kestrel + YARP 2.x).
+- Node.js 18+ locally (CI uses Node 20.x), TypeScript ~5.9.3, Vite 7, Tailwind CSS 4 via `@tailwindcss/vite`, `@microsoft/signalr` 10.
+- Ports: 35179 = internal API + hub (loopback-bound); 35180 = web gateway (Vite dev server with `strictPort: true`, or service/Desktop hosted; binds 0.0.0.0 only when LAN access security config allows).
+- Windows-only runtime: `windows-sys` bindings, WinRing0 driver (bridge sensors), UAC/admin-mode features, RyzenAdj (AMD platform gate).
+
+## Entries
 
 <spec-entry category="arch" keywords="lifecycle,migration,rebuild,sqlite,marker" date="2026-08-10" sid="S-20260810-r6rv" title="Rust 生命周期数据库重建标志策略" description="Rust 后端生命周期数据库重建、占用降级与未来迁移的稳定规则" source="feature/rust-service-backend@901d86c">
 

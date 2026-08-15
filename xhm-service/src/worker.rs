@@ -916,6 +916,7 @@ async fn collect_cycle(
     let mut records = Vec::new();
     let mut snapshots = Vec::new();
     let mut metadata = Vec::new();
+    let logical_cpu_count = system.cpus().len().max(1);
 
     for process in system.processes().values() {
         let process_name = process.name().to_string_lossy().into_owned();
@@ -948,7 +949,7 @@ async fn collect_cycle(
             process_name,
             command_line,
             display_name,
-            cpu_usage: f64::from(process.cpu_usage()),
+            cpu_usage: normalize_process_cpu_usage(process.cpu_usage(), logical_cpu_count),
             memory_bytes: process.memory(),
             gpu_usage,
             vram_mb,
@@ -1065,7 +1066,7 @@ fn build_process_sample(input: ProcessSampleInput) -> Result<ProcessSample, serd
         vram_mb,
         timestamp,
     } = input;
-    let cpu_usage = round_one(nonnegative(cpu_usage));
+    let cpu_usage = round_one(percentage(cpu_usage));
     let memory_mb = round_one(bytes_to_mb(memory_bytes));
     let mut metrics = MetricValueMap::new();
     metrics.insert(
@@ -1085,7 +1086,7 @@ fn build_process_sample(input: ProcessSampleInput) -> Result<ProcessSample, serd
     metrics.insert(
         "gpu".to_owned(),
         MetricValue {
-            value: round_one(nonnegative(gpu_usage)),
+            value: round_one(percentage(gpu_usage)),
             unit: Some("%".to_owned()),
         },
     );
@@ -1285,6 +1286,14 @@ fn optional_nonnegative(value: Option<f64>) -> Option<f64> {
             None
         }
     })
+}
+
+fn normalize_process_cpu_usage(cpu_usage: f32, logical_cpu_count: usize) -> f64 {
+    percentage(f64::from(cpu_usage) / logical_cpu_count.max(1) as f64)
+}
+
+fn percentage(value: f64) -> f64 {
+    nonnegative(value).min(100.0)
 }
 
 fn nonnegative(value: f64) -> f64 {
@@ -1659,6 +1668,32 @@ mod tests {
             &keywords
         ));
         assert!(!matches_keywords("alpha-service.exe", "", &[]));
+    }
+
+    #[test]
+    fn process_cpu_usage_uses_whole_system_percentage_scale() {
+        assert_eq!(normalize_process_cpu_usage(400.0, 32), 12.5);
+        assert_eq!(normalize_process_cpu_usage(1_600.0, 8), 100.0);
+        assert_eq!(normalize_process_cpu_usage(f32::NAN, 32), 0.0);
+    }
+
+    #[test]
+    fn process_sample_bounds_percentage_metrics() {
+        let sample = build_process_sample(ProcessSampleInput {
+            process_id: 42,
+            process_name: "alpha".to_owned(),
+            command_line: "alpha.exe --serve".to_owned(),
+            display_name: "Alpha Service".to_owned(),
+            cpu_usage: 120.0,
+            memory_bytes: 0,
+            gpu_usage: 250.0,
+            vram_mb: 0.0,
+            timestamp: fixed_time(),
+        })
+        .unwrap();
+
+        assert_eq!(sample.snapshot.metrics.get("cpu"), Some(&100.0));
+        assert_eq!(sample.snapshot.metrics.get("gpu"), Some(&100.0));
     }
 
     #[test]

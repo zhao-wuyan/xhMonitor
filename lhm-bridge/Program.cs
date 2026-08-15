@@ -590,7 +590,8 @@ internal sealed class ProcessVramCollector : IDisposable
                 }
 
                 usageByProcessId.TryGetValue(processId, out var current);
-                usageByProcessId[processId] = current + usage;
+                // 与 Windows 系统口径一致：进程 GPU 百分比取最忙的 engine。
+                usageByProcessId[processId] = Math.Max(current, Math.Min(100.0, usage));
             }
             catch (InvalidOperationException)
             {

@@ -185,6 +185,7 @@ if ($SkipService) {
 if (-not $SkipService) {
     $webDirectory = Join-Path $RootDir "xhmonitor-web"
     $webNodeModules = Join-Path $webDirectory "node_modules"
+    $previousWebVersion = $env:XHMONITOR_APP_VERSION
     Push-Location $webDirectory
     try {
         if (-not (Test-Path -LiteralPath $webNodeModules -PathType Container)) {
@@ -194,13 +195,19 @@ if (-not $SkipService) {
                 throw "Web 依赖安装失败"
             }
         }
-        Write-Host "  构建 Web 前端..." -ForegroundColor Gray
+        Write-Host "  构建 Web 前端 (v$Version)..." -ForegroundColor Gray
+        $env:XHMONITOR_APP_VERSION = $Version
         & npm run build
         if ($LASTEXITCODE -ne 0) {
             throw "Web 前端构建失败"
         }
     } finally {
         Pop-Location
+        if ($null -eq $previousWebVersion) {
+            Remove-Item Env:XHMONITOR_APP_VERSION -ErrorAction SilentlyContinue
+        } else {
+            $env:XHMONITOR_APP_VERSION = $previousWebVersion
+        }
     }
 }
 

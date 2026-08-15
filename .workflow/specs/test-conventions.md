@@ -1,19 +1,47 @@
 ---
 title: "Test Conventions"
-dimension: specs
-category: testing
-keywords:
-  - testing
-  - xunit
-  - fluentassertions
-  - moq
-  - dotnet
-  - node-test
-readMode: required
-priority: high
+category: test
 ---
 
 # Test Conventions
+
+## Framework
+
+- Rust: built-in test harness; unit tests live in `#[cfg(test)]` modules co-located in every `xhm-core`/`xhm-service` source file; `tower` + `http-body-util` are dev-dependencies of xhm-service for Axum router tests.
+- .NET: xUnit 2.6.2 + FluentAssertions 6.12.0 + coverlet.collector 6.0.2 in `XhMonitor.Desktop.Tests` (net8.0-windows, references `XhMonitor.Desktop`, `<Using Include="Xunit" />`).
+- Web: Node built-in test runner — `npm run test` maps to `node --test`; existing test file `components/charts/peakValley.test.js`. No vitest/jest.
+
+## Run Commands
+
+```powershell
+cargo test                          # all Rust workspace tests
+cargo test -p xhm-service           # single crate
+cargo test -p xhm-service <filter>  # filter by test name substring
+dotnet test xhMonitor.sln           # .NET solution tests (XhMonitor.Desktop.Tests)
+dotnet test XhMonitor.Desktop.Tests\XhMonitor.Desktop.Tests.csproj
+dotnet test xhMonitor.sln --collect:"XPlat Code Coverage"  # coverlet coverage
+cd xhmonitor-web; npm run test      # node --test
+```
+
+## Directory Structure
+
+- Rust: no separate `tests/` directories; `mod tests` blocks at the bottom of each `src/*.rs` file.
+- .NET: dedicated test project directory `XhMonitor.Desktop.Tests/` with `*Tests.cs` files (e.g. `AsyncOperationGateTests.cs`).
+- Web: `*.test.js` colocated with the code under test (`xhmonitor-web/components/charts/`).
+
+## Naming
+
+- .NET: test class `{Subject}Tests`; methods `{MethodOrScenario}_Should{ExpectedBehavior}` or `{MethodOrScenario}_When{Condition}_{ExpectedBehavior}`; `[Fact]` for single-scenario tests.
+- Rust: `snake_case` test function names describing the behavior under test.
+
+## Patterns
+
+- Mock external boundaries (hardware providers, SignalR, filesystem, child processes); xhm-core ships `MockLhmReader` and trait seams (`MetricStore`, `LhmReader`, `Clock`) for test doubles.
+- SQLite tests use temp paths or `:memory:`.
+- .NET assertions use FluentAssertions `Should()` style.
+- Keep web tests deterministic and network-free (pure functions, data transforms).
+
+## Entries
 
 <spec-entry category="testing" keywords="xunit,fluentassertions,naming,unit-tests,dotnet" date="2026-05-20" source="XhMonitor.Tests/Core/ResultTests.cs:1; XhMonitor.Tests/Data/SqliteConnectionStringResolverTests.cs:1; XhMonitor.Desktop.Tests/AsyncOperationGateTests.cs:1">
 
