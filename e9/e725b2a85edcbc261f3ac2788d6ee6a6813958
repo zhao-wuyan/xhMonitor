@@ -1,0 +1,24 @@
+Cargo.toml
+  h_cb0e2129f6578c 35-36
+lhm-bridge/Program.cs
+  h_cb0e2129f6578c 126
+xhm-core/src/models.rs
+  h_cb0e2129f6578c 870,882
+xhm-service/src/lib.rs
+  h_cb0e2129f6578c 14
+xhm-service/src/network/mod.rs
+  h_cb0e2129f6578c 1-1020
+xhm-service/src/worker.rs
+  h_cb0e2129f6578c 25-28,229,279,883,897,905,1153,1155,1178,1201-1202,1791-1799,1819,1848-1851,1853-1857
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "e9e725b2a85edcbc261f3ac2788d6ee6a6813958",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
