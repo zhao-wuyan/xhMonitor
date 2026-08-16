@@ -1,0 +1,14 @@
+.workflow/spec-analytics.jsonl
+  h_cb0e2129f6578c 45-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "465ae28d1490c05957ae19887dbc30571e1555b7",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
