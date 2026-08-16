@@ -777,8 +777,6 @@ mod tests {
             process_gpu_usage: Default::default(),
             process_vram_mb: Default::default(),
             gpu_load: Some(43.0),
-            net_up_mbps: 0.106,
-            net_down_mbps: 0.091,
             disk_read_mbps: 0.0,
             disk_write_mbps: 0.0,
             disks: Vec::new(),

@@ -32,6 +32,8 @@ sysinfo = { version = "0.32", default-features = false, features = ["system", "d
 libloading = "0.8"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
     "Win32_Security",
     "Win32_System_LibraryLoader",
     "Win32_System_Registry",

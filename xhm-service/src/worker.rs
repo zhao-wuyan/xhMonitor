@@ -22,7 +22,10 @@ use xhm_core::{
     CoreError, Result as CoreResult,
 };
 
-use crate::state::{AppState, ProcessNameRule, PushTarget, RoutedPushEvent};
+use crate::{
+    network::{NetworkMonitor, NetworkThroughput},
+    state::{AppState, ProcessNameRule, PushTarget, RoutedPushEvent},
+};
 
 const BYTES_PER_MB: f64 = 1024.0 * 1024.0;
 const HARDWARE_REFRESH_INTERVAL: Duration = Duration::from_secs(60 * 60);
@@ -223,6 +226,7 @@ async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
         let runtime = state.runtime.read().await;
         ProcessNameResolver::new(&runtime.process_name_rules)
     };
+    let mut network_monitor = NetworkMonitor::new();
 
     loop {
         if *shutdown_rx.borrow() {
@@ -272,6 +276,7 @@ async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
                 &state,
                 &mut system,
                 max_memory,
+                &mut network_monitor,
                 &keywords,
                 &process_name_resolver,
             )
@@ -875,6 +880,7 @@ async fn collect_cycle(
     state: &AppState,
     system: &mut System,
     max_memory: f64,
+    network_monitor: &mut NetworkMonitor,
     keywords: &[String],
     process_name_resolver: &ProcessNameResolver,
 ) {
@@ -888,6 +894,7 @@ async fn collect_cycle(
     } else {
         None
     };
+    let network = network_monitor.sample();
     let usage = build_system_usage(
         local_timestamp,
         f64::from(system.global_cpu_usage()),
@@ -895,6 +902,7 @@ async fn collect_cycle(
         max_memory,
         lhm.as_ref(),
         power,
+        network,
     );
     send_event(state, PushTarget::All, PushEvent::SystemUsage(usage));
 
@@ -1142,17 +1150,9 @@ fn build_system_usage(
     max_memory: f64,
     lhm: Option<&LhmSnapshot>,
     power: Option<PowerStatus>,
+    network: NetworkThroughput,
 ) -> SystemUsagePayload {
-    let (
-        total_gpu,
-        cpu_temperature,
-        gpu_temperature,
-        upload_speed,
-        download_speed,
-        disks,
-        vram_used,
-        vram_total,
-    ) = match lhm {
+    let (total_gpu, cpu_temperature, gpu_temperature, disks, vram_used, vram_total) = match lhm {
         Some(snapshot) => {
             let disks = snapshot
                 .disks
@@ -1170,14 +1170,12 @@ fn build_system_usage(
                 round_one(nonnegative(snapshot.gpu_load.unwrap_or(0.0))),
                 finite(snapshot.cpu_temp),
                 finite(snapshot.gpu_temp),
-                nonnegative(snapshot.net_up_mbps),
-                nonnegative(snapshot.net_down_mbps),
                 disks,
                 finite(snapshot.gpu_memory_used_mb).unwrap_or(0.0),
                 finite(snapshot.gpu_memory_total_mb).unwrap_or(0.0),
             )
         }
-        None => (0.0, None, None, 0.0, 0.0, Vec::new(), 0.0, 0.0),
+        None => (0.0, None, None, Vec::new(), 0.0, 0.0),
     };
     let total_vram = round_one(nonnegative(vram_used));
     let max_vram = round_one(nonnegative(vram_total));
@@ -1200,8 +1198,8 @@ fn build_system_usage(
         gpu_temperature: gpu_temperature.map(round_one),
         total_memory: round_one(bytes_to_mb(used_memory_bytes)),
         total_vram,
-        upload_speed,
-        download_speed,
+        upload_speed: nonnegative(network.upload_mib_per_second),
+        download_speed: nonnegative(network.download_mib_per_second),
         max_memory,
         max_vram,
         disks,
@@ -1790,7 +1788,15 @@ mod tests {
     #[test]
     fn system_usage_without_bridge_or_power_uses_safe_values() {
         let timestamp = fixed_time().with_timezone(&Local);
-        let usage = build_system_usage(timestamp, f64::NAN, 512 * 1024 * 1024, 1024.0, None, None);
+        let usage = build_system_usage(
+            timestamp,
+            f64::NAN,
+            512 * 1024 * 1024,
+            1024.0,
+            None,
+            None,
+            NetworkThroughput::default(),
+        );
 
         assert_eq!(usage.total_cpu, 0.0);
         assert_eq!(usage.total_gpu, 0.0);
@@ -1810,7 +1816,7 @@ mod tests {
     }
 
     #[test]
-    fn system_usage_maps_only_per_disk_bridge_snapshots() {
+    fn system_usage_combines_native_network_with_non_network_lhm_data() {
         let lhm = LhmSnapshot {
             ts: fixed_time(),
             cpu_temp: Some(60.04),
@@ -1821,8 +1827,6 @@ mod tests {
             process_gpu_usage: Default::default(),
             gpu_load: Some(25.04),
             process_vram_mb: Default::default(),
-            net_up_mbps: 1.25,
-            net_down_mbps: 2.5,
             disk_read_mbps: 99.0,
             disk_write_mbps: 88.0,
             disks: vec![xhm_core::models::LhmDiskSnapshot {
@@ -1841,7 +1845,16 @@ mod tests {
             1024.0,
             Some(&lhm),
             None,
+            NetworkThroughput {
+                upload_mib_per_second: 7.25,
+                download_mib_per_second: 9.5,
+            },
         );
+        assert_eq!(usage.upload_speed, 7.25);
+        assert_eq!(usage.download_speed, 9.5);
+        assert_eq!(usage.total_gpu, 25.0);
+        assert_eq!(usage.cpu_temperature, Some(60.0));
+        assert_eq!(usage.gpu_temperature, Some(50.1));
 
         assert_eq!(usage.disks.len(), 1);
         assert_eq!(usage.disks[0].name, "NVMe 0");

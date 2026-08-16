@@ -11,6 +11,7 @@ use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 pub mod api;
 pub mod db;
 pub mod lhm;
+pub mod network;
 pub mod power;
 pub mod realtime;
 pub mod state;
