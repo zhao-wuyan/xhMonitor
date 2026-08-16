@@ -42,3 +42,8 @@
 {"type":"cli","id":"CLI-1786786238864-1","timestamp":"2026-08-15T09:30:38.864Z","command":"load","args":{"type":"knowhow","id":"kg-code-c-projectdev-project-xinghe-xhmonitor-xhmonitor-web-vite-config-ts-version"}}
 {"type":"cli","id":"CLI-1786804883075-1","timestamp":"2026-08-15T14:41:23.075Z","command":"load","args":{"type":"spec","id":"spec:project:quality-rules-003"}}
 {"type":"cli","id":"CLI-1786804883223-1","timestamp":"2026-08-15T14:41:23.223Z","command":"load","args":{"type":"knowhow","id":"knowhow-rcp-20260813-build-workflow"}}
+{"type":"cli","id":"CLI-1786857826123-1","timestamp":"2026-08-16T05:23:46.123Z","command":"load","args":{"type":"knowhow","id":"session-maestro-20260813-debug-lhm-cpu-20260813-153104"}}
+{"type":"cli","id":"CLI-1786861990829-1","timestamp":"2026-08-16T06:33:10.829Z","command":"load","args":{"type":"spec","id":"spec:project:coding-conventions"}}
+{"type":"cli","id":"CLI-1786861999276-1","timestamp":"2026-08-16T06:33:19.276Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
+{"type":"cli","id":"CLI-1786862005126-1","timestamp":"2026-08-16T06:33:25.126Z","command":"load","args":{"type":"spec","id":"spec:project:quality-rules"}}
+{"type":"cli","id":"CLI-1786862049243-1","timestamp":"2026-08-16T06:34:09.243Z","command":"load","args":{"type":"knowhow","id":"knowhow-rcp-20260813-dev-workflow"}}
