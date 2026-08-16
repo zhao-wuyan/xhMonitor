@@ -47,3 +47,8 @@
 {"type":"cli","id":"CLI-1786861999276-1","timestamp":"2026-08-16T06:33:19.276Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
 {"type":"cli","id":"CLI-1786862005126-1","timestamp":"2026-08-16T06:33:25.126Z","command":"load","args":{"type":"spec","id":"spec:project:quality-rules"}}
 {"type":"cli","id":"CLI-1786862049243-1","timestamp":"2026-08-16T06:34:09.243Z","command":"load","args":{"type":"knowhow","id":"knowhow-rcp-20260813-dev-workflow"}}
+{"type":"cli","id":"CLI-1786862208655-1","timestamp":"2026-08-16T06:36:48.655Z","command":"load","args":{"type":"spec","id":"spec:project:coding-conventions"}}
+{"type":"cli","id":"CLI-1786862208818-1","timestamp":"2026-08-16T06:36:48.818Z","command":"load","args":{"type":"spec","id":"spec:project:architecture-constraints"}}
+{"type":"cli","id":"CLI-1786862208818-1","timestamp":"2026-08-16T06:36:48.818Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
+{"type":"cli","id":"CLI-1786863013014-1","timestamp":"2026-08-16T06:50:13.014Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
+{"type":"cli","id":"CLI-1786867415857-1","timestamp":"2026-08-16T08:03:35.857Z","command":"load","args":{"type":"knowhow","id":"knowhow-rcp-20260813-build-workflow"}}
