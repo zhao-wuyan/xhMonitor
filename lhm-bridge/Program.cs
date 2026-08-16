@@ -4,7 +4,6 @@
 // 采集范围与原 XhMonitor.Core/Services/LibreHardwareManager.cs 对齐：
 //   - CPU Temperature（对应 SystemMetricProvider.GetTemperatures）
 //   - GPU Temperature + Load（对应 LibreHardwareMonitorGpuProvider）
-//   - Network Throughput（对应 SystemMetricProvider.GetNetworkSpeed via LHM）
 //   - Storage Throughput（对应 SystemMetricProvider.GetDiskUsages via LHM）
 //
 // 契约：
@@ -12,7 +11,6 @@
 //   stderr — 诊断日志；首行固定为 banner JSON（含 is_admin），供父进程探测能力
 //   退出码 — 0 优雅退出 / 1 LHM 初始化失败 / 2 --require-admin 且非管理员
 
-using System.Net.NetworkInformation;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -86,7 +84,6 @@ catch (Exception ex)
     return 1;
 }
 
-var physicalAdapterSignatures = GetPhysicalAdapterSignatures();
 using var processVramCollector = new ProcessVramCollector();
 
 using var cts = new CancellationTokenSource();
@@ -126,7 +123,7 @@ while (!cts.IsCancellationRequested)
     try
     {
         computer.Accept(visitor);
-        var snapshot = BuildSnapshot(computer, physicalAdapterSignatures, processVramCollector);
+        var snapshot = BuildSnapshot(computer, processVramCollector);
         Console.WriteLine(JsonSerializer.Serialize(snapshot, options));
         Console.Out.Flush();
         collectionFailures.RecordSuccess();
@@ -189,7 +186,6 @@ static bool IsRunningAsAdministrator()
 
 static LhmSnapshot BuildSnapshot(
     Computer computer,
-    IReadOnlyCollection<string> physicalAdapterSignatures,
     ProcessVramCollector processVramCollector)
 {
     var cpuTemperatureSensors = new List<LhmSensorReading>();
@@ -197,7 +193,6 @@ static LhmSnapshot BuildSnapshot(
     var gpuLoadSensors = new List<LhmSensorReading>();
     var gpuMemoryUsedSensors = new List<LhmSensorReading>();
     var gpuMemoryTotalSensors = new List<LhmSensorReading>();
-    var networkSensors = new List<LhmSensorReading>();
     var disks = new List<LhmDiskSnapshot>();
     double diskRead = 0, diskWrite = 0;
 
@@ -259,16 +254,6 @@ static LhmSnapshot BuildSnapshot(
                 }
                 break;
 
-            case HardwareType.Network:
-                foreach (var sensor in hw.Sensors)
-                {
-                    if (sensor.SensorType == SensorType.Throughput)
-                    {
-                        networkSensors.Add(new LhmSensorReading(
-                            hw.Name, sensor.Name, sensor.SensorType, sensor.Value));
-                    }
-                }
-                break;
 
             case HardwareType.Storage:
                 {
@@ -300,9 +285,6 @@ static LhmSnapshot BuildSnapshot(
     var (cpuTemp, cpuTempLabel) = LhmSelection.SelectTemperatureWithLabel(cpuTemperatureSensors);
     var (gpuTemp, _) = LhmSelection.SelectTemperatureWithLabel(gpuTemperatureSensors);
     var gpuLoad = LhmSelection.SelectGpuLoad(gpuLoadSensors);
-    var (netUp, netDown) = LhmSelection.SelectNetworkThroughput(
-        networkSensors,
-        physicalAdapterSignatures);
     var processGpuUsage = processVramCollector.CaptureGpuUsagePercent();
     var processVramMb = processVramCollector.CaptureUsageMb();
 
@@ -314,8 +296,6 @@ static LhmSnapshot BuildSnapshot(
         GpuMemoryUsedMb: gpuMemoryUsed.HasValue ? Math.Round(gpuMemoryUsed.Value, 1) : null,
         GpuMemoryTotalMb: gpuMemoryTotal.HasValue ? Math.Round(gpuMemoryTotal.Value, 1) : null,
         GpuLoad: gpuLoad.HasValue ? Math.Round(gpuLoad.Value, 1) : null,
-        NetUploadMbps: LhmSelection.BytesPerSecondToMbps(netUp),
-        NetDownloadMbps: LhmSelection.BytesPerSecondToMbps(netDown),
         DiskReadMbps: Math.Round(diskRead, 3),
         DiskWriteMbps: Math.Round(diskWrite, 3),
         ProcessGpuUsage: processGpuUsage,
@@ -416,38 +396,6 @@ static bool ContainsAny(string name, string[] patterns)
     return false;
 }
 
-static IReadOnlyCollection<string> GetPhysicalAdapterSignatures()
-{
-    var signatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    try
-    {
-        foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            if (adapter.NetworkInterfaceType != NetworkInterfaceType.Ethernet &&
-                adapter.NetworkInterfaceType != NetworkInterfaceType.Wireless80211)
-            {
-                continue;
-            }
-
-            if (!string.IsNullOrWhiteSpace(adapter.Name))
-            {
-                signatures.Add(adapter.Name);
-            }
-
-            if (!string.IsNullOrWhiteSpace(adapter.Description) &&
-                !string.Equals(adapter.Description, adapter.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                signatures.Add(adapter.Description);
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"[lhm-bridge] network adapter verification failed: {ex.Message}");
-    }
-
-    return signatures;
-}
 
 internal sealed class ProcessVramCollector : IDisposable
 {
@@ -774,7 +722,6 @@ internal static class BridgeComputerConfiguration
             IsCpuEnabled = true,
             IsGpuEnabled = true,
             IsMemoryEnabled = false,
-            IsNetworkEnabled = true,
             IsStorageEnabled = true,
             IsMotherboardEnabled = false,
             IsControllerEnabled = false,
@@ -806,57 +753,9 @@ internal readonly record struct LhmSensorReading(
     SensorType SensorType,
     float? Value);
 
-internal enum NetworkAdapterCategory
-{
-    Physical,
-    Virtual,
-    Unknown,
-}
-
-internal readonly record struct NetworkAdapterThroughput(
-    string HardwareName,
-    double UploadBytesPerSecond,
-    double DownloadBytesPerSecond,
-    NetworkAdapterCategory Category);
 
 internal static class LhmSelection
 {
-    private static readonly string[] VirtualAdapterKeywords =
-    [
-        "vEthernet",
-        "Hyper-V",
-        "VirtualBox",
-        "VMware",
-        "TAP-",
-        "VPN",
-        "Radmin",
-        "Loopback",
-        "Pseudo",
-        "WireGuard",
-        "OpenVPN",
-        "Tun",
-        "Fortinet",
-        "Cisco AnyConnect",
-        "TeamViewer",
-        "AnyDesk",
-        "Kernel",
-    ];
-
-    private static readonly string[] UploadSensorNamePatterns =
-    [
-        "upload",
-        "send",
-        "sent",
-        "tx",
-    ];
-
-    private static readonly string[] DownloadSensorNamePatterns =
-    [
-        "download",
-        "receive",
-        "received",
-        "rx",
-    ];
 
     private static readonly string[] EngineSensorNamePatterns =
     [
@@ -882,8 +781,6 @@ internal static class LhmSelection
         "GPU Load",
     ];
 
-    internal static double BytesPerSecondToMbps(double bytesPerSecond) =>
-        bytesPerSecond / 1_048_576.0;
 
     internal static (double? Value, string? Label) SelectTemperatureWithLabel(
         IEnumerable<LhmSensorReading> sensors)
@@ -1084,78 +981,6 @@ internal static class LhmSelection
         return maximumByHardware;
     }
 
-    internal static (double UploadBytesPerSecond, double DownloadBytesPerSecond)
-        SelectNetworkThroughput(
-            IEnumerable<LhmSensorReading> sensors,
-            IReadOnlyCollection<string> physicalAdapterSignatures)
-    {
-        var byAdapter = new Dictionary<string, (double Upload, double Download)>(
-            StringComparer.OrdinalIgnoreCase);
-
-        foreach (var sensor in sensors)
-        {
-            if (sensor.SensorType != SensorType.Throughput ||
-                string.IsNullOrWhiteSpace(sensor.HardwareName))
-            {
-                continue;
-            }
-
-            if (!byAdapter.TryGetValue(sensor.HardwareName, out var throughput))
-            {
-                throughput = (0.0, 0.0);
-            }
-
-            if (sensor.Value is float value && float.IsFinite(value) && value > 0)
-            {
-                if (ContainsAny(sensor.Name, UploadSensorNamePatterns))
-                {
-                    throughput.Upload += value;
-                }
-                else if (ContainsAny(sensor.Name, DownloadSensorNamePatterns))
-                {
-                    throughput.Download += value;
-                }
-            }
-
-            byAdapter[sensor.HardwareName] = throughput;
-        }
-
-        var physical = new List<NetworkAdapterThroughput>();
-        var virtualAdapters = new List<NetworkAdapterThroughput>();
-        var unknown = new List<NetworkAdapterThroughput>();
-        foreach (var (hardwareName, throughput) in byAdapter)
-        {
-            var adapter = new NetworkAdapterThroughput(
-                hardwareName,
-                throughput.Upload,
-                throughput.Download,
-                GetNetworkAdapterCategory(hardwareName, physicalAdapterSignatures));
-            switch (adapter.Category)
-            {
-                case NetworkAdapterCategory.Physical:
-                    physical.Add(adapter);
-                    break;
-                case NetworkAdapterCategory.Virtual:
-                    virtualAdapters.Add(adapter);
-                    break;
-                default:
-                    unknown.Add(adapter);
-                    break;
-            }
-        }
-
-        if (physical.Count > 0)
-        {
-            return Sum(physical);
-        }
-
-        if (virtualAdapters.Count > 0)
-        {
-            return Max(virtualAdapters);
-        }
-
-        return Sum(unknown);
-    }
 
     private static bool IsHigher(float value, LhmSensorReading? candidate) =>
         candidate is not { Value: float current } || value > current;
@@ -1172,61 +997,6 @@ internal static class LhmSelection
         return false;
     }
 
-    private static NetworkAdapterCategory GetNetworkAdapterCategory(
-        string hardwareName,
-        IReadOnlyCollection<string> physicalAdapterSignatures)
-    {
-        if (ContainsAny(hardwareName, VirtualAdapterKeywords))
-        {
-            return NetworkAdapterCategory.Virtual;
-        }
-
-        foreach (var signature in physicalAdapterSignatures)
-        {
-            if (!string.IsNullOrWhiteSpace(signature) &&
-                (hardwareName.Contains(signature, StringComparison.OrdinalIgnoreCase) ||
-                 signature.Contains(hardwareName, StringComparison.OrdinalIgnoreCase)))
-            {
-                return NetworkAdapterCategory.Physical;
-            }
-        }
-
-        return NetworkAdapterCategory.Unknown;
-    }
-
-    private static (double UploadBytesPerSecond, double DownloadBytesPerSecond)
-        Sum(IReadOnlyList<NetworkAdapterThroughput> adapters)
-    {
-        double upload = 0.0;
-        double download = 0.0;
-        foreach (var adapter in adapters)
-        {
-            upload += adapter.UploadBytesPerSecond;
-            download += adapter.DownloadBytesPerSecond;
-        }
-
-        return (upload, download);
-    }
-
-    private static (double UploadBytesPerSecond, double DownloadBytesPerSecond)
-        Max(IReadOnlyList<NetworkAdapterThroughput> adapters)
-    {
-        NetworkAdapterThroughput? best = null;
-        var bestTotal = double.MinValue;
-        foreach (var adapter in adapters)
-        {
-            var total = adapter.UploadBytesPerSecond + adapter.DownloadBytesPerSecond;
-            if (total > bestTotal)
-            {
-                bestTotal = total;
-                best = adapter;
-            }
-        }
-
-        return best is { } selectedAdapter
-            ? (selectedAdapter.UploadBytesPerSecond, selectedAdapter.DownloadBytesPerSecond)
-            : (0.0, 0.0);
-    }
 
     private static bool ContainsAny(string name, IReadOnlyList<string> patterns)
     {
@@ -1266,8 +1036,6 @@ record LhmSnapshot(
     [property: JsonPropertyName("gpu_memory_used_mb")] double? GpuMemoryUsedMb,
     [property: JsonPropertyName("gpu_memory_total_mb")] double? GpuMemoryTotalMb,
     [property: JsonPropertyName("gpu_load")] double? GpuLoad,
-    [property: JsonPropertyName("net_up_mbps")] double NetUploadMbps,
-    [property: JsonPropertyName("net_down_mbps")] double NetDownloadMbps,
     [property: JsonPropertyName("disk_read_mbps")] double DiskReadMbps,
     [property: JsonPropertyName("disk_write_mbps")] double DiskWriteMbps,
     [property: JsonPropertyName("process_gpu_usage")] IReadOnlyDictionary<int, double> ProcessGpuUsage,

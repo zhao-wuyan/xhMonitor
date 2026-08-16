@@ -6,7 +6,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT"
@@ -32,6 +32,8 @@ sysinfo = { version = "0.32", default-features = false, features = ["system", "d
 libloading = "0.8"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
     "Win32_Security",
     "Win32_System_LibraryLoader",
     "Win32_System_Registry",

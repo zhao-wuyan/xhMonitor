@@ -621,10 +621,6 @@ pub struct LhmSnapshot {
     #[serde(default)]
     pub gpu_load: Option<f64>,
     #[serde(default)]
-    pub net_up_mbps: f64,
-    #[serde(default)]
-    pub net_down_mbps: f64,
-    #[serde(default)]
     pub disk_read_mbps: f64,
     #[serde(default)]
     pub disk_write_mbps: f64,
@@ -871,12 +867,11 @@ mod tests {
     #[test]
     fn lhm_snapshot_parses_a_bridge_line_missing_optional_sensors() {
         // 非提权运行时 cpu_temp / cpu_temp_label 整个键都不存在。
-        let line = r#"{"ts":"2026-07-26T06:33:34.3146799Z","gpu_temp":52,"gpu_load":43,"net_up_mbps":0.106,"net_down_mbps":0.091,"disk_read_mbps":0,"disk_write_mbps":0}"#;
+        let line = r#"{"ts":"2026-07-26T06:33:34.3146799Z","gpu_temp":52,"gpu_load":43,"disk_read_mbps":0,"disk_write_mbps":0}"#;
         let snap: LhmSnapshot = serde_json::from_str(line).unwrap();
         assert_eq!(snap.cpu_temp, None);
         assert_eq!(snap.cpu_temp_label, None);
         assert_eq!(snap.gpu_temp, Some(52.0));
-        assert_eq!(snap.net_up_mbps, 0.106);
         assert!(snap.process_gpu_usage.is_empty());
         assert!(snap.process_vram_mb.is_empty());
         assert!(snap.disks.is_empty());
@@ -884,7 +879,7 @@ mod tests {
 
     #[test]
     fn lhm_snapshot_parses_an_elevated_bridge_line() {
-        let line = r#"{"ts":"2026-07-26T06:33:34.3146799Z","cpu_temp":61.5,"cpu_temp_label":"Core Max","gpu_temp":52,"gpu_memory_used_mb":4096,"gpu_memory_total_mb":16384,"process_gpu_usage":{"1234":72.5,"4321":4},"process_vram_mb":{"1234":512.5,"4321":64},"gpu_load":43,"net_up_mbps":0,"net_down_mbps":0,"disk_read_mbps":12.5,"disk_write_mbps":3.5,"disks":[{"name":"Samsung SSD 990 PRO 1TB","total_bytes":1099511627776,"used_bytes":687194767360,"read_mbps":12.5,"write_mbps":null},{"name":"WDC WD40EZAX","total_bytes":null,"used_bytes":null,"read_mbps":null,"write_mbps":3.5}]}"#;
+        let line = r#"{"ts":"2026-07-26T06:33:34.3146799Z","cpu_temp":61.5,"cpu_temp_label":"Core Max","gpu_temp":52,"gpu_memory_used_mb":4096,"gpu_memory_total_mb":16384,"process_gpu_usage":{"1234":72.5,"4321":4},"process_vram_mb":{"1234":512.5,"4321":64},"gpu_load":43,"disk_read_mbps":12.5,"disk_write_mbps":3.5,"disks":[{"name":"Samsung SSD 990 PRO 1TB","total_bytes":1099511627776,"used_bytes":687194767360,"read_mbps":12.5,"write_mbps":null},{"name":"WDC WD40EZAX","total_bytes":null,"used_bytes":null,"read_mbps":null,"write_mbps":3.5}]}"#;
         let snap: LhmSnapshot = serde_json::from_str(line).unwrap();
         assert_eq!(snap.cpu_temp, Some(61.5));
         assert_eq!(snap.cpu_temp_label.as_deref(), Some("Core Max"));

@@ -323,6 +323,7 @@ if (-not $SkipDesktop) {
         $DesktopDir
         "--nologo"
         "-p:Version=$Version"
+        "-p:XhMonitorAppVersion=$Version"
         "-p:AssemblyVersion=$Version"
         "-p:FileVersion=$Version"
         "-p:InformationalVersion=$Version"
