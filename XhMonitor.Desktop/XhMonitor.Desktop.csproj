@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <XhMonitorAppVersion Condition="'$(XhMonitorAppVersion)' == ''">$(Version)</XhMonitorAppVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,7 +58,11 @@
     <Exec Command="npm install" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" Condition="!Exists('$(ProjectDir)..\xhmonitor-web\node_modules')" />
 
     <!-- Build web assets -->
-    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)..\xhmonitor-web" />
+    <Exec
+      Command="npm run build"
+      WorkingDirectory="$(ProjectDir)..\xhmonitor-web"
+      EnvironmentVariables="XHMONITOR_APP_VERSION=$(XhMonitorAppVersion)"
+    />
 
     <!-- Copy dist folder to project directory as wwwroot (MSBuild will auto-copy to output/publish) -->
     <ItemGroup>
