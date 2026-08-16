@@ -1,0 +1,24 @@
+.workflow/spec-analytics.jsonl
+  h_cb0e2129f6578c 50-54
+Cargo.lock
+  h_cb0e2129f6578c 1847,1857
+Cargo.toml
+  h_cb0e2129f6578c 9
+Directory.Build.props
+  h_cb0e2129f6578c 3-5
+xhmonitor-web/package-lock.json
+  h_cb0e2129f6578c 3,9
+xhmonitor-web/package.json
+  h_cb0e2129f6578c 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "658d854f264bf237c404b74b5cba643f0a7b0803",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
