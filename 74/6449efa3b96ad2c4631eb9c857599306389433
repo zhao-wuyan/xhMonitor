@@ -1,0 +1,16 @@
+XhMonitor.Desktop/XhMonitor.Desktop.csproj
+  h_cb0e2129f6578c 11,61-65
+publish.ps1
+  h_cb0e2129f6578c 326
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "746449efa3b96ad2c4631eb9c857599306389433",
+  "prompts": {},
+  "humans": {
+    "h_cb0e2129f6578c": {
+      "author": "zhao-wuyan <zhao-wuyan@exampl.com>"
+    }
+  }
+}
