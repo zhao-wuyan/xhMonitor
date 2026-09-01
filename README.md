@@ -7,6 +7,8 @@ XhMonitor 是一套 Windows 进程资源监控工具，支持 CPU、内存、GPU
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
+> 国内用户可通过 [AtomGit 国内镜像](https://atomgit.com/zhao-wuyan/xhMonitor) 加速访问代码与 Release 下载。
+
 ## 当前架构
 
 当前过渡版本使用 Rust backend 和 C# WPF Desktop：
