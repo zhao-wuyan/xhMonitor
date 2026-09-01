@@ -2,9 +2,9 @@ namespace XhMonitor.Desktop.Configuration;
 
 public sealed class AppUpdateOptions
 {
-    public string ReleaseApiBaseUrl { get; set; } = "https://gitee.com/api/v5/repos";
+    public string ReleaseApiBaseUrl { get; set; } = "https://api.atomgit.com/api/v5/repos";
 
-    public string Owner { get; set; } = "zhaowuyan";
+    public string Owner { get; set; } = "zhao-wuyan";
 
     public string Repository { get; set; } = "xhMonitor";
 

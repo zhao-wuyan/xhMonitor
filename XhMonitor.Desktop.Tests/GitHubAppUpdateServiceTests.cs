@@ -56,7 +56,7 @@ public sealed class GitHubAppUpdateServiceTests
         using var tempDir = new TemporaryDirectory();
         using var handler = new FakeHttpMessageHandler(request =>
         {
-            request.RequestUri!.AbsoluteUri.Should().Be("https://gitee.com/api/v5/repos/zhaowuyan/xhMonitor/releases/tags/latest");
+            request.RequestUri!.AbsoluteUri.Should().Be("https://api.atomgit.com/api/v5/repos/zhao-wuyan/xhMonitor/releases/latest");
             return CreateJsonResponse("""
             {
               "tag_name": "latest",
@@ -81,17 +81,17 @@ public sealed class GitHubAppUpdateServiceTests
     }
 
     [Fact]
-    public async Task CheckForUpdatesAsync_ShouldResolveGiteeDownloadUrlField()
+    public async Task CheckForUpdatesAsync_ShouldResolveAtomGitBrowserDownloadUrlField()
     {
         using var tempDir = new TemporaryDirectory();
         using var handler = new FakeHttpMessageHandler(_ => CreateJsonResponse("""
         {
-          "tag_name": "latest",
+          "tag_name": "v0.2.13",
           "name": "v0.2.13",
           "assets": [
             {
               "name": "XhMonitor-v0.2.13-Lite-Setup.exe",
-              "download_url": "https://gitee.com/zhaowuyan/xhMonitor/releases/download/latest/XhMonitor-v0.2.13-Lite-Setup.exe"
+              "browser_download_url": "https://atomgit.com/zhao-wuyan/xhMonitor/releases/download/v0.2.13/XhMonitor-v0.2.13-Lite-Setup.exe"
             }
           ]
         }
@@ -106,127 +106,36 @@ public sealed class GitHubAppUpdateServiceTests
         status.InstallerAssetName.Should().Be("XhMonitor-v0.2.13-Lite-Setup.exe");
     }
 
+
     [Fact]
-    public async Task CheckForUpdatesAsync_ShouldResolveSourceRelease_WhenLatestOnlyPointsToRealTag()
+    public async Task CheckForUpdatesAsync_ShouldUseAtomGitTagEndpoint_WhenPreferredTagIsExplicit()
     {
         using var tempDir = new TemporaryDirectory();
-        var requestedUris = new List<string>();
         using var handler = new FakeHttpMessageHandler(request =>
         {
-            requestedUris.Add(request.RequestUri!.AbsoluteUri);
-            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/latest", StringComparison.Ordinal))
+            request.RequestUri!.AbsoluteUri.Should().Be(
+                "https://api.atomgit.com/api/v5/repos/zhao-wuyan/xhMonitor/releases/v0.3.3");
+            return CreateJsonResponse("""
             {
-                return CreateJsonResponse("""
+              "tag_name": "v0.3.3",
+              "name": "v0.3.3",
+              "assets": [
                 {
-                  "tag_name": "latest",
-                  "name": "v0.2.13",
-                  "body": "Source release: v0.2.13",
-                  "assets": []
+                  "name": "XhMonitor-v0.3.3-Lite-Setup.exe",
+                  "browser_download_url": "https://atomgit.com/zhao-wuyan/xhMonitor/releases/download/v0.3.3/XhMonitor-v0.3.3-Lite-Setup.exe"
                 }
-                """);
+              ]
             }
-
-            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/v0.2.13", StringComparison.Ordinal))
-            {
-                return CreateJsonResponse("""
-                {
-                  "tag_name": "v0.2.13",
-                  "name": "0.2.13",
-                  "assets": [
-                    {
-                      "name": "XhMonitor-v0.2.13-Lite-Setup.exe",
-                      "browser_download_url": "https://example.com/download/XhMonitor-v0.2.13-Lite-Setup.exe"
-                    }
-                  ]
-                }
-                """);
-            }
-
-            throw new InvalidOperationException($"Unexpected request: {request.RequestUri}");
+            """);
         });
 
-        var service = CreateService(handler, tempDir.Path);
+        var service = CreateService(handler, tempDir.Path, preferredReleaseTag: "v0.3.3");
 
         var status = await service.CheckForUpdatesAsync();
 
         status.State.Should().Be(AppUpdateState.UpdateAvailable);
-        status.LatestVersion.Should().Be("0.2.13");
-        status.ReleaseTag.Should().Be("v0.2.13");
-        status.InstallerAssetName.Should().Be("XhMonitor-v0.2.13-Lite-Setup.exe");
-        requestedUris.Should().Contain(uri => uri.EndsWith("/releases/tags/latest", StringComparison.Ordinal));
-        requestedUris.Should().Contain(uri => uri.EndsWith("/releases/tags/v0.2.13", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task CheckForUpdatesAsync_ShouldResolveSourceRelease_FromLatestTagCommit()
-    {
-        using var tempDir = new TemporaryDirectory();
-        var requestedUris = new List<string>();
-        using var handler = new FakeHttpMessageHandler(request =>
-        {
-            requestedUris.Add(request.RequestUri!.AbsoluteUri);
-            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/latest", StringComparison.Ordinal))
-            {
-                return CreateJsonResponse("""
-                {
-                  "tag_name": "latest",
-                  "name": "v0.2.24",
-                  "body": "Source release: v0.2.24",
-                  "assets": []
-                }
-                """);
-            }
-
-            if (request.RequestUri.AbsoluteUri.EndsWith("/tags", StringComparison.Ordinal))
-            {
-                return CreateJsonResponse("""
-                [
-                  {
-                    "name": "latest",
-                    "commit": { "sha": "5a4b8a38224b7d2630bb000384127407ea5a7f3e" }
-                  },
-                  {
-                    "name": "v0.2.24",
-                    "commit": { "sha": "434124b1c85ad1a208b72ed6410acdcc58eeda2b" }
-                  },
-                  {
-                    "name": "v0.2.25",
-                    "commit": { "sha": "5a4b8a38224b7d2630bb000384127407ea5a7f3e" }
-                  }
-                ]
-                """);
-            }
-
-            if (request.RequestUri.AbsoluteUri.EndsWith("/releases/tags/v0.2.25", StringComparison.Ordinal))
-            {
-                return CreateJsonResponse("""
-                {
-                  "tag_name": "v0.2.25",
-                  "name": "0.2.25",
-                  "assets": [
-                    {
-                      "name": "XhMonitor-v0.2.25-Lite-Setup.exe",
-                      "browser_download_url": "https://example.com/download/XhMonitor-v0.2.25-Lite-Setup.exe"
-                    }
-                  ]
-                }
-                """);
-            }
-
-            throw new InvalidOperationException($"Unexpected request: {request.RequestUri}");
-        });
-
-        var service = CreateService(handler, tempDir.Path);
-
-        var status = await service.CheckForUpdatesAsync();
-
-        status.State.Should().Be(AppUpdateState.UpdateAvailable);
-        status.LatestVersion.Should().Be("0.2.25");
-        status.ReleaseTag.Should().Be("v0.2.25");
-        status.InstallerAssetName.Should().Be("XhMonitor-v0.2.25-Lite-Setup.exe");
-        requestedUris.Should().Contain(uri => uri.EndsWith("/tags", StringComparison.Ordinal));
-        requestedUris.Should().Contain(uri => uri.EndsWith("/releases/tags/v0.2.25", StringComparison.Ordinal));
-        requestedUris.Should().NotContain(uri => uri.EndsWith("/releases/tags/v0.2.24", StringComparison.Ordinal));
+        status.LatestVersion.Should().Be("0.3.3");
+        status.ReleaseTag.Should().Be("v0.3.3");
     }
 
     [Fact]
@@ -325,7 +234,7 @@ public sealed class GitHubAppUpdateServiceTests
         using var tempDir = new TemporaryDirectory();
         using var handler = new FakeHttpMessageHandler(request =>
         {
-            if (request.RequestUri!.AbsoluteUri.Contains("/releases/tags/latest", StringComparison.Ordinal))
+            if (request.RequestUri!.AbsoluteUri.Contains("/releases/latest", StringComparison.Ordinal))
             {
                 return CreateJsonResponse("""
                 {
@@ -371,7 +280,7 @@ public sealed class GitHubAppUpdateServiceTests
         using var tempDir = new TemporaryDirectory();
         using var handler = new FakeHttpMessageHandler(request =>
         {
-            if (request.RequestUri!.AbsoluteUri.Contains("/releases/tags/latest", StringComparison.Ordinal))
+            if (request.RequestUri!.AbsoluteUri.Contains("/releases/latest", StringComparison.Ordinal))
             {
                 return CreateJsonResponse("""
                 {
@@ -430,7 +339,7 @@ public sealed class GitHubAppUpdateServiceTests
         using var tempDir = new TemporaryDirectory();
         using var handler = new FakeHttpMessageHandler(request =>
         {
-            if (request.RequestUri!.AbsoluteUri.Contains("/releases/tags/latest", StringComparison.Ordinal))
+            if (request.RequestUri!.AbsoluteUri.Contains("/releases/latest", StringComparison.Ordinal))
             {
                 return CreateJsonResponse("""
                 {
@@ -468,7 +377,8 @@ public sealed class GitHubAppUpdateServiceTests
         string downloadDirectory,
         FakeTrayIconService? trayIconService = null,
         FakeInstallerLauncher? launcher = null,
-        Version? currentVersion = null)
+        Version? currentVersion = null,
+        string preferredReleaseTag = "latest")
     {
         var httpClientFactory = new FakeHttpClientFactory(handler);
         var appVersionService = new FakeAppVersionService(currentVersion ?? new Version(0, 2, 9));
@@ -476,10 +386,10 @@ public sealed class GitHubAppUpdateServiceTests
         launcher ??= new FakeInstallerLauncher();
         var options = Options.Create(new AppUpdateOptions
         {
-            ReleaseApiBaseUrl = "https://gitee.com/api/v5/repos",
-            Owner = "zhaowuyan",
+            ReleaseApiBaseUrl = "https://api.atomgit.com/api/v5/repos",
+            Owner = "zhao-wuyan",
             Repository = "xhMonitor",
-            PreferredReleaseTag = "latest",
+            PreferredReleaseTag = preferredReleaseTag,
             TargetAssetTemplate = "XhMonitor-v{version}-Lite-Setup.exe",
             DownloadDirectory = downloadDirectory
         });
