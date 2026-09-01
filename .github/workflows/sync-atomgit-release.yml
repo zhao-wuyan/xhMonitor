@@ -93,8 +93,8 @@ jobs:
         shell: bash
         env:
           ATOMGIT_GIT_HOST: ${{ vars.ATOMGIT_GIT_HOST || 'atomgit.com' }}
-          ATOMGIT_OWNER: ${{ vars.ATOMGIT_REPO_OWNER || github.repository_owner }}
-          ATOMGIT_REPO: ${{ vars.ATOMGIT_REPO_NAME || github.event.repository.name }}
+          ATOMGIT_OWNER: ${{ secrets.ATOMGIT_REPO_OWNER }}
+          ATOMGIT_REPO: ${{ secrets.ATOMGIT_REPO_NAME }}
           ATOMGIT_GIT_USERNAME: ${{ secrets.ATOMGIT_GIT_USERNAME }}
           ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
         run: |
@@ -125,6 +125,6 @@ jobs:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
           ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
           ATOMGIT_API_BASE: ${{ vars.ATOMGIT_API_BASE || 'https://api.atomgit.com' }}
-          ATOMGIT_OWNER: ${{ vars.ATOMGIT_REPO_OWNER || github.repository_owner }}
-          ATOMGIT_REPO: ${{ vars.ATOMGIT_REPO_NAME || github.event.repository.name }}
+          ATOMGIT_OWNER: ${{ secrets.ATOMGIT_REPO_OWNER }}
+          ATOMGIT_REPO: ${{ secrets.ATOMGIT_REPO_NAME }}
         run: node .github/scripts/sync-atomgit-release.js
