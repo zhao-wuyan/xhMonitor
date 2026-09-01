@@ -72,6 +72,12 @@ jobs:
             echo "version=${TAG#v}"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Fetch all branches and tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+
 
       - name: Configure AtomGit upload hosts
         shell: bash
@@ -83,6 +89,61 @@ jobs:
           getent hosts api.atomgit.com
           getent hosts file.atomgit.com
           getent hosts file.gitcode.com
+      - name: Push branches and tags when supported
+        shell: bash
+        env:
+          ATOMGIT_GIT_HOST: ${{ vars.ATOMGIT_GIT_HOST || 'atomgit.com' }}
+          ATOMGIT_OWNER: ${{ secrets.ATOMGIT_REPO_OWNER }}
+          ATOMGIT_REPO: ${{ secrets.ATOMGIT_REPO_NAME }}
+          ATOMGIT_GIT_USERNAME: ${{ secrets.ATOMGIT_GIT_USERNAME }}
+          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          for name in ATOMGIT_OWNER ATOMGIT_REPO ATOMGIT_GIT_USERNAME ATOMGIT_TOKEN; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing AtomGit setting: $name" >&2
+              exit 1
+            fi
+          done
+
+          REMOTE_URL="https://${ATOMGIT_GIT_USERNAME}:${ATOMGIT_TOKEN}@${ATOMGIT_GIT_HOST}/${ATOMGIT_OWNER}/${ATOMGIT_REPO}.git"
+          git remote add atomgit "$REMOTE_URL"
+
+          mapfile -t BRANCH_REFS < <(
+            git for-each-ref --format='%(refname)' refs/remotes/origin |
+              grep -v 'refs/remotes/origin/HEAD$'
+          )
+          if [[ ${#BRANCH_REFS[@]} -eq 0 ]]; then
+            echo "No origin branches found." >&2
+            exit 1
+          fi
+
+          PROBE_REF="${BRANCH_REFS[0]}"
+          PROBE_BRANCH="${PROBE_REF#refs/remotes/origin/}"
+          set +e
+          PROBE_OUTPUT="$(git push atomgit "${PROBE_REF}:refs/heads/${PROBE_BRANCH}" 2>&1)"
+          PROBE_STATUS=$?
+          set -e
+          printf '%s\n' "$PROBE_OUTPUT"
+
+          if [[ $PROBE_STATUS -ne 0 ]]; then
+            if grep -Fqi "operation is not allowed because the repository is an image repository" <<< "$PROBE_OUTPUT"; then
+              echo "AtomGit target is a mirror repository; branch and tag pushes are managed by AtomGit and will be skipped."
+              exit 0
+            fi
+
+            echo "AtomGit push capability probe failed." >&2
+            exit "$PROBE_STATUS"
+          fi
+
+          for ref in "${BRANCH_REFS[@]:1}"; do
+            branch="${ref#refs/remotes/origin/}"
+            git push atomgit "${ref}:refs/heads/${branch}"
+          done
+
+          git push atomgit 'refs/tags/*:refs/tags/*'
+
 
 
       - name: Sync AtomGit release and assets
