@@ -12,6 +12,7 @@
 //   退出码 — 0 优雅退出 / 1 LHM 初始化失败 / 2 --require-admin 且非管理员
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -117,13 +118,17 @@ var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCon
 var collectionFailures = new ConsecutiveFailureBudget(MaxConsecutiveCollectionFailures);
 var successfulSnapshots = 0;
 var exitCode = 0;
+var cpuTemperatureUnavailableLogged = false;
 
 while (!cts.IsCancellationRequested)
 {
     try
     {
         computer.Accept(visitor);
-        var snapshot = BuildSnapshot(computer, processVramCollector);
+        var snapshot = BuildSnapshot(
+            computer,
+            processVramCollector,
+            ref cpuTemperatureUnavailableLogged);
         Console.WriteLine(JsonSerializer.Serialize(snapshot, options));
         Console.Out.Flush();
         collectionFailures.RecordSuccess();
@@ -186,7 +191,8 @@ static bool IsRunningAsAdministrator()
 
 static LhmSnapshot BuildSnapshot(
     Computer computer,
-    ProcessVramCollector processVramCollector)
+    ProcessVramCollector processVramCollector,
+    ref bool cpuTemperatureUnavailableLogged)
 {
     var cpuTemperatureSensors = new List<LhmSensorReading>();
     var gpuTemperatureSensors = new List<LhmSensorReading>();
@@ -283,6 +289,24 @@ static LhmSnapshot BuildSnapshot(
         }
     }
     var (cpuTemp, cpuTempLabel) = LhmSelection.SelectTemperatureWithLabel(cpuTemperatureSensors);
+    if (!cpuTemp.HasValue && !cpuTemperatureUnavailableLogged)
+    {
+        cpuTemperatureUnavailableLogged = true;
+        var sensorDetails = cpuTemperatureSensors.Count == 0
+            ? "<none>"
+            : string.Join(
+                "; ",
+                cpuTemperatureSensors.Select(sensor =>
+                {
+                    var value = sensor.Value is float present
+                        ? present.ToString("R", CultureInfo.InvariantCulture)
+                        : "null";
+                    return $"{sensor.HardwareName}/{sensor.Name}={value}";
+                }));
+        Console.Error.WriteLine(
+            $"[lhm-bridge] WARNING: CPU temperature unavailable after sensor selection; " +
+            $"sensor_count={cpuTemperatureSensors.Count}; sensors={sensorDetails}");
+    }
     var (gpuTemp, _) = LhmSelection.SelectTemperatureWithLabel(gpuTemperatureSensors);
     var gpuLoad = LhmSelection.SelectGpuLoad(gpuLoadSensors);
     var processGpuUsage = processVramCollector.CaptureGpuUsagePercent();

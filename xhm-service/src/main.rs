@@ -3,7 +3,12 @@
 //! 对齐 C# `Program.cs`：路径基于 `current_exe().parent()`、graceful shutdown、
 //! 管理员检测，以及采集 worker 与 LHM bridge 的确定性回收。
 
-use std::{net::SocketAddr, path::Path, sync::Arc};
+use std::{
+    net::SocketAddr,
+    path::Path,
+    process::{Command, Stdio},
+    sync::Arc,
+};
 
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
@@ -31,6 +36,7 @@ use xhm_service::{
 async fn main() -> anyhow::Result<()> {
     let paths = ServicePaths::new()?;
     let _log_guard = init_logging(&paths.exe_dir)?;
+    log_startup_dependencies(&paths);
 
     let database_preparation = prepare_legacy_database(&paths.db_path)?;
     tracing::info!(db = %paths.db_path.display(), "opening database");
@@ -235,6 +241,121 @@ fn init_logging(exe_dir: &Path) -> anyhow::Result<WorkerGuard> {
 
     Ok(guard)
 }
+fn log_startup_dependencies(paths: &ServicePaths) {
+    tracing::info!(
+        service_version = env!("CARGO_PKG_VERSION"),
+        target_os = std::env::consts::OS,
+        target_arch = std::env::consts::ARCH,
+        exe_dir = %paths.exe_dir.display(),
+        "startup environment"
+    );
+
+    match query_dotnet_runtimes() {
+        Ok(runtimes) if runtimes.is_empty() => {
+            tracing::warn!(
+                dependency = ".NET",
+                installed = false,
+                "no installed .NET runtimes were reported"
+            );
+        }
+        Ok(runtimes) => {
+            tracing::info!(
+                dependency = ".NET",
+                installed = true,
+                runtimes = %runtimes.join(" | "),
+                "startup dependency detected"
+            );
+        }
+        Err(error) => {
+            tracing::warn!(
+                dependency = ".NET",
+                status = "unknown",
+                %error,
+                "startup dependency check failed"
+            );
+        }
+    }
+
+    match query_pawnio_installed() {
+        Ok(true) => {
+            tracing::info!(
+                dependency = "PawnIO",
+                installed = true,
+                "startup dependency detected"
+            );
+        }
+        Ok(false) => {
+            tracing::warn!(
+                dependency = "PawnIO",
+                installed = false,
+                impact = "AMD CPU temperature sensors may return zero",
+                "startup dependency missing"
+            );
+        }
+        Err(error) => {
+            tracing::warn!(
+                dependency = "PawnIO",
+                status = "unknown",
+                %error,
+                "startup dependency check failed"
+            );
+        }
+    }
+
+    tracing::info!(
+        dependency = "lhm-bridge",
+        installed = paths.lhm_bridge_path.is_file(),
+        path = %paths.lhm_bridge_path.display(),
+        "startup dependency inventory"
+    );
+}
+
+fn query_dotnet_runtimes() -> Result<Vec<String>, String> {
+    let output = Command::new("dotnet")
+        .arg("--list-runtimes")
+        .stdin(Stdio::null())
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|error| error.to_string())?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!(
+            "dotnet --list-runtimes exited with {}: {}",
+            output.status,
+            stderr.trim()
+        ));
+    }
+
+    Ok(parse_dotnet_runtimes(&String::from_utf8_lossy(
+        &output.stdout,
+    )))
+}
+
+fn parse_dotnet_runtimes(output: &str) -> Vec<String> {
+    output
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+#[cfg(windows)]
+fn query_pawnio_installed() -> Result<bool, String> {
+    Command::new("sc.exe")
+        .args(["query", "PawnIO"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(not(windows))]
+fn query_pawnio_installed() -> Result<bool, String> {
+    Err("PawnIO is only available on Windows".to_owned())
+}
 
 fn load_data_collection_settings(store: &dyn MetricStore) -> (Vec<String>, bool) {
     let settings = match store.list_settings() {
@@ -345,6 +466,28 @@ mod tests {
         let contents = std::fs::read_to_string(log_path).unwrap();
         assert!(contents.contains("logging smoke marker"));
         std::fs::remove_dir_all(log_root).unwrap();
+    }
+    #[test]
+    fn dotnet_runtime_inventory_keeps_framework_names_versions_and_paths() {
+        let output = concat!(
+            "Microsoft.AspNetCore.App 8.0.27 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]\r\n",
+            "Microsoft.NETCore.App 8.0.27 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]\r\n",
+            "Microsoft.WindowsDesktop.App 8.0.27 [C:\\Program Files\\dotnet\\shared\\Microsoft.WindowsDesktop.App]\r\n",
+        );
+
+        assert_eq!(
+            parse_dotnet_runtimes(output),
+            vec![
+                "Microsoft.AspNetCore.App 8.0.27 [C:\\Program Files\\dotnet\\shared\\Microsoft.AspNetCore.App]",
+                "Microsoft.NETCore.App 8.0.27 [C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App]",
+                "Microsoft.WindowsDesktop.App 8.0.27 [C:\\Program Files\\dotnet\\shared\\Microsoft.WindowsDesktop.App]",
+            ]
+        );
+    }
+
+    #[test]
+    fn dotnet_runtime_inventory_discards_blank_lines() {
+        assert!(parse_dotnet_runtimes("\r\n  \n").is_empty());
     }
 
     #[test]
