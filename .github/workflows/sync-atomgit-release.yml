@@ -1,0 +1,130 @@
+name: Sync AtomGit Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: 源 GitHub release tag，例如 v0.3.2；留空时使用当前选择的 tag ref
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  sync-atomgit:
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Resolve source release
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          INPUT_TAG="${{ inputs.source_tag }}"
+          REF_TYPE="${{ github.ref_type }}"
+          REF_NAME="${{ github.ref_name }}"
+
+          if [[ -n "$INPUT_TAG" ]]; then
+            TAG="$INPUT_TAG"
+          elif [[ "$REF_TYPE" == "tag" && -n "$REF_NAME" ]]; then
+            TAG="$REF_NAME"
+          else
+            echo "Choose a tag ref or fill source_tag." >&2
+            exit 1
+          fi
+
+          if [[ -z "$TAG" || "$TAG" == "latest" ]]; then
+            echo "source_tag must be a real release tag, not latest." >&2
+            exit 1
+          fi
+
+          if ! gh release view "$TAG" -R "$GH_REPO" >/dev/null 2>&1; then
+            echo "No published GitHub release found for tag: $TAG" >&2
+            exit 1
+          fi
+
+          IS_PRERELEASE="$(gh release view "$TAG" -R "$GH_REPO" --json isPrerelease --jq '.isPrerelease')"
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            echo "Prerelease $TAG will not be synced to AtomGit." >&2
+            exit 1
+          fi
+
+          {
+            echo "tag=$TAG"
+            echo "version=${TAG#v}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Fetch all branches and tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+
+      - name: Configure AtomGit upload hosts
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "159.138.147.37 api.atomgit.com" | sudo tee -a /etc/hosts
+          echo "159.138.147.37 file.atomgit.com" | sudo tee -a /etc/hosts
+          echo "159.138.147.37 file.gitcode.com" | sudo tee -a /etc/hosts
+          getent hosts api.atomgit.com
+          getent hosts file.atomgit.com
+          getent hosts file.gitcode.com
+
+      - name: Push branches and tags to AtomGit
+        shell: bash
+        env:
+          ATOMGIT_GIT_HOST: ${{ vars.ATOMGIT_GIT_HOST || 'atomgit.com' }}
+          ATOMGIT_OWNER: ${{ vars.ATOMGIT_REPO_OWNER || github.repository_owner }}
+          ATOMGIT_REPO: ${{ vars.ATOMGIT_REPO_NAME || github.event.repository.name }}
+          ATOMGIT_GIT_USERNAME: ${{ secrets.ATOMGIT_GIT_USERNAME }}
+          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          for name in ATOMGIT_OWNER ATOMGIT_REPO ATOMGIT_GIT_USERNAME ATOMGIT_TOKEN; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing AtomGit setting: $name" >&2
+              exit 1
+            fi
+          done
+
+          REMOTE_URL="https://${ATOMGIT_GIT_USERNAME}:${ATOMGIT_TOKEN}@${ATOMGIT_GIT_HOST}/${ATOMGIT_OWNER}/${ATOMGIT_REPO}.git"
+          git remote add atomgit "$REMOTE_URL"
+
+          while read -r ref; do
+            branch="${ref#refs/remotes/origin/}"
+            git push atomgit "${ref}:refs/heads/${branch}"
+          done < <(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v 'refs/remotes/origin/HEAD$')
+
+          git push atomgit 'refs/tags/*:refs/tags/*'
+
+      - name: Sync AtomGit release and assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
+          ATOMGIT_API_BASE: ${{ vars.ATOMGIT_API_BASE || 'https://api.atomgit.com' }}
+          ATOMGIT_OWNER: ${{ vars.ATOMGIT_REPO_OWNER || github.repository_owner }}
+          ATOMGIT_REPO: ${{ vars.ATOMGIT_REPO_NAME || github.event.repository.name }}
+        run: node scripts/sync-atomgit-release.js
