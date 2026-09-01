@@ -142,7 +142,14 @@ jobs:
             git push atomgit "${ref}:refs/heads/${branch}"
           done
 
-          git push atomgit 'refs/tags/*:refs/tags/*'
+          while read -r tag_ref; do
+            tag="${tag_ref#refs/tags/}"
+            if [[ "$tag" == "latest" ]]; then
+              echo "Skipping managed tag: latest"
+              continue
+            fi
+            git push atomgit "${tag_ref}:${tag_ref}"
+          done < <(git for-each-ref --format='%(refname)' refs/tags)
 
 
 
