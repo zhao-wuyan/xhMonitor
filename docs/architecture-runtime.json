@@ -1,0 +1,408 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "xhMonitor 运行时架构",
+    "locale": "zh-CN",
+    "output": "docs/architecture-runtime.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/zhao-wuyan/xhMonitor.git",
+      "revision": "89708588b5de25e37a7ce373a5e9310a5a2f9ed1"
+    },
+    "views": [
+      {
+        "id": "collect",
+        "label": "采集链路",
+        "focus": [
+          "sensors",
+          "lhm-bridge",
+          "ryzenadj",
+          "targets",
+          "svc-worker",
+          "sqlite"
+        ],
+        "note": "传感器、功耗、进程三类数据源汇入 1s 采集循环并落库"
+      },
+      {
+        "id": "realtime",
+        "label": "实时分发",
+        "focus": [
+          "svc-worker",
+          "svc-api",
+          "desktop",
+          "browser"
+        ],
+        "note": "实时快照 → SignalR 兼容 WS/SSE → WPF 与 React 双端"
+      },
+      {
+        "id": "orchestrate",
+        "label": "启动编排",
+        "focus": [
+          "desktop",
+          "desktop-gateway",
+          "svc-api",
+          "svc-webgw"
+        ],
+        "note": "Desktop 拉起 Rust 后端并探活；备用网关端口被占时自动让位"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "sensors",
+      "type": "external",
+      "label": "硬件传感器",
+      "sublabel": "CPU/GPU 温度 · 负载 · 网卡",
+      "pos": [
+        16,
+        60
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/lhm/mod.rs",
+          "label": "LHM 桥读取"
+        },
+        {
+          "path": "xhm-service/src/network/mod.rs",
+          "label": "网卡原生读取"
+        }
+      ]
+    },
+    {
+      "id": "lhm-bridge",
+      "type": "backend",
+      "label": "lhm-bridge",
+      "sublabel": "LibreHardwareMonitor 子进程",
+      "tag": "提权运行",
+      "pos": [
+        276,
+        140
+      ],
+      "size": [
+        130,
+        60
+      ],
+      "sources": [
+        {
+          "path": "lhm-bridge/Program.cs"
+        }
+      ]
+    },
+    {
+      "id": "ryzenadj",
+      "type": "external",
+      "label": "RyzenAdj",
+      "sublabel": "libryzenadj.dll · CLI 回退",
+      "pos": [
+        16,
+        300
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/power/mod.rs"
+        }
+      ]
+    },
+    {
+      "id": "targets",
+      "type": "external",
+      "label": "目标进程",
+      "sublabel": "llama-server · ComfyUI…",
+      "pos": [
+        16,
+        470
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/worker.rs",
+          "label": "关键词扫描"
+        }
+      ]
+    },
+    {
+      "id": "svc-worker",
+      "type": "backend",
+      "label": "ServiceWorker",
+      "sublabel": "1s 采集 · 5min 生命周期聚合",
+      "tag": "tokio task",
+      "pos": [
+        290,
+        260
+      ],
+      "size": [
+        160,
+        84
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/worker.rs"
+        },
+        {
+          "path": "xhm-service/src/state.rs",
+          "label": "RuntimeConfig"
+        }
+      ]
+    },
+    {
+      "id": "svc-api",
+      "type": "backend",
+      "label": "Axum API · Realtime",
+      "sublabel": ":35179 · REST /api/v1",
+      "tag": "兼容旧 C# 事件",
+      "pos": [
+        490,
+        260
+      ],
+      "size": [
+        150,
+        84
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/realtime/mod.rs",
+          "label": "SignalR JSON 协议"
+        },
+        {
+          "path": "xhm-service/src/api/mod.rs"
+        }
+      ]
+    },
+    {
+      "id": "svc-webgw",
+      "type": "backend",
+      "label": "Web 网关",
+      "sublabel": ":35180 · LAN 安全",
+      "pos": [
+        680,
+        260
+      ],
+      "size": [
+        150,
+        84
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/web.rs"
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite xhmonitor.db",
+      "sublabel": "原始 · Minute/Hour/Day · 设置",
+      "pos": [
+        280,
+        440
+      ],
+      "size": [
+        170,
+        70
+      ],
+      "sources": [
+        {
+          "path": "xhm-service/src/db/mod.rs"
+        }
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "xhmonitor-web",
+      "sublabel": "React 19 · 系统浏览器",
+      "tag": "Vite 构建",
+      "pos": [
+        650,
+        440
+      ],
+      "size": [
+        160,
+        72
+      ],
+      "sources": [
+        {
+          "path": "xhmonitor-web/package.json"
+        }
+      ]
+    },
+    {
+      "id": "desktop",
+      "type": "frontend",
+      "label": "XhMonitor.Desktop",
+      "sublabel": "WPF 壳 · 悬浮窗/任务栏/托盘",
+      "tag": "net8.0-windows",
+      "pos": [
+        912,
+        70
+      ],
+      "size": [
+        140,
+        96
+      ],
+      "sources": [
+        {
+          "path": "XhMonitor.Desktop/App.xaml.cs"
+        },
+        {
+          "path": "XhMonitor.Desktop/Services/ApplicationHostedService.cs"
+        }
+      ]
+    },
+    {
+      "id": "desktop-gateway",
+      "type": "backend",
+      "label": "WebServerService",
+      "sublabel": "YARP 反代 → :35179 · 备用",
+      "pos": [
+        912,
+        260
+      ],
+      "size": [
+        140,
+        68
+      ],
+      "sources": [
+        {
+          "path": "XhMonitor.Desktop/Services/WebServerService.cs"
+        },
+        {
+          "path": "XhMonitor.Desktop/Services/ServiceDiscovery.cs",
+          "label": "端口发现"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "xhm-service 进程 (Rust)",
+      "wraps": [
+        "svc-worker",
+        "svc-api",
+        "svc-webgw"
+      ],
+      "pad": 40
+    },
+    {
+      "kind": "region",
+      "label": "XhMonitor.Desktop 进程 (WPF)",
+      "wraps": [
+        "desktop",
+        "desktop-gateway"
+      ],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "from": "sensors",
+      "to": "lhm-bridge",
+      "label": "LibreHardwareMonitor"
+    },
+    {
+      "from": "lhm-bridge",
+      "to": "svc-worker",
+      "label": "stdout JSONL · 1s",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "ryzenadj",
+      "to": "svc-worker",
+      "label": "功耗 3s · DLL/CLI 回退",
+      "labelDy": -14
+    },
+    {
+      "from": "targets",
+      "to": "svc-worker",
+      "label": "关键词 · 命令行解析"
+    },
+    {
+      "from": "svc-worker",
+      "to": "sqlite",
+      "label": "原始写入 · 分层聚合",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "svc-worker",
+      "to": "svc-api",
+      "label": "推送",
+      "variant": "emphasis"
+    },
+    {
+      "from": "svc-api",
+      "to": "desktop",
+      "label": "SignalR WS 实时推送",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "from": "svc-api",
+      "to": "browser",
+      "label": "WS + SSE · REST",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "svc-webgw",
+      "to": "browser",
+      "label": "静态 UI · 安全层",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "desktop",
+      "to": "svc-api",
+      "label": "拉起 · 探活 · 功耗控制",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "进程编排 (ApplicationHostedService)",
+      "items": [
+        "xhm-service 探活 :35179 通过后才启动 Web 服务层",
+        "发布态运行 xhm-service.exe，开发态回退 cargo run",
+        "停止时并行 Kill 进程树；PowerControlService 经 REST 切档"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "实时链路 (SignalR 兼容)",
+      "items": [
+        "Rust 手写 SignalR JSON 协议，事件名与旧 C# 逐字节兼容",
+        "事件：ReceiveSystemUsage / ReceiveProcessMetrics(Lite)",
+        "双消费者：WPF 悬浮窗与 React 前端；SSE 为备选通道"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "数据生命周期 (SQLite)",
+      "items": [
+        "原始指标以 MetricsJson 写入，record_metrics 可按需关闭",
+        "5min 任务做 Minute→Hour→Day 聚合，覆盖校验后才删源层",
+        "默认保留 30 天，断点存 MetricLifecycleCheckpoints"
+      ]
+    }
+  ]
+}

@@ -52,3 +52,7 @@
 {"type":"cli","id":"CLI-1786862208818-1","timestamp":"2026-08-16T06:36:48.818Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
 {"type":"cli","id":"CLI-1786863013014-1","timestamp":"2026-08-16T06:50:13.014Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
 {"type":"cli","id":"CLI-1786867415857-1","timestamp":"2026-08-16T08:03:35.857Z","command":"load","args":{"type":"knowhow","id":"knowhow-rcp-20260813-build-workflow"}}
+{"type":"cli","id":"CLI-1788234812413-1","timestamp":"2026-09-01T03:53:32.413Z","command":"load","args":{"type":"knowhow","id":"session-run-maestro-20260813-debug-lhm-cpu-20260813-153104-20260813-002-debug"}}
+{"type":"cli","id":"CLI-1788234930120-1","timestamp":"2026-09-01T03:55:30.120Z","command":"load","args":{"type":"spec","id":"spec:project:debug-notes"}}
+{"type":"cli","id":"CLI-1788235576047-1","timestamp":"2026-09-01T04:06:16.047Z","command":"load","args":{"type":"spec","id":"spec:project:architecture-constraints"}}
+{"type":"cli","id":"CLI-1788235576350-1","timestamp":"2026-09-01T04:06:16.350Z","command":"load","args":{"type":"spec","id":"spec:project:test-conventions"}}
