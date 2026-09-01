@@ -127,4 +127,4 @@ jobs:
           ATOMGIT_API_BASE: ${{ vars.ATOMGIT_API_BASE || 'https://api.atomgit.com' }}
           ATOMGIT_OWNER: ${{ vars.ATOMGIT_REPO_OWNER || github.repository_owner }}
           ATOMGIT_REPO: ${{ vars.ATOMGIT_REPO_NAME || github.event.repository.name }}
-        run: node scripts/sync-atomgit-release.js
+        run: node .github/scripts/sync-atomgit-release.js
