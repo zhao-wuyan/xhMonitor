@@ -1,0 +1,267 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  repository: read
+  project: read
+  pr: none
+  issue: none
+  note: none
+
+concurrency:
+  enable: true
+  max: 1
+  exceed-action: QUEUE
+
+stages:
+  build-release:
+    name: 构建发布制品
+    fail_fast: true
+    jobs:
+      windows-release:
+        name: Windows 发布构建
+        # AtomGit 官方托管 Runner 当前不提供 Windows；需注册具有这些标签的自托管 Runner。
+        runs-on: [self-hosted, windows, x64, xhmonitor-release]
+        steps:
+          - name: 检出代码
+            uses: checkout
+
+          - name: 从 Tag 解析版本号
+            shell: pwsh
+            run: |
+              $tag = $env:ATOMGIT_REF -replace '^refs/tags/', ''
+              if ([string]::IsNullOrWhiteSpace($tag) -or $tag -eq $env:ATOMGIT_REF) {
+                throw "Expected a tag ref, got '$env:ATOMGIT_REF'"
+              }
+
+              $version = $tag.TrimStart('v', 'V')
+              if ([string]::IsNullOrWhiteSpace($version)) {
+                throw "Resolved version is empty (tag='$tag')"
+              }
+
+              "TAG=$tag" | Out-File -FilePath $env:ATOMGIT_ENV -Encoding utf8 -Append
+              "VERSION=$version" | Out-File -FilePath $env:ATOMGIT_ENV -Encoding utf8 -Append
+              Write-Host "TAG=$tag"
+              Write-Host "VERSION=$version"
+
+          - name: 配置 Node.js 20
+            uses: setup-node
+            with:
+              node-version: "20"
+
+          - name: 校验 Windows Runner 工具链
+            shell: pwsh
+            run: |
+              $requiredCommands = @("dotnet", "node", "npm", "cargo", "rustup", "choco", "git")
+              foreach ($command in $requiredCommands) {
+                if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {
+                  throw "Required command is missing on the self-hosted runner: $command"
+                }
+              }
+
+              if (-not (dotnet --list-sdks | Where-Object { $_ -match '^8\.' })) {
+                throw ".NET 8 SDK is required on the self-hosted runner"
+              }
+
+              dotnet --info
+              node --version
+              npm --version
+              rustc --version
+              cargo --version
+
+          - name: 同步版本号
+            shell: pwsh
+            run: |
+              $buildPropsPath = "Directory.Build.props"
+              [xml]$buildProps = Get-Content $buildPropsPath
+              $buildProps.Project.PropertyGroup.Version = $env:VERSION
+              $buildProps.Project.PropertyGroup.AssemblyVersion = "$env:VERSION.0"
+              $buildProps.Project.PropertyGroup.FileVersion = "$env:VERSION.0"
+              $buildProps.Save("$PWD\$buildPropsPath")
+
+          - name: 安装 Inno Setup
+            shell: pwsh
+            run: choco install innosetup -y --no-progress
+
+          - name: 准备 Inno Setup 中文语言文件
+            shell: pwsh
+            run: |
+              $languageDir = "C:\Program Files (x86)\Inno Setup 6\Languages"
+              $languageFile = "$languageDir\ChineseSimplified.isl"
+              if (-not (Test-Path $languageFile)) {
+                New-Item -ItemType Directory -Force -Path $languageDir | Out-Null
+                Invoke-WebRequest `
+                  -Uri "https://raw.githubusercontent.com/kira-96/Inno-Setup-Chinese-Simplified-Translation/main/ChineseSimplified.isl" `
+                  -OutFile $languageFile
+              }
+
+          - name: 准备 .NET 8 Runtime 安装包
+            shell: pwsh
+            run: |
+              $runtimeDir = "tools\RuntimePkg"
+              New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
+              $issContent = Get-Content "installer\XhMonitor.iss" -Raw
+
+              function Resolve-ExpectedFile {
+                param([string]$Pattern, [string]$Name)
+                $match = [regex]::Match($issContent, $Pattern)
+                if (-not $match.Success) {
+                  throw "Failed to resolve $Name package name from installer\XhMonitor.iss"
+                }
+                return $match.Groups[1].Value
+              }
+
+              function Ensure-RuntimePackage {
+                param([string]$ExpectedFile, [string]$RuntimeKind, [string]$DisplayName)
+                $path = Join-Path $runtimeDir $ExpectedFile
+                if (Test-Path $path) {
+                  Write-Host "Using existing $DisplayName package: $path"
+                  return
+                }
+
+                if ($ExpectedFile -notmatch '(\d+\.\d+\.\d+)-win-x64\.exe$') {
+                  throw "Unsupported runtime package name: $ExpectedFile"
+                }
+                $version = $matches[1]
+                $url = "https://builds.dotnet.microsoft.com/dotnet/$RuntimeKind/$version/$ExpectedFile"
+                Invoke-WebRequest -Uri $url -OutFile $path
+                if (-not (Test-Path $path)) {
+                  throw "Failed to download $DisplayName"
+                }
+              }
+
+              $aspNetCoreFile = Resolve-ExpectedFile `
+                -Pattern '#define AspNetCoreRuntimeInstallerFileName "([^"]+)"' `
+                -Name "ASP.NET Core Runtime"
+              $desktopFile = Resolve-ExpectedFile `
+                -Pattern '#define DotNetDesktopRuntimeInstallerFileName "([^"]+)"' `
+                -Name ".NET Desktop Runtime"
+
+              Ensure-RuntimePackage `
+                -ExpectedFile $aspNetCoreFile `
+                -RuntimeKind "aspnetcore/Runtime" `
+                -DisplayName "ASP.NET Core Runtime"
+              Ensure-RuntimePackage `
+                -ExpectedFile $desktopFile `
+                -RuntimeKind "WindowsDesktop" `
+                -DisplayName ".NET Desktop Runtime"
+
+          - name: 准备 RyzenAdj 依赖
+            shell: pwsh
+            run: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Update-RyzenAdj.ps1
+              $requiredFiles = @(
+                "tools\RyzenAdj\ryzenadj.exe",
+                "tools\RyzenAdj\libryzenadj.dll",
+                "tools\RyzenAdj\WinRing0x64.dll",
+                "tools\RyzenAdj\WinRing0x64.sys",
+                "tools\RyzenAdj\inpoutx64.dll",
+                "tools\RyzenAdj\LICENSE.txt",
+                "tools\RyzenAdj\VERSION.txt"
+              )
+              foreach ($file in $requiredFiles) {
+                if (-not (Test-Path $file -PathType Leaf)) {
+                  throw "Required RyzenAdj file is missing: $file"
+                }
+              }
+
+          - name: 构建 Lite ZIP
+            shell: pwsh
+            run: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Version $env:VERSION -Lite
+              $source = "release\XhMonitor-v$env:VERSION.zip"
+              $target = "release\XhMonitor-v$env:VERSION-Lite.zip"
+              if (-not (Test-Path $source -PathType Leaf)) {
+                throw "ZIP not found: $source"
+              }
+              Move-Item $source $target -Force
+
+          - name: 构建 Lite 安装包
+            shell: pwsh
+            run: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 `
+                -Version $env:VERSION `
+                -BuildType Lite `
+                -SkipPublish
+
+          - name: 构建 Lite-Net8 安装包
+            shell: pwsh
+            run: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 `
+                -Version $env:VERSION `
+                -BuildType LiteNet8 `
+                -SkipPublish
+
+          - name: 暂存 Lite 制品
+            shell: pwsh
+            run: |
+              New-Item -ItemType Directory -Force -Path "release-lite-backup" | Out-Null
+              Move-Item "release\XhMonitor-v$env:VERSION-Lite.zip" "release-lite-backup" -Force
+              Move-Item "release\XhMonitor-v$env:VERSION-Lite-Setup.exe" "release-lite-backup" -Force
+              Move-Item "release\XhMonitor-v$env:VERSION-Lite-Net8-Setup.exe" "release-lite-backup" -Force
+
+          - name: 构建 Full ZIP
+            shell: pwsh
+            run: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Version $env:VERSION
+              $source = "release\XhMonitor-v$env:VERSION.zip"
+              $target = "release\XhMonitor-v$env:VERSION-Full.zip"
+              if (-not (Test-Path $source -PathType Leaf)) {
+                throw "ZIP not found: $source"
+              }
+              Move-Item $source $target -Force
+
+          - name: 构建 Full 安装包
+            shell: pwsh
+            run: |
+              pwsh -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 `
+                -Version $env:VERSION `
+                -BuildType Full `
+                -SkipPublish
+
+          - name: 恢复并校验全部制品
+            shell: pwsh
+            run: |
+              Move-Item "release-lite-backup\*" "release\" -Force
+              Remove-Item "release-lite-backup" -Force -Recurse
+
+              $assets = @(
+                "release\XhMonitor-v$env:VERSION-Lite.zip",
+                "release\XhMonitor-v$env:VERSION-Lite-Setup.exe",
+                "release\XhMonitor-v$env:VERSION-Lite-Net8-Setup.exe",
+                "release\XhMonitor-v$env:VERSION-Full.zip",
+                "release\XhMonitor-v$env:VERSION-Full-Setup.exe"
+              )
+              foreach ($asset in $assets) {
+                if (-not (Test-Path $asset -PathType Leaf)) {
+                  throw "Release asset not found: $asset"
+                }
+                $item = Get-Item $asset
+                Write-Host "$($item.Name) ($([math]::Round($item.Length / 1MB, 2)) MB)"
+              }
+
+          - name: 上传发布制品
+            uses: upload-artifact
+            with:
+              name: xhmonitor-release-assets
+              path: |
+                release/*.exe
+                release/*.zip
+
+post:
+  jobs:
+    release-summary:
+      name: 发布构建摘要
+      runs-on: [self-hosted, windows, x64, xhmonitor-release]
+      steps:
+        - name: 写入摘要
+          shell: pwsh
+          run: |
+            "## XhMonitor AtomGit Release" | Out-File -FilePath $env:ATOMGIT_STEP_SUMMARY -Encoding utf8 -Append
+            "- Ref: $env:ATOMGIT_REF" | Out-File -FilePath $env:ATOMGIT_STEP_SUMMARY -Encoding utf8 -Append
+            "- Commit: $env:ATOMGIT_SHA" | Out-File -FilePath $env:ATOMGIT_STEP_SUMMARY -Encoding utf8 -Append
+            "- Artifacts: Lite ZIP, Lite Setup, Lite-Net8 Setup, Full ZIP, Full Setup" | Out-File -FilePath $env:ATOMGIT_STEP_SUMMARY -Encoding utf8 -Append
