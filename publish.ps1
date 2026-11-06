@@ -294,17 +294,27 @@ if (-not $SkipService) {
         -Destination (Join-Path $ServiceDir "appsettings.json") `
         -DisplayName "appsettings.json"
 
-    Copy-RequiredDirectory `
-        -Source (Join-Path $RootDir "tools\RyzenAdj") `
-        -Destination (Join-Path $ServiceDir "tools\RyzenAdj") `
-        -DisplayName "RyzenAdj 工具目录"
+    Copy-RequiredFile `
+        -Source (Join-Path $RootDir "tools\PawnIO\Modules\COPYING") `
+        -Destination (Join-Path $ServiceDir "tools\PawnIO\Modules\COPYING") `
+        -DisplayName "RyzenSMU 模块许可证"
+
+    Copy-RequiredFile `
+        -Source (Join-Path $RootDir "tools\PawnIO\Modules\VERSION.txt") `
+        -Destination (Join-Path $ServiceDir "tools\PawnIO\Modules\VERSION.txt") `
+        -DisplayName "RyzenSMU 模块来源和版本"
+
+    Copy-RequiredFile `
+        -Source (Join-Path $RootDir "tools\PawnIO\Modules\source-0.2.11.zip") `
+        -Destination (Join-Path $ServiceDir "tools\PawnIO\Modules\source-0.2.11.zip") `
+        -DisplayName "RyzenSMU 模块对应源码包"
 
     Copy-RequiredDirectory `
         -Source (Join-Path $RootDir "xhmonitor-web\dist") `
         -Destination (Join-Path $ServiceDir "wwwroot") `
         -DisplayName "Web 前端资源"
 
-    Write-Host "✓ Service 已包含 Rust 二进制、bridge 依赖、Web 资源、配置和 RyzenAdj" -ForegroundColor Green
+    Write-Host "✓ Service 已包含 Rust 二进制（嵌入 RyzenSMU 模块）、bridge 依赖、Web 资源和配置" -ForegroundColor Green
 } else {
     Write-Host "  跳过 Service 文件组装" -ForegroundColor Gray
 }
@@ -418,8 +428,10 @@ XhMonitor-v$Version/
 │  ├─ wwwroot/              # Web 前端静态资源
 │  ├─ logs/                 # 日志目录（自动创建）
 │  ├─ xhmonitor.db          # 数据库文件（自动创建）
-│  └─ tools/
-│     └─ RyzenAdj/
+│  └─ tools/PawnIO/Modules/ # 嵌入 RyzenSMU 模块的许可证、来源信息与对应源码
+│     ├─ COPYING
+│     ├─ VERSION.txt
+│     └─ source-0.2.11.zip
 ├─ Desktop/                 # 桌面应用 (C# WPF)
 │  ├─ XhMonitor.Desktop.exe
 │  ├─ appsettings.json

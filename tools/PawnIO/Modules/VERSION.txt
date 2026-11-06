@@ -1,0 +1,6 @@
+PawnIO.Modules 0.2.11
+Source: https://github.com/namazso/PawnIO.Modules/releases/tag/0.2.11
+Archive SHA256: 43608cb89bc84247fef1368a139013f7d043e17db6d6c8dfc9b46bf0905a81f4
+RyzenSMU.bin SHA256: 301d9ca397108e09f31bfbd5ac4c9bb4f352a5de68532c32db3ba7ddcde93450
+License: LGPL-2.1-or-later (COPYING)
+Source code: https://github.com/namazso/PawnIO.Modules/tree/0.2.11

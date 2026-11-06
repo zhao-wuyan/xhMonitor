@@ -288,7 +288,7 @@ fn log_startup_dependencies(paths: &ServicePaths) {
             tracing::warn!(
                 dependency = "PawnIO",
                 installed = false,
-                impact = "AMD CPU temperature sensors may return zero",
+                impact = "AMD CPU temperature sensors may return zero; CPU power limit reads and writes are unavailable",
                 "startup dependency missing"
             );
         }

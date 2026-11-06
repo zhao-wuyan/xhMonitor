@@ -162,8 +162,6 @@ pub struct ServicePaths {
     pub widget_config_path: PathBuf,
     pub lhm_bridge_path: PathBuf,
     pub wwwroot_path: PathBuf,
-    pub ryzenadj_dll_path: PathBuf,
-    pub ryzenadj_exe_path: PathBuf,
 }
 
 impl ServicePaths {
@@ -217,9 +215,6 @@ impl ServicePaths {
                     }
                 }
 
-                let development_ryzenadj = project_root.join("tools").join("RyzenAdj");
-                paths.ryzenadj_dll_path = development_ryzenadj.join("libryzenadj.dll");
-                paths.ryzenadj_exe_path = development_ryzenadj.join("ryzenadj.exe");
             }
         }
         Ok(paths)
@@ -227,15 +222,12 @@ impl ServicePaths {
 
     pub fn for_exe_dir(exe_dir: impl AsRef<Path>) -> Self {
         let exe_dir = exe_dir.as_ref().to_path_buf();
-        let ryzenadj_dir = exe_dir.join("tools").join("RyzenAdj");
 
         Self {
             db_path: exe_dir.join("xhmonitor.db"),
             widget_config_path: exe_dir.join("data").join("widget-settings.json"),
             lhm_bridge_path: exe_dir.join("lhm-bridge.exe"),
             wwwroot_path: exe_dir.join("wwwroot"),
-            ryzenadj_dll_path: ryzenadj_dir.join("libryzenadj.dll"),
-            ryzenadj_exe_path: ryzenadj_dir.join("ryzenadj.exe"),
             exe_dir,
         }
     }
@@ -478,25 +470,12 @@ mod tests {
         );
         assert_eq!(paths.lhm_bridge_path, exe_dir.join("lhm-bridge.exe"));
         assert_eq!(paths.wwwroot_path, exe_dir.join("wwwroot"));
-        assert_eq!(
-            paths.ryzenadj_dll_path,
-            exe_dir
-                .join("tools")
-                .join("RyzenAdj")
-                .join("libryzenadj.dll")
-        );
-        assert_eq!(
-            paths.ryzenadj_exe_path,
-            exe_dir.join("tools").join("RyzenAdj").join("ryzenadj.exe")
-        );
 
         for derived_path in [
             &paths.db_path,
             &paths.widget_config_path,
             &paths.lhm_bridge_path,
             &paths.wwwroot_path,
-            &paths.ryzenadj_dll_path,
-            &paths.ryzenadj_exe_path,
         ] {
             assert!(derived_path.starts_with(&paths.exe_dir));
         }
