@@ -4,7 +4,7 @@
 // 采集范围与原 XhMonitor.Core/Services/LibreHardwareManager.cs 对齐：
 //   - CPU Temperature（对应 SystemMetricProvider.GetTemperatures）
 //   - GPU Temperature + Load（对应 LibreHardwareMonitorGpuProvider）
-//   - Storage Throughput（对应 SystemMetricProvider.GetDiskUsages via LHM）
+//   - 物理磁盘容量与吞吐（Windows 原生只读采集）
 //
 // 契约：
 //   stdout — 每行一个 LhmSnapshot JSON；除此之外不写任何内容
@@ -22,7 +22,7 @@ using System.Text.Json.Serialization;
 using LibreHardwareMonitor.Hardware;
 using Microsoft.Win32;
 
-[assembly: InternalsVisibleTo("XhMonitor.Tests")]
+[assembly: InternalsVisibleTo("lhm-bridge.Tests")]
 
 const int DefaultIntervalMs = 1000;
 const int MinIntervalMs = 200;
@@ -86,6 +86,7 @@ catch (Exception ex)
 }
 
 using var processVramCollector = new ProcessVramCollector();
+using var diskCollector = new NativeDiskCollector();
 
 using var cts = new CancellationTokenSource();
 
@@ -128,6 +129,7 @@ while (!cts.IsCancellationRequested)
         var snapshot = BuildSnapshot(
             computer,
             processVramCollector,
+            diskCollector,
             ref cpuTemperatureUnavailableLogged);
         Console.WriteLine(JsonSerializer.Serialize(snapshot, options));
         Console.Out.Flush();
@@ -192,6 +194,7 @@ static bool IsRunningAsAdministrator()
 static LhmSnapshot BuildSnapshot(
     Computer computer,
     ProcessVramCollector processVramCollector,
+    NativeDiskCollector diskCollector,
     ref bool cpuTemperatureUnavailableLogged)
 {
     var cpuTemperatureSensors = new List<LhmSensorReading>();
@@ -199,8 +202,13 @@ static LhmSnapshot BuildSnapshot(
     var gpuLoadSensors = new List<LhmSensorReading>();
     var gpuMemoryUsedSensors = new List<LhmSensorReading>();
     var gpuMemoryTotalSensors = new List<LhmSensorReading>();
-    var disks = new List<LhmDiskSnapshot>();
+    var disks = diskCollector.Capture();
     double diskRead = 0, diskWrite = 0;
+    foreach (var disk in disks)
+    {
+        diskRead += disk.ReadMbps ?? 0.0;
+        diskWrite += disk.WriteMbps ?? 0.0;
+    }
 
     foreach (var hw in computer.Hardware)
     {
@@ -261,17 +269,6 @@ static LhmSnapshot BuildSnapshot(
                 break;
 
 
-            case HardwareType.Storage:
-                {
-                    var disk = BuildDiskSnapshot(hw);
-                    if (disk != null)
-                    {
-                        disks.Add(disk);
-                        diskRead += disk.ReadMbps ?? 0.0;
-                        diskWrite += disk.WriteMbps ?? 0.0;
-                    }
-                    break;
-                }
         }
     }
 
@@ -328,97 +325,6 @@ static LhmSnapshot BuildSnapshot(
     );
 }
 
-static LhmDiskSnapshot? BuildDiskSnapshot(IHardware hw)
-{
-    double readBytesPerSecond = 0.0, writeBytesPerSecond = 0.0;
-    var readFound = false;
-    var writeFound = false;
-    float? totalSpaceGib = null;
-    float? freeSpaceGib = null;
-
-    foreach (var sensor in hw.Sensors)
-    {
-        if (!sensor.Value.HasValue || sensor.Value.Value < 0) continue;
-
-        var value = sensor.Value.Value;
-        if (sensor.SensorType == SensorType.Throughput)
-        {
-            if (ContainsAny(sensor.Name, DiskSensorNamePatterns.Read) &&
-                !ContainsAny(sensor.Name, DiskSensorNamePatterns.Write))
-            {
-                readFound = true;
-                readBytesPerSecond += value;
-            }
-            else if (ContainsAny(sensor.Name, DiskSensorNamePatterns.Write))
-            {
-                writeFound = true;
-                writeBytesPerSecond += value;
-            }
-
-            continue;
-        }
-
-        if (sensor.SensorType != SensorType.Data &&
-            sensor.SensorType != SensorType.SmallData)
-        {
-            continue;
-        }
-
-        if (value > 0 &&
-            ContainsAny(sensor.Name, DiskSensorNamePatterns.TotalSpace) &&
-            (!totalSpaceGib.HasValue || value > totalSpaceGib.Value))
-        {
-            totalSpaceGib = value;
-        }
-
-        if (ContainsAny(sensor.Name, DiskSensorNamePatterns.FreeSpace) &&
-            (!freeSpaceGib.HasValue || value > freeSpaceGib.Value))
-        {
-            freeSpaceGib = value;
-        }
-    }
-
-    long? totalBytes = totalSpaceGib.HasValue
-        ? ConvertGibToBytes(totalSpaceGib.Value)
-        : null;
-    long? usedBytes = null;
-    if (totalBytes.HasValue && freeSpaceGib.HasValue)
-    {
-        var freeBytes = ConvertGibToBytes(freeSpaceGib.Value);
-        usedBytes = Math.Clamp(totalBytes.Value - freeBytes, 0L, totalBytes.Value);
-    }
-
-    double? readMbps = readFound ? readBytesPerSecond / 1_048_576.0 : null;
-    double? writeMbps = writeFound ? writeBytesPerSecond / 1_048_576.0 : null;
-
-    if (!totalBytes.HasValue &&
-        !usedBytes.HasValue &&
-        !readMbps.HasValue &&
-        !writeMbps.HasValue)
-    {
-        return null;
-    }
-
-    return new LhmDiskSnapshot(
-        Name: hw.Name,
-        TotalBytes: totalBytes,
-        UsedBytes: usedBytes,
-        ReadMbps: readMbps,
-        WriteMbps: writeMbps);
-}
-
-static long ConvertGibToBytes(float gib) =>
-    (long)Math.Round(gib * 1024.0 * 1024.0 * 1024.0);
-
-static bool ContainsAny(string name, string[] patterns)
-{
-    foreach (var pattern in patterns)
-    {
-        if (name.Contains(pattern, StringComparison.OrdinalIgnoreCase)) return true;
-    }
-
-    return false;
-}
 
 
 internal sealed class ProcessVramCollector : IDisposable
@@ -428,8 +334,8 @@ internal sealed class ProcessVramCollector : IDisposable
         @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
     private readonly bool _processCountersSupported;
     private readonly bool _adapterCountersSupported;
-    private readonly bool _gpuEngineCountersSupported;
-    private readonly Dictionary<string, PerformanceCounter>? _gpuEngineCounters;
+    private readonly WindowsPdhQuery? _gpuEngineQuery;
+    private bool _gpuEngineWarmedUp;
 
     internal ProcessVramCollector()
     {
@@ -437,11 +343,10 @@ internal sealed class ProcessVramCollector : IDisposable
         {
             return;
         }
-        _gpuEngineCounters = new(StringComparer.OrdinalIgnoreCase);
+        _gpuEngineQuery = new WindowsPdhQuery(@"\GPU Engine(*)\Utilization Percentage");
 
         _processCountersSupported = CategoryExists("GPU Process Memory");
         _adapterCountersSupported = CategoryExists("GPU Adapter Memory");
-        _gpuEngineCountersSupported = CategoryExists("GPU Engine");
         SystemCapacityMb = CaptureRegistryCapacityMb();
     }
 
@@ -504,85 +409,38 @@ internal sealed class ProcessVramCollector : IDisposable
     }
     internal IReadOnlyDictionary<int, double> CaptureGpuUsagePercent()
     {
-        var usageByProcessId = new Dictionary<int, double>();
-        if (!OperatingSystem.IsWindows() ||
-            !_gpuEngineCountersSupported ||
-            _gpuEngineCounters is null)
+        var result = new Dictionary<int, double>();
+        if (_gpuEngineQuery is null || !_gpuEngineQuery.Collect())
         {
-            return usageByProcessId;
+            _gpuEngineWarmedUp = false;
+            return result;
         }
-
-        string[] instanceNames;
-        try
+        if (!_gpuEngineWarmedUp)
         {
-            instanceNames = new PerformanceCounterCategory("GPU Engine").GetInstanceNames();
+            _gpuEngineWarmedUp = true;
+            return result;
         }
-        catch (UnauthorizedAccessException)
+        if (!_gpuEngineQuery.TryReadValues(out var items))
         {
-            return usageByProcessId;
+            _gpuEngineWarmedUp = false;
+            return result;
         }
-        catch (InvalidOperationException)
+        foreach (ref readonly var item in items)
         {
-            return usageByProcessId;
+            AccumulateGpuUsage(_gpuEngineQuery.GetInstanceName(in item),
+                item.FormattedValue.Status, item.FormattedValue.Value, result);
         }
+        return result;
+    }
 
-        var activeInstances = new HashSet<string>(instanceNames, StringComparer.OrdinalIgnoreCase);
-        foreach (var instanceName in instanceNames)
-        {
-            if (!TryExtractProcessId(instanceName, out var processId))
-            {
-                continue;
-            }
-
-            if (!_gpuEngineCounters.TryGetValue(instanceName, out var counter))
-            {
-                try
-                {
-                    counter = new PerformanceCounter(
-                        "GPU Engine",
-                        "Utilization Percentage",
-                        instanceName,
-                        readOnly: true);
-                    counter.NextValue();
-                    _gpuEngineCounters.Add(instanceName, counter);
-                }
-                catch (InvalidOperationException)
-                {
-                    counter?.Dispose();
-                }
-                continue;
-            }
-
-            try
-            {
-                var usage = counter.NextValue();
-                if (!float.IsFinite(usage) || usage <= 0)
-                {
-                    continue;
-                }
-
-                usageByProcessId.TryGetValue(processId, out var current);
-                // 与 Windows 系统口径一致：进程 GPU 百分比取最忙的 engine。
-                usageByProcessId[processId] = Math.Max(current, Math.Min(100.0, usage));
-            }
-            catch (InvalidOperationException)
-            {
-                counter.Dispose();
-                _gpuEngineCounters.Remove(instanceName);
-            }
-        }
-
-        foreach (var staleInstance in _gpuEngineCounters.Keys
-                     .Where(instance => !activeInstances.Contains(instance))
-                     .ToArray())
-        {
-            _gpuEngineCounters.Remove(staleInstance, out var counter);
-            counter?.Dispose();
-        }
-
-        return usageByProcessId.ToDictionary(
-            pair => pair.Key,
-            pair => Math.Round(pair.Value, 1));
+    internal static void AccumulateGpuUsage(ReadOnlySpan<char> instanceName, uint status,
+        double usage, Dictionary<int, double> result)
+    {
+        if (status > 1 || !TryExtractProcessId(instanceName, out var processId) ||
+            processId <= 0 || !double.IsFinite(usage) || usage <= 0)
+            return;
+        result.TryGetValue(processId, out var current);
+        result[processId] = Math.Max(current, Math.Round(Math.Min(usage, 100.0), 1));
     }
 
 
@@ -703,7 +561,7 @@ internal sealed class ProcessVramCollector : IDisposable
         };
     }
 
-    internal static bool TryExtractProcessId(string instanceName, out int processId)
+    internal static bool TryExtractProcessId(ReadOnlySpan<char> instanceName, out int processId)
     {
         processId = 0;
         const string marker = "pid_";
@@ -714,26 +572,14 @@ internal sealed class ProcessVramCollector : IDisposable
         }
 
         start += marker.Length;
-        var end = instanceName.IndexOf('_', start);
-        if (end < 0)
-        {
-            end = instanceName.Length;
-        }
+        var relativeEnd = instanceName[start..].IndexOf('_');
+        var end = relativeEnd < 0 ? instanceName.Length : start + relativeEnd;
 
         return int.TryParse(instanceName[start..end], out processId);
     }
     public void Dispose()
     {
-        if (!OperatingSystem.IsWindows() || _gpuEngineCounters is null)
-        {
-            return;
-        }
-
-        foreach (var counter in _gpuEngineCounters.Values)
-        {
-            counter.Dispose();
-        }
-        _gpuEngineCounters.Clear();
+        _gpuEngineQuery?.Dispose();
     }
 
 }
@@ -746,7 +592,7 @@ internal static class BridgeComputerConfiguration
             IsCpuEnabled = true,
             IsGpuEnabled = true,
             IsMemoryEnabled = false,
-            IsStorageEnabled = true,
+            IsStorageEnabled = false,
             IsMotherboardEnabled = false,
             IsControllerEnabled = false,
         };
@@ -1067,13 +913,6 @@ record LhmSnapshot(
     [property: JsonPropertyName("disks")] IReadOnlyList<LhmDiskSnapshot> Disks
 );
 
-static class DiskSensorNamePatterns
-{
-    public static readonly string[] Read = ["Read", "Read Rate", "Read Speed"];
-    public static readonly string[] Write = ["Write", "Write Rate", "Write Speed"];
-    public static readonly string[] TotalSpace = ["Total Space", "Total Size", "Total Capacity"];
-    public static readonly string[] FreeSpace = ["Free Space", "Available Space", "Available", "Free"];
-}
 
 class UpdateVisitor : IVisitor
 {

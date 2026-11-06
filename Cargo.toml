@@ -6,7 +6,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.3.5"
+version = "0.3.6"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT"
@@ -29,9 +29,10 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 futures = "0.3"
 rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
 sysinfo = { version = "0.32", default-features = false, features = ["system", "disk"] }
-libloading = "0.8"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
     "Win32_NetworkManagement_IpHelper",
     "Win32_NetworkManagement_Ndis",
     "Win32_Security",

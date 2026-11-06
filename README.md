@@ -24,6 +24,14 @@ XhMonitor 是一套 Windows 进程资源监控工具，支持 CPU、内存、GPU
 
 旧 `XhMonitor.Service` 已由 `xhm-service` 替代。Rust Desktop 仍在独立迁移分支开发，不属于当前生产 workspace。
 
+Rust Service 的 CPU 功耗限制读写面向 Ryzen AI Max 395（Strix Halo），由 Rust 直接访问已安装的 PawnIO 驱动，并加载编译时嵌入的官方签名 RyzenSMU 模块。使用该功能需要安装 PawnIO 并以管理员权限运行 Service；不依赖 WinRing0，也不会每秒启动 RyzenAdj CLI。PawnIO 同时用于支持该驱动的 CPU 传感器访问。
+
+功耗采样复用设备句柄，监控线程与 API 共享 3 秒缓存（失败也节流）；写入后失效缓存以便验证实际限制。权限、模块初始化失败会停用至服务重启；运行期连续 3 次操作失败后停止访问。PCI 互斥量等待上限为 100 ms，不进行用户态忙等或无限重试。这些措施减少访问开销，但不构成硬件稳定性保证。
+
+嵌入模块来自 [PawnIO.Modules 0.2.11](https://github.com/namazso/PawnIO.Modules/tree/0.2.11)，按 LGPL-2.1-or-later 许可分发；发布包在 `Service/tools/PawnIO/Modules/` 中同时提供 `COPYING`、`VERSION.txt`（版本、源码地址及校验值）及对应完整源码包 `source-0.2.11.zip`，无需另附模块二进制。
+
+从旧版覆盖安装时，安装器仅依据 HKLM 中本程序的既有安装记录迁移 WinRing0：只删除名称、安装内已知映像路径和内核类型均匹配、且已经停止的 `R0lhm-bridge` / `R0XhMonitor_Service` 服务，不主动停止或卸载运行中的驱动。旧文件仅限 `Service/tools/RyzenAdj/WinRing0x64.sys`、`WinRing0x64.dll` 及 `Service/` 下的 `lhm-bridge.sys`、`XhMonitor.Service.sys`、`LibreHardwareMonitorLib.sys`；仍被服务引用、被占用、存在链接或无法核实归属时保留，并在安装日志中记录原因。通用共享 WinRing0 服务、系统目录和 PawnIO 不会被清理；交互安装仅在完成页显示简短保留说明，不单独弹窗，具体驱动、路径及失败原因只写安装日志；静默安装只记录日志，不自动重启。
+
 ## 目录结构
 
 ```text
@@ -36,7 +44,8 @@ xhMonitor/
 ├── XhMonitor.Desktop/
 ├── XhMonitor.Desktop.Tests/
 ├── xhmonitor-web/
-├── tools/RyzenAdj/
+├── tools/PawnIO/        # 安装器与嵌入的官方签名 RyzenSMU 模块
+├── tools/RyzenAdj/      # 保留供旧 C# 代码使用，不随新版本分发
 ├── scripts/
 ├── publish.ps1
 ├── build-installer.ps1
@@ -149,6 +158,15 @@ LHM bridge：
 dotnet build lhm-bridge/lhm-bridge.csproj -c Release
 ```
 
+安装器迁移行为测试（需要 Inno Setup 6，测试只操作隔离临时文件，不修改真实驱动服务）：
+
+```powershell
+$testOutput = Join-Path $env:TEMP 'XhMonitorInstallerTests'
+New-Item -ItemType Directory -Path $testOutput -Force | Out-Null
+ISCC.exe "/O$testOutput" installer/tests/LegacyWinRingMigration.Tests.iss
+& "$testOutput/LegacyWinRingMigration.Tests.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$testOutput/migration-tests.log"
+```
+
 ## 发布
 
 构建绿色版：
@@ -173,7 +191,10 @@ XhMonitor-v1.0.0/
 │   ├── xhm-service.exe
 │   ├── lhm-bridge.exe
 │   ├── appsettings.json
-│   └── tools/RyzenAdj/
+│   └── tools/PawnIO/Modules/
+│       ├── COPYING
+│       ├── VERSION.txt
+│       └── source-0.2.11.zip
 ├── Desktop/
 │   └── XhMonitor.Desktop.exe
 ├── 启动服务.bat

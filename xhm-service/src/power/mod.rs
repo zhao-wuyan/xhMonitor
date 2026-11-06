@@ -1,15 +1,13 @@
 use std::{
     collections::HashMap,
-    ffi::{c_void, OsStr},
     fmt, fs,
-    path::{Path, PathBuf},
-    process::{Command, Output, Stdio},
     sync::{Arc, Mutex, MutexGuard},
-    thread,
     time::{Duration, Instant},
 };
 
-use libloading::Library;
+#[cfg(windows)]
+use std::ffi::OsStr;
+
 use serde::Deserialize;
 use xhm_core::{
     models::{PowerScheme, PowerSchemeSwitchResult, PowerStatus, PowerWarmupStatus},
@@ -19,8 +17,11 @@ use xhm_core::{
 
 use crate::state::{strip_json_comments, ServicePaths};
 
-const CLI_TIMEOUT: Duration = Duration::from_secs(3);
-const MAX_CONSECUTIVE_CLI_FAILURES: u8 = 3;
+mod pawnio;
+use pawnio::PawnIoBackend;
+
+const STATUS_CACHE_TTL: Duration = Duration::from_secs(3);
+const MAX_CONSECUTIVE_FAILURES: u8 = 3;
 const DEVICE_NOT_SUPPORTED: &str = "当前设备不支持此功能";
 const SCHEME_PROFILE_NOT_CONFIGURED: &str = "功耗切换方案未配置";
 
@@ -57,714 +58,105 @@ where
     }
 }
 
-struct NativeBackend {
-    library_path: PathBuf,
-    #[cfg(windows)]
-    library_directory: Option<Vec<u16>>,
-    session: Mutex<Option<NativeSession>>,
+#[derive(Default)]
+struct BackendState {
+    cached: Option<(Instant, Option<RyzenAdjSnapshot>)>,
+    consecutive_failures: u8,
 }
 
-impl NativeBackend {
-    fn new(library_path: PathBuf) -> Self {
-        #[cfg(windows)]
-        let library_directory = library_path.parent().map(path_to_wide_null);
-
-        Self {
-            library_path,
-            #[cfg(windows)]
-            library_directory,
-            session: Mutex::new(None),
-        }
-    }
-
-    #[cfg(windows)]
-    fn library_directory(&self) -> Option<&[u16]> {
-        self.library_directory.as_deref()
-    }
-
-    #[cfg(not(windows))]
-    fn library_directory(&self) -> Option<&[u16]> {
-        None
-    }
-
-    fn with_session<T>(
-        &self,
-        operation: impl FnOnce(&NativeSession, Option<&[u16]>) -> Result<T>,
-    ) -> Result<T> {
-        let mut session = lock_ryzen(&self.session, "native session")?;
-        if session.is_none() {
-            *session = Some(NativeSession::load(
-                &self.library_path,
-                self.library_directory(),
-            )?);
-        }
-
-        operation(
-            session.as_ref().expect("native session initialized"),
-            self.library_directory(),
-        )
-    }
-}
-
-impl fmt::Debug for NativeBackend {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("NativeBackend")
-            .field("library_path", &self.library_path)
-            .finish_non_exhaustive()
-    }
-}
-
-impl RyzenAdjBackend for NativeBackend {
-    fn is_available(&self) -> bool {
-        cfg!(windows) && self.library_path.is_file()
-    }
-
-    fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
-        self.with_session(NativeSession::read_snapshot)
-    }
-
-    fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
-        self.with_session(|session, directory| session.apply_scheme(directory, scheme))
-    }
-}
-
-type InitFn = unsafe extern "system" fn() -> *mut c_void;
-type CleanupFn = unsafe extern "system" fn(*mut c_void);
-type RefreshFn = unsafe extern "system" fn(*mut c_void) -> i32;
-type ReadValueFn = unsafe extern "system" fn(*mut c_void) -> f32;
-type SetLimitFn = unsafe extern "system" fn(*mut c_void, u32) -> i32;
-
-struct NativeSession {
-    // The library must stay loaded until cleanup has run. Drop executes cleanup
-    // before fields are released, so copied function pointers never outlive it.
-    library: Library,
-    handle: usize,
-    cleanup: CleanupFn,
-    refresh: RefreshFn,
-    get_stapm_limit: ReadValueFn,
-    get_stapm_value: ReadValueFn,
-    get_fast_limit: ReadValueFn,
-    get_fast_value: ReadValueFn,
-    get_slow_limit: ReadValueFn,
-    get_slow_value: ReadValueFn,
-    set_stapm_limit: SetLimitFn,
-    set_fast_limit: SetLimitFn,
-    set_slow_limit: SetLimitFn,
-}
-
-impl NativeSession {
-    fn load(library_path: &Path, library_directory: Option<&[u16]>) -> Result<Self> {
-        if !cfg!(windows) {
-            return Err(CoreError::Unsupported(
-                "native RyzenAdj is only available on Windows".to_owned(),
-            ));
-        }
-
-        let _directory_scope = NativeLibraryDirectoryScope::enter(library_directory)?;
-        // SAFETY: Loading a DLL executes its loader hooks. The path is the configured
-        // libryzenadj.dll path and the resulting Library is retained by NativeSession.
-        let library = unsafe { Library::new(library_path) }
-            .map_err(|error| ryzen_error(format!("load {}: {error}", library_path.display())))?;
-
-        // SAFETY: These signatures match libryzenadj's exported stdcall API. Symbols
-        // are copied only while `library` is alive and are stored beside that library.
-        let init = unsafe { load_symbol::<InitFn>(&library, b"init_ryzenadj\0")? };
-        let cleanup = unsafe { load_symbol::<CleanupFn>(&library, b"cleanup_ryzenadj\0")? };
-        let refresh = unsafe { load_symbol::<RefreshFn>(&library, b"refresh_table\0")? };
-        let get_stapm_limit =
-            unsafe { load_symbol::<ReadValueFn>(&library, b"get_stapm_limit\0")? };
-        let get_stapm_value =
-            unsafe { load_symbol::<ReadValueFn>(&library, b"get_stapm_value\0")? };
-        let get_fast_limit = unsafe { load_symbol::<ReadValueFn>(&library, b"get_fast_limit\0")? };
-        let get_fast_value = unsafe { load_symbol::<ReadValueFn>(&library, b"get_fast_value\0")? };
-        let get_slow_limit = unsafe { load_symbol::<ReadValueFn>(&library, b"get_slow_limit\0")? };
-        let get_slow_value = unsafe { load_symbol::<ReadValueFn>(&library, b"get_slow_value\0")? };
-        let set_stapm_limit = unsafe { load_symbol::<SetLimitFn>(&library, b"set_stapm_limit\0")? };
-        let set_fast_limit = unsafe { load_symbol::<SetLimitFn>(&library, b"set_fast_limit\0")? };
-        let set_slow_limit = unsafe { load_symbol::<SetLimitFn>(&library, b"set_slow_limit\0")? };
-
-        // SAFETY: `init` is the resolved libryzenadj initializer and takes no arguments.
-        let handle = unsafe { init() };
-        if handle.is_null() {
-            return Err(ryzen_error(
-                "init_ryzenadj returned null; run as Administrator and keep the RyzenAdj driver files beside the DLL",
-            ));
-        }
-
-        Ok(Self {
-            library,
-            handle: handle as usize,
-            cleanup,
-            refresh,
-            get_stapm_limit,
-            get_stapm_value,
-            get_fast_limit,
-            get_fast_value,
-            get_slow_limit,
-            get_slow_value,
-            set_stapm_limit,
-            set_fast_limit,
-            set_slow_limit,
-        })
-    }
-
-    fn read_snapshot(&self, library_directory: Option<&[u16]>) -> Result<RyzenAdjSnapshot> {
-        let _directory_scope = NativeLibraryDirectoryScope::enter(library_directory)?;
-        let handle = self.handle as *mut c_void;
-
-        // SAFETY: The handle was returned by init_ryzenadj and is serialized by the
-        // NativeBackend mutex. Function pointers remain valid while `self.library` lives.
-        let refresh_result = unsafe { (self.refresh)(handle) };
-        check_native_result("refresh_table", refresh_result)?;
-
-        // SAFETY: Same initialized handle and live library as above. Getter calls do not
-        // transfer ownership and are made only after a successful table refresh.
-        let snapshot = unsafe {
-            RyzenAdjSnapshot {
-                stapm_limit: f64::from((self.get_stapm_limit)(handle)),
-                stapm_value: f64::from((self.get_stapm_value)(handle)),
-                fast_limit: f64::from((self.get_fast_limit)(handle)),
-                fast_value: f64::from((self.get_fast_value)(handle)),
-                slow_limit: f64::from((self.get_slow_limit)(handle)),
-                slow_value: f64::from((self.get_slow_value)(handle)),
-            }
-        };
-        Ok(snapshot)
-    }
-
-    fn apply_scheme(&self, library_directory: Option<&[u16]>, scheme: PowerScheme) -> Result<()> {
-        let _directory_scope = NativeLibraryDirectoryScope::enter(library_directory)?;
-        let handle = self.handle as *mut c_void;
-
-        // SAFETY: The initialized handle and each setter are owned by this live session;
-        // NativeBackend serializes the three writes as one operation.
-        unsafe {
-            check_native_result(
-                "set_stapm_limit",
-                (self.set_stapm_limit)(handle, watts_to_milliwatts(scheme.stapm_watts)),
-            )?;
-            check_native_result(
-                "set_fast_limit",
-                (self.set_fast_limit)(handle, watts_to_milliwatts(scheme.fast_watts)),
-            )?;
-            check_native_result(
-                "set_slow_limit",
-                (self.set_slow_limit)(handle, watts_to_milliwatts(scheme.slow_watts)),
-            )?;
-        }
-        Ok(())
-    }
-}
-
-impl fmt::Debug for NativeSession {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("NativeSession")
-            .field("library", &self.library)
-            .field("handle", &self.handle)
-            .finish_non_exhaustive()
-    }
-}
-
-impl Drop for NativeSession {
-    fn drop(&mut self) {
-        if self.handle == 0 {
-            return;
-        }
-
-        // SAFETY: cleanup belongs to the still-live Library field and this is the sole
-        // owner of the non-zero handle. The handle is cleared to make double cleanup impossible.
-        unsafe { (self.cleanup)(self.handle as *mut c_void) };
-        self.handle = 0;
-    }
-}
-
-unsafe fn load_symbol<T>(library: &Library, name: &[u8]) -> Result<T>
-where
-    T: Copy,
-{
-    // SAFETY: The caller supplies the ABI/signature matching the requested export.
-    let symbol = unsafe { library.get::<T>(name) }
-        .map_err(|error| ryzen_error(format!("missing native symbol: {error}")))?;
-    Ok(*symbol)
-}
-
-fn check_native_result(function: &str, result: i32) -> Result<()> {
-    if result == 0 {
-        Ok(())
-    } else {
-        Err(ryzen_error(format!("{function} failed with code {result}")))
-    }
-}
-
-#[cfg(windows)]
-static DLL_DIRECTORY_LOCK: Mutex<()> = Mutex::new(());
-
-#[cfg(windows)]
-struct NativeLibraryDirectoryScope {
-    _guard: MutexGuard<'static, ()>,
-    previous: Option<Vec<u16>>,
-}
-
-#[cfg(windows)]
-impl NativeLibraryDirectoryScope {
-    fn enter(directory: Option<&[u16]>) -> Result<Self> {
-        use std::ptr::null_mut;
-        use windows_sys::Win32::System::LibraryLoader::{GetDllDirectoryW, SetDllDirectoryW};
-
-        let directory =
-            directory.ok_or_else(|| ryzen_error("libryzenadj.dll path has no parent directory"))?;
-        let guard = lock_ryzen(&DLL_DIRECTORY_LOCK, "DLL directory")?;
-
-        // SAFETY: A zero-length query with a null buffer asks Windows for the required size.
-        let required = unsafe { GetDllDirectoryW(0, null_mut()) };
-        let previous = if required == 0 {
-            None
-        } else {
-            let mut buffer = vec![0_u16; required as usize + 1];
-            // SAFETY: `buffer` is writable for the supplied length and remains alive in scope.
-            let written = unsafe {
-                GetDllDirectoryW(
-                    u32::try_from(buffer.len()).unwrap_or(u32::MAX),
-                    buffer.as_mut_ptr(),
-                )
-            };
-            if written == 0 {
-                None
-            } else {
-                buffer.truncate(written as usize + 1);
-                Some(buffer)
-            }
-        };
-
-        // SAFETY: `directory` is a NUL-terminated UTF-16 string retained by NativeBackend.
-        if unsafe { SetDllDirectoryW(directory.as_ptr()) } == 0 {
-            return Err(CoreError::Io(std::io::Error::last_os_error()));
-        }
-
-        Ok(Self {
-            _guard: guard,
-            previous,
-        })
-    }
-}
-
-#[cfg(windows)]
-impl Drop for NativeLibraryDirectoryScope {
-    fn drop(&mut self) {
-        use std::ptr::null;
-        use windows_sys::Win32::System::LibraryLoader::SetDllDirectoryW;
-
-        let previous = self
-            .previous
-            .as_ref()
-            .map_or_else(null, |directory| directory.as_ptr());
-        // SAFETY: The previous buffer is NUL terminated and lives through this call. A null
-        // pointer restores the default DLL search directory when none was previously set.
-        unsafe {
-            SetDllDirectoryW(previous);
-        }
-    }
-}
-
-#[cfg(not(windows))]
-struct NativeLibraryDirectoryScope;
-
-#[cfg(not(windows))]
-impl NativeLibraryDirectoryScope {
-    fn enter(_directory: Option<&[u16]>) -> Result<Self> {
-        Ok(Self)
-    }
-}
-
-#[cfg(windows)]
-fn path_to_wide_null(path: &Path) -> Vec<u16> {
-    use std::os::windows::ffi::OsStrExt;
-
-    path.as_os_str().encode_wide().chain(Some(0)).collect()
-}
-
-#[derive(Debug)]
-struct CliBackend {
-    executable_path: PathBuf,
-}
-
-impl CliBackend {
-    fn new(executable_path: PathBuf) -> Self {
-        Self { executable_path }
-    }
-
-    fn command(&self) -> Command {
-        let mut command = Command::new(&self.executable_path);
-        if let Some(directory) = self.executable_path.parent() {
-            command.current_dir(directory);
-        }
-        command
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        command
-    }
-
-    fn run(&self, mut command: Command) -> Result<Output> {
-        let mut child = command.spawn()?;
-        let started = Instant::now();
-
-        loop {
-            match child.try_wait()? {
-                Some(_) => break,
-                None if started.elapsed() < CLI_TIMEOUT => {
-                    thread::sleep(Duration::from_millis(10));
-                }
-                None => {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err(ryzen_error(format!(
-                        "{} timed out after {:.1}s",
-                        self.executable_path.display(),
-                        CLI_TIMEOUT.as_secs_f64()
-                    )));
-                }
-            }
-        }
-
-        let output = child.wait_with_output()?;
-        if output.status.success() {
-            return Ok(output);
-        }
-
-        let code = output.status.code().unwrap_or(-1);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        Err(ryzen_error(format!(
-            "{} exited with code {code}. StdErr: {}. StdOut: {}",
-            self.executable_path.display(),
-            truncate(&stderr, 800),
-            truncate(&stdout, 800)
-        )))
-    }
-}
-
-impl RyzenAdjBackend for CliBackend {
-    fn is_available(&self) -> bool {
-        cfg!(windows) && self.executable_path.is_file()
-    }
-
-    fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
-        let mut command = self.command();
-        command.arg("-i");
-        let output = self.run(command)?;
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        parse_info_output(&stdout).map_err(ryzen_error)
-    }
-
-    fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
-        let arguments = limit_arguments(scheme);
-        let mut command = self.command();
-        command.args(arguments.iter().map(String::as_str));
-        self.run(command).map(|_| ())
-    }
-}
-
-fn limit_arguments(scheme: PowerScheme) -> [String; 3] {
-    [
-        format!("--stapm-limit={}", watts_to_milliwatts(scheme.stapm_watts)),
-        format!("--fast-limit={}", watts_to_milliwatts(scheme.fast_watts)),
-        format!("--slow-limit={}", watts_to_milliwatts(scheme.slow_watts)),
-    ]
-}
-
-fn watts_to_milliwatts(watts: i32) -> u32 {
-    u32::try_from(watts).unwrap_or(0).saturating_mul(1_000)
-}
-
-fn parse_info_output(output: &str) -> std::result::Result<RyzenAdjSnapshot, String> {
-    if output.trim().is_empty() {
-        return Err("Empty output".to_owned());
-    }
-
-    let mut stapm_limit = None;
-    let mut stapm_value = None;
-    let mut fast_limit = None;
-    let mut fast_value = None;
-    let mut slow_limit = None;
-    let mut slow_value = None;
-
-    for line in output.lines() {
-        let line = line.trim();
-        if !line.starts_with('|') || line.starts_with("|---") {
-            continue;
-        }
-
-        let mut columns = line
-            .split('|')
-            .map(str::trim)
-            .filter(|part| !part.is_empty());
-        let Some(name) = columns.next() else {
-            continue;
-        };
-        let Some(value_text) = columns.next() else {
-            continue;
-        };
-        let Ok(value) = value_text.parse::<f64>() else {
-            continue;
-        };
-        if value.is_nan() {
-            continue;
-        }
-
-        if name.eq_ignore_ascii_case("STAPM LIMIT") {
-            stapm_limit = Some(value);
-        } else if name.eq_ignore_ascii_case("STAPM VALUE") {
-            stapm_value = Some(value);
-        } else if name.eq_ignore_ascii_case("PPT LIMIT FAST") {
-            fast_limit = Some(value);
-        } else if name.eq_ignore_ascii_case("PPT VALUE FAST") {
-            fast_value = Some(value);
-        } else if name.eq_ignore_ascii_case("PPT LIMIT SLOW") {
-            slow_limit = Some(value);
-        } else if name.eq_ignore_ascii_case("PPT VALUE SLOW") {
-            slow_value = Some(value);
-        }
-    }
-
-    match (
-        stapm_limit,
-        stapm_value,
-        fast_limit,
-        fast_value,
-        slow_limit,
-        slow_value,
-    ) {
-        (
-            Some(stapm_limit),
-            Some(stapm_value),
-            Some(fast_limit),
-            Some(fast_value),
-            Some(slow_limit),
-            Some(slow_value),
-        ) => Ok(RyzenAdjSnapshot {
-            stapm_limit,
-            stapm_value,
-            fast_limit,
-            fast_value,
-            slow_limit,
-            slow_value,
-        }),
-        _ => Err("Missing required keys in output table".to_owned()),
-    }
-}
-
-fn truncate(value: &str, max_chars: usize) -> &str {
-    if value.len() <= max_chars {
-        value
-    } else {
-        let mut boundary = max_chars;
-        while !value.is_char_boundary(boundary) {
-            boundary -= 1;
-        }
-        &value[..boundary]
-    }
-}
-
-#[derive(Debug, Default)]
-struct FallbackState {
-    primary_disabled: bool,
-    consecutive_cli_failures: u8,
-    disabled: bool,
-}
-
-struct FallbackBackend<P, F> {
-    primary: P,
-    fallback: F,
-    state: Mutex<FallbackState>,
-}
-
-impl<P, F> FallbackBackend<P, F>
-where
-    P: RyzenAdjBackend,
-    F: RyzenAdjBackend,
-{
-    fn new(primary: P, fallback: F) -> Self {
-        Self {
-            primary,
-            fallback,
-            state: Mutex::new(FallbackState::default()),
-        }
-    }
-
-    fn is_available(&self) -> bool {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        !state.disabled
-            && ((!state.primary_disabled && self.primary.is_available())
-                || self.fallback.is_available())
-    }
-
-    fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
-        let mut state = lock_ryzen(&self.state, "RyzenAdj fallback")?;
-        if state.disabled {
-            return Err(cli_circuit_open_error());
-        }
-        if !state.primary_disabled {
-            if self.primary.is_available() {
-                match self.primary.read_snapshot() {
-                    Ok(snapshot) => return Ok(snapshot),
-                    Err(error) => {
-                        tracing::warn!(%error, "native RyzenAdj failed; permanently switching to CLI");
-                        state.primary_disabled = true;
-                    }
-                }
-            } else {
-                state.primary_disabled = true;
-            }
-        }
-
-        let result = self.fallback.read_snapshot();
-        self.record_cli_result(&mut state, result.is_ok());
-        result
-    }
-
-    fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
-        let mut state = lock_ryzen(&self.state, "RyzenAdj fallback")?;
-        if state.disabled {
-            return Err(cli_circuit_open_error());
-        }
-        if !state.primary_disabled {
-            if self.primary.is_available() {
-                match self.primary.apply_scheme(scheme) {
-                    Ok(()) => return Ok(()),
-                    Err(error) => {
-                        tracing::warn!(%error, "native RyzenAdj failed; permanently switching to CLI");
-                        state.primary_disabled = true;
-                    }
-                }
-            } else {
-                state.primary_disabled = true;
-            }
-        }
-
-        let result = self.fallback.apply_scheme(scheme);
-        self.record_cli_result(&mut state, result.is_ok());
-        result
-    }
-
-    fn record_cli_result(&self, state: &mut FallbackState, succeeded: bool) {
-        if succeeded {
-            state.consecutive_cli_failures = 0;
-            return;
-        }
-
-        state.consecutive_cli_failures = state.consecutive_cli_failures.saturating_add(1);
-        if state.consecutive_cli_failures >= MAX_CONSECUTIVE_CLI_FAILURES {
-            state.disabled = true;
-            tracing::warn!(
-                failure_count = state.consecutive_cli_failures,
-                "disabled RyzenAdj after consecutive CLI failures"
-            );
-        }
-    }
-}
-
-impl<P, F> RyzenAdjBackend for FallbackBackend<P, F>
-where
-    P: RyzenAdjBackend,
-    F: RyzenAdjBackend,
-{
-    fn is_available(&self) -> bool {
-        FallbackBackend::is_available(self)
-    }
-
-    fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
-        FallbackBackend::read_snapshot(self)
-    }
-
-    fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
-        FallbackBackend::apply_scheme(self, scheme)
-    }
-}
-
-fn cli_circuit_open_error() -> CoreError {
-    ryzen_error("RyzenAdj disabled after 3 consecutive CLI failures")
-}
-
-struct PlatformGatedBackend<B> {
+struct CachedBackend<B> {
     platform_supported: bool,
     backend: B,
+    state: Mutex<BackendState>,
 }
 
-impl<B> PlatformGatedBackend<B> {
+impl<B: RyzenAdjBackend> CachedBackend<B> {
     fn new(platform_supported: bool, backend: B) -> Self {
         Self {
             platform_supported,
             backend,
+            state: Mutex::new(BackendState::default()),
         }
     }
-}
 
-impl<B> RyzenAdjBackend for PlatformGatedBackend<B>
-where
-    B: RyzenAdjBackend,
-{
+    fn available(&self, state: &BackendState) -> bool {
+        self.platform_supported
+            && state.consecutive_failures < MAX_CONSECUTIVE_FAILURES
+            && self.backend.is_available()
+    }
+
     fn is_available(&self) -> bool {
-        self.platform_supported && self.backend.is_available()
+        self.state.lock().is_ok_and(|state| self.available(&state))
     }
 
-    fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
-        if !self.platform_supported {
-            return Err(CoreError::Unsupported(
-                "RyzenAdj requires an AMD GPU and AMD Ryzen AI Max 395 processor".to_owned(),
-            ));
+    fn read_snapshot(&self) -> Option<RyzenAdjSnapshot> {
+        self.read_snapshot_with_clock(Instant::now)
+    }
+
+    fn read_snapshot_with_clock(&self, now: impl FnOnce() -> Instant) -> Option<RyzenAdjSnapshot> {
+        // 缓存检查与硬件采样使用同一把锁，避免 API 和监控线程同时重复采样。
+        let mut state = self.state.lock().ok()?;
+        if !self.available(&state) {
+            return None;
         }
-        self.backend.read_snapshot()
+        let now = now();
+        if let Some((sampled_at, snapshot)) = state.cached {
+            if now.saturating_duration_since(sampled_at) < STATUS_CACHE_TTL {
+                return snapshot;
+            }
+        }
+
+        let result = self.backend.read_snapshot();
+        Self::record_result(&mut state, result.is_ok());
+        let snapshot = match result {
+            Ok(snapshot) => Some(snapshot),
+            Err(error) => {
+                tracing::warn!(%error, "PawnIO power status unavailable");
+                None
+            }
+        };
+        // 暂时失败同样节流；命中失败缓存不会再次计数或输出日志。
+        state.cached = Some((now, snapshot));
+        snapshot
     }
 
     fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
-        if !self.platform_supported {
+        let mut state = lock_ryzen(&self.state, "PawnIO power state")?;
+        if !self.available(&state) {
             return Err(CoreError::Unsupported(
-                "RyzenAdj requires an AMD GPU and AMD Ryzen AI Max 395 processor".to_owned(),
+                "PawnIO power control unavailable".to_owned(),
             ));
         }
-        self.backend.apply_scheme(scheme)
+        // 写入可能部分成功，即使返回失败也必须允许后续读取验证实际限制。
+        state.cached = None;
+        let result = self.backend.apply_scheme(scheme);
+        Self::record_result(&mut state, result.is_ok());
+        result
+    }
+
+    fn record_result(state: &mut BackendState, succeeded: bool) {
+        if succeeded {
+            state.consecutive_failures = 0;
+        } else {
+            state.consecutive_failures = state.consecutive_failures.saturating_add(1);
+            if state.consecutive_failures == MAX_CONSECUTIVE_FAILURES {
+                tracing::warn!("disabled PawnIO power control after 3 consecutive failures");
+            }
+        }
     }
 }
 
-/// Production RyzenAdj implementation. Construction only records paths; DLL loading,
-/// native initialization, and CLI process creation are deferred until the first read/write.
+/// 通过 PawnIO 读取和切换功耗；首次访问时才加载官方签名模块。
 pub struct ProductionRyzenAdjClient {
-    backend: PlatformGatedBackend<FallbackBackend<NativeBackend, CliBackend>>,
+    backend: CachedBackend<PawnIoBackend>,
     schemes: Box<[PowerScheme]>,
 }
 
 impl ProductionRyzenAdjClient {
     pub fn new(paths: &ServicePaths, platform_supported: bool) -> Self {
-        let schemes = load_verified_schemes(paths);
-        Self::from_paths(
-            paths.ryzenadj_dll_path.clone(),
-            paths.ryzenadj_exe_path.clone(),
-            platform_supported,
-            schemes,
-        )
-    }
-
-    pub fn from_paths(
-        library_path: PathBuf,
-        executable_path: PathBuf,
-        platform_supported: bool,
-        schemes: Vec<PowerScheme>,
-    ) -> Self {
         Self {
-            backend: PlatformGatedBackend::new(
-                platform_supported,
-                FallbackBackend::new(
-                    NativeBackend::new(library_path),
-                    CliBackend::new(executable_path),
-                ),
-            ),
-            schemes: schemes.into_boxed_slice(),
+            backend: CachedBackend::new(platform_supported, PawnIoBackend::new()),
+            schemes: load_verified_schemes(paths).into_boxed_slice(),
         }
     }
 }
@@ -774,8 +166,6 @@ impl fmt::Debug for ProductionRyzenAdjClient {
         formatter
             .debug_struct("ProductionRyzenAdjClient")
             .field("platform_supported", &self.backend.platform_supported)
-            .field("native", &self.backend.backend.primary)
-            .field("cli", &self.backend.backend.fallback)
             .field("schemes", &self.schemes)
             .finish_non_exhaustive()
     }
@@ -787,13 +177,9 @@ impl RyzenAdjClient for ProductionRyzenAdjClient {
     }
 
     fn read_status(&self) -> Option<PowerStatus> {
-        match self.backend.read_snapshot() {
-            Ok(snapshot) => Some(snapshot_to_status(snapshot, &self.schemes)),
-            Err(error) => {
-                tracing::warn!(%error, "RyzenAdj status unavailable");
-                None
-            }
-        }
+        self.backend
+            .read_snapshot()
+            .map(|snapshot| snapshot_to_status(snapshot, &self.schemes))
     }
 
     fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
@@ -1467,186 +853,229 @@ mod tests {
         }
     }
 
-    #[test]
-    fn cli_parser_reads_all_required_power_fields() {
-        let output = r#"
-CPU Family: Renoir
-|        Name         |   Value   |     Parameter      |
-|---------------------|-----------|--------------------|
-| STAPM LIMIT         | 55000.000 | stapm-limit        |
-| STAPM VALUE         | 42000.000 |                    |
-| PPT LIMIT FAST      | 100000.000 | fast-limit        |
-| PPT VALUE FAST      | 80000.000 |                    |
-| PPT LIMIT SLOW      | 55000.000 | slow-limit         |
-| PPT VALUE SLOW      | 45000.000 |                    |
-"#;
-
-        assert_eq!(parse_info_output(output), Ok(snapshot()));
-    }
-
-    #[test]
-    fn cli_parser_rejects_incomplete_status_table() {
-        let error = parse_info_output("| STAPM LIMIT | 55000.000 |").unwrap_err();
-
-        assert_eq!(error, "Missing required keys in output table");
-    }
-
-    #[test]
-    fn cli_limit_arguments_convert_watts_to_milliwatts() {
-        assert_eq!(
-            limit_arguments(TEST_SCHEMES[0]),
-            [
-                "--stapm-limit=55000",
-                "--fast-limit=100000",
-                "--slow-limit=55000",
-            ]
-        );
-    }
-
-    #[derive(Debug)]
-    struct TestBackend {
-        fail_read: bool,
-        reads: AtomicUsize,
-    }
-
-    impl TestBackend {
-        fn succeeding() -> Self {
-            Self {
-                fail_read: false,
-                reads: AtomicUsize::new(0),
-            }
-        }
-
-        fn failing() -> Self {
-            Self {
-                fail_read: true,
-                reads: AtomicUsize::new(0),
-            }
-        }
-    }
-
-    impl RyzenAdjBackend for TestBackend {
-        fn is_available(&self) -> bool {
-            true
-        }
-
-        fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
-            self.reads.fetch_add(1, Ordering::SeqCst);
-            if self.fail_read {
-                Err(ryzen_error("native failed"))
-            } else {
-                Ok(snapshot())
-            }
-        }
-
-        fn apply_scheme(&self, _scheme: PowerScheme) -> Result<()> {
-            Ok(())
-        }
-    }
-
-    #[derive(Debug)]
     struct ScriptedBackend {
         outcomes: Mutex<std::collections::VecDeque<bool>>,
+        current: Mutex<RyzenAdjSnapshot>,
         reads: AtomicUsize,
+        writes: AtomicUsize,
+        available: std::sync::atomic::AtomicBool,
+        fail_write: std::sync::atomic::AtomicBool,
     }
 
     impl ScriptedBackend {
         fn new(outcomes: impl IntoIterator<Item = bool>) -> Self {
             Self {
                 outcomes: Mutex::new(outcomes.into_iter().collect()),
+                current: Mutex::new(snapshot()),
                 reads: AtomicUsize::new(0),
+                writes: AtomicUsize::new(0),
+                available: std::sync::atomic::AtomicBool::new(true),
+                fail_write: std::sync::atomic::AtomicBool::new(false),
             }
         }
     }
 
     impl RyzenAdjBackend for ScriptedBackend {
         fn is_available(&self) -> bool {
-            true
+            self.available.load(Ordering::SeqCst)
         }
 
         fn read_snapshot(&self) -> Result<RyzenAdjSnapshot> {
             self.reads.fetch_add(1, Ordering::SeqCst);
-            if self.outcomes.lock().unwrap().pop_front().unwrap_or(false) {
-                Ok(snapshot())
+            if self.outcomes.lock().unwrap().pop_front().unwrap_or(true) {
+                Ok(*self.current.lock().unwrap())
             } else {
-                Err(ryzen_error("CLI failed"))
+                Err(ryzen_error("sample failed"))
             }
         }
 
-        fn apply_scheme(&self, _scheme: PowerScheme) -> Result<()> {
-            Ok(())
+        fn apply_scheme(&self, scheme: PowerScheme) -> Result<()> {
+            self.writes.fetch_add(1, Ordering::SeqCst);
+            let mut current = self.current.lock().unwrap();
+            current.stapm_limit = f64::from(scheme.stapm_watts);
+            current.fast_limit = f64::from(scheme.fast_watts);
+            current.slow_limit = f64::from(scheme.slow_watts);
+            if self.fail_write.load(Ordering::SeqCst) {
+                Err(ryzen_error("partial write failed"))
+            } else {
+                Ok(())
+            }
         }
     }
 
     #[test]
-    fn fallback_disables_native_exactly_once_across_threads() {
-        let primary = Arc::new(TestBackend::failing());
-        let fallback = Arc::new(TestBackend::succeeding());
-        let client = Arc::new(FallbackBackend::new(primary.clone(), fallback.clone()));
+    fn successful_cache_expires_at_three_seconds() {
+        let backend = Arc::new(ScriptedBackend::new([]));
+        let client = CachedBackend::new(true, backend.clone());
+        let now = Instant::now();
+        assert_eq!(client.read_snapshot_with_clock(|| now), Some(snapshot()));
+        assert_eq!(
+            client.read_snapshot_with_clock(|| now + STATUS_CACHE_TTL - Duration::from_nanos(1)),
+            Some(snapshot())
+        );
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            client.read_snapshot_with_clock(|| now + STATUS_CACHE_TTL),
+            Some(snapshot())
+        );
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 2);
+    }
 
+    #[test]
+    fn concurrent_callers_share_one_sample() {
+        let backend = Arc::new(ScriptedBackend::new([]));
+        let client = Arc::new(CachedBackend::new(true, backend.clone()));
+        let barrier = Arc::new(std::sync::Barrier::new(8));
+        let now = Instant::now();
         let workers: Vec<_> = (0..8)
             .map(|_| {
-                let client = Arc::clone(&client);
-                thread::spawn(move || client.read_snapshot().unwrap())
+                let client = client.clone();
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    client.read_snapshot_with_clock(|| now)
+                })
             })
             .collect();
         for worker in workers {
-            assert_eq!(worker.join().unwrap(), snapshot());
+            assert_eq!(worker.join().unwrap(), Some(snapshot()));
         }
-
-        assert_eq!(primary.reads.load(Ordering::SeqCst), 1);
-        assert_eq!(fallback.reads.load(Ordering::SeqCst), 8);
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 1);
     }
 
     #[test]
-    fn three_consecutive_cli_failures_open_circuit_and_stop_execution() {
-        let primary = Arc::new(TestBackend::failing());
-        let fallback = Arc::new(TestBackend::failing());
-        let client = FallbackBackend::new(primary, fallback.clone());
-
-        for _ in 0..MAX_CONSECUTIVE_CLI_FAILURES {
-            assert!(client.read_snapshot().is_err());
+    fn throttled_failures_stop_all_io_after_three_real_attempts() {
+        let backend = Arc::new(ScriptedBackend::new([false, false, false]));
+        let client = CachedBackend::new(true, backend.clone());
+        let now = Instant::now();
+        for index in 0..3 {
+            let at = now + STATUS_CACHE_TTL * index;
+            assert!(client.read_snapshot_with_clock(|| at).is_none());
+            assert!(client
+                .read_snapshot_with_clock(|| at + Duration::from_secs(1))
+                .is_none());
+            assert_eq!(backend.reads.load(Ordering::SeqCst), index as usize + 1);
         }
-
         assert!(!client.is_available());
-        assert!(client.read_snapshot().is_err());
-        assert_eq!(
-            fallback.reads.load(Ordering::SeqCst),
-            usize::from(MAX_CONSECUTIVE_CLI_FAILURES)
-        );
+        assert!(client
+            .read_snapshot_with_clock(|| now + STATUS_CACHE_TTL * 10)
+            .is_none());
+        assert!(client.apply_scheme(TEST_SCHEMES[0]).is_err());
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 3);
+        assert_eq!(backend.writes.load(Ordering::SeqCst), 0);
     }
 
     #[test]
-    fn successful_cli_execution_resets_consecutive_failure_count() {
-        let primary = Arc::new(TestBackend::failing());
-        let fallback = Arc::new(ScriptedBackend::new([
+    fn successful_sample_resets_failure_count() {
+        let backend = Arc::new(ScriptedBackend::new([
             false, false, true, false, false, false,
         ]));
-        let client = FallbackBackend::new(primary, fallback.clone());
-
-        assert!(client.read_snapshot().is_err());
-        assert!(client.read_snapshot().is_err());
-        assert!(client.read_snapshot().is_ok());
-        assert!(client.read_snapshot().is_err());
-        assert!(client.read_snapshot().is_err());
-        assert!(client.is_available());
-        assert!(client.read_snapshot().is_err());
-
+        let client = CachedBackend::new(true, backend.clone());
+        let now = Instant::now();
+        for index in 0..6 {
+            assert!(client.is_available());
+            assert_eq!(
+                client
+                    .read_snapshot_with_clock(|| now + STATUS_CACHE_TTL * index)
+                    .is_some(),
+                index == 2
+            );
+        }
         assert!(!client.is_available());
-        assert_eq!(fallback.reads.load(Ordering::SeqCst), 6);
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 6);
     }
 
     #[test]
-    fn unsupported_platform_gate_never_touches_backend() {
-        let backend = Arc::new(TestBackend::succeeding());
-        let client = PlatformGatedBackend::new(false, backend.clone());
+    fn successful_write_resets_failures_and_invalidates_failure_cache() {
+        let backend = Arc::new(ScriptedBackend::new([false, false, true]));
+        let client = CachedBackend::new(true, backend.clone());
+        let now = Instant::now();
+        assert!(client.read_snapshot_with_clock(|| now).is_none());
+        assert!(client
+            .read_snapshot_with_clock(|| now + STATUS_CACHE_TTL)
+            .is_none());
+        client.apply_scheme(TEST_SCHEMES[1]).unwrap();
+        assert_eq!(client.state.lock().unwrap().consecutive_failures, 0);
+        let verified = client
+            .read_snapshot_with_clock(|| now + STATUS_CACHE_TTL)
+            .unwrap();
+        assert_eq!(
+            snapshot_to_status(verified, &TEST_SCHEMES).limits,
+            TEST_SCHEMES[1]
+        );
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 3);
+    }
 
+    #[test]
+    fn writes_invalidate_success_cache_even_after_partial_failure() {
+        for fail_write in [false, true] {
+            let backend = Arc::new(ScriptedBackend::new([]));
+            let client = CachedBackend::new(true, backend.clone());
+            let now = Instant::now();
+            assert_eq!(client.read_snapshot_with_clock(|| now), Some(snapshot()));
+            backend.fail_write.store(fail_write, Ordering::SeqCst);
+            assert_eq!(client.apply_scheme(TEST_SCHEMES[1]).is_err(), fail_write);
+            let verified = client.read_snapshot_with_clock(|| now).unwrap();
+            assert_eq!(
+                snapshot_to_status(verified, &TEST_SCHEMES).limits,
+                TEST_SCHEMES[1]
+            );
+            assert_eq!(backend.reads.load(Ordering::SeqCst), 2);
+        }
+    }
+
+    #[test]
+    fn unsupported_platform_never_touches_backend() {
+        let backend = Arc::new(ScriptedBackend::new([]));
+        let client = CachedBackend::new(false, backend.clone());
         assert!(!client.is_available());
+        assert!(client.read_snapshot().is_none());
         assert!(matches!(
-            client.read_snapshot(),
+            client.apply_scheme(TEST_SCHEMES[0]),
             Err(CoreError::Unsupported(_))
         ));
         assert_eq!(backend.reads.load(Ordering::SeqCst), 0);
+        assert_eq!(backend.writes.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn permanent_backend_disable_overrides_success_cache() {
+        let backend = Arc::new(ScriptedBackend::new([]));
+        let client = CachedBackend::new(true, backend.clone());
+        assert!(client.read_snapshot().is_some());
+        backend.available.store(false, Ordering::SeqCst);
+        assert!(!client.is_available());
+        assert!(client.read_snapshot().is_none());
+        assert!(client.apply_scheme(TEST_SCHEMES[0]).is_err());
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 1);
+        assert_eq!(backend.writes.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn three_write_failures_stop_subsequent_reads_and_writes() {
+        let backend = Arc::new(ScriptedBackend::new([]));
+        let client = CachedBackend::new(true, backend.clone());
+        backend.fail_write.store(true, Ordering::SeqCst);
+        for _ in 0..MAX_CONSECUTIVE_FAILURES {
+            assert!(client.apply_scheme(TEST_SCHEMES[1]).is_err());
+        }
+        assert!(!client.is_available());
+        assert!(client.apply_scheme(TEST_SCHEMES[1]).is_err());
+        assert!(client.read_snapshot().is_none());
+        assert_eq!(backend.writes.load(Ordering::SeqCst), 3);
+        assert_eq!(backend.reads.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn switch_rejects_empty_schemes_without_writing() {
+        let client = MockRyzenAdjClient::supported(PowerStatus {
+            current_watts: 42.0,
+            limit_watts: 55.0,
+            scheme_index: Some(0),
+            limits: TEST_SCHEMES[0],
+        });
+        assert!(!switch_to_next_scheme(&client, &[]).success);
+        assert!(client.applied_schemes().is_empty());
     }
 
     #[test]

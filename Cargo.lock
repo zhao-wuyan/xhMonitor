@@ -691,16 +691,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
-name = "libloading"
-version = "0.8.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7c4b02199fee7c5d21a5ae7d8cfa79a6ef5bb2fc834d6e9058e89c825efdc55"
-dependencies = [
- "cfg-if",
- "windows-link",
-]
-
-[[package]]
 name = "libsqlite3-sys"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1844,7 +1834,7 @@ checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
 
 [[package]]
 name = "xhm-core"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "chrono",
  "serde",
@@ -1854,14 +1844,13 @@ dependencies = [
 
 [[package]]
 name = "xhm-service"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "anyhow",
  "axum",
  "chrono",
  "futures",
  "http-body-util",
- "libloading",
  "regex",
  "rusqlite",
  "serde",

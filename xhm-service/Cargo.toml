@@ -12,7 +12,6 @@ anyhow.workspace = true
 axum.workspace = true
 chrono.workspace = true
 futures.workspace = true
-libloading.workspace = true
 rusqlite.workspace = true
 serde.workspace = true
 serde_json.workspace = true

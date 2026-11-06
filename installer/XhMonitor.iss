@@ -13,6 +13,7 @@
 
 #define MyAppName "星核监视器"
 #define MyAppNameEn "XhMonitor"
+#define MyAppId "{8A7B9C0D-1E2F-3A4B-5C6D-7E8F9A0B1C2D}"
 ; 版本号通过命令行参数 /DMyAppVersion=x.x.x 传递
 #ifndef MyAppVersion
   #define MyAppVersion "0.2.1"
@@ -51,7 +52,7 @@
 
 [Setup]
 ; 应用程序信息
-AppId={{8A7B9C0D-1E2F-3A4B-5C6D-7E8F9A0B1C2D}
+AppId={{#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}
@@ -75,6 +76,7 @@ UninstallDisplayIcon={app}\Desktop\Assets\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
+SetupLogging=yes
 
 ; 权限设置
 PrivilegesRequired=admin
@@ -110,7 +112,8 @@ english.SystemSettings=System Settings:
 english.AutoInstallDotNetRuntime=Auto install .NET 8 runtimes required by XhMonitor
 english.AutoInstallDotNetRuntimeHint=Silently install .NET Desktop + ASP.NET Core Runtime 8 when missing
 english.AutoInstallPawnIO=Auto install PawnIO hardware driver
-english.AutoInstallPawnIOHint=Install PawnIO for LibreHardwareMonitor builds that support safer CPU sensor access
+english.AutoInstallPawnIOHint=Install PawnIO for CPU sensor access and CPU power limit reads and writes
+english.LegacyWinRingRetained=Some components from an earlier version were kept and were not automatically removed. Details are recorded in the setup log.
 ; 中文消息（启用中文语言后生效）
 ; chinesesimplified.CreateDesktopIcon=创建桌面快捷方式(&D)
 ; chinesesimplified.CreateQuickLaunchIcon=创建快速启动栏快捷方式(&Q)
@@ -122,7 +125,8 @@ chinesesimplified.SystemSettings=系统设置：
 chinesesimplified.AutoInstallDotNetRuntime=自动安装 XhMonitor 所需的 .NET 8 运行环境
 chinesesimplified.AutoInstallDotNetRuntimeHint=缺少运行环境时，静默安装 .NET Desktop + ASP.NET Core Runtime 8
 chinesesimplified.AutoInstallPawnIO=自动安装 PawnIO 硬件驱动
-chinesesimplified.AutoInstallPawnIOHint=为支持 PawnIO 的 LibreHardwareMonitor 版本安装更安全的 CPU 传感器访问驱动
+chinesesimplified.AutoInstallPawnIOHint=安装 PawnIO，支持 CPU 传感器访问及 CPU 功耗限制读写
+chinesesimplified.LegacyWinRingRetained=部分旧版组件已保留，未执行自动清理。详细信息已记录到安装日志。
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -197,6 +201,9 @@ const
 
 var
   RuntimePromptShown: Boolean;
+  LegacyDriverMigrationDetails: String;
+
+#include "LegacyWinRingMigration.iss"
 
 // 强制终止进程
 procedure KillProcess(ProcessName: String);
@@ -204,14 +211,6 @@ var
   ResultCode: Integer;
 begin
   Exec('taskkill.exe', '/F /IM ' + ProcessName, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-end;
-
-procedure StopWinRingDriver();
-var
-  ResultCode: Integer;
-begin
-  Exec('sc.exe', 'stop WinRing0_1_2_0', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(2000);
 end;
 
 function IsChineseSystemLanguage(): Boolean;
@@ -658,8 +657,14 @@ begin
     KillProcess('lhm-bridge.exe');
     KillProcess('xhm-desktop.exe');
     KillProcess('XhMonitor.Service.exe');
-    StopWinRingDriver();
     Sleep(1000);
+    LegacyDriverMigrationDetails := '';
+    MigrateLegacyWinRing(ExpandConstant('{app}'), LegacyDriverMigrationDetails);
+  end;
+
+  if (CurStep = ssPostInstall) and (LegacyDriverMigrationDetails <> '') then
+  begin
+    Log(CustomMessage('LegacyWinRingRetained') + #13#10 + LegacyDriverMigrationDetails);
   end;
 
 #if BuildType != "Full"
@@ -670,6 +675,12 @@ begin
       ShowRuntimeMissingPrompt();
   end;
 #endif
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and (LegacyDriverMigrationDetails <> '') and not WizardSilent then
+    ShowLegacyWinRingCompletionNotice(CustomMessage('LegacyWinRingRetained'));
 end;
 
 // 卸载前停止新旧组件
@@ -691,6 +702,5 @@ begin
   KillProcess('lhm-bridge.exe');
   KillProcess('xhm-desktop.exe');
   KillProcess('XhMonitor.Service.exe');
-  StopWinRingDriver();
   Sleep(1000);
 end;
