@@ -54,6 +54,7 @@ bld/
 *.tmp
 *.temp
 *~
+.tem-*
 
 ## OS files
 .DS_Store
@@ -82,6 +83,8 @@ xhmonitor.db
 .ccw
 .claude/
 .gitnexus
+.omp/
+.workflow/spec-analytics.jsonl
 
 ## Runtime packages tracked for release bundling
 !tools/
