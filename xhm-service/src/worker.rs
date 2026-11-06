@@ -238,14 +238,15 @@ async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
             system.refresh_memory();
             max_memory = round_one(bytes_to_mb(system.total_memory()));
 
-            // VRAM capacity from LHM bridge snapshot (if available)
-            if let Some(snapshot) = state.lhm.snapshot().as_ref() {
-                if let Some(total) = snapshot.gpu_memory_total_mb {
-                    if total.is_finite() && total > 0.0 {
-                        max_vram = round_one(total);
-                    }
-                }
-            }
+            // 缺失专用容量时清除旧值，不能继续广播先前可能包含共享内存的上限。
+            max_vram = state
+                .lhm
+                .snapshot()
+                .as_ref()
+                .and_then(|snapshot| snapshot.gpu_memory_total_mb)
+                .filter(|total| total.is_finite() && *total > 0.0)
+                .map(round_one)
+                .unwrap_or(0.0);
 
             send_event(
                 &state,

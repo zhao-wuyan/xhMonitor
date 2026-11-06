@@ -259,10 +259,7 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
             _maxPower = data.MaxPower;
         }
 
-        if (data.MaxVram > 0)
-        {
-            _maxVram = data.MaxVram;
-        }
+        _maxVram = data.MaxVram;
 
         RebuildColumns();
     }
@@ -286,10 +283,7 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
             _maxMemory = data.MaxMemory;
         }
 
-        if (data.MaxVram > 0)
-        {
-            _maxVram = data.MaxVram;
-        }
+        _maxVram = data.MaxVram;
 
         RebuildColumns();
     }
@@ -648,7 +642,7 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
                 _displaySettings.DockVramLabel,
                 GetCachedMaxVramText(expectedMaxVram),
                 VramLabelBrush,
-                true,
+                expectedMaxVram > 0,
                 vramPercent));
         }
 
@@ -685,7 +679,9 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
         if (!expectedMaxVram.Equals(_cachedExpectedMaxVramValue) || string.IsNullOrEmpty(_cachedExpectedMaxVramText))
         {
             _cachedExpectedMaxVramValue = expectedMaxVram;
-            _cachedExpectedMaxVramText = CompactUnitFormatter.FormatMemoryFromMegabytes(expectedMaxVram);
+            _cachedExpectedMaxVramText = expectedMaxVram > 0
+                ? CompactUnitFormatter.FormatMemoryFromMegabytes(expectedMaxVram)
+                : "-";
         }
 
         return _cachedExpectedMaxVramText;
@@ -1196,8 +1192,7 @@ public sealed class TaskbarMetricsViewModel : INotifyPropertyChanged, IAsyncDisp
             return _maxVram;
         }
 
-        // 未获取到显存上限时，使用保守的 8G 显存上限用于比例和列宽估算。
-        return 8 * 1024;
+        return 0;
     }
 
     public async ValueTask DisposeAsync()

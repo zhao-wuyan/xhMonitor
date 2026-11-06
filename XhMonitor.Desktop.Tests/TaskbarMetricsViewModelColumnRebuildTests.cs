@@ -189,6 +189,47 @@ public class TaskbarMetricsViewModelColumnRebuildTests
         vm.Columns[1].BarTrailingText.Should().Be("62°C");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LostVramCapacity_ShouldClearCachedPercentage(bool hardwareLimitsUpdate)
+    {
+        var vm = new TaskbarMetricsViewModel(new FakeServiceDiscovery());
+        try
+        {
+            vm.ApplySettings(new TaskbarDisplaySettings
+            {
+                MonitorCpu = false,
+                MonitorMemory = false,
+                MonitorGpu = false,
+                MonitorVram = true,
+                MonitorPower = false,
+                MonitorNetwork = false,
+                DockVisualStyle = TaskbarDisplaySettings.DockVisualStyleBar
+            });
+            ApplySystemUsage(vm, new SystemUsageDto { TotalVram = 1536, MaxVram = 6144 });
+            vm.Columns.Single().BarDisplayText.Should().Be("25%");
+
+            if (hardwareLimitsUpdate)
+            {
+                typeof(TaskbarMetricsViewModel).GetMethod("ApplyHardwareLimits",
+                    BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(vm, new object[] { new HardwareLimitsDto { MaxVram = 0 } });
+            }
+            else
+            {
+                ApplySystemUsage(vm, new SystemUsageDto { TotalVram = 1536, MaxVram = 0 });
+            }
+
+            vm.Columns.Single().IsBarMetric.Should().BeFalse();
+            vm.Columns.Single().BarDisplayText.Should().BeEmpty();
+        }
+        finally
+        {
+            await vm.DisposeAsync();
+        }
+    }
+
     private static void ApplySystemUsage(TaskbarMetricsViewModel vm, SystemUsageDto data)
     {
         var method = typeof(TaskbarMetricsViewModel).GetMethod(

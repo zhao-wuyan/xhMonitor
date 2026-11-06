@@ -8,6 +8,10 @@ public class MemoryUnitConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
+        if (parameter is "Capacity" &&
+            (value is not double capacity || !double.IsFinite(capacity) || capacity <= 0))
+            return "-";
+
         if (value is not double doubleVal)
             return "0 M";
 
