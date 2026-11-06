@@ -240,8 +240,8 @@ public sealed class WindowManagementService : IWindowManagementService
             var appVersionService = _serviceProvider.GetRequiredService<IAppVersionService>();
             var appUpdateService = _serviceProvider.GetRequiredService<IAppUpdateService>();
             var aboutWindow = new Windows.AboutWindow(appVersionService, appUpdateService);
-            TryAssignFloatingOwner(aboutWindow);
-            aboutWindow.ShowDialog();
+            // 关于页是普通独立窗口，避免继承置顶悬浮窗的窗口层级并遮挡安装器。
+            aboutWindow.Show();
         });
     }
 
@@ -279,8 +279,8 @@ public sealed class WindowManagementService : IWindowManagementService
                 appVersionService,
                 appUpdateService,
                 section);
-            TryAssignFloatingOwner(settingsWindow);
-            settingsWindow.ShowDialog();
+            // 设置页同样不依附置顶悬浮窗，避免遮挡它启动的外部安装器。
+            settingsWindow.Show();
         });
     }
 
@@ -598,29 +598,6 @@ public sealed class WindowManagementService : IWindowManagementService
         return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
     }
 
-    private void TryAssignFloatingOwner(Window dialogWindow)
-    {
-        var owner = _floatingWindow;
-        if (owner == null)
-        {
-            return;
-        }
-
-        // WPF 约束：Owner 必须是已显示过的 Window；在迷你/贴边模式下悬浮窗可能从未展示。
-        if (!owner.IsLoaded || !owner.IsVisible)
-        {
-            return;
-        }
-
-        try
-        {
-            dialogWindow.Owner = owner;
-        }
-        catch (InvalidOperationException ex)
-        {
-            Debug.WriteLine($"Skip assigning floating owner: {ex.Message}");
-        }
-    }
 
     private async void OnMetricLongPressStarted(object? sender, MetricActionEventArgs e)
     {

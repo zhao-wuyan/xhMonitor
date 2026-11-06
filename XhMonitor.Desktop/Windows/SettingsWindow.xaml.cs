@@ -201,10 +201,15 @@ public partial class SettingsWindow : Window
                     {
                         await _backendServerService.RestartAsync();
 
-                        // Service 重启后，主动重连 SignalR 以刷新 Power 等指标状态。
-                        if (Owner is FloatingWindow fw)
+                        // 重连依赖实际悬浮窗，不再借用会传播置顶层级的 Owner 关系。
+                        var windows = System.Windows.Application.Current.Windows;
+                        for (var index = 0; index < windows.Count; index++)
                         {
-                            await fw.ReconnectSignalRAsync();
+                            if (windows[index] is FloatingWindow { IsLoaded: true } floatingWindow)
+                            {
+                                await floatingWindow.ReconnectSignalRAsync();
+                                break;
+                            }
                         }
                     }
 
@@ -378,7 +383,6 @@ public partial class SettingsWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DialogResult = false;
         Close();
     }
 

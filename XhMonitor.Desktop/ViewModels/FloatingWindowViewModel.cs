@@ -350,7 +350,7 @@ public class FloatingWindowViewModel : INotifyPropertyChanged, IAsyncDisposable
             UploadSpeed = data.UploadSpeed;
             DownloadSpeed = data.DownloadSpeed;
             if (data.MaxMemory > 0) MaxMemory = data.MaxMemory;
-            if (data.MaxVram > 0) MaxVram = data.MaxVram;
+            MaxVram = data.MaxVram;
         }));
     }
 

@@ -762,20 +762,45 @@ internal static class LhmSelection
         return sensorType == SensorType.Data ? present * 1024.0f : present;
     }
 
+    private static bool IsDedicatedGpuMemorySensor(in LhmSensorReading sensor)
+    {
+        var name = sensor.Name;
+        if (name.Contains("Shared", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (name.Contains("Dedicated", StringComparison.OrdinalIgnoreCase))
+        {
+            return name.Contains("Memory", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("VRAM", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // 不接受没有明确专用口径的 D3D 候选，避免把未知含义当作专用显存。
+        if (name.Contains("D3D", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        // LHM 厂商接口的 GPU Memory/VRAM 是板载专用显存。
+        return name.StartsWith("GPU Memory", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("VRAM", StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
-    /// 按 hardware 选择最大的有效 used 值后求和，避免重复传感器导致重复计数。
+    /// 只按 hardware 选择最大的有效专用显存 used 值后求和，保留合法的 0。
     /// </summary>
     internal static double? SelectGpuMemoryValue(IEnumerable<LhmSensorReading> sensors)
     {
-        var maximumByHardware = MaxByHardware(sensors, static _ => true, allowZero: false);
+        var maximumByHardware = MaxByHardware(sensors, static sensor => IsDedicatedGpuMemorySensor(sensor), allowZero: true);
         return maximumByHardware.Count == 0
             ? null
             : maximumByHardware.Values.Sum();
     }
 
     /// <summary>
-    /// 选择 GPU 总显存（MB）。每个 hardware 优先取显式 Total；
-    /// 否则只用同一 hardware 的 Used + Available/Free 估算。
+    /// 选择 GPU 专用显存容量（MB）。每个 hardware 优先取专用 Total；
+    /// 否则只用同一 hardware 的专用 Used + Available/Free 估算。
     /// </summary>
     internal static double? SelectGpuMemoryTotal(
         IEnumerable<LhmSensorReading> totalSensors,
@@ -784,16 +809,16 @@ internal static class LhmSelection
         var totalCandidates = totalSensors.ToArray();
         var explicitTotalByHardware = MaxByHardware(
             totalCandidates,
-            static sensor => sensor.Name.Contains("Total", StringComparison.OrdinalIgnoreCase),
-            allowZero: false);
+            static sensor => IsDedicatedGpuMemorySensor(sensor) && sensor.Name.Contains("Total", StringComparison.OrdinalIgnoreCase),
+            allowZero: true);
         var availableByHardware = MaxByHardware(
             totalCandidates,
-            static sensor => !sensor.Name.Contains("Total", StringComparison.OrdinalIgnoreCase),
+            static sensor => IsDedicatedGpuMemorySensor(sensor) && !sensor.Name.Contains("Total", StringComparison.OrdinalIgnoreCase),
             allowZero: true);
         var usedByHardware = MaxByHardware(
             usedSensors,
-            static _ => true,
-            allowZero: false);
+            static sensor => IsDedicatedGpuMemorySensor(sensor),
+            allowZero: true);
 
         foreach (var hardware in usedByHardware.Keys)
         {

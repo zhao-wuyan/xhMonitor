@@ -594,7 +594,7 @@
                         <TextBlock Grid.Column="4" Text="GPU" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right" Margin="4,0"/>
                         <TextBlock Grid.Column="5" Foreground="{StaticResource ColorTextSub}" FontSize="9" FontWeight="Bold" TextAlignment="Right" Margin="4,0">
                             <Run Text="VRAM "/>
-                            <Run Text="{Binding MaxVram, Converter={StaticResource MemoryConverter}, StringFormat='({0})'}" FontSize="10"/>
+                            <Run Text="{Binding MaxVram, Converter={StaticResource MemoryConverter}, ConverterParameter=Capacity, StringFormat='({0})'}" FontSize="10"/>
                         </TextBlock>
                     </Grid>
 
