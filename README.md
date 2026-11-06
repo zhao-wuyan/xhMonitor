@@ -24,6 +24,8 @@ XhMonitor 是一套 Windows 进程资源监控工具，支持 CPU、内存、GPU
 
 旧 `XhMonitor.Service` 已由 `xhm-service` 替代。Rust Desktop 仍在独立迁移分支开发，不属于当前生产 workspace。
 
+桌面“关于”和“设置”使用独立普通窗口，不继承监控悬浮窗的置顶层级，避免遮挡它们启动的安装器；监控悬浮窗本身仍保持置顶。设置页在后端重启后直接查找已加载的悬浮窗重连 SignalR，不依赖窗口 Owner 关系。
+
 Rust Service 的 CPU 功耗限制读写面向 Ryzen AI Max 395（Strix Halo），由 Rust 直接访问已安装的 PawnIO 驱动，并加载编译时嵌入的官方签名 RyzenSMU 模块。使用该功能需要安装 PawnIO 并以管理员权限运行 Service；不依赖 WinRing0，也不会每秒启动 RyzenAdj CLI。PawnIO 同时用于支持该驱动的 CPU 传感器访问。
 
 功耗采样复用设备句柄，监控线程与 API 共享 3 秒缓存（失败也节流）；写入后失效缓存以便验证实际限制。权限、模块初始化失败会停用至服务重启；运行期连续 3 次操作失败后停止访问。PCI 互斥量等待上限为 100 ms，不进行用户态忙等或无限重试。这些措施减少访问开销，但不构成硬件稳定性保证。
