@@ -30,7 +30,7 @@ Rust Service 的 CPU 功耗限制读写面向 Ryzen AI Max 395（Strix Halo）�
 
 嵌入模块来自 [PawnIO.Modules 0.2.11](https://github.com/namazso/PawnIO.Modules/tree/0.2.11)，按 LGPL-2.1-or-later 许可分发；发布包在 `Service/tools/PawnIO/Modules/` 中同时提供 `COPYING`、`VERSION.txt`（版本、源码地址及校验值）及对应完整源码包 `source-0.2.11.zip`，无需另附模块二进制。
 
-从旧版覆盖安装时，安装器仅依据 HKLM 中本程序的既有安装记录迁移 WinRing0：只删除名称、安装内已知映像路径和内核类型均匹配、且已经停止的 `R0lhm-bridge` / `R0XhMonitor_Service` 服务，不主动停止或卸载运行中的驱动。旧文件仅限 `Service/tools/RyzenAdj/WinRing0x64.sys`、`WinRing0x64.dll` 及 `Service/` 下的 `lhm-bridge.sys`、`XhMonitor.Service.sys`、`LibreHardwareMonitorLib.sys`；仍被服务引用、被占用、存在链接或无法核实归属时保留，并在安装日志中记录原因。通用共享 WinRing0 服务、系统目录和 PawnIO 不会被清理；交互安装会提示未清理项，静默安装只记录日志，不自动重启。
+从旧版覆盖安装时，安装器仅依据 HKLM 中本程序的既有安装记录迁移 WinRing0：只删除名称、安装内已知映像路径和内核类型均匹配、且已经停止的 `R0lhm-bridge` / `R0XhMonitor_Service` 服务，不主动停止或卸载运行中的驱动。旧文件仅限 `Service/tools/RyzenAdj/WinRing0x64.sys`、`WinRing0x64.dll` 及 `Service/` 下的 `lhm-bridge.sys`、`XhMonitor.Service.sys`、`LibreHardwareMonitorLib.sys`；仍被服务引用、被占用、存在链接或无法核实归属时保留，并在安装日志中记录原因。通用共享 WinRing0 服务、系统目录和 PawnIO 不会被清理；交互安装仅在完成页显示简短保留说明，不单独弹窗，具体驱动、路径及失败原因只写安装日志；静默安装只记录日志，不自动重启。
 
 ## 目录结构
 

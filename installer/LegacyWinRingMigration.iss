@@ -34,6 +34,9 @@ type
   end;
   TLegacyDrivers = array of TLegacyDriver;
 
+var
+  LegacyCompletionNoticeShown: Boolean;
+
 function LegacyCreateFile(FileName: String; Access, Share: LongWord; Security: INT_PTR;
   Creation, Flags: LongWord; Template: TLegacyHandle): TLegacyHandle;
   external 'CreateFileW@kernel32.dll stdcall';
@@ -151,7 +154,7 @@ begin
   end;
 end;
 
-function NormalizeLegacyDriverPath(const RawPath: String; var Path: String): Boolean;
+function NormalizeLegacyDriverPath(const RawPath: String; var Path, FailureReason: String): Boolean;
 var
   Buffer, SystemPath, FinalPath: String;
   Count: LongWord;
@@ -159,15 +162,22 @@ var
   ErrorCode: LongWord;
 begin
   Result := False;
+  FailureReason := '';
   Path := Trim(RawPath);
   if (Length(Path) >= 2) and (Path[1] = '"') and (Path[Length(Path)] = '"') then
     Path := Copy(Path, 2, Length(Path) - 2);
   if Pos('"', Path) > 0 then
+  begin
+    FailureReason := 'ImagePath contains unmatched quotes or arguments';
     exit;
+  end;
   Buffer := StringOfChar(#0, 32768);
   Count := LegacyExpandEnvironment(Path, Buffer, Length(Buffer));
   if (Count = 0) or (Count > LongWord(Length(Buffer))) then
+  begin
+    FailureReason := 'ExpandEnvironmentStringsW failed or exceeded the buffer limit (error ' + IntToStr(DLLGetLastError) + ')';
     exit;
+  end;
   SetLength(Buffer, Count - 1);
   Path := Buffer;
   if CompareText(Copy(Path, 1, 12), '\SystemRoot\') = 0 then
@@ -179,7 +189,10 @@ begin
   if Copy(Path, 1, 4) = '\\?\' then
     Delete(Path, 1, 4);
   if (Length(Path) < 3) or (Path[2] <> ':') or (Path[3] <> '\') then
+  begin
+    FailureReason := 'Unsupported expanded driver ImagePath: "' + Path + '"';
     exit;
+  end;
   Path := ExpandFileName(Path);
   // 原生 DLL 调用不会自动绕过 32 位安装器的 System32 重定向。
   Buffer := Path;
@@ -192,12 +205,16 @@ begin
     ErrorCode := DLLGetLastError;
     // 已不存在的映像不会引用当前仍存在的候选文件；其他错误均拒绝清理。
     Result := (ErrorCode = 2) or (ErrorCode = 3);
+    if not Result then
+      FailureReason := 'CreateFileW failed (error ' + IntToStr(ErrorCode) + '); openedPath="' + Buffer + '"';
     exit;
   end;
   try
     Result := LegacyFinalPath(Handle, FinalPath);
     if Result then
-      Path := FinalPath;
+      Path := FinalPath
+    else
+      FailureReason := 'GetFinalPathNameByHandleW could not verify the image (error ' + IntToStr(DLLGetLastError) + ')';
   finally
     LegacyCloseHandle(Handle);
   end;
@@ -208,7 +225,7 @@ var
   Names: TArrayOfString;
   RootKey, ServiceType: LongWord;
   Index, Count: Integer;
-  Key, RawPath, ImagePath: String;
+  Key, RawPath, ImagePath, FailureReason: String;
 begin
   Result := False;
   SetArrayLength(Drivers, 0);
@@ -243,9 +260,10 @@ begin
         // Windows 允许内核服务省略 ImagePath，此时使用系统驱动目录。
         RawPath := ExpandConstant('{win}\System32\drivers\') + Names[Index] + '.sys';
       end;
-      if not NormalizeLegacyDriverPath(RawPath, ImagePath) then
+      if not NormalizeLegacyDriverPath(RawPath, ImagePath, FailureReason) then
       begin
-        AddLegacyWarning(Details, 'Cannot resolve driver image: ' + Names[Index] + '; all legacy files were retained.');
+        AddLegacyWarning(Details, 'Cannot resolve driver image: ' + Names[Index] + '; image="' + RawPath +
+          '"; reason=' + FailureReason + '; all legacy files were retained.');
         exit;
       end;
       Count := GetArrayLength(Drivers);
@@ -439,4 +457,23 @@ begin
     end;
   end;
   CleanupLegacyWinRingFiles(AppRoot, RegisteredRoot, Drivers, InventoryComplete, Details);
+end;
+
+procedure ShowLegacyWinRingCompletionNotice(const Notice: String);
+var
+  RequiredTop, Shift: Integer;
+begin
+  if LegacyCompletionNoticeShown or (Notice = '') then
+    exit;
+  // 沿用原生成功页；诊断详情只进入日志，不再弹出阻断对话框。
+  WizardForm.FinishedLabel.Caption := WizardForm.FinishedLabel.Caption + #13#10#13#10 + Notice;
+  WizardForm.FinishedLabel.AdjustHeight;
+  RequiredTop := WizardForm.FinishedLabel.Top + WizardForm.FinishedLabel.Height + ScaleY(12);
+  if RequiredTop > WizardForm.RunList.Top then
+  begin
+    Shift := RequiredTop - WizardForm.RunList.Top;
+    WizardForm.RunList.Top := RequiredTop;
+    WizardForm.RunList.Height := WizardForm.RunList.Height - Shift;
+  end;
+  LegacyCompletionNoticeShown := True;
 end;

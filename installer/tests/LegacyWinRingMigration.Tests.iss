@@ -299,15 +299,15 @@ end;
 
 procedure AssertNormalized(const RawPath, ExpectedPath, Reason: String);
 var
-  Path: String;
+  Path, FailureReason: String;
 begin
-  Assert(NormalizeLegacyDriverPath(RawPath, Path), Reason + ': normalization succeeds');
+  Assert(NormalizeLegacyDriverPath(RawPath, Path, FailureReason), Reason + ': normalization succeeds');
   Assert(LegacySamePath(Path, ExpectedPath), Reason + ': exact normalized path');
 end;
 
 procedure TestPathNormalization;
 var
-  Root, Path, Normalized: String;
+  Root, Path, Normalized, FailureReason: String;
 begin
   Root := CreateLegacyFixture('normalization');
   Path := Root + '\Service\lhm-bridge.sys';
@@ -320,8 +320,8 @@ begin
   finally
     Assert(TestSetEnvironmentVariable('XHM_MIGRATION_TEST_ROOT', ''), 'Clear process-local fixture environment variable');
   end;
-  Assert(not NormalizeLegacyDriverPath('"' + Path + '" --argument', Normalized), 'Reject embedded quotes and arguments');
-  Assert(not NormalizeLegacyDriverPath('Service\lhm-bridge.sys', Normalized), 'Reject relative driver path');
+  Assert(not NormalizeLegacyDriverPath('"' + Path + '" --argument', Normalized, FailureReason), 'Reject embedded quotes and arguments');
+  Assert(not NormalizeLegacyDriverPath('Service\lhm-bridge.sys', Normalized, FailureReason), 'Reject relative driver path');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

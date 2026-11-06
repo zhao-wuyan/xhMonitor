@@ -113,7 +113,7 @@ english.AutoInstallDotNetRuntime=Auto install .NET 8 runtimes required by XhMoni
 english.AutoInstallDotNetRuntimeHint=Silently install .NET Desktop + ASP.NET Core Runtime 8 when missing
 english.AutoInstallPawnIO=Auto install PawnIO hardware driver
 english.AutoInstallPawnIOHint=Install PawnIO for CPU sensor access and CPU power limit reads and writes
-english.LegacyWinRingRetained=Some legacy WinRing0 components were retained for safety. Shared, running, referenced, or unverified drivers were not removed. No driver was stopped. If an application-owned driver is still running, restart Windows and rerun setup to retry. Details are recorded in the setup log.
+english.LegacyWinRingRetained=Some components from an earlier version were kept and were not automatically removed. Details are recorded in the setup log.
 ; 中文消息（启用中文语言后生效）
 ; chinesesimplified.CreateDesktopIcon=创建桌面快捷方式(&D)
 ; chinesesimplified.CreateQuickLaunchIcon=创建快速启动栏快捷方式(&Q)
@@ -126,7 +126,7 @@ chinesesimplified.AutoInstallDotNetRuntime=自动安装 XhMonitor 所需的 .NET
 chinesesimplified.AutoInstallDotNetRuntimeHint=缺少运行环境时，静默安装 .NET Desktop + ASP.NET Core Runtime 8
 chinesesimplified.AutoInstallPawnIO=自动安装 PawnIO 硬件驱动
 chinesesimplified.AutoInstallPawnIOHint=安装 PawnIO，支持 CPU 传感器访问及 CPU 功耗限制读写
-chinesesimplified.LegacyWinRingRetained=部分旧 WinRing0 组件因安全限制已保留。安装器不会停止驱动，也不会删除共享、仍被引用或无法确认归属的组件。如果本程序旧驱动仍在运行，请重启 Windows 后重新运行安装器尝试清理。详细原因已写入安装日志。
+chinesesimplified.LegacyWinRingRetained=部分旧版组件已保留，未执行自动清理。详细信息已记录到安装日志。
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -665,9 +665,6 @@ begin
   if (CurStep = ssPostInstall) and (LegacyDriverMigrationDetails <> '') then
   begin
     Log(CustomMessage('LegacyWinRingRetained') + #13#10 + LegacyDriverMigrationDetails);
-    if not WizardSilent then
-      SuppressibleMsgBox(CustomMessage('LegacyWinRingRetained') + #13#10 + #13#10 +
-        LegacyDriverMigrationDetails, mbInformation, MB_OK, IDOK);
   end;
 
 #if BuildType != "Full"
@@ -678,6 +675,12 @@ begin
       ShowRuntimeMissingPrompt();
   end;
 #endif
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and (LegacyDriverMigrationDetails <> '') and not WizardSilent then
+    ShowLegacyWinRingCompletionNotice(CustomMessage('LegacyWinRingRetained'));
 end;
 
 // 卸载前停止新旧组件
