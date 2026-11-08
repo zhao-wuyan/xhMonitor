@@ -1,0 +1,54 @@
+[tools]
+node = "24.22.1"
+dotnet = "8.0.427"
+rust = { version = "1.94.0", profile = "minimal" }
+
+[settings]
+# 每个 SDK 独立安装，避免被本机其他 .NET SDK 版本覆盖。
+dotnet.isolated = true
+
+[tasks.default]
+description = "一键启动整个开发环境（Desktop、Rust 后端、Vite）"
+depends = ["dev"]
+
+[tasks."deps:web"]
+description = "按 lockfile 安装 Web 依赖"
+dir = "{{config_root}}/xhmonitor-web"
+run = "npm ci"
+sources = ["package.json", "package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+
+[tasks."build:bridge"]
+description = "构建硬件传感器桥接程序"
+dir = "{{config_root}}"
+run = "dotnet build lhm-bridge/lhm-bridge.csproj -c Debug"
+
+[tasks."build:service"]
+description = "构建 Rust 后端，避免首次启动时等待编译"
+dir = "{{config_root}}"
+run = "cargo build --locked -p xhm-service"
+
+[tasks.dev]
+description = "一键启动整个开发环境（Desktop、Rust 后端、Vite）"
+alias = ["start"]
+dir = "{{config_root}}"
+depends = ["deps:web", "build:bridge", "build:service"]
+run = "powershell -NoProfile -ExecutionPolicy Bypass -File start-all.ps1"
+
+[tasks.run]
+description = "启动 Desktop（自动拉起后端并托管 Web 页面）"
+dir = "{{config_root}}"
+depends = ["deps:web", "build:bridge", "build:service"]
+run = "dotnet run --project XhMonitor.Desktop/XhMonitor.Desktop.csproj"
+
+[tasks."run:service"]
+description = "单独运行 Rust 后端"
+dir = "{{config_root}}"
+depends = ["build:bridge"]
+run = "cargo run --locked -p xhm-service"
+
+[tasks."run:web"]
+description = "单独运行 Vite 开发服务器（热更新）"
+dir = "{{config_root}}/xhmonitor-web"
+depends = ["deps:web"]
+run = "npm run dev"

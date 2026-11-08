@@ -915,12 +915,24 @@ record BridgeBanner(
     [property: JsonPropertyName("pid")] int Pid
 );
 
+record LhmVolumeSnapshot(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("mount_path")] string MountPath,
+    [property: JsonPropertyName("file_system")] string FileSystem,
+    [property: JsonPropertyName("total_bytes")] long? TotalBytes,
+    [property: JsonPropertyName("used_bytes")] long? UsedBytes
+);
+
 record LhmDiskSnapshot(
+    [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("total_bytes")] long? TotalBytes,
     [property: JsonPropertyName("used_bytes")] long? UsedBytes,
     [property: JsonPropertyName("read_mbps")] double? ReadMbps,
-    [property: JsonPropertyName("write_mbps")] double? WriteMbps
+    [property: JsonPropertyName("write_mbps")] double? WriteMbps,
+    [property: JsonPropertyName("temperature_celsius")] double? TemperatureCelsius,
+    [property: JsonPropertyName("volumes")] IReadOnlyList<LhmVolumeSnapshot> Volumes
 );
 
 record LhmSnapshot(

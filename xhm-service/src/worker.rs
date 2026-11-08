@@ -17,7 +17,7 @@ use xhm_core::{
     wire::{
         select_lite_subset, DiskUsagePayload, HardwareLimitsPayload, ProcessMetadataPayload,
         ProcessMetadataSnapshot, ProcessMetricSnapshot, ProcessSnapshotPayload, PushEvent,
-        SubscriptionMode, SystemUsagePayload,
+        SubscriptionMode, SystemUsagePayload, VolumeUsagePayload,
     },
     CoreError, Result as CoreResult,
 };
@@ -1159,11 +1159,25 @@ fn build_system_usage(
                 .disks
                 .iter()
                 .map(|disk| DiskUsagePayload {
+                    id: disk.id.clone(),
                     name: disk.name.clone(),
                     total_bytes: disk.total_bytes,
                     used_bytes: disk.used_bytes,
+                    temperature_celsius: finite(disk.temperature_celsius),
                     read_speed: optional_nonnegative(disk.read_mbps),
                     write_speed: optional_nonnegative(disk.write_mbps),
+                    volumes: disk
+                        .volumes
+                        .iter()
+                        .map(|volume| VolumeUsagePayload {
+                            id: volume.id.clone(),
+                            label: volume.label.clone(),
+                            mount_path: volume.mount_path.clone(),
+                            file_system: volume.file_system.clone(),
+                            total_bytes: volume.total_bytes,
+                            used_bytes: volume.used_bytes,
+                        })
+                        .collect(),
                 })
                 .collect();
 
@@ -1831,11 +1845,14 @@ mod tests {
             disk_read_mbps: 99.0,
             disk_write_mbps: 88.0,
             disks: vec![xhm_core::models::LhmDiskSnapshot {
+                id: "nvme-0".to_owned(),
                 name: "NVMe 0".to_owned(),
                 total_bytes: Some(1_000),
                 used_bytes: Some(400),
+                temperature_celsius: None,
                 read_mbps: Some(3.5),
                 write_mbps: None,
+                volumes: Vec::new(),
             }],
         };
 

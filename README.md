@@ -28,6 +28,12 @@ XhMonitor 是一套 Windows 进程资源监控工具，支持 CPU、内存、GPU
 
 显存（VRAM）已用量和总容量均采用专用显存口径，排除 Shared 传感器。同一 GPU 的厂商接口与 D3D Dedicated 读数不重复累计，多 GPU 累计各自的专用值。桌面显存容量未知时显示 `-`，任务栏不生成使用百分比，不使用共享内存或假定的 `8G` 上限补足。
 
+Web 磁盘卡片保持每块物理盘一个位置，悬浮向下展开有卷标且已挂载的卷；展开列表复用磁盘卡片的紧凑容量条和玻璃面板样式，不展示说明段落。点击图钉可原位显示其中一个卷，固定后展开列表顶部保留物理磁盘汇总，点击其取消固定按钮恢复磁盘卡片。固定设置保存在当前浏览器的布局配置中，按设备标识和卷 GUID 区分，不按盘符或型号匹配；固定卷暂时不可用时回到磁盘视图，恢复连接后重新显示。触屏可点击展开，键盘可聚焦、展开并通过 Escape 收起。
+
+磁盘汇总容量只统计可读取的有卷标挂载卷，不包含未挂载、无卷标或无法读取的文件系统；无法读取的 Btrfs 等文件系统不以分区长度推算已用量。没有可读卷时，仅显示物理总容量并标明已用未知。`R:/W:` 始终为物理盘读写速率，固定卷后也不变；悬浮提示保留简短口径标注，不增加常驻卡片行。
+
+磁盘卡片标题右侧显示剩余空间和物理盘温度，字体、灰色及透明度与已用／总容量数字一致。剩余空间随固定卷切换；温度始终取所属物理盘，不随卷切换。温度通过 Windows 原生存储温度属性只读查询，不重新启用 LHM Storage；查询失败、不支持或未报告温度时直接隐藏，不保留旧值，也不显示占位符。
+
 Rust Service 的 CPU 功耗限制读写面向 Ryzen AI Max 395（Strix Halo），由 Rust 直接访问已安装的 PawnIO 驱动，并加载编译时嵌入的官方签名 RyzenSMU 模块。使用该功能需要安装 PawnIO 并以管理员权限运行 Service；不依赖 WinRing0，也不会每秒启动 RyzenAdj CLI。PawnIO 同时用于支持该驱动的 CPU 传感器访问。
 
 功耗采样复用设备句柄，监控线程与 API 共享 3 秒缓存（失败也节流）；写入后失效缓存以便验证实际限制。权限、模块初始化失败会停用至服务重启；运行期连续 3 次操作失败后停止访问。PCI 互斥量等待上限为 100 ms，不进行用户态忙等或无限重试。这些措施减少访问开销，但不构成硬件稳定性保证。
@@ -61,11 +67,40 @@ xhMonitor/
 - Windows 10/11 x64。
 - Rust 1.82 或更高版本，MSVC toolchain。
 - .NET SDK 8。
-- Node.js 18 或更高版本。
+- Node.js 20.19+ 或 22.12+（Vite 7 要求）；`mise.toml` 固定使用 Node.js 24。
 - Visual Studio 2022 Build Tools。
 - 构建安装器时需要 Inno Setup 6.x。
 
 ## 开发运行
+
+推荐使用 [mise](https://mise.jdx.dev/) 管理开发环境。根目录 `mise.toml` 固定 Rust `1.94.0`、.NET SDK `8.0.427`、Node.js `24.22.1`；.NET SDK 使用独立安装目录，避免被其他已安装的 SDK 版本覆盖。
+
+首次使用（已安装 mise，并准备好 Visual Studio 2022 Build Tools 的 C++ 工具链和 Windows SDK）：
+
+```powershell
+mise trust
+mise install
+mise run
+```
+
+之后执行 `mise run`、`mise run dev` 或 `mise run start` 即可一键启动整个开发环境。任务会先安装 Web 依赖、构建硬件传感器 bridge 和 Rust Service，再调用 `start-all.ps1`：先启动 Vite 并等待其监听 `35180`，再在独立窗口运行 Desktop，由 Desktop 自动拉起 Rust 后端，避免重复启动 Service。任务返回后，各组件继续运行；停止时通过托盘退出 Desktop，并在 Vite 窗口按 `Ctrl+C`。
+
+| 命令 | 用途 |
+|------|------|
+| `mise run` / `mise run dev` / `mise run start` | 一键运行 Desktop、Rust 后端和 Vite 开发服务器 |
+| `mise run run` | 仅运行 Desktop 及其后端和内嵌 Web 页面，不启动 Vite |
+| `mise run run:service` | 单独运行后端，先构建硬件传感器 bridge |
+| `mise run run:web` | 单独运行 Vite 热更新服务器，先安装 Web 依赖 |
+| `mise run deps:web` | 按 `package-lock.json` 安装前端依赖，依赖未变时跳过 |
+| `mise run build:bridge` | 构建 Debug 硬件传感器 bridge |
+| `mise run build:service` | 按 `Cargo.lock` 构建 Rust 后端 |
+| `mise tasks ls` | 查看任务列表 |
+
+后端健康检查地址为 `http://127.0.0.1:35179/api/v1/config/health`，Vite 地址为 `http://localhost:35180`。一键任务要求 `35180` 空闲，不会终止已有服务；Desktop 的内嵌 Web 会选择其他空闲端口，后端 Web gateway 遇到端口占用会继续提供 API。仅开发前端时，也可先执行 `mise run run:web`，再在另一终端执行 `mise run run:service`。
+
+硬件传感器和 PawnIO 功耗功能需要管理员权限及相应驱动；mise 不会自动提权或安装系统驱动。
+
+也可以继续使用以下手动命令，或保留的 `start-all.ps1` 脚本：
 
 启动 Rust Service：
 
