@@ -837,6 +837,7 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   border: 1px solid rgba(255, 255, 255, 0.05);
   min-width: 200px;
   max-width: 240px;
+  cursor: pointer;
 }
 
 .disk-widget--mobile .disk-item {
@@ -862,6 +863,24 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
+}
+
+.disk-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.disk-title-row .disk-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.disk-title-metrics {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
 }
 
 .disk-details-row {
@@ -910,6 +929,9 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   font-size: 0.7rem;
   opacity: 0.8;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .disk-widget--mobile .disk-info-text {
@@ -924,6 +946,8 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   padding-left: 8px;
   margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .disk-widget--mobile .disk-speed-group {
@@ -948,6 +972,100 @@ body.is-sorting .sortable-chosen:not(.sortable-drag) {
   display: inline-block;
   min-width: 3ch;
   text-align: right;
+}
+
+.disk-item:focus-visible,
+.disk-volume-panel button:focus-visible {
+  outline: 2px solid var(--xh-color-text-primary);
+  outline-offset: 3px;
+}
+
+.disk-volume-panel {
+  position: fixed;
+  z-index: var(--xh-z-dropdown);
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--xh-spacing-md);
+  border-radius: var(--xh-radius-md);
+  color: var(--xh-color-text-primary);
+  font-size: var(--xh-font-size-sm);
+}
+
+.disk-volume-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xh-spacing-sm);
+}
+
+.disk-volume-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: var(--xh-spacing-md);
+  min-width: 0;
+  max-width: none;
+  padding: var(--xh-spacing-md) var(--xh-spacing-base);
+  cursor: default;
+}
+
+.disk-volume-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xh-spacing-sm);
+  min-width: 0;
+}
+
+.disk-volume-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--xh-spacing-md);
+}
+
+.disk-volume-title .disk-info-text,
+.disk-volume-percent {
+  flex-shrink: 0;
+}
+
+.disk-volume-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--xh-radius-sm);
+  background: transparent;
+  color: var(--xh-color-text-secondary);
+  cursor: pointer;
+}
+
+.disk-volume-panel button:hover,
+.disk-volume-pin[aria-pressed='true'] {
+  background: var(--xh-color-glass-highlight);
+  color: var(--xh-color-text-primary);
+}
+
+.disk-volume-row[data-pinned='true'] {
+  border-color: var(--xh-color-info);
+}
+
+.disk-volume-empty {
+  padding: var(--xh-spacing-md) var(--xh-spacing-base);
+  color: var(--xh-color-text-secondary);
+}
+
+@media (pointer: coarse) {
+  .disk-volume-row {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .disk-volume-panel button {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* Process Panel */

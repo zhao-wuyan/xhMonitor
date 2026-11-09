@@ -585,19 +585,35 @@ pub mod widget_disk {
 // LHM bridge IPC
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// `lhm-bridge` 中单个 LHM Storage hardware 的逐盘快照。
+/// 挂载且具有卷标的文件系统快照；容量未知时不猜测使用量。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct LhmVolumeSnapshot {
+    pub id: String,
+    pub label: String,
+    pub mount_path: String,
+    pub file_system: String,
+    pub total_bytes: Option<i64>,
+    pub used_bytes: Option<i64>,
+}
+
+/// 原生采集的逐物理盘快照；已知容量统计范围为可读取的有卷标挂载卷。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct LhmDiskSnapshot {
+    pub id: String,
     pub name: String,
     #[serde(default)]
     pub total_bytes: Option<i64>,
     #[serde(default)]
     pub used_bytes: Option<i64>,
     #[serde(default)]
+    pub temperature_celsius: Option<f64>,
+    #[serde(default)]
     pub read_mbps: Option<f64>,
     #[serde(default)]
     pub write_mbps: Option<f64>,
+    pub volumes: Vec<LhmVolumeSnapshot>,
 }
 
 /// `lhm-bridge` stdout 每行一个的快照（snake_case，与 C# 侧 `[JsonPropertyName]` 对齐）。
@@ -879,7 +895,7 @@ mod tests {
 
     #[test]
     fn lhm_snapshot_parses_an_elevated_bridge_line() {
-        let line = r#"{"ts":"2026-07-26T06:33:34.3146799Z","cpu_temp":61.5,"cpu_temp_label":"Core Max","gpu_temp":52,"gpu_memory_used_mb":4096,"gpu_memory_total_mb":16384,"process_gpu_usage":{"1234":72.5,"4321":4},"process_vram_mb":{"1234":512.5,"4321":64},"gpu_load":43,"disk_read_mbps":12.5,"disk_write_mbps":3.5,"disks":[{"name":"Samsung SSD 990 PRO 1TB","total_bytes":1099511627776,"used_bytes":687194767360,"read_mbps":12.5,"write_mbps":null},{"name":"WDC WD40EZAX","total_bytes":null,"used_bytes":null,"read_mbps":null,"write_mbps":3.5}]}"#;
+        let line = r#"{"ts":"2026-07-26T06:33:34.3146799Z","cpu_temp":61.5,"cpu_temp_label":"Core Max","gpu_temp":52,"gpu_memory_used_mb":4096,"gpu_memory_total_mb":16384,"process_gpu_usage":{"1234":72.5,"4321":4},"process_vram_mb":{"1234":512.5,"4321":64},"gpu_load":43,"disk_read_mbps":12.5,"disk_write_mbps":3.5,"disks":[{"id":"nvme-0","name":"Samsung SSD 990 PRO 1TB","total_bytes":1099511627776,"used_bytes":687194767360,"read_mbps":12.5,"write_mbps":null,"volumes":[]},{"id":"sata-1","name":"WDC WD40EZAX","total_bytes":null,"used_bytes":null,"read_mbps":null,"write_mbps":3.5,"volumes":[]}]}"#;
         let snap: LhmSnapshot = serde_json::from_str(line).unwrap();
         assert_eq!(snap.cpu_temp, Some(61.5));
         assert_eq!(snap.cpu_temp_label.as_deref(), Some("Core Max"));

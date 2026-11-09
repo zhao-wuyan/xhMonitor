@@ -82,17 +82,33 @@ pub struct HardwareLimitsPayload {
     pub max_vram: f64,
 }
 
+/// 可供磁盘卡片展开和钉住的有卷标挂载卷。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeUsagePayload {
+    pub id: String,
+    pub label: String,
+    pub mount_path: String,
+    pub file_system: String,
+    pub total_bytes: Option<i64>,
+    pub used_bytes: Option<i64>,
+}
+
 /// `ReceiveSystemUsage` 中的单块磁盘。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiskUsagePayload {
+    pub id: String,
     pub name: String,
     pub total_bytes: Option<i64>,
     pub used_bytes: Option<i64>,
+    /// 物理盘温度（摄氏度）；缺失时不显示。
+    pub temperature_celsius: Option<f64>,
     /// MB/s
     pub read_speed: Option<f64>,
     /// MB/s
     pub write_speed: Option<f64>,
+    pub volumes: Vec<VolumeUsagePayload>,
 }
 
 /// `ReceiveSystemUsage`。字段顺序对齐 `Worker.cs:274-299` 的匿名类型声明序。

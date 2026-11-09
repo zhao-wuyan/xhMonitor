@@ -109,7 +109,7 @@ export const useMetricsHub = (options?: { processMetricsMode?: ProcessMetricsSub
 
     connection.on('ReceiveSystemUsage', (data: Record<string, unknown>) => {
       const toNullableNumber = (value: unknown): number | null => {
-        if (value === null || value === undefined) return null;
+        if (typeof value !== 'number' && (typeof value !== 'string' || value.trim() === '')) return null;
         const n = Number(value);
         return Number.isFinite(n) ? n : null;
       };
@@ -118,15 +118,35 @@ export const useMetricsHub = (options?: { processMetricsMode?: ProcessMetricsSub
       const disks: DiskUsage[] | undefined = Array.isArray(rawDisks)
         ? rawDisks
             .map((item) => {
+              if (typeof item !== 'object' || item === null) return null;
               const d = item as Record<string, unknown>;
+              const id = String(d.id ?? d.Id ?? '').trim();
               const name = String(d.name ?? d.Name ?? '').trim();
-              if (!name) return null;
+              if (!id || !name) return null;
+              const rawVolumes = d.volumes ?? d.Volumes;
+              const volumes = Array.isArray(rawVolumes) ? rawVolumes.flatMap((item) => {
+                if (typeof item !== 'object' || item === null) return [];
+                const v = item as Record<string, unknown>;
+                const id = String(v.id ?? v.Id ?? '').trim();
+                const label = String(v.label ?? v.Label ?? '').trim();
+                const mountPath = String(v.mountPath ?? v.MountPath ?? '').trim();
+                if (!id || !label || !mountPath) return [];
+                return [{
+                  id, label, mountPath,
+                  fileSystem: String(v.fileSystem ?? v.FileSystem ?? ''),
+                  totalBytes: toNullableNumber(v.totalBytes ?? v.TotalBytes),
+                  usedBytes: toNullableNumber(v.usedBytes ?? v.UsedBytes),
+                }];
+              }) : [];
               return {
+                id,
                 name,
+                volumes,
                 totalBytes: toNullableNumber(d.totalBytes ?? d.TotalBytes),
                 usedBytes: toNullableNumber(d.usedBytes ?? d.UsedBytes),
                 readSpeed: toNullableNumber(d.readSpeed ?? d.ReadSpeed),
                 writeSpeed: toNullableNumber(d.writeSpeed ?? d.WriteSpeed),
+                temperatureCelsius: toNullableNumber(d.temperatureCelsius ?? d.TemperatureCelsius),
               } satisfies DiskUsage;
             })
             .filter((d): d is DiskUsage => Boolean(d))

@@ -6,13 +6,11 @@ internal static class WindowsNativeDiskReader
 {
     internal static readonly Guid DiskInterface = new("53F56307-B6BF-11D0-94F2-00A0C91EFB8B");
     internal const uint PresentDeviceInterfaces = 0x12;
-    internal const uint GenericRead = 0x80000000;
     internal const uint ShareReadWrite = 3;
     internal const uint OpenExisting = 3;
     internal const uint StorageGetDeviceNumber = 0x002D1080;
     internal const uint StorageQueryProperty = 0x002D1400;
     internal const uint DiskGetDriveGeometryEx = 0x000700A0;
-    internal const uint DiskGetDriveLayoutEx = 0x00070050;
     internal const uint VolumeGetVolumeDiskExtents = 0x00560000;
     internal const uint DiskPerformance = 0x00070020;
     internal const int InsufficientBuffer = 122;
@@ -85,6 +83,18 @@ internal static class WindowsNativeDiskReader
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool FindVolumeClose(IntPtr search);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetVolumePathNamesForVolumeNameW(string volumeName,
+        [Out] char[] paths, uint length, out uint requiredLength);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetVolumeInformationW(string rootPath,
+        StringBuilder volumeName, uint volumeNameSize, out uint serialNumber,
+        out uint maximumComponentLength, out uint fileSystemFlags,
+        StringBuilder fileSystemName, uint fileSystemNameSize);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

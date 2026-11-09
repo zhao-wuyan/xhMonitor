@@ -16,12 +16,24 @@ export interface MetricsData {
   processes: ProcessInfo[];
 }
 
+export interface DiskVolume {
+  id: string;
+  label: string;
+  mountPath: string;
+  fileSystem: string;
+  totalBytes: number | null;
+  usedBytes: number | null;
+}
+
 export interface DiskUsage {
+  id: string;
   name: string;
   totalBytes: number | null;
   usedBytes: number | null;
   readSpeed: number | null;
   writeSpeed: number | null;
+  temperatureCelsius: number | null;
+  volumes: DiskVolume[];
 }
 
 export interface SystemUsage {

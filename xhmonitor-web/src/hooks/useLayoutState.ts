@@ -41,6 +41,7 @@ export interface LayoutState {
   background: LayoutBackground;
   themeColors: ThemeColors;
   diskPosition: DiskPosition;
+  diskPins: Record<string, string>;
   dragMode: DragMode;
   showPeakValleyMarkers: boolean;
 }
@@ -89,6 +90,7 @@ const DEFAULT_LAYOUT_STATE: LayoutState = {
     pwr: '#f43f5e',
   },
   diskPosition: 'left',
+  diskPins: {},
   dragMode: 'sort',
   showPeakValleyMarkers: true,
 };
@@ -138,6 +140,12 @@ const toDiskPosition = (value: unknown, fallback: DiskPosition): DiskPosition =>
 const toDragMode = (value: unknown, fallback: DragMode): DragMode =>
   value === 'swap' ? 'swap' : fallback;
 
+const normalizeDiskPins = (value: unknown): Record<string, string> =>
+  isRecord(value)
+    ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] =>
+        entry[0].trim().length > 0 && typeof entry[1] === 'string' && entry[1].trim().length > 0))
+    : {};
+
 const normalizeLayoutState = (state: LayoutState): LayoutState => {
   const gridColumns = Math.max(1, Math.round(state.gridColumns));
   const cardOrder =
@@ -185,6 +193,7 @@ const normalizeLayoutState = (state: LayoutState): LayoutState => {
       pwr: toStringValue(state.themeColors.pwr, DEFAULT_LAYOUT_STATE.themeColors.pwr),
     },
     diskPosition,
+    diskPins: normalizeDiskPins(state.diskPins),
     dragMode,
     showPeakValleyMarkers: toBooleanValue(
       state.showPeakValleyMarkers,
@@ -214,6 +223,7 @@ const mergeLayoutState = (state: LayoutState, patch: LayoutStatePatch): LayoutSt
       ...patch.themeColors,
     },
     diskPosition: patch.diskPosition ?? state.diskPosition,
+    diskPins: patch.diskPins ?? state.diskPins,
     dragMode: patch.dragMode ?? state.dragMode,
     showPeakValleyMarkers: patch.showPeakValleyMarkers ?? state.showPeakValleyMarkers,
   });
@@ -270,6 +280,7 @@ const parseStoredLayoutState = (raw: unknown): LayoutState | null => {
       pwr: toStringValue(themeColorsValue.pwr, DEFAULT_LAYOUT_STATE.themeColors.pwr),
     },
     diskPosition: toDiskPosition(stateValue.diskPosition, DEFAULT_LAYOUT_STATE.diskPosition),
+    diskPins: normalizeDiskPins(stateValue.diskPins),
     dragMode: toDragMode(stateValue.dragMode, DEFAULT_LAYOUT_STATE.dragMode),
     showPeakValleyMarkers: toBooleanValue(
       stateValue.showPeakValleyMarkers,
@@ -340,6 +351,7 @@ export const useLayoutState = () => {
         background: { ...DEFAULT_LAYOUT_STATE.background },
         themeColors: { ...DEFAULT_LAYOUT_STATE.themeColors },
         diskPosition: DEFAULT_LAYOUT_STATE.diskPosition,
+        diskPins: {},
         dragMode: DEFAULT_LAYOUT_STATE.dragMode,
         showPeakValleyMarkers: DEFAULT_LAYOUT_STATE.showPeakValleyMarkers,
       })

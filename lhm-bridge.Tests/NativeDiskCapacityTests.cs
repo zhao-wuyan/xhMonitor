@@ -6,228 +6,170 @@ public class NativeDiskCapacityTests
 {
     private const uint DiskNumber = 3;
 
-    private static NativePartition DataPartition(long offset, long length) =>
-        new(offset, length, false, false, false, true);
-
-    private static NativePartition ReservedPartition(long offset, long length) =>
-        new(offset, length, false, false, false, false);
-
-    private static NativeVolume Volume(string id, long offset, long length, long? freeBytes) =>
-        new(id, new[] { new NativeExtent(DiskNumber, offset, length) }, freeBytes);
+    private static NativeVolume Volume(string id, string path, long offset, long length,
+        long? total, long? free, uint diskNumber = DiskNumber, string label = "Windows", string fileSystem = "NTFS") =>
+        new(id, new[] { new NativeExtent(diskNumber, offset, length) }, label, path, fileSystem, total, free);
 
     [Fact]
-    public void CalculateUsedBytes_ShouldExcludeUnallocatedSpace()
+    public void CalculateCapacity_ShouldKeepReadableCDriveWhenOtherPartitionsAreUnreadable()
     {
-        var partitions = new[] { DataPartition(0, 600), DataPartition(600, 200) };
-        var volumes = new[] { Volume("volume-a", 0, 600, 150), Volume("volume-b", 600, 200, 50) };
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber, new[]
+        {
+            Volume("windows", @"C:\", 100, 600, 590, 150),
+            Volume("linux", "", 700, 200, null, null, label: "Linux", fileSystem: "Btrfs"),
+            Volume("locked", @"D:\", 900, 100, null, null, label: "Private"),
+            Volume("efi", "", 0, 100, 100, 80)
+        }, 1000);
 
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000, partitions, volumes)
-            .Should().Be(600);
+        (result.TotalBytes, result.UsedBytes).Should().Be((590L, 440L));
+        result.Volumes.Select(volume => volume.Id).Should().Equal("windows", "locked");
+        result.Volumes[1].TotalBytes.Should().BeNull();
+        result.Volumes[1].UsedBytes.Should().BeNull();
     }
 
     [Fact]
-    public void CalculateUsedBytes_ShouldDeduplicatePartitionRangesAndVolumeIdentities()
+    public void CalculateCapacity_ShouldAggregateCDEOnOneDiskWithoutCountingOtherDisks()
     {
-        var partitions = new[]
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber, new[]
         {
-            DataPartition(0, 600), DataPartition(600, 200),
-            DataPartition(0, 600), DataPartition(600, 200)
-        };
-        var volumes = new[]
-        {
-            Volume("volume-a", 0, 600, 150), Volume("volume-b", 600, 200, 50),
-            Volume("VOLUME-A", 0, 600, 150), Volume("VOLUME-B", 600, 200, 50)
-        };
+            Volume("c", @"C:\", 0, 600, 590, 150),
+            Volume("d", @"D:\", 600, 200, 190, 100, label: "Data"),
+            Volume("e", @"E:\", 800, 100, 90, 80, label: "Backup"),
+            Volume("f", @"F:\", 0, 1000, 990, 900, 4)
+        });
 
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000, partitions, volumes)
-            .Should().Be(600);
+        (result.TotalBytes, result.UsedBytes).Should().Be((870L, 540L));
+        result.Volumes.Select(volume => volume.Label).Should().Equal("Windows", "Data", "Backup");
+        result.Volumes.Select(volume => volume.UsedBytes).Should().Equal(440L, 90L, 10L);
     }
 
     [Fact]
-    public void CalculateUsedBytes_ShouldNotCountExtendedPartitionContainerOrUnusedEntries()
+    public void CalculateCapacity_ShouldDeduplicateVolumeIdentityAndExtentAliases()
     {
-        var partitions = new[]
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber, new[]
         {
-            new NativePartition(0, 1000, true, false, false, false),
-            DataPartition(0, 600), DataPartition(600, 200),
-            new NativePartition(0, 0, false, false, false, false)
-        };
-        var volumes = new[] { Volume("volume-a", 0, 600, 150), Volume("volume-b", 600, 200, 50) };
+            Volume("same-volume", @"C:\", 0, 600, 590, 150),
+            Volume("SAME-VOLUME", @"D:\Mount\", 0, 600, 590, 150),
+            Volume("extent-alias", @"E:\", 0, 600, 590, 150)
+        });
 
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000, partitions, volumes)
-            .Should().Be(600);
+        (result.TotalBytes, result.UsedBytes).Should().Be((590L, 440L));
+        result.Volumes.Should().ContainSingle().Which.MountPath.Should().Be(@"C:\");
+    }
+
+    [Fact]
+    public void CalculateCapacity_ShouldPreserveFolderMountAndActualLabelAndFilesystem()
+    {
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber,
+            new[] { Volume("folder", @"C:\Data\", 0, 600, 590, 150, label: " My data ", fileSystem: "ReFS") });
+
+        result.Volumes.Should().ContainSingle().Which.Should().Be(
+            new LhmVolumeSnapshot("folder", " My data ", @"C:\Data\", "ReFS", 590, 440));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void CalculateCapacity_ShouldExcludeUnnamedMountedFilesystems(string label)
+    {
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber,
+            new[] { Volume("unlabeled", @"C:\", 0, 600, 590, 150, label: label) }, 600);
+
+        (result.TotalBytes, result.UsedBytes).Should().Be((600L, (long?)null));
+        result.Volumes.Should().BeEmpty();
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void CalculateUsedBytes_ShouldCountReservedPartitionWhenItsFreeSpaceIsUnavailable(bool hasVolume)
+    public void CalculateCapacity_ShouldNotGuessBtrfsUsageFromPartitionLength(bool isMounted)
     {
-        var partitions = new[]
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber,
+            new[] { Volume("btrfs", isMounted ? @"D:\" : "", 0, 1000, null, null, label: "Linux", fileSystem: "Btrfs") }, 1000);
+
+        (result.TotalBytes, result.UsedBytes).Should().Be((1000L, (long?)null));
+        result.Volumes.Should().HaveCount(isMounted ? 1 : 0);
+        if (isMounted)
         {
-            DataPartition(0, 600), DataPartition(600, 200), ReservedPartition(800, 10)
-        };
-        var volumes = new List<NativeVolume>
-        {
-            Volume("volume-a", 0, 600, 150), Volume("volume-b", 600, 200, 50)
-        };
-        if (hasVolume)
-        {
-            volumes.Add(Volume("reserved", 800, 10, null));
+            result.Volumes[0].TotalBytes.Should().BeNull();
+            result.Volumes[0].UsedBytes.Should().BeNull();
         }
-
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000, partitions, volumes)
-            .Should().Be(610);
-    }
-
-    [Fact]
-    public void CalculateUsedBytes_ShouldSubtractReadableReservedVolumeFreeSpaceOnce()
-    {
-        var partitions = new[] { DataPartition(0, 600), ReservedPartition(600, 100) };
-        var volumes = new[]
-        {
-            Volume("data", 0, 600, 150),
-            Volume("reserved", 600, 100, 40), Volume("reserved", 600, 100, 40)
-        };
-
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000, partitions, volumes)
-            .Should().Be(510);
-    }
-
-    [Fact]
-    public void CalculateUsedBytes_ShouldReturnUnknownWhenWindowsDataPartitionHasNoVolume()
-    {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { DataPartition(0, 600) }, Array.Empty<NativeVolume>())
-            .Should().BeNull();
-    }
-
-    [Fact]
-    public void CalculateUsedBytes_ShouldReturnUnknownWhenWindowsDataVolumeFreeSpaceCannotBeRead()
-    {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { DataPartition(0, 600) }, new[] { Volume("locked", 0, 600, null) })
-            .Should().BeNull();
     }
 
     [Theory]
-    [InlineData(4u, 0L)]
-    [InlineData(DiskNumber, 1L)]
-    public void CalculateUsedBytes_ShouldRequireMatchingDiskNumberAndPartitionStart(uint extentDisk, long extentOffset)
+    [InlineData(600L, 0L, 600L)]
+    [InlineData(600L, 600L, 0L)]
+    [InlineData(0L, 0L, 0L)]
+    public void CalculateCapacity_ShouldDistinguishFullEmptyAndZeroSizedFilesystems(long total, long free, long used)
     {
-        var volume = new NativeVolume("wrong-mapping",
-            new[] { new NativeExtent(extentDisk, extentOffset, 600) }, 150);
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber,
+            new[] { Volume("data", @"C:\", 0, 600, total, free) }, 600);
 
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { DataPartition(0, 600) }, new[] { volume })
-            .Should().BeNull();
-    }
-
-    [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public void CalculateUsedBytes_ShouldReturnUnknownForDynamicOrOtherOperatingSystemPartitions(
-        bool isDynamic, bool isOtherOperatingSystem)
-    {
-        var partitions = new[]
-        {
-            DataPartition(0, 600),
-            new NativePartition(600, 200, false, isDynamic, isOtherOperatingSystem, false)
-        };
-
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000, partitions,
-                new[] { Volume("data", 0, 600, 150) })
-            .Should().BeNull();
+        (result.TotalBytes, result.UsedBytes).Should().Be((total, used));
+        result.Volumes[0].UsedBytes.Should().Be(used);
     }
 
     [Theory]
     [InlineData(DiskNumber)]
     [InlineData(4u)]
-    public void CalculateUsedBytes_ShouldReturnUnknownForMultiExtentOrSpannedVolumes(uint secondDisk)
+    public void CalculateCapacity_ShouldExcludeMultiExtentVolumesWithoutLosingBasicVolumes(uint secondDisk)
     {
-        var volume = new NativeVolume("multi-extent", new[]
+        var spanned = new NativeVolume("spanned", new[]
         {
-            new NativeExtent(DiskNumber, 0, 600), new NativeExtent(secondDisk, 600, 200)
-        }, 200);
+            new NativeExtent(DiskNumber, 600, 200), new NativeExtent(secondDisk, 800, 200)
+        }, "Spanned", @"D:\", "NTFS", 400, 100);
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber,
+            new[] { Volume("basic", @"C:\", 0, 600, 590, 150), spanned });
 
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { DataPartition(0, 600), DataPartition(600, 200) }, new[] { volume })
-            .Should().BeNull();
+        (result.TotalBytes, result.UsedBytes).Should().Be((590L, 440L));
+        result.Volumes.Should().ContainSingle().Which.Id.Should().Be("basic");
     }
 
-    [Fact]
-    public void CalculateUsedBytes_ShouldIgnoreVolumesBelongingOnlyToOtherDisks()
+    [Theory]
+    [InlineData(-1L, 100L)]
+    [InlineData(601L, 100L)]
+    [InlineData(600L, -1L)]
+    [InlineData(600L, 601L)]
+    public void CalculateCapacity_ShouldKeepInvalidCapacityUnknownWithoutDiscardingC(long total, long free)
     {
-        var volumes = new[]
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber, new[]
         {
-            Volume("data", 0, 600, 150),
-            new NativeVolume("other-disk", new[] { new NativeExtent(4, 0, 600) }, 500)
-        };
+            Volume("invalid", @"D:\", 600, 600, total, free),
+            Volume("c", @"C:\", 0, 600, 590, 150)
+        });
 
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { DataPartition(0, 600) }, volumes)
-            .Should().Be(450);
-    }
-
-    [Theory]
-    [InlineData(1000L)]
-    [InlineData(0L)]
-    public void CalculateUsedBytes_ShouldReturnZeroForSuccessfullyReadEmptyLayout(long totalBytes)
-    {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, totalBytes,
-                Array.Empty<NativePartition>(), Array.Empty<NativeVolume>())
-            .Should().Be(0);
-    }
-
-    [Theory]
-    [InlineData(1000L, 0L, -1L)]
-    [InlineData(1000L, -1L, 100L)]
-    [InlineData(1000L, 900L, 200L)]
-    [InlineData(1000L, 0L, 1001L)]
-    [InlineData(long.MaxValue, long.MaxValue - 1, 2L)]
-    public void CalculateUsedBytes_ShouldReturnUnknownForInvalidPartitionBounds(
-        long totalBytes, long offset, long length)
-    {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, totalBytes,
-                new[] { ReservedPartition(offset, length) }, Array.Empty<NativeVolume>())
-            .Should().BeNull();
+        (result.TotalBytes, result.UsedBytes).Should().Be((590L, 440L));
+        result.Volumes[0].TotalBytes.Should().BeNull();
+        result.Volumes[0].UsedBytes.Should().BeNull();
+        result.Volumes[1].UsedBytes.Should().Be(440);
     }
 
     [Fact]
-    public void CalculateUsedBytes_ShouldReturnUnknownWhenPartitionLengthSumExceedsPhysicalCapacity()
+    public void CalculateCapacity_ShouldNotSubstitutePhysicalCapacityAfterOverflow()
     {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { ReservedPartition(0, 600), ReservedPartition(400, 600) },
-                Array.Empty<NativeVolume>())
-            .Should().BeNull();
-    }
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber, new[]
+        {
+            Volume("a", @"C:\", 0, long.MaxValue, long.MaxValue, 0),
+            Volume("b", @"D:\", 1, 1, 1, 0)
+        }, 1000);
 
-    [Fact]
-    public void CalculateUsedBytes_ShouldReturnUnknownWhenPartitionLengthSumOverflows()
-    {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, long.MaxValue,
-                new[] { ReservedPartition(0, long.MaxValue - 1), ReservedPartition(1, 2) },
-                Array.Empty<NativeVolume>())
-            .Should().BeNull();
+        result.TotalBytes.Should().BeNull();
+        result.UsedBytes.Should().BeNull();
+        result.Volumes.Should().HaveCount(2);
+        result.Volumes[0].UsedBytes.Should().Be(long.MaxValue);
     }
 
     [Theory]
-    [InlineData(0L, 600L)]
-    [InlineData(600L, 0L)]
-    public void CalculateUsedBytes_ShouldAcceptReadableFullAndEmptyWindowsDataVolumes(
-        long availableFreeBytes, long expectedUsedBytes)
+    [InlineData(-1L, 600L)]
+    [InlineData(0L, 0L)]
+    [InlineData(long.MaxValue, 1L)]
+    public void CalculateCapacity_ShouldRejectInvalidExtents(long offset, long length)
     {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, 1000,
-                new[] { DataPartition(0, 600) },
-                new[] { Volume("data", 0, 600, availableFreeBytes) })
-            .Should().Be(expectedUsedBytes);
-    }
+        var result = NativeDiskCollector.CalculateCapacity(DiskNumber,
+            new[] { Volume("invalid", @"D:\", offset, length, 0, 0) });
 
-    [Fact]
-    public void CalculateUsedBytes_ShouldReturnUnknownForNegativePhysicalCapacity()
-    {
-        NativeDiskCollector.CalculateUsedBytes(DiskNumber, -1,
-                Array.Empty<NativePartition>(), Array.Empty<NativeVolume>())
-            .Should().BeNull();
+        result.TotalBytes.Should().BeNull();
+        result.UsedBytes.Should().BeNull();
+        result.Volumes.Should().BeEmpty();
     }
 }
