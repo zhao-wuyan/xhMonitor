@@ -47,7 +47,7 @@ jobs:
           cache: npm
           cache-dependency-path: xhmonitor-web/package-lock.json
 
-      - name: Sync version to Directory.Build.props
+      - name: Sync version from tag
         shell: pwsh
         run: |
           $buildPropsPath = "Directory.Build.props"
@@ -60,6 +60,36 @@ jobs:
 
           $buildProps.Save("$PWD\$buildPropsPath")
           Write-Host "Updated Directory.Build.props to version $env:VERSION"
+
+          # Cargo.toml：只改 [workspace.package] 段内的 version，不触碰依赖版本
+          $cargoTomlPath = "Cargo.toml"
+          $cargoToml = Get-Content $cargoTomlPath -Raw
+          $cargoBlockPattern = '(?ms)(\[workspace\.package\][^\[]*?^\s*version = ")[^"]+(")'
+          if ($cargoToml -notmatch $cargoBlockPattern) {
+            throw "Failed to update [workspace.package] version in Cargo.toml"
+          }
+          $cargoToml = [regex]::Replace($cargoToml, $cargoBlockPattern, {
+              param($m)
+              $m.Groups[1].Value + $env:VERSION + $m.Groups[2].Value
+            })
+          [System.IO.File]::WriteAllText((Resolve-Path $cargoTomlPath), $cargoToml)
+          Write-Host "Updated Cargo.toml to version $env:VERSION"
+
+          # Cargo.lock：同步 workspace 成员条目，避免与 Cargo.toml 不一致
+          $lockPath = "Cargo.lock"
+          $lock = Get-Content $lockPath -Raw
+          foreach ($crate in @("xhm-core", "xhm-service")) {
+            $pattern = '(\[\[package\]\]\r?\nname = "' + [regex]::Escape($crate) + '"\r?\nversion = ")[^"]+(")'
+            if ($lock -notmatch $pattern) {
+              throw "Cargo.lock is missing a package entry for $crate"
+            }
+            $lock = [regex]::Replace($lock, $pattern, {
+                param($m)
+                $m.Groups[1].Value + $env:VERSION + $m.Groups[2].Value
+              })
+          }
+          [System.IO.File]::WriteAllText((Resolve-Path $lockPath), $lock)
+          Write-Host "Updated Cargo.lock to version $env:VERSION"
 
       - name: Install Inno Setup
         shell: pwsh

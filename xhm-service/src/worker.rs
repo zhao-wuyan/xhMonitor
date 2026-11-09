@@ -219,7 +219,6 @@ impl Drop for ServiceWorker {
 async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
     let mut system = System::new();
     let mut max_memory = 0.0;
-    let mut max_vram = 0.0;
     let mut next_hardware_refresh = Instant::now();
     let mut next_collection = Instant::now();
     let process_name_resolver = {
@@ -239,7 +238,7 @@ async fn run_worker(state: AppState, mut shutdown_rx: watch::Receiver<bool>) {
             max_memory = round_one(bytes_to_mb(system.total_memory()));
 
             // 缺失专用容量时清除旧值，不能继续广播先前可能包含共享内存的上限。
-            max_vram = state
+            let max_vram = state
                 .lhm
                 .snapshot()
                 .as_ref()
