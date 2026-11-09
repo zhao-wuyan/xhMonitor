@@ -16,7 +16,7 @@
 #define MyAppId "{8A7B9C0D-1E2F-3A4B-5C6D-7E8F9A0B1C2D}"
 ; 版本号通过命令行参数 /DMyAppVersion=x.x.x 传递
 #ifndef MyAppVersion
-  #define MyAppVersion "0.2.1"
+  #define MyAppVersion "0.3.8"
 #endif
 ; 构建类型通过命令行参数 /DBuildType=xxx 传递
 #ifndef BuildType
